@@ -46,8 +46,6 @@ class MainFrame(wx.Frame):
         self.splitter.SplitVertically(self.panelLeft, self.panelRight)
         self.panelLeft.SetFocus()
         self.Centre()
-
-        self.gcodeMode = ''
         
 
     def InitToolBar(self):

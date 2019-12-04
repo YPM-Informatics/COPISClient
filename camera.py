@@ -7,11 +7,14 @@ from enums import Axis
 
 class Camera():
     def __init__(self, x, y, z, b, c):
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-        self.b = float(b)
-        self.c = float(c)
+        try:
+            self.x = float(x)
+            self.y = float(y)
+            self.z = float(z)
+            self.b = float(b)
+            self.c = float(c)
+        except:
+            self.SetDialog('Values for axis should be numbers.')
         self.start = (self.x, self.y, self.z, self.b, self.c)
 
         self.angle = 0
@@ -31,9 +34,9 @@ class Camera():
         glTranslatef(self.x, self.y, self.z)
         if self.mode == 'normal':
             if self.b != 0.0:
-                glRotatef(self.b, 0, 1, 0)
+                glRotatef(self.b, 0, 0, 1)
             if self.c != 0.0:
-                glRotatef(self.c, 0, 0, 1)
+                glRotatef(self.c, 0, 1, 0)
         elif self.mode == 'rotate':
             glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
 
@@ -128,3 +131,8 @@ class Camera():
                 self.b += amount
             elif axis == Axis.C:
                 self.c += amount
+                
+    def SetDialog(self, message):
+        msg = wx.MessageDialog(self, message, "Confirm Exit", wx.OK)
+        msg.ShowModal()
+        msg.Destroy()

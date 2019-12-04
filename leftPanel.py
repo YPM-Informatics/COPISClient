@@ -1,5 +1,4 @@
 import wx
-from pygcode import *
 from enums import Axis
 
 class LeftPanel(wx.Panel):
@@ -504,23 +503,11 @@ class LeftPanel(wx.Panel):
             
             if axis in [Axis.X, Axis.Y, Axis.Z]:
                 cmdBox = self.parent.GetWindow2().cmd
-                gcode = ""
                 size = self.xyzSc.GetValue()
                 
-##                if self.parent.gcodeMode != 'G91':
-##                    self.parent.gcodeMode = 'G91'
-##                    cmdBox.Append('G91')
                     
                 if direction == Axis.Minus:
                     size = -size
-                    
-##                if axis == Axis.X:
-##                    gcode = GCodeLinearMove(X=size)
-##                elif axis == Axis.Y:
-##                    gcode = GCodeLinearMove(Y=size)
-##                elif axis == Axis.Z:
-##                    gcode = GCodeLinearMove(Z=size)
-##                cmdBox.Append(str(gcode))
                 
                 size = size / 100
             else:
