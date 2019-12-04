@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from OpenGL.GLUT import *
 import wx
 import sys
 from mainFrame import MainFrame
@@ -14,6 +13,5 @@ class COPISApp(wx.App):
         return True
 
 if __name__ == '__main__':
-    glutInit(sys.argv)
     app = COPISApp()
     app.MainLoop()

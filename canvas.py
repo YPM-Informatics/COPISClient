@@ -1,5 +1,4 @@
 from OpenGL.GL import *
-from OpenGL.GLUT import *
 import wx
 from wx import glcanvas
 import numpy as np
@@ -13,7 +12,7 @@ class CanvasBase(glcanvas.GLCanvas):
         
         # initial mouse position
         self.lastx = self.x = 30
-        self.lasty = self.y = 30
+        self.lastz = self.z = 30
         self.size = None
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -43,15 +42,15 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnMouseDown(self, evt):
         self.CaptureMouse()
-        self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
+        self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
     def OnMouseUp(self, evt):
         self.ReleaseMouse()
 
     def OnMouseMotion(self, evt):
         if evt.Dragging() and evt.LeftIsDown():
-            self.lastx, self.lasty = self.x, self.y
-            self.x, self.y = evt.GetPosition()
+            self.lastx, self.lastz = self.x, self.z
+            self.x, self.z = evt.GetPosition()
             self.Refresh(False)
 
 
@@ -64,10 +63,6 @@ class Canvas(CanvasBase):
         # position viewer
         glMatrixMode(GL_MODELVIEW)
         glTranslatef(0.0, 0.0, -1.5)
-
-        # position object
-        glRotatef(self.y, 1.0, 0.0, 0.0)
-        glRotatef(self.x, 0.0, 1.0, 0.0)
 
         self.cameras = []
 
@@ -83,16 +78,16 @@ class Canvas(CanvasBase):
         w = max(w, 1.0)
         h = max(h, 1.0)
         xScale = 180.0 / w
-        yScale = 180.0 / h
+        zScale = 180.0 / h
 
         ## object
         glPushMatrix()
         glColor3ub(0, 0, 128)
         glTranslated(0.0,0.0,0.0)
-        glutSolidSphere(0.2,60,60)
+        #glutSolidSphere(0.2,60,60)
         glPopMatrix()
-        glRotatef((self.y - self.lasty) * yScale, 1.0, 0.0, 0.0)
-        glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0)
+        glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
+        glRotatef((self.x - self.lastx) * xScale, 0.0, 0.0, 1.0)
 
         for camera in self.cameras:
             camera.onDraw()
@@ -104,10 +99,11 @@ class Canvas(CanvasBase):
         
         glBegin(GL_LINES)
         for i in np.arange(-1, 1, 0.05):
-            glVertex3f(i, 0, 1)
-            glVertex3f(i, 0, -1)
-            glVertex3f(1, 0, i)
-            glVertex3f(-1, 0, i)
+            glVertex3f(i,  1, 0)
+            glVertex3f(i, -1, 0)
+            glVertex3f( 1, i, 0)
+            glVertex3f(-1, i, 0)
+
         glColor3ub(255, 0, 0)
         glVertex3f(0, 0, 0)
         glVertex3f(1.5, 0, 0)
