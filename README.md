@@ -1,1 +1,1 @@
-# Computer-Operated Photogrammetric Imaging Systme (COPIS)
+# Computer-Operated Photogrammetric Imaging System (COPIS)
