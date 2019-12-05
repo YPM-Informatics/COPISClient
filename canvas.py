@@ -1,4 +1,5 @@
 from OpenGL.GL import *
+from OpenGL.GLU import *
 import wx
 from wx import glcanvas
 import numpy as np
@@ -56,6 +57,8 @@ class CanvasBase(glcanvas.GLCanvas):
 
 class Canvas(CanvasBase):
     def InitGL(self):
+        global quadratic
+        quadratic = gluNewQuadric()
         # set viewing projection
         glMatrixMode(GL_PROJECTION)
         glFrustum(-0.5, 0.5, -0.5, 0.5, 0.4, 5)
@@ -83,8 +86,7 @@ class Canvas(CanvasBase):
         ## object
         glPushMatrix()
         glColor3ub(0, 0, 128)
-        glTranslated(0.0,0.0,0.0)
-        #glutSolidSphere(0.2,60,60)
+        gluSphere(quadratic, 0.2, 32, 32)
         glPopMatrix()
         glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
         glRotatef((self.x - self.lastx) * xScale, 0.0, 0.0, 1.0)

@@ -5,7 +5,7 @@ import random
 import webcolors
 from enums import Axis
 
-class Camera():
+class Camera(object):
     def __init__(self, x, y, z, b, c):
         try:
             self.x = float(x)
