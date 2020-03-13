@@ -1,6 +1,8 @@
+from Canon.EDSDKLib import *
 import wx
 from leftPanel import LeftPanel
 from rightPanel import RightPanel
+from camera import *
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent):
@@ -9,16 +11,16 @@ class MyPopupMenu(wx.Menu):
 
         mmi = wx.MenuItem(self, wx.NewId(), 'Minimize')
         self.Append(mmi)
-        self.Bind(wx.EVT_MENU, self.OnMinimize, mmi)
+        self.Bind(wx.EVT_MENU, self.minimize, mmi)
 
         cmi = wx.MenuItem(self, wx.NewId(), 'Close')
         self.Append(cmi)
-        self.Bind(wx.EVT_MENU, self.OnClose, cmi)
+        self.Bind(wx.EVT_MENU, self.close, cmi)
 
-    def OnMinimize(self, e):
+    def minimize(self, e):
         self.parent.Iconize()
 
-    def OnClose(self, e):
+    def close(self, e):
         self.parent.Close()
         
 
@@ -30,13 +32,13 @@ class MainFrame(wx.Frame):
         self.SetMinSize(wx.Size(1352, 850))
 
         ## initialize menu bar
-        self.InitMenuBar()
+        self.initMenubar()
 
         ## initialize tool bar
-        self.InitToolBar()
+        self.initToolbar()
 
         ## initialize status bar
-        self.InitStatusBar()
+        self.initStatusbar()
 
         ## split the window in a half
         self.splitter = wx.SplitterWindow(self)
@@ -46,24 +48,9 @@ class MainFrame(wx.Frame):
         self.splitter.SplitVertically(self.panelLeft, self.panelRight)
         self.panelLeft.SetFocus()
         self.Centre()
-        
 
-    def InitToolBar(self):
+    def initToolbar(self):
         toolbar = self.CreateToolBar()
-
-        ## undo, redo and refresh buttons
-        ## TO DO: create and bind functions
-        undoImg = wx.Image('img/undo.png')
-        undoImg = undoImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Undo', wx.BitmapFromImage(undoImg))
-
-        redoImg = wx.Image('img/redo.png')
-        redoImg = redoImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Redo', wx.BitmapFromImage(redoImg))
-
-        refreshImg = wx.Image('img/refresh.png')
-        refreshImg = refreshImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Refresh', wx.BitmapFromImage(refreshImg))
 
         ## port and baud options
         ## TO DO: it should detect ports and baud options when the machine is connected
@@ -119,7 +106,7 @@ class MainFrame(wx.Frame):
         
         toolbar.Realize()
 
-    def InitMenuBar(self):
+    def initMenubar(self):
         menubar = wx.MenuBar()
 
         ## view menu that shows view options
@@ -128,26 +115,31 @@ class MainFrame(wx.Frame):
         self.shst = viewMenu.Append(wx.ID_ANY, 'Show statusbar', 'Show Statusbar', kind=wx.ITEM_CHECK)
         ## set default true
         viewMenu.Check(self.shst.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.ToggleStatusBar, self.shst)
+        self.Bind(wx.EVT_MENU, self.toggleStatusbar, self.shst)
 
         ## add view menu to menu bar
         menubar.Append(viewMenu, '&View')
         ## set menu bar to the frame
         self.SetMenuBar(menubar)
 
-    def InitStatusBar(self):
+    def initStatusbar(self):
         self.statusbar = self.CreateStatusBar()
         self.statusbar.SetStatusText('Ready')
 
-    def OnQuit(self, e):
+    def quit(self, e):
         self.Close()
 
-    def ToggleStatusBar(self, e):
+    def toggleStatusbar(self, e):
         if self.shst.IsChecked():
             self.statusbar.Show()
         else:
             self.statusbar.Hide()
 
-    def OnRightDown(self, e):
+    def rightClick(self, e):
         self.PopupMenu(MyPopupMenu(self), e.GetPosition())
-        
+
+    def deleteCamera(self):
+        if self.selected_cam is not None:
+            self.camera_models.remove(self.selected_cam)
+            del self.selected_cam
+            self.selected_cam = None
