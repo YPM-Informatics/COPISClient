@@ -3,6 +3,7 @@ import wx
 from wx import glcanvas
 import numpy as np
 from camera import Camera
+import time
 
 class CanvasBase(glcanvas.GLCanvas):
     def __init__(self, parent):
@@ -55,6 +56,10 @@ class CanvasBase(glcanvas.GLCanvas):
 
 
 class Canvas(CanvasBase):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+
     def InitGL(self):
         # set viewing projection
         glMatrixMode(GL_PROJECTION)
@@ -63,8 +68,6 @@ class Canvas(CanvasBase):
         # position viewer
         glMatrixMode(GL_MODELVIEW)
         glTranslatef(0.0, 0.0, -1.5)
-
-        self.cameras = []
 
     def OnDraw(self):
         # clear color and depth buffers
@@ -89,7 +92,7 @@ class Canvas(CanvasBase):
         glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
         glRotatef((self.x - self.lastx) * xScale, 0.0, 0.0, 1.0)
 
-        for camera in self.cameras:
+        for camera in self.parent.parent.GetParent().camera_models:
             camera.onDraw()
 
         self.SwapBuffers()
@@ -115,7 +118,5 @@ class Canvas(CanvasBase):
         glVertex3f(0, 0, 1.5)
         glEnd()
 
-    def OnDrawCamera(self, x, y, z, b, c):
-        camera = Camera(x, y, z, b, c)
-        self.cameras.append(camera)
-        self.OnDraw()
+    def OnDrawSphere(self):
+        pass

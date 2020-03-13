@@ -15,11 +15,6 @@ class LeftPanel(wx.Panel):
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
 
-        ## Adding camera section
-        ## This is just for testing
-        add_camera_hbox = self.InitAddCamera()
-        vboxLeft.Add(add_camera_hbox, 0.5, wx.LEFT|wx.TOP, border = 5)
-
         ## Positioning section starts
         positioning_vbox = self.InitPositioning()
         vboxLeft.Add(positioning_vbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
@@ -28,72 +23,11 @@ class LeftPanel(wx.Panel):
         circular_path_hbox = self.InitCircularPathGenerator()
         vboxLeft.Add(circular_path_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
 
-        ## Z stack generator and camera control section
-        z_stack_hbox = self.InitZStackAndCamControl()
-        vboxLeft.Add(z_stack_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
+        ## camera control section
+        cam_control_vbox = self.InitCamControl()
+        vboxLeft.Add(cam_control_vbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
         
         self.SetSizerAndFit(vboxLeft)
-        
-    def InitAddCamera(self):
-        ## LAYOUT
-        
-        ########################################################################################
-        ##                                                                                    ##
-        ## hbox ----------------------------------------------------------------------------- ##
-        ##      | vbox  ------------------------------------------ vbox     --------------- | ##
-        ##      | Xyzpt | hbox --------------------------------- | AddClear | ----------- | | ##
-        ##      |       | Xyz  |    ------    ------    ------ | |          | |   Add   | | | ##
-        ##      |       |      | X: |    | Y: |    | Z: |    | | |          | ----------- | | ##
-        ##      |       |      |    ------    ------    ------ | |          | ----------- | | ##
-        ##      |       |      --------------------------------- |          | |  Clear  | | | ##
-        ##      |       | hbox --------------------------------- |          | ----------- | | ##
-        ##      |       | Pt   |    ------    ------           | |          --------------- | ##
-        ##      |       |      | P: |    | P: |    |           | |                          | ##
-        ##      |       |      |    ------    ------           | |                          | ##
-        ##      |       |      --------------------------------- |                          | ##
-        ##      |       ------------------------------------------                          | ##
-        ##      ----------------------------------------------------------------------------- ##
-        ##                                                                                    ##
-        ########################################################################################
-        hbox = wx.BoxSizer()
-        vboxXyzpt = wx.BoxSizer(wx.VERTICAL)
-        hboxXyz = wx.BoxSizer()
-        xInputLabel = wx.StaticText(self, -1, "X: ")
-        hboxXyz.Add(xInputLabel, 1, flag = wx.RIGHT, border = 10)
-        self.xTc = wx.TextCtrl(self)
-        hboxXyz.Add(self.xTc)
-        yInputLabel = wx.StaticText(self, -1, "Y: ")
-        hboxXyz.Add(yInputLabel, 1, flag = wx.RIGHT|wx.LEFT, border = 10)
-        self.yTc = wx.TextCtrl(self)
-        hboxXyz.Add(self.yTc)
-        zInputLabel = wx.StaticText(self, -1, "Z: ")
-        hboxXyz.Add(zInputLabel, 1, flag = wx.RIGHT|wx.LEFT, border = 10)
-        self.zTc = wx.TextCtrl(self)
-        hboxXyz.Add(self.zTc)
-        vboxXyzpt.Add(hboxXyz)
-
-        hboxBc = wx.BoxSizer()
-        bInputLabel = wx.StaticText(self, -1, "B: ")
-        hboxBc.Add(bInputLabel, 1, flag = wx.RIGHT, border = 10)
-        self.bTc = wx.TextCtrl(self)
-        hboxBc.Add(self.bTc)
-        cInputLabel = wx.StaticText(self, -1, "C: ")
-        hboxBc.Add(cInputLabel, 1, flag = wx.RIGHT|wx.LEFT, border = 10)
-        self.cTc = wx.TextCtrl(self)
-        hboxBc.Add(self.cTc)
-        vboxXyzpt.Add(hboxBc, 1, flag = wx.TOP, border = 2)
-        hbox.Add(vboxXyzpt)
-
-        vboxAddClear = wx.BoxSizer(wx.VERTICAL)
-        addCamBtn = wx.Button(self, wx.ID_ANY, label = 'Add')
-        vboxAddClear.Add(addCamBtn)
-        clearCamBtn = wx.Button(self, wx.ID_ANY, label = 'Clear')
-        vboxAddClear.Add(clearCamBtn)
-        hbox.Add(vboxAddClear, 1, flag = wx.LEFT, border = 10)
-
-        addCamBtn.Bind(wx.EVT_BUTTON, self.OnAddCameraButton)
-        
-        return hbox
 
     def InitPositioning(self):
         ## LAYOUT
@@ -143,14 +77,13 @@ class LeftPanel(wx.Panel):
         
         hboxTop = wx.BoxSizer()
         self.masterCombo = wx.ComboBox(self, wx.ID_ANY, choices = [])
+        self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         ## self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Set Center')
         ## hboxTop.Add(self.setCenterBtn, 1, flag = wx.LEFT, border = 5)
         
         self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh From COPIS')
         hboxTop.Add(self.setCenterBtn)
-        ## sld = wx.Slider(self, maxValue = 500, style = wx.SL_HORIZONTAL)
-        ## hboxTop.Add(sld)
         vboxPositioning.Add(hboxTop, 0.5 , flag = wx.LEFT|wx.BOTTOM|wx.EXPAND, border = 15)
 
         hboxXyzbc = wx.BoxSizer()
@@ -372,7 +305,7 @@ class LeftPanel(wx.Panel):
         
         return hbox
 
-    def InitZStackAndCamControl(self):
+    def InitCamControl(self):
         ## LAYOUT
 
         ##########################################################################################################
@@ -396,44 +329,13 @@ class LeftPanel(wx.Panel):
         ##      ----------------------------------------------------------------------------------------------- ##
         ##                                                                                                      ##
         ##########################################################################################################
-        ## hbox = wx.BoxSizer()
-        ## vbox1 = wx.BoxSizer(wx.VERTICAL)
-        ## zGeneratorLabel = wx.StaticText(self, wx.ID_ANY, label = 'Z Stack Generator', style = wx.ALIGN_LEFT)
-        ## zGeneratorLabel.SetFont(self.font)
-        ## vbox1.Add(zGeneratorLabel, 1, flag = wx.TOP|wx.BOTTOM, border = 5)
-        ## 
-        ## hboxFocalSteps = wx.BoxSizer()
-        ## noFocalStepsLabel = wx.StaticText(self, wx.ID_ANY, label = 'No. Focal Steps: ')
-        ## hboxFocalSteps.Add(noFocalStepsLabel)
-        ## self.noFocalStepsSc = wx.SpinCtrl(self, value = '0')
-        ## self.noFocalStepsSc.SetRange(0, 100)
-        ## hboxFocalSteps.Add(self.noFocalStepsSc, 1, flag = wx.LEFT, border = 5)
-        ## vbox1.Add(hboxFocalSteps, 1, flag = wx.LEFT, border = 15)
-        ## 
-        ## hboxStartZ = wx.BoxSizer()
-        ## startZLabel2 = wx.StaticText(self, wx.ID_ANY, label = 'Start Z: ')
-        ## hboxStartZ.Add(startZLabel2)
-        ## self.startZSc2 = wx.SpinCtrl(self, value = '0')
-        ## self.startZSc2.SetRange(0, 100)
-        ## hboxStartZ.Add(self.startZSc2, 1, flag = wx.TOP, border = 5)
-        ## vbox1.Add(hboxStartZ, 1, flag = wx.LEFT, border = 15)
-        ## 
-        ## hboxZInc = wx.BoxSizer()
-        ## zIncrementLabel = wx.StaticText(self, wx.ID_ANY, label = 'Z Increment (mm): ')
-        ## hboxZInc.Add(zIncrementLabel)
-        ## self.zIncrementSc = wx.SpinCtrl(self, value = '0')
-        ## self.zIncrementSc.SetRange(0, 100)
-        ## hboxZInc.Add(self.zIncrementSc, flag = wx.TOP, border = 5)
-        ## vbox1.Add(hboxZInc, 1, flag = wx.LEFT, border = 15)
-        ## self.generateBtn = wx.Button(self, wx.ID_ANY, label = 'Generate')
-        ## vbox1.Add(self.generateBtn, 1, flag = wx.TOP|wx.LEFT, border = 10)
-        ## hbox.Add(vbox1)
-
-        vbox2 = wx.BoxSizer(wx.VERTICAL)
+        vbox = wx.BoxSizer(wx.VERTICAL)
         cameraControlLabel = wx.StaticText(self, wx.ID_ANY, label = 'Camera Control', style = wx.ALIGN_LEFT)
         cameraControlLabel.SetFont(self.font)
-        vbox2.Add(cameraControlLabel, 1, flag = wx.TOP, border = 10)
+        vbox.Add(cameraControlLabel, 0, flag = wx.TOP | wx.BOTTOM, border = 10)
 
+        hbox = wx.BoxSizer()
+        vbox1 = wx.BoxSizer(wx.VERTICAL)
         hboxRemote = wx.BoxSizer()
         self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter')
         hboxRemote.Add(self.remoteRb)
@@ -444,7 +346,7 @@ class LeftPanel(wx.Panel):
         self.shutterBtn = wx.Button(self, wx.ID_ANY, label = 'Shutter')
         vboxAFShutter.Add(self.shutterBtn)
         hboxRemote.Add(vboxAFShutter, 1, flag = wx.LEFT, border = 5)
-        vbox2.Add(hboxRemote)
+        vbox1.Add(hboxRemote)
 
         hboxUSB = wx.BoxSizer()
         self.usbRb = wx.RadioButton(self, label = 'USB/PTP')
@@ -456,36 +358,17 @@ class LeftPanel(wx.Panel):
         self.fiBtn = wx.Button(self, wx.ID_ANY, label = 'F++')
         vboxF.Add(self.fiBtn)
         hboxUSB.Add(vboxF, 1, flag = wx.LEFT, border = 5)
-        vbox2.Add(hboxUSB, 1, flag = wx.TOP, border = 5)
-        
-        ##hbox.Add(vbox2, 1, flag = wx.LEFT, border = 30)
+        vbox1.Add(hboxUSB, 1, flag = wx.TOP, border = 5)
+        hbox.Add(vbox1, 1, flag = wx.LEFT, border = 30)
 
-        return vbox2
+        vbox2 = wx.BoxSizer(wx.VERTICAL)
+        self.takePictureBtn = wx.Button(self, wx.ID_ANY, label = 'Take Picture')
+        vbox2.Add(self.takePictureBtn)
+        self.takePictureBtn.Bind(wx.EVT_BUTTON, self.OnTakePicture)
+        hbox.Add(vbox2, 1, flag = wx.LEFT, border = 10)
+        vbox.Add(hbox, 1, flag = wx.LEFT)
 
-    def OnAddCameraButton(self, event):
-        if self.canvas == "":
-            self.canvas = self.parent.GetWindow2().canvas
-        x = float(self.xTc.GetValue()) / 100
-        y = float(self.yTc.GetValue()) / 100
-        z = float(self.zTc.GetValue()) / 100
-        b = self.bTc.GetValue()
-        c = self.cTc.GetValue()
-
-        self.canvas.OnDrawCamera(x, y, z, b, c)
-        ## get the camera added
-        camera = self.parent.GetWindow2().canvas.cameras[-1]
-
-        ## set the new camera option to positioning DDL
-        cameraLabelTxt = "camera" + str(len(self.parent.GetWindow2().canvas.cameras))
-        self.masterCombo.Append(cameraLabelTxt)
-
-        ## Display camera name and color before "Positioning" label
-        cameraLabel = wx.StaticText(self, wx.ID_ANY, label = cameraLabelTxt, style = wx.ALIGN_LEFT)
-        cameraLabel.SetForegroundColour((0, 0, 0))
-        cameraLabel.SetBackgroundColour((camera.red, camera.green, camera.blue))
-        self.hboxCameraInfo.Add(cameraLabel, 1, wx.SHAPED)
-        self.hboxCameraInfo.Layout()
-        self.Fit()
+        return vbox
 
     def SetDialog(self, message):
         msg = wx.MessageDialog(self, message, "Confirm Exit", wx.OK)
@@ -517,7 +400,7 @@ class LeftPanel(wx.Panel):
                     size = -size
             
                 
-            self.canvas.cameras[cameraOption].onMove(axis, size)
+            self.parent.GetParent().camera_models[cameraOption].onMove(axis, size)
             self.canvas.OnDraw()
         else:
             self.SetDialog("Please select the camera to control")
@@ -526,10 +409,19 @@ class LeftPanel(wx.Panel):
         if self.canvas == "":
             self.canvas = self.parent.GetWindow2().canvas
 
-        cameraOption = self.masterCombo.GetSelection()
-
-        if cameraOption != -1:
-            self.canvas.cameras[cameraOption].onFocusCenter()
+        if self.parent.GetParent().selected_cam is not None:
+            self.parent.GetParent().camera_models[cameraOption].onFocusCenter()
         else:
             self.SetDialog("Please select the camera to control")
+
+    def OnMasterCombo(self, event):
+        choice = self.masterCombo.GetSelection()
+        self.parent.GetParent().selected_cam = self.parent.GetParent().camera_models[choice]
+        self.parent.GetParent().openCameraSession()
         
+    def OnTakePicture(self, event):
+        cameraOption = self.masterCombo.GetSelection()
+        if self.parent.GetParent().selected_cam is not None:
+            self.parent.GetParent().selected_cam.shoot()
+        else:
+            pass

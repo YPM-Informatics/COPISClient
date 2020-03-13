@@ -9,15 +9,15 @@ class RightPanel(wx.Panel):
 
     def InitPanel(self):
         ## LAYOUT
-
-	#################################################################################################
+        
+        #################################################################################################
         ##                                                                                             ##
         ## vbox  ------------------------------------------------------------------------------------- ##
         ## Right | --------------------------------------------------------------------------------- | ##
-	##       | |                                                                               | | ##
-	##       | |                                                                               | | ##
-	##       | |                                                                               | | ##
-	##       | |                                 C A N V A S                                   | | ##
+        ##       | |                                                                               | | ##
+        ##       | |                                                                               | | ##
+        ##       | |                                                                               | | ##
+        ##       | |                                 C A N V A S                                   | | ##
         ##       | |                                                                               | | ##
         ##       | |                                                                               | | ##
         ##       | |                                                                               | | ##
@@ -29,27 +29,24 @@ class RightPanel(wx.Panel):
         ##       |        |              | |                               | |      |    Down    | | | ##
         ##       |        |              | |                               | |      |            | | | ##
         ##       |        |              | |                               | |      |   Replace  | | | ##
-	##       |        |              | |          C O M M A N D        | |      |   Delete   | | | ##
-	##       |        |              | |                               | |      | Delete All | | | ##
-	##       |        |              | |                               | |      |            | | | ##
-	##       |        |              | |                               | |      |Save To File| | | ##
-	##       |        |              | --------------------------------- |      |  Send All  | | | ##
-	##       |        |              | hbox   -------------------------- |      |  Send Sel  | | | ##
-	##       |        |              | AddCmd | __________________ Add | |      -------------- | | ##
-	##       |        |              |        -------------------------- |                     | | ##
-	##       |        |              -------------------------------------                     | | ##
-	##       |        -------------------------------------------------------------------------- | ##
+        ##       |        |              | |          C O M M A N D        | |      |   Delete   | | | ##
+        ##       |        |              | |                               | |      | Delete All | | | ##
+        ##       |        |              | |                               | |      |            | | | ##
+        ##       |        |              | |                               | |      |Save To File| | | ##
+        ##       |        |              | --------------------------------- |      |  Send All  | | | ##
+        ##       |        |              | hbox   -------------------------- |      |  Send Sel  | | | ##
+        ##       |        |              | AddCmd | __________________ Add | |      -------------- | | ##
+        ##       |        |              |        -------------------------- |                     | | ##
+        ##       |        |              -------------------------------------                     | | ##
+        ##       |        -------------------------------------------------------------------------- | ##
         ##       ------------------------------------------------------------------------------------- ##
         ##                                                                                             ##
         #################################################################################################
+        hboxBottom = wx.BoxSizer()
         vboxRight = wx.BoxSizer(wx.VERTICAL)
         self.canvas = Canvas(self)
         self.canvas.SetMinSize((200, 200))
         vboxRight.Add(self.canvas, 2, wx.EXPAND)
-
-        hboxBottom = wx.BoxSizer()
-        self.onlineCb = wx.CheckBox(self, label = 'Online')
-        hboxBottom.Add(self.onlineCb, 0.5, flag = wx.LEFT|wx.TOP|wx.RIGHT, border = 10)
         
         vboxCmd = wx.BoxSizer(wx.VERTICAL)
         self.cmd = wx.ListBox(self, style = wx.LB_SINGLE)
@@ -91,6 +88,9 @@ class RightPanel(wx.Panel):
         self.sendSelBtn = wx.Button(self, wx.ID_ANY, label = 'Send Sel')
         vboxBtns.Add(self.sendSelBtn)
         hboxBottom.Add(vboxBtns)
+
+        #self.resultBox = wx.TextCtrl(self, style = wx.TE_MULTILINE)
+        #hboxBottom.Add(self.resultBox, 1, wx.EXPAND)
         vboxRight.Add(hboxBottom, 1, wx.EXPAND)
 
         self.SetSizerAndFit(vboxRight)
