@@ -1,5 +1,6 @@
 import wx
 from enums import Axis
+from Canon.EDSDKLib import *
 
 class LeftPanel(wx.Panel):
     def __init__(self, parent):
@@ -337,7 +338,7 @@ class LeftPanel(wx.Panel):
         hbox = wx.BoxSizer()
         vbox1 = wx.BoxSizer(wx.VERTICAL)
         hboxRemote = wx.BoxSizer()
-        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter')
+        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter', style = wx.RB_GROUP)
         hboxRemote.Add(self.remoteRb)
 
         vboxAFShutter = wx.BoxSizer(wx.VERTICAL)
@@ -351,7 +352,8 @@ class LeftPanel(wx.Panel):
         hboxUSB = wx.BoxSizer()
         self.usbRb = wx.RadioButton(self, label = 'USB/PTP')
         hboxUSB.Add(self.usbRb)
-        
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnRadiogroup)
+
         vboxF = wx.BoxSizer(wx.VERTICAL)
         self.frBtn = wx.Button(self, wx.ID_ANY, label = 'F-')
         vboxF.Add(self.frBtn)
@@ -425,3 +427,8 @@ class LeftPanel(wx.Panel):
             self.parent.GetParent().selected_cam.shoot()
         else:
             pass
+
+    def OnRadiogroup(self, event):
+        rb = event.GetEventObject()
+        if rb == "USB/PTP":
+            self.parent.GetParent().initEDSDK()

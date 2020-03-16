@@ -2,35 +2,16 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import numpy as np
 import random
-from enums import Axis
 from Canon.EDSDKLib import *
 import sys
 import time
 import wx
 
 class Camera():
-    def __init__(self, x, y, z, b, c, camref):
-        ## 3D camera object part
-        try:
-            self.x = float(x)
-            self.y = float(y)
-            self.z = float(z)
-            self.b = float(b)
-            self.c = float(c)
-        except:
-            self.setDialog('Values for axis should be numbers.')
-        self.start = (self.x, self.y, self.z, self.b, self.c)
-
-        self.angle = 0
-        self.rotationVector = []
-    
+    def __init__(self, id, camref):
         self.mode = 'normal'
-        
         self.camref = camref
-
-
-
-    
+        self.id = id
 
     def downloadImage(self, image):
         dir_info = self.edsdk.EdsGetDirectoryItemInfo(image)
