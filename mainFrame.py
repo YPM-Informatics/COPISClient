@@ -49,6 +49,9 @@ class MainFrame(wx.Frame):
         self.panelLeft.SetFocus()
         self.Centre()
 
+        self.camera_models = []
+        self.selected_cam = None
+
     def initToolbar(self):
         toolbar = self.CreateToolBar()
 
@@ -143,3 +146,40 @@ class MainFrame(wx.Frame):
             self.camera_models.remove(self.selected_cam)
             del self.selected_cam
             self.selected_cam = None
+
+    def initEDSDK(self):
+        self.edsdk = EDSDK()
+        self.edsdk.EdsInitializeSDK()
+        self.cameraList = edsdk.EdsGetCameraList()
+        self.camCount = edsdk.EdsGetChildCount(cameraList)
+
+        for i in range(self.camCount):
+            x = float(random.randrange(-100, 100)) / 100
+            y = float(random.randrange(-100, 100)) / 100
+            z = float(random.randrange(-100, 100)) / 100
+            b = random.randrange(0, 360, 5)
+            c = random.randrange(0, 360, 5)
+            
+            camera = Camera(i, edsdk.EdsGetChildAtIndex(cameraList, i))
+            self.camera_models.append(camera)
+            self.panelRight.canvas.OnDrawCamera(i, x, y, z, b, c)
+            self.panelLeft.masterCombo.choices.append("camera " + i)
+        
+        self.edsdk.EdsRelease(cameraList)
+
+        if self.camCount != 0:
+            ObjectHandlerType = WINFUNCTYPE   (c_int,c_int,c_void_p,c_void_p)
+            object_handler = ObjectHandlerType(handleObject)
+            self.edsdk.EdsSetObjectEventHandler(self.selected_cam.camref, edsdk.ObjectEvent_All, object_handler, None)
+    
+            PropertyHandlerType = WINFUNCTYPE   (c_int,c_int,c_int,c_int,c_void_p)
+            property_handler = PropertyHandlerType(handleProperty)
+            self.edsdk.EdsSetPropertyEventHandler(self.selected_cam.camref, edsdk.PropertyEvent_All, property_handler, None)
+    
+            StateHandlerType = WINFUNCTYPE   (c_int,c_int,c_int,c_void_p)
+            state_handler = StateHandlerType(handleState)
+            self.edsdk.EdsSetCameraStateEventHandler(self.selected_cam.camref, edsdk.StateEvent_All, state_handler, self.selected_cam.camref)
+    
+            self.edsdk.EdsOpenSession(self.selected_cam.camref)
+            self.edsdk.EdsSetPropertyData(self.selected_cam.camref, self.edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+            self.edsdk.EdsSetCapacity(self.selected_cam.camref, EdsCapacity(10000000,512,1))
