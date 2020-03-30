@@ -285,8 +285,10 @@ class LeftPanel(wx.Panel):
         vbox2.Add(self.vertextPhotoCb)
         self.generateCBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Circle')
         vbox2.Add(self.generateCBtn, 1, flag = wx.TOP, border = 5)
+        self.generateCBtn.Bind(wx.EVT_BUTTON, self.onIncreaseScale)
         self.generateSBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Sphere')
         vbox2.Add(self.generateSBtn, 1, flag = wx.TOP, border = 5)
+        self.generateSBtn.Bind(wx.EVT_BUTTON, self.onDecreaseScale)
         hbox.Add(vbox2, 1, flag = wx.TOP|wx.LEFT, border = 30)
 
         vbox3 = wx.BoxSizer(wx.VERTICAL)
@@ -367,6 +369,10 @@ class LeftPanel(wx.Panel):
         self.takePictureBtn = wx.Button(self, wx.ID_ANY, label = 'Take Picture')
         vbox2.Add(self.takePictureBtn)
         self.takePictureBtn.Bind(wx.EVT_BUTTON, self.OnTakePicture)
+
+        self.startEvfBtn = wx.Button(self, wx.ID_ANY, label = 'Start Liveview')
+        vbox2.Add(self.startEvfBtn)
+        self.startEvfBtn.Bind(wx.EVT_BUTTON, self.onStartEvf)
         hbox.Add(vbox2, 1, flag = wx.LEFT, border = 10)
         vbox.Add(hbox, 1, flag = wx.LEFT)
 
@@ -405,7 +411,7 @@ class LeftPanel(wx.Panel):
             self.parent.GetParent().camera_models[cameraOption].onMove(axis, size)
             self.canvas.OnDraw()
         else:
-            self.SetDialog("Please select the camera to control")
+            self.SetDialog("Please select the camera to control.")
 
     def OnFocusCenter(self, event):
         if self.canvas == "":
@@ -414,21 +420,32 @@ class LeftPanel(wx.Panel):
         if self.parent.GetParent().selected_cam is not None:
             self.parent.GetParent().camera_models[cameraOption].onFocusCenter()
         else:
-            self.SetDialog("Please select the camera to control")
+            self.SetDialog("Please select the camera to control.")
 
     def OnMasterCombo(self, event):
-        choice = self.masterCombo.GetSelection()
-        self.parent.GetParent().selected_cam = self.parent.GetParent().camera_models[choice]
-        self.parent.GetParent().openCameraSession()
+        choice = self.masterCombo.GetStringSelection()
+        id = int(choice[-1]) - 1
+        self.parent.GetParent().cam_list.set_selected_cam_by_id(id)
         
     def OnTakePicture(self, event):
         cameraOption = self.masterCombo.GetSelection()
-        if self.parent.GetParent().selected_cam is not None:
-            self.parent.GetParent().selected_cam.shoot()
+        if self.parent.GetParent().cam_list.selected_camera is not None:
+            self.parent.GetParent().cam_list.selected_camera.shoot()
         else:
-            pass
+            self.SetDialog("Please select the camera to take a picture.")
 
     def OnRadiogroup(self, event):
         rb = event.GetEventObject()
-        if rb == "USB/PTP":
+        if rb.Label == "USB/PTP":
             self.parent.GetParent().initEDSDK()
+
+    def onDecreaseScale(self, event):
+        self.parent.GetWindow2().canvas.scale -= 0.1
+        self.parent.GetWindow2().canvas.OnDraw()
+
+    def onIncreaseScale(self, event):
+        self.parent.GetWindow2().canvas.scale += 0.1
+        self.parent.GetWindow2().canvas.OnDraw()
+
+    def onStartEvf(self, event):
+        self.parent.GetParent().cam_list.selected_camera.getEvfData()

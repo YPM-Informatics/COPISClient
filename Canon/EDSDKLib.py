@@ -655,7 +655,7 @@ class EDSDK():
 	def EdsInitializeSDK(self):
 		err = self.dll.EdsInitializeSDK()
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 
 	###################################################################################
 	#
@@ -675,7 +675,7 @@ class EDSDK():
 	def EdsTerminateSDK(self):	
 		err = self.dll.EdsTerminateSDK()
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 
 	###################### Reference-counter operating functions ######################
 	###################################################################################
@@ -694,7 +694,7 @@ class EDSDK():
 	def EdsRetain(self, inRef):
 		err = self.dll.EdsRetain(c_int(inRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	###################################################################################
 	#
@@ -712,7 +712,7 @@ class EDSDK():
 	def EdsRelease(self, inRef):
 		err = self.dll.EdsRelease(inRef)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	########################## Item-tree operating functions ##########################
 	###################################################################################
@@ -733,7 +733,7 @@ class EDSDK():
 		outCount = c_int()
 		err = self.dll.EdsGetChildCount(inRef, byref(outCount))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outCount.value
 	
 	###################################################################################
@@ -755,7 +755,7 @@ class EDSDK():
 		outRef = c_void_p()
 		err = self.dll.EdsGetChildAtIndex(inRef, inIndex, byref(outRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outRef
 	
 	###################################################################################
@@ -775,7 +775,7 @@ class EDSDK():
 		outParentRef = c_void_p()
 		err = self.dll.EdsGetParent(c_int(inRef), byref(outParentRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outParentRef
 	
 	########################### Property operating functions ##########################  
@@ -805,7 +805,7 @@ class EDSDK():
 		outSize = c_int()
 		err = self.dll.EdsGetPropertySize(c_int(inRef), c_uint(inPropertyID), c_int(inParam), byref(outDataType), byref(outSize))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return {"dataType": outDataType, "size": outSize}
 	
 	###################################################################################
@@ -827,11 +827,10 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	###################################################################################
-	def EdsGetPropertyData(self, inRef, inPropertyID, inParam, inPropertySize):
-		outPropertyData = c_void_p()
-		err = self.dll.EdsGetPropertyData(c_int(inRef), c_uint(inPropertyID), c_int(inParam), c_int(inPropertySize), byref(outPropertyData))
+	def EdsGetPropertyData(self, inRef, inPropertyID, inParam, inPropertySize, outPropertyData):
+		err = self.dll.EdsGetPropertyData(inRef, inPropertyID, inParam, inPropertySize, byref(outPropertyData))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outPropertyData
 
 	##############################################################################
@@ -855,7 +854,7 @@ class EDSDK():
 		data = c_int(inPropertyData)
 		err = self.dll.EdsSetPropertyData(inRef, inPropertyID, inParam, inPropertySize, byref(data))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsGetPropertyDesc
@@ -892,7 +891,7 @@ class EDSDK():
 		err = self.dll.EdsGetCameraList(byref(outCameraListRef))
 	
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outCameraListRef
 	
 	##############################################################################
@@ -929,7 +928,7 @@ class EDSDK():
 	def EdsOpenSession(self, inCameraRef):
 		err = self.dll.EdsOpenSession(inCameraRef)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsCloseSession
@@ -946,7 +945,7 @@ class EDSDK():
 	def EdsCloseSession(self, inCameraRef):
 		err = self.dll.EdsCloseSession(inCameraRef)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsSendCommand
@@ -966,7 +965,7 @@ class EDSDK():
 	def EdsSendCommand(self, inCameraRef, inCommand, inParam):
 		err = self.dll.EdsSendCommand(inCameraRef, c_uint(inCommand), c_int(inParam))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsSendStatusCommand
@@ -986,7 +985,7 @@ class EDSDK():
 	def EdsSendStatusCommand(self, inCameraRef, inCameraState, inParam):
 		err = self.dll.EdsSendStatusCommand(c_int(inCameraRef), c_uint(inCameraState), c_int(inParam))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsSetCapacity
@@ -1015,7 +1014,7 @@ class EDSDK():
 	def EdsSetCapacity(self, inCameraRef, inCapacity):
 		err = self.dll.EdsSetCapacity(inCameraRef,inCapacity)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsGetVolumeInfo
@@ -1045,7 +1044,7 @@ class EDSDK():
 	def EdsFormatVolume(self, inVolumeRef):
 		err = self.dll.EdsFormatVolume(c_int(inVolumeRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsGetDirectoryItemInfo
@@ -1064,7 +1063,7 @@ class EDSDK():
 		out_dir_item_info = DirectoryItemInfo()
 		err = self.dll.EdsGetDirectoryItemInfo(c_int64(inDirItemRef), byref(out_dir_item_info))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return out_dir_item_info
 	
 	##############################################################################
@@ -1086,7 +1085,7 @@ class EDSDK():
 	def EdsDeleteDirectoryItem(self, inDirItemRef):
 		err = self.dll.EdsDeleteDirectoryItem(c_int(inDirItemRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsDownload
@@ -1107,11 +1106,11 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	def EdsDownload(self, inDirItemRef, inReadSize):
-		outStream = c_void_p()
-		err = self.dll.EdsDownload(c_int64(inDirItemRef), c_uint64(inReadSize), byref(outStream))
+	def EdsDownload(self, inDirItemRef, inReadSize, stream):
+		outStream = stream
+		err = self.dll.EdsDownload(c_int64(inDirItemRef), inReadSize, outStream)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStream
 	
 	##############################################################################
@@ -1131,7 +1130,7 @@ class EDSDK():
 	def EdsDownloadCancel (self, inDirItemRef):
 		err = self.dll.EdsDownloadCancel(c_int(inDirItemRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsDownloadComplete
@@ -1152,7 +1151,7 @@ class EDSDK():
 	def EdsDownloadComplete (self, inDirItemRef):
 		err = self.dll.EdsDownloadComplete(c_int64(inDirItemRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsDownloadThumbnail
@@ -1174,7 +1173,7 @@ class EDSDK():
 		outStream = c_void_p()
 		err = self.dll.EdsDownloadThumbnail(c_void_p(inDirItemRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStream
 	
 	##############################################################################
@@ -1236,7 +1235,7 @@ class EDSDK():
 		outStream = c_void_p()
 		err = self.dll.EdsCreateFileStream(create_string_buffer(str.encode(inFileName), 256).value, inCreateDisposition, inDesiredAccess, byref(outStream))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStream
 	
 	##############################################################################
@@ -1257,7 +1256,7 @@ class EDSDK():
 		outStream = c_void_p()
 		err = self.dll.EdsCreateMemoryStream(c_int64(inBufferSize), byref(outStream))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStream
 	
 	##############################################################################
@@ -1297,7 +1296,7 @@ class EDSDK():
 		outStream = c_void_p()
 		err = self.dll.EdsCreateMemoryStreamFromPointer(c_void_p(inUserBuffer), c_uint64(inBufferSize))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStream
 	
 	##############################################################################
@@ -1324,7 +1323,7 @@ class EDSDK():
 		outPointer = c_void_p()
 		err = self.dll.EdsGetPointer(c_void_p(inStreamRef), byref(outPointer))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outPointer
 	
 	##############################################################################
@@ -1349,7 +1348,7 @@ class EDSDK():
 		outReadSize = c_uint64()
 		err = self.dll.EdsRead(c_void_p(inStreamRef), c_uint64(inReadSize), byref(outBuffer), byref(outReadSize))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return {"buffer": outBuffer, "readSize": outReadSize}
 	
 	##############################################################################
@@ -1372,7 +1371,7 @@ class EDSDK():
 		outWrittenSize = c_uint()
 		err = self.dll.EdsWrite(c_void_p(inStreamRef), c_uint64(inWriteSize), c_void_p(inBuffer), byref(outWrittenSize))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outWrittenSize
 	
 	##############################################################################
@@ -1415,7 +1414,7 @@ class EDSDK():
 		outPosition = c_uint64()
 		err = self.dll.EdsGetPosition(c_void_p(inStreamRef), byref(outPosition))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outPosition
 	
 	##############################################################################
@@ -1434,7 +1433,7 @@ class EDSDK():
 		outLength = c_uint64()
 		err = self.dll.EdsGetLength(c_void_p(inStreamRef), byref(outLength))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outLength
 	
 	##############################################################################
@@ -1459,7 +1458,7 @@ class EDSDK():
 		outStreamRef = c_void_p()
 		err = self.dll.EdsCopyData(cc_void_p(inStreamRef), c_uint64(inWriteSize), byref(outStreamRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outStreamRef
 	
 	##############################################################################
@@ -1516,7 +1515,7 @@ class EDSDK():
 		outImageRef = c_void_p()
 		err = self.dll.EdsCreateImageRef(c_void_p(inStreamRef), byref(outImageRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outImageRef
 	
 	##############################################################################
@@ -1628,7 +1627,7 @@ class EDSDK():
 	def EdsSetPropertyEventHandler(self, inCameraRef, inEvnet, inPropertyEventHandler, inContext):
 		err = self.dll.EdsSetPropertyEventHandler(inCameraRef, inEvnet, inPropertyEventHandler, inContext)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsSetObjectEventHandler
@@ -1654,7 +1653,7 @@ class EDSDK():
 	def EdsSetObjectEventHandler(self,  inCameraRef, inEvnet, inObjectEventHandler, inContext):
 		err = self.dll.EdsSetObjectEventHandler(inCameraRef, inEvnet, inObjectEventHandler, inContext)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:  EdsSetCameraStateEventHandler
@@ -1679,7 +1678,7 @@ class EDSDK():
 	def EdsSetCameraStateEventHandler(self, inCameraRef, inEvnet, inStateEventHandler, inContext):
 		err = self.dll.EdsSetCameraStateEventHandler(inCameraRef, inEvnet, inStateEventHandler, inContext)
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 	
 	##############################################################################
 	#  Function:   EdsCreateEvfImageRef         
@@ -1696,7 +1695,7 @@ class EDSDK():
 		outEvfImageRef = c_void_p()
 		err = self.dll.EdsCreateEvfImageRef(c_void_p(inStreamRef), byref(outEvfImageRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outEvfImageRef
 	
 	##############################################################################
@@ -1721,7 +1720,7 @@ class EDSDK():
 		outEvfImageRef = c_void_p()
 		err = self.dll.EdsDownloadEvfImage(c_void_p(inCameraRef), byref(outEvfImageRef))
 		if err != self.EDS_ERR_OK:
-			raise EDSDKError(hex(err))
+			raise Exception(hex(err))
 		return outEvfImageRef
 	
 class EdsRect(Structure):
