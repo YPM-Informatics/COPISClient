@@ -60,6 +60,8 @@ class Canvas(CanvasBase):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
+        self.scale = 1.0
+        self.camera_objects = []
 
     def InitGL(self):
         global quadratic
@@ -87,15 +89,15 @@ class Canvas(CanvasBase):
         zScale = 180.0 / h
 
         ## object
-        #glPushMatrix()
-        #glColor3ub(0, 0, 128)
-        #gluSphere(quadratic, 0.2, 32, 32)
-        #glPopMatrix()
+        glPushMatrix()
+        glColor3ub(0, 0, 128)
+        gluSphere(quadratic, 0.2, 32, 32)
+        glPopMatrix()
         glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
         glRotatef((self.x - self.lastx) * xScale, 0.0, 0.0, 1.0)
 
-        #for camera in self.parent.parent.GetParent().camera_models:
-        #    camera.onDraw()
+        for cam in self.camera_objects:
+            cam.onDraw()
 
         self.SwapBuffers()
 
@@ -125,7 +127,9 @@ class Canvas(CanvasBase):
 
     def OnDrawCamera(self, id, x, y, z, b, c):
         cam = Camera3D(id, x, y, z, b, c)
+        self.camera_objects.append(cam)
         cam.onDraw()
+        self.SwapBuffers()
 
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):
@@ -137,6 +141,7 @@ class Camera3D():
         self.c = float(c)
 
         self.start = (self.x, self.y, self.z, self.b, self.c)
+        self.mode = "normal"
 
         self.angle = 0
         self.rotationVector = []
@@ -154,42 +159,42 @@ class Camera3D():
 
         glBegin(GL_QUADS)	
         ## bottom	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f(-0.025, -0.05, -0.05)	
         glVertex3f( 0.025, -0.05, -0.05)	
         glVertex3f( 0.025, -0.05,  0.05)	
         glVertex3f(-0.025, -0.05,  0.05)	
 
         ## right	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f(-0.025,  0.05, -0.05)	
         glVertex3f( 0.025,  0.05, -0.05)	
         glVertex3f( 0.025, -0.05, -0.05)	
         glVertex3f(-0.025, -0.05, -0.05)
 
         ## top
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f(-0.025,  0.05, -0.05)	
         glVertex3f( 0.025,  0.05, -0.05)	
         glVertex3f( 0.025,  0.05,  0.05)	
         glVertex3f(-0.025,  0.05,  0.05)	
 
         ## left	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f(-0.025, -0.05,  0.05)	
         glVertex3f( 0.025, -0.05,  0.05)	
         glVertex3f( 0.025,  0.05,  0.05)	
         glVertex3f(-0.025,  0.05,  0.05)	
 
         ## back	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f( 0.025, -0.05, -0.05)	
         glVertex3f( 0.025, -0.05,  0.05)	
         glVertex3f( 0.025,  0.05,  0.05)	
         glVertex3f( 0.025,  0.05, -0.05)
 
         ## front	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glVertex3f(-0.025, -0.05, -0.05)	
         glVertex3f(-0.025, -0.05,  0.05)	
         glVertex3f(-0.025,  0.05,  0.05)	
@@ -197,7 +202,7 @@ class Camera3D():
         glEnd()	
 
         glPushMatrix()	
-        glColor3ub(self.red, self.green, self.blue)	
+        glColor3ub(255, 255, 255)	
         glTranslated(-0.05, 0.0, 0.0)	
         quadric = gluNewQuadric()	
         glRotatef(90.0, 0.0, 1.0, 0.0)	

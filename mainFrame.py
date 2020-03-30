@@ -3,6 +3,9 @@ import wx
 from leftPanel import LeftPanel
 from rightPanel import RightPanel
 from camera import *
+import random
+from ctypes import *
+import canvas
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent):
@@ -49,8 +52,7 @@ class MainFrame(wx.Frame):
         self.panelLeft.SetFocus()
         self.Centre()
 
-        self.camera_models = []
-        self.selected_cam = None
+        self.cam_list = []
 
     def initToolbar(self):
         toolbar = self.CreateToolBar()
@@ -142,44 +144,33 @@ class MainFrame(wx.Frame):
         self.PopupMenu(MyPopupMenu(self), e.GetPosition())
 
     def deleteCamera(self):
-        if self.selected_cam is not None:
-            self.camera_models.remove(self.selected_cam)
+        if self.selected_cam:
+            self.cam_list.cam_model_list.remove(self.selected_cam)
             del self.selected_cam
             self.selected_cam = None
 
     def initEDSDK(self):
-        self.edsdk = EDSDK()
-        self.edsdk.EdsInitializeSDK()
-        self.cameraList = edsdk.EdsGetCameraList()
-        self.camCount = edsdk.EdsGetChildCount(cameraList)
+        self.cam_list = CameraList()
+        cam_count = self.cam_list.get_count()
 
-        for i in range(self.camCount):
+        message = str(cam_count)
+        if cam_count < 2:
+            message += " cameara is "
+        else:
+            message += " cameras are "
+        message += "connected."
+        print(message)
+
+        for i in range(cam_count):
             x = float(random.randrange(-100, 100)) / 100
             y = float(random.randrange(-100, 100)) / 100
             z = float(random.randrange(-100, 100)) / 100
             b = random.randrange(0, 360, 5)
             c = random.randrange(0, 360, 5)
             
-            camera = Camera(i, edsdk.EdsGetChildAtIndex(cameraList, i))
-            self.camera_models.append(camera)
+            cam_3d = canvas.Camera3D(i, x, y, z, b, c)
+            self.cam_list.cam_model_list.append(cam_3d)
             self.panelRight.canvas.OnDrawCamera(i, x, y, z, b, c)
-            self.panelLeft.masterCombo.choices.append("camera " + i)
+            self.panelLeft.masterCombo.Append("camera " + str(i + 1))
         
-        self.edsdk.EdsRelease(cameraList)
-
-        if self.camCount != 0:
-            ObjectHandlerType = WINFUNCTYPE   (c_int,c_int,c_void_p,c_void_p)
-            object_handler = ObjectHandlerType(handleObject)
-            self.edsdk.EdsSetObjectEventHandler(self.selected_cam.camref, edsdk.ObjectEvent_All, object_handler, None)
     
-            PropertyHandlerType = WINFUNCTYPE   (c_int,c_int,c_int,c_int,c_void_p)
-            property_handler = PropertyHandlerType(handleProperty)
-            self.edsdk.EdsSetPropertyEventHandler(self.selected_cam.camref, edsdk.PropertyEvent_All, property_handler, None)
-    
-            StateHandlerType = WINFUNCTYPE   (c_int,c_int,c_int,c_void_p)
-            state_handler = StateHandlerType(handleState)
-            self.edsdk.EdsSetCameraStateEventHandler(self.selected_cam.camref, edsdk.StateEvent_All, state_handler, self.selected_cam.camref)
-    
-            self.edsdk.EdsOpenSession(self.selected_cam.camref)
-            self.edsdk.EdsSetPropertyData(self.selected_cam.camref, self.edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-            self.edsdk.EdsSetCapacity(self.selected_cam.camref, EdsCapacity(10000000,512,1))
