@@ -1729,6 +1729,10 @@ class EdsRect(Structure):
 			 ("width", c_int),
 			 ("height", c_int)]
 		
+class EdsSize(Structure):
+	_fields_ = [("width", c_int),
+			 ("height", c_int)]
+
 class EdsFocusPoint(Structure):
 	_fields_ = [("valid", c_uint),
 			 ("selected", c_uint),

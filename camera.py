@@ -1,8 +1,7 @@
 from Canon.EDSDKLib import *
-import sys
 import time
-import wx
 from ctypes import *
+from enum import *
 
 edsdk = EDSDK()
 edsdk.EdsInitializeSDK()
@@ -154,6 +153,13 @@ class Camera:
         evfImageRef = edsdk.EdsCreateEvfImageRef(evfStream)
         edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
 
+        dataset = EvfDataSet()
+        dataset.stream = evfStream
+        dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), dataset.zoom)
+        dataset.imagePosition = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
+        dataset.zoomRect = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
+        dataset.sizeJpgLarge = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
+
         edsdk.EdsRelease(evfStream)
         edsdk.EdsRelease(evfImageRef)
     
@@ -193,3 +199,10 @@ class CameraList:
 
     def set_selected_cam_by_id(self, id):
         self.selected_camera = self.get_camera_by_id(id)
+
+class EvfDataSet(Structure):
+    _fields_: [('stream', c_void_p),
+               ('zoom', c_uint),
+               ('zoomRect', EdsRect),
+               ('imagePosition', EdsPoint),
+               ('sizeJpgLarge', EdsSize)]
