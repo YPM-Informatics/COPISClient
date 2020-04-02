@@ -7,11 +7,36 @@ from ctypes import *
 edsdk = EDSDK()
 edsdk.EdsInitializeSDK()
 
+##############################################################################
+#  Function:   generateFileName
+#
+#  Description:
+#      Generates the image file name consists of date and file extension
+#
+#  Parameters:
+#       In:    None
+#
+#  Returns:    file_name - image file name
+##############################################################################
 def generateFileName():
     now = datetime.datetime.now()
     file_name = "IMG_" + now.isoformat()[:-7].replace(':', '-') + ".jpg"
     return file_name
 
+
+##############################################################################
+#  Function:   downloadImage
+#
+#  Description:
+#      Using EDSDK, get the location of the image in camera, create the file
+#      stream that processes transfer image from camera to PC, and download
+#      the image
+#
+#  Parameters:
+#       In:    image - the image reference
+#
+#  Returns:    None
+##############################################################################
 def downloadImage(image):
     dir_info = edsdk.EdsGetDirectoryItemInfo(image)
     #self.panelRight.resultBox.AppendText("Picture is taken.")
@@ -22,14 +47,46 @@ def downloadImage(image):
     #self.panelRight.resultBox.AppendText("Image is saved as " + file_name)
     edsdk.EdsRelease(stream) 
 
+
 ObjectHandlerType = WINFUNCTYPE(c_int,c_int,c_void_p,c_void_p)
+##############################################################################
+#  Function:   handleObject
+#
+#  Description:
+#      Handles the group of events where request notifications are issued to
+#      create, delete or transfer image data stored in a camera or image files
+#      on the memory card
+#
+#  Parameters:
+#       In:    event - EdsObjectEvent event type supplemented
+#              object - EdsBaseRef reference to object created by the event
+#              context - EdsVoid any data needed for the application
+#
+#  Returns:    None
+##############################################################################
 def handleObject(event, object, context):
     if event == edsdk.ObjectEvent_DirItemRequestTransfer:
         downloadImage(object)
     return 0
 object_handler = ObjectHandlerType(handleObject)
 
+
 StateHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_void_p)
+##############################################################################
+#  Function:   handleState
+#
+#  Description:
+#      Handles the group of events where notifications are issued regarding
+#      changes in the state of a camera, such as activation of a shut-down
+#      timer
+#
+#  Parameters:
+#       In:    event - EdsStateEvent event type supplemented
+#              state - EdsUInt32 pointer to the event data
+#              context - EdsVoid any data needed for the application
+#
+#  Returns:    None
+##############################################################################
 def handleState(event, state, context):
     if event == edsdk.StateEvent_WillSoonShutDown:
         #self.panelRight.resultBox.AppendText("Camera is about to shut off.")
@@ -37,7 +94,25 @@ def handleState(event, state, context):
     return 0
 state_handler = StateHandlerType(handleState)
 
+
 PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
+##############################################################################
+#  Function:   handleProperty
+#
+#  Description:
+#      Handles the group of events where notifications are issued regarding
+#      changes in the properties of a camera
+#
+#  Parameters:
+#       In:    event - EdsPropertyEvent event type supplemented
+#              property - EdsPropertyID property ID created by the event
+#              param - EdsUInt32 used to identify information created by the
+#                      event for custom function properties or other 
+#                      properties that have multiple items of information
+#              context - EdsVoid any data needed for the application
+#
+#  Returns:    None
+##############################################################################
 def handleProperty(event, property, param, context):
     return 0
 property_handler = PropertyHandlerType(handleProperty)
@@ -49,10 +124,12 @@ class Camera:
         self.id = id   
         self.device = c_void_p()
         
+        ## set the handlers
         edsdk.EdsSetObjectEventHandler(self.camref, edsdk.ObjectEvent_All, object_handler, None)
         edsdk.EdsSetPropertyEventHandler(self.camref, edsdk.PropertyEvent_All, property_handler, None)
         edsdk.EdsSetCameraStateEventHandler(self.camref, edsdk.StateEvent_All, state_handler, self.camref)
         
+        ## connect to the camera
         edsdk.EdsOpenSession(self.camref)
         edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
         edsdk.EdsSetCapacity(self.camref, EdsCapacity(10000000,512,1))
@@ -70,7 +147,6 @@ class Camera:
 
     def getEvfData(self):
         ## start live view
-        #self.device = edsdk.EdsGetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(self.device), self.device)
         self.device = edsdk.EvfOutputDevice_PC
         self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
 
@@ -88,6 +164,7 @@ class CameraList:
         self.cam_model_list = []
         self.selected_camera = None
 
+        ## transfer EDSDK camera object to custom camera object
         for i in range(self.get_count()):
             self.cam_model_list.append(Camera(i, edsdk.EdsGetChildAtIndex(self.list, i)))
 
