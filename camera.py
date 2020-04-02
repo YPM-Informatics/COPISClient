@@ -47,6 +47,7 @@ class Camera:
     def __init__(self, id, camref):
         self.camref = camref
         self.id = id   
+        self.device = c_void_p()
         
         edsdk.EdsSetObjectEventHandler(self.camref, edsdk.ObjectEvent_All, object_handler, None)
         edsdk.EdsSetPropertyEventHandler(self.camref, edsdk.PropertyEvent_All, property_handler, None)
@@ -69,10 +70,16 @@ class Camera:
 
     def getEvfData(self):
         ## start live view
-        self.device = c_void_p()
-        self.device = edsdk.EdsGetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(self.device), self.device)
+        #self.device = edsdk.EdsGetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(self.device), self.device)
         self.device = edsdk.EvfOutputDevice_PC
-        self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(self.device), self.device)
+        self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
+
+        evfStream = edsdk.EdsCreateMemoryStream(0)
+        evfImageRef = edsdk.EdsCreateEvfImageRef(evfStream)
+        edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
+
+        edsdk.EdsRelease(evfStream)
+        edsdk.EdsRelease(evfImageRef)
     
 class CameraList:
     def __init__(self):
