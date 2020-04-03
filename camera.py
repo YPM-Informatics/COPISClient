@@ -1,7 +1,6 @@
 from Canon.EDSDKLib import *
 import time
 from ctypes import *
-from enum import *
 
 edsdk = EDSDK()
 edsdk.EdsInitializeSDK()
@@ -155,7 +154,7 @@ class Camera:
 
         dataset = EvfDataSet()
         dataset.stream = evfStream
-        dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), dataset.zoom)
+        dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
         dataset.imagePosition = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
         dataset.zoomRect = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
         dataset.sizeJpgLarge = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
@@ -201,7 +200,7 @@ class CameraList:
         self.selected_camera = self.get_camera_by_id(id)
 
 class EvfDataSet(Structure):
-    _fields_: [('stream', c_void_p),
+    _fields_ = [('stream', c_void_p),
                ('zoom', c_uint),
                ('zoomRect', EdsRect),
                ('imagePosition', EdsPoint),

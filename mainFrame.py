@@ -117,13 +117,25 @@ class MainFrame(wx.Frame):
         ## view menu that shows view options
         viewMenu = wx.Menu()
         ## add statusbar show option to view menu
-        self.shst = viewMenu.Append(wx.ID_ANY, 'Show statusbar', 'Show Statusbar', kind=wx.ITEM_CHECK)
+        self.shst = viewMenu.Append(wx.ID_NEW, 'Show statusbar', 'Enable or disable statusbar at the bottom of the application.', kind=wx.ITEM_CHECK)
         ## set default true
         viewMenu.Check(self.shst.GetId(), True)
         self.Bind(wx.EVT_MENU, self.toggleStatusbar, self.shst)
 
+        ## tools menu
+        toolMenu = wx.Menu()
+        self.pathGenerator = toolMenu.Append(wx.ID_NEW, 'Generate path', 'By generating circular or sphere path, you can position cameras in the path and take pictures from it.', kind = wx.ITEM_NORMAL)
+        self.Bind(wx.EVT_MENU, self.openPathGeneratorToolbox, self.pathGenerator)
+
+        ## configurataion menu
+        configMenu = wx.Menu()
+        self.preference = configMenu.Append(wx.ID_NEW, 'Preferences', 'Choose configuration options by your preference', kind = wx.ITEM_NORMAL)
+        self.Bind(wx.EVT_MENU, self.openConfigPreferenceBox, self.preference)
+
         ## add view menu to menu bar
         menubar.Append(viewMenu, '&View')
+        menubar.Append(toolMenu, '&Tools')
+        menubar.Append(configMenu, '&Configuration')
         ## set menu bar to the frame
         self.SetMenuBar(menubar)
 
@@ -172,5 +184,9 @@ class MainFrame(wx.Frame):
             self.cam_list.cam_model_list.append(cam_3d)
             self.panelRight.canvas.OnDrawCamera(i, x, y, z, b, c)
             self.panelLeft.masterCombo.Append("camera " + str(i + 1))
-        
-    
+
+    def openPathGeneratorToolbox(self, e):
+        pass
+
+    def openConfigPreferenceBox(self, e):
+        pass
