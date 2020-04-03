@@ -21,8 +21,8 @@ class LeftPanel(wx.Panel):
         vboxLeft.Add(positioning_vbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
 
         ## Circular path generator section
-        circular_path_hbox = self.InitCircularPathGenerator()
-        vboxLeft.Add(circular_path_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
+        ##circular_path_hbox = self.InitCircularPathGenerator()
+        ##vboxLeft.Add(circular_path_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
 
         ## camera control section
         cam_control_vbox = self.InitCamControl()
@@ -339,30 +339,35 @@ class LeftPanel(wx.Panel):
 
         hbox = wx.BoxSizer()
         vbox1 = wx.BoxSizer(wx.VERTICAL)
-        hboxRemote = wx.BoxSizer()
-        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter', style = wx.RB_GROUP)
-        hboxRemote.Add(self.remoteRb)
+        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter', style=wx.RB_GROUP)
+        vbox1.Add(self.remoteRb)
 
-        vboxAFShutter = wx.BoxSizer(wx.VERTICAL)
+        vboxAFShutter = wx.BoxSizer()
         self.afBtn = wx.Button(self, wx.ID_ANY, label = 'A/F')
         vboxAFShutter.Add(self.afBtn)
         self.shutterBtn = wx.Button(self, wx.ID_ANY, label = 'Shutter')
         vboxAFShutter.Add(self.shutterBtn)
-        hboxRemote.Add(vboxAFShutter, 1, flag = wx.LEFT, border = 5)
-        vbox1.Add(hboxRemote)
+        vbox1.Add(vboxAFShutter, 1, flag = wx.LEFT, border = 5)
 
-        hboxUSB = wx.BoxSizer()
-        self.usbRb = wx.RadioButton(self, label = 'USB/PTP')
-        hboxUSB.Add(self.usbRb)
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnRadiogroup)
+        self.usbRb = wx.RadioButton(self, label = 'USB')
+        vbox1.Add(self.usbRb)
+        self.Bind(wx.EVT_RADIOBUTTON, self.onRemoteUSBRadioGroup)
 
-        vboxF = wx.BoxSizer(wx.VERTICAL)
+        self.edsdkRb = wx.RadioButton(self, label = 'EDSDK', style=wx.RB_GROUP)
+        vbox1.Add(self.edsdkRb, flag = wx.LEFT | wx.TOP, border = 10)
+        self.edsdkRb.SetValue(False)
+        self.edsdkRb.Disable()
+
+        self.ptpRb = wx.RadioButton(self, label = 'PTP')
+        vbox1.Add(self.ptpRb, flag = wx.LEFT | wx.TOP, border = 10)
+        self.ptpRb.Disable()
+
+        hboxF = wx.BoxSizer()
         self.frBtn = wx.Button(self, wx.ID_ANY, label = 'F-')
-        vboxF.Add(self.frBtn)
+        hboxF.Add(self.frBtn)
         self.fiBtn = wx.Button(self, wx.ID_ANY, label = 'F++')
-        vboxF.Add(self.fiBtn)
-        hboxUSB.Add(vboxF, 1, flag = wx.LEFT, border = 5)
-        vbox1.Add(hboxUSB, 1, flag = wx.TOP, border = 5)
+        hboxF.Add(self.fiBtn)
+        vbox1.Add(hboxF, 1, flag = wx.TOP, border = 15)
         hbox.Add(vbox1, 1, flag = wx.LEFT, border = 30)
 
         vbox2 = wx.BoxSizer(wx.VERTICAL)
@@ -434,9 +439,17 @@ class LeftPanel(wx.Panel):
         else:
             self.SetDialog("Please select the camera to take a picture.")
 
-    def OnRadiogroup(self, event):
+    def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
-        if rb.Label == "USB/PTP":
+        if rb.Label == "USB":
+            self.edsdkRb.Enable()
+            self.ptpRb.Enable()
+        elif rb.Label == "Remote Shutter":
+            self.edsdkRb.SetValue(False)
+            self.ptpRb.SetValue(False)
+            self.edsdkRb.Disable()
+            self.ptpRb.Disable()
+        elif rb.Label == "ESDK":
             self.parent.GetParent().initEDSDK()
 
     def onDecreaseScale(self, event):

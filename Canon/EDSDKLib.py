@@ -1693,7 +1693,7 @@ class EDSDK():
 	##############################################################################
 	def EdsCreateEvfImageRef(self, inStreamRef):
 		outEvfImageRef = c_void_p()
-		err = self.dll.EdsCreateEvfImageRef(c_void_p(inStreamRef), byref(outEvfImageRef))
+		err = self.dll.EdsCreateEvfImageRef(inStreamRef, byref(outEvfImageRef))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outEvfImageRef
@@ -1716,12 +1716,10 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	def EdsDownloadEvfImage(self, inCameraRef):
-		outEvfImageRef = c_void_p()
-		err = self.dll.EdsDownloadEvfImage(c_void_p(inCameraRef), byref(outEvfImageRef))
+	def EdsDownloadEvfImage(self, inCameraRef, inEvfImageRef):
+		err = self.dll.EdsDownloadEvfImage(inCameraRef, inEvfImageRef)
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
-		return outEvfImageRef
 	
 class EdsRect(Structure):
 	_fields_ = [("x", c_int),
