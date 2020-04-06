@@ -1,6 +1,7 @@
 import wx
 from enums import Axis
 from Canon.EDSDKLib import *
+from evfFrame import *
 
 class LeftPanel(wx.Panel):
     def __init__(self, parent):
@@ -196,117 +197,6 @@ class LeftPanel(wx.Panel):
         
         return vboxPositioning
 
-    def InitCircularPathGenerator(self):
-        ## LAYOUT
-
-     	##################################################################################################
-        ##                                                                                              ##
-        ## hbox --------------------------------------------------------------------------------------- ##
-        ##      | vbox1  ------------------------------  vbox2 --------------------  vbox3 ---------- | ##
-	    ##      |        | Circular Path Generator    |        |  Take Photo at   |        | rpm:   | | ##
-	    ##      |        | hbox   ------------------- |        |  Each Vertex     |        | X:     | | ##
-	    ##      |        | Points | No.Points: ____ | |        |                  |        | Y:     | | ##
-	    ##      |        |        ------------------- |        |  Generate Circle |        | Z:     | | ##
-	    ##      |        | hbox   ------------------- |        |                  |        | P:     | | ##
-	    ##      |        | Radius | Radius (mm): ___| |        |  Generate Sphere |        | T:     | | ##
-	    ##      |        |        ------------------- |        --------------------        ---------- | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartX | Start X: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartY | Start Y: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartZ | Start Z: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-        ##      |        | hbox   ------------------- |                                               | ##
-        ##      |        | Cameras| No. Cams: ____  | |                                               | ##
-        ##      |        |        ------------------- |                                               | ##
-        ##      |        ------------------------------                                               | ##
-        ##      --------------------------------------------------------------------------------------- ##
-        ##                                                                                              ##
-        ##################################################################################################
-        hbox = wx.BoxSizer()
-        vbox1 = wx.BoxSizer(wx.VERTICAL)
-        cGeneratorLabel = wx.StaticText(self, wx.ID_ANY, label = 'Circular Path Generator', style = wx.ALIGN_LEFT)
-        cGeneratorLabel.SetFont(self.font)
-        vbox1.Add(cGeneratorLabel, 1, flag = wx.TOP|wx.BOTTOM, border = 10)
-        hboxPoints = wx.BoxSizer()
-        noPointsLabel = wx.StaticText(self, wx.ID_ANY, label = 'No. Points: ')
-        hboxPoints.Add(noPointsLabel, 1, flag = wx.RIGHT, border = 5)
-        self.noPointsSc = wx.SpinCtrl(self, value = '0')
-        self.noPointsSc.SetRange(0, 100)
-        hboxPoints.Add(self.noPointsSc)
-        vbox1.Add(hboxPoints, 1, flag = wx.LEFT, border = 15)
-
-        hboxRadius = wx.BoxSizer()
-        radiusLabel = wx.StaticText(self, wx.ID_ANY, label = 'Radius (mm): ')
-        hboxRadius.Add(radiusLabel, 1, flag = wx.RIGHT, border = 5)
-        self.radiusSc = wx.SpinCtrl(self, value = '0')
-        self.radiusSc.SetRange(0, 100)
-        hboxRadius.Add(self.radiusSc)
-        vbox1.Add(hboxRadius, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartX = wx.BoxSizer()
-        startXLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start X: ')
-        hboxStartX.Add(startXLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startXSc = wx.SpinCtrl(self, value = '0')
-        self.startXSc.SetRange(0, 100)
-        hboxStartX.Add(self.startXSc)
-        vbox1.Add(hboxStartX, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartY = wx.BoxSizer()
-        startYLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start Y: ')
-        hboxStartY.Add(startYLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startYSc = wx.SpinCtrl(self, value = '0')
-        self.startYSc.SetRange(0, 100)
-        hboxStartY.Add(self.startYSc)
-        vbox1.Add(hboxStartY, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartZ = wx.BoxSizer()
-        startZLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start Z: ')
-        hboxStartZ.Add(startZLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startZSc = wx.SpinCtrl(self, value = '0')
-        self.startZSc.SetRange(0, 100)
-        hboxStartZ.Add(self.startZSc)
-        vbox1.Add(hboxStartZ, 1, flag = wx.LEFT, border = 15)
-
-        hboxCameras = wx.BoxSizer()
-        noCamsLabel = wx.StaticText(self, wx.ID_ANY, label = 'No. Cams: ')
-        hboxCameras.Add(noCamsLabel, 1, flag = wx.RIGHT, border = 5)
-        self.noCamsSc = wx.SpinCtrl(self, value = '0')
-        self.noCamsSc.SetRange(0, 100)
-        hboxCameras.Add(self.noCamsSc)
-        vbox1.Add(hboxCameras, 1, flag = wx.LEFT, border = 15)
-        hbox.Add(vbox1)
-        
-        vbox2 = wx.BoxSizer(wx.VERTICAL)
-        self.vertextPhotoCb = wx.CheckBox(self, label = 'Take Photo at Each Vertex')
-        vbox2.Add(self.vertextPhotoCb)
-        self.generateCBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Circle')
-        vbox2.Add(self.generateCBtn, 1, flag = wx.TOP, border = 5)
-        self.generateCBtn.Bind(wx.EVT_BUTTON, self.onIncreaseScale)
-        self.generateSBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Sphere')
-        vbox2.Add(self.generateSBtn, 1, flag = wx.TOP, border = 5)
-        self.generateSBtn.Bind(wx.EVT_BUTTON, self.onDecreaseScale)
-        hbox.Add(vbox2, 1, flag = wx.TOP|wx.LEFT, border = 30)
-
-        vbox3 = wx.BoxSizer(wx.VERTICAL)
-        self.rpmLabel = wx.StaticText(self, wx.ID_ANY, label = 'rpm: ')
-        vbox3.Add(self.rpmLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.xLabel = wx.StaticText(self, wx.ID_ANY, label = 'X: ')
-        vbox3.Add(self.xLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.yLabel = wx.StaticText(self, wx.ID_ANY, label = 'Y: ')
-        vbox3.Add(self.yLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.zLabel = wx.StaticText(self, wx.ID_ANY, label = 'Z: ')
-        vbox3.Add(self.zLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.bLabel = wx.StaticText(self, wx.ID_ANY, label = 'B: ')
-        vbox3.Add(self.bLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.cLabel = wx.StaticText(self, wx.ID_ANY, label = 'C: ')
-        vbox3.Add(self.cLabel)
-        hbox.Add(vbox3, 1, flag = wx.TOP|wx.LEFT, border = 30)
-        
-        return hbox
 
     def InitCamControl(self):
         ## LAYOUT
@@ -462,3 +352,5 @@ class LeftPanel(wx.Panel):
 
     def onStartEvf(self, event):
         self.parent.GetParent().cam_list.selected_camera.getEvfData()
+        self.evfFrame = EvfFrame()
+        self.evfFrame.Show()

@@ -6,6 +6,9 @@ from camera import *
 import random
 from ctypes import *
 import canvas
+from pathGeneratorFrame import *
+from configPreferenceFrame import *
+#from wx.lib.pubsub import Publisher
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent):
@@ -117,19 +120,19 @@ class MainFrame(wx.Frame):
         ## view menu that shows view options
         viewMenu = wx.Menu()
         ## add statusbar show option to view menu
-        self.shst = viewMenu.Append(wx.ID_NEW, 'Show statusbar', 'Enable or disable statusbar at the bottom of the application.', kind=wx.ITEM_CHECK)
+        self.shst = viewMenu.Append(wx.ID_ANY, 'Show statusbar', 'Enable or disable statusbar at the bottom of the application.', kind=wx.ITEM_CHECK)
         ## set default true
         viewMenu.Check(self.shst.GetId(), True)
         self.Bind(wx.EVT_MENU, self.toggleStatusbar, self.shst)
 
         ## tools menu
         toolMenu = wx.Menu()
-        self.pathGenerator = toolMenu.Append(wx.ID_NEW, 'Generate path', 'By generating circular or sphere path, you can position cameras in the path and take pictures from it.', kind = wx.ITEM_NORMAL)
+        self.pathGenerator = toolMenu.Append(wx.ID_ANY, 'Generate path', 'By generating circular or sphere path, you can position cameras in the path and take pictures from it.', kind = wx.ITEM_NORMAL)
         self.Bind(wx.EVT_MENU, self.openPathGeneratorToolbox, self.pathGenerator)
 
         ## configurataion menu
         configMenu = wx.Menu()
-        self.preference = configMenu.Append(wx.ID_NEW, 'Preferences', 'Choose configuration options by your preference', kind = wx.ITEM_NORMAL)
+        self.preference = configMenu.Append(wx.ID_ANY, 'Preferences', 'Choose configuration options by your preference', kind = wx.ITEM_NORMAL)
         self.Bind(wx.EVT_MENU, self.openConfigPreferenceBox, self.preference)
 
         ## add view menu to menu bar
@@ -186,7 +189,9 @@ class MainFrame(wx.Frame):
             self.panelLeft.masterCombo.Append("camera " + str(i + 1))
 
     def openPathGeneratorToolbox(self, e):
-        pass
+        self.pathGenFrame = PathGeneratorFrame()
+        self.pathGenFrame.Show()
 
     def openConfigPreferenceBox(self, e):
-        pass
+        self.configPrefFrame = ConfigPreferenceFrame()
+        self.configPrefFrame.Show()
