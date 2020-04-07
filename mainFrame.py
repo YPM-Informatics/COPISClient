@@ -85,15 +85,15 @@ class MainFrame(wx.Frame):
         toolbar.AddStretchableSpace()
         playImg = wx.Image('img/play.png')
         playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Play', wx.BitmapFromImage(playImg))
+        toolbar.AddTool(1, 'Play', wx.Bitmap(playImg))
 
         pauseImg = wx.Image('img/pause.png')
         pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Pause', wx.BitmapFromImage(pauseImg))
+        toolbar.AddTool(1, 'Pause', wx.Bitmap(pauseImg))
         
         stopImg = wx.Image('img/stop.png')
         stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Stop', wx.BitmapFromImage(stopImg))
+        toolbar.AddTool(1, 'Stop', wx.Bitmap(stopImg))
 
         ## import file
         ## TO DO: create and bind function to "Browse" button
@@ -110,7 +110,7 @@ class MainFrame(wx.Frame):
         toolbar.AddStretchableSpace()
         settingImg = wx.Image('img/setting.png')
         settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        toolbar.AddTool(1, 'Setting', wx.BitmapFromImage(settingImg))
+        toolbar.AddTool(1, 'Setting', wx.Bitmap(settingImg))
         
         toolbar.Realize()
 
