@@ -121,6 +121,8 @@ class Camera:
         self.camref = camref
         self.id = id   
         self.device = c_void_p()
+        self.is_evf_on = False
+        self.keep_evf_alive = False
         
         ## set the handlers
         edsdk.EdsSetObjectEventHandler(self.camref, edsdk.ObjectEvent_All, object_handler, None)
@@ -143,24 +145,30 @@ class Camera:
 
         edsdk.EdsSendCommand(self.camref, 0, 0)
 
+    def startEvf(self):
+        if not self.is_evf_on:
+            ## start live view
+            self.device = edsdk.EvfOutputDevice_PC
+            self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
+            self.keep_evf_alive = True
+
     def getEvfData(self):
-        ## start live view
-        self.device = edsdk.EvfOutputDevice_PC
-        self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
+        if self.is_evf_on: return
 
-        evfStream = edsdk.EdsCreateMemoryStream(0)
-        evfImageRef = edsdk.EdsCreateEvfImageRef(evfStream)
-        edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
+        while self.keep_evf_alive:
+            evfStream = edsdk.EdsCreateMemoryStream(0)
+            evfImageRef = edsdk.EdsCreateEvfImageRef(evfStream)
+            edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
 
-        dataset = EvfDataSet()
-        dataset.stream = evfStream
-        dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
-        dataset.imagePosition = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
-        dataset.zoomRect = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
-        dataset.sizeJpgLarge = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
+            dataset = EvfDataSet()
+            dataset.stream = evfStream
+            dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
+            dataset.imagePosition = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
+            dataset.zoomRect = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
+            dataset.sizeJpgLarge = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
 
-        edsdk.EdsRelease(evfStream)
-        edsdk.EdsRelease(evfImageRef)
+            edsdk.EdsRelease(evfStream)
+            edsdk.EdsRelease(evfImageRef)
     
 class CameraList:
     def __init__(self):
