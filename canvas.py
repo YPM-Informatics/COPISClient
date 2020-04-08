@@ -3,8 +3,6 @@ from OpenGL.GLU import *
 import wx
 from wx import glcanvas
 import numpy as np
-from camera import Camera
-import time
 from enums import Axis
 
 class CanvasBase(glcanvas.GLCanvas):
@@ -125,11 +123,6 @@ class Canvas(CanvasBase):
     def OnDrawSphere(self):
         pass
 
-    def OnDrawCamera(self, id, x, y, z, b, c):
-        cam = Camera3D(id, x, y, z, b, c)
-        self.camera_objects.append(cam)
-        cam.onDraw()
-        self.SwapBuffers()
 
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):

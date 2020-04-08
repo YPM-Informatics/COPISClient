@@ -331,6 +331,11 @@ class LeftPanel(wx.Panel):
 
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
+
+        self.parent.GetParent().panelRight.canvas.camera_objects = []
+        self.parent.GetParent().panelRight.canvas.OnDraw()
+        self.masterCombo.Clear()
+
         if rb.Label == "USB":
             self.edsdkRb.Enable()
             self.ptpRb.Enable()
@@ -339,8 +344,14 @@ class LeftPanel(wx.Panel):
             self.ptpRb.SetValue(False)
             self.edsdkRb.Disable()
             self.ptpRb.Disable()
-        elif rb.Label == "ESDK":
+
+            if self.parent.GetParent().is_edsdk_on:
+                self.parent.GetParent().terminateEDSDK()
+        elif rb.Label == "EDSDK":
             self.parent.GetParent().initEDSDK()
+        else:
+            if self.parent.GetParent().is_edsdk_on:
+                self.parent.GetParent().terminateEDSDK()
 
     def onDecreaseScale(self, event):
         self.parent.GetWindow2().canvas.scale -= 0.1

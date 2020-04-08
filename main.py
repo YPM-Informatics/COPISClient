@@ -3,7 +3,6 @@
 import wx
 import sys
 from mainFrame import MainFrame
-from camera import *
 
 APP_EXIT = 1
 
@@ -17,8 +16,5 @@ if __name__ == '__main__':
     app = COPISApp()
     app.MainLoop()
 
-    #for camera in camera_models:
-    #    del camera
-    #
-    #edsdk.EdsTerminateSDK()
-
+    if app.frame.is_edsdk_on:
+        app.frame.terminateEDSDK()

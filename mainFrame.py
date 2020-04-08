@@ -1,14 +1,11 @@
-from Canon.EDSDKLib import *
 import wx
 from leftPanel import LeftPanel
 from rightPanel import RightPanel
-from camera import *
 import random
 from ctypes import *
 import canvas
 from pathGeneratorFrame import *
 from configPreferenceFrame import *
-#from wx.lib.pubsub import Publisher
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent):
@@ -56,6 +53,7 @@ class MainFrame(wx.Frame):
         self.Centre()
 
         self.cam_list = []
+        self.is_edsdk_on = False
 
     def initToolbar(self):
         toolbar = self.CreateToolBar()
@@ -165,7 +163,14 @@ class MainFrame(wx.Frame):
             self.selected_cam = None
 
     def initEDSDK(self):
-        self.cam_list = CameraList()
+        if self.is_edsdk_on:
+            return
+
+        import edsdkObject
+
+        edsdkObject.initialize()
+        self.is_edsdk_on = True
+        self.cam_list = edsdkObject.CameraList()
         cam_count = self.cam_list.get_count()
 
         message = str(cam_count)
@@ -184,9 +189,23 @@ class MainFrame(wx.Frame):
             c = random.randrange(0, 360, 5)
             
             cam_3d = canvas.Camera3D(i, x, y, z, b, c)
-            self.cam_list.cam_model_list.append(cam_3d)
-            self.panelRight.canvas.OnDrawCamera(i, x, y, z, b, c)
+            self.panelRight.canvas.camera_objects.append(cam_3d)
+            cam_3d.onDraw()
+            self.panelRight.canvas.SwapBuffers()
             self.panelLeft.masterCombo.Append("camera " + str(i + 1))
+
+    def terminateEDSDK(self):
+        if not self.is_edsdk_on:
+            return
+
+        if self.cam_list != []:
+            self.cam_list.disconnect_cameras()
+            self.cam_list = []
+
+        import edsdkObject
+
+        edsdkObject.terminate()
+        self.is_edsdk_on = False
 
     def openPathGeneratorToolbox(self, e):
         self.pathGenFrame = PathGeneratorFrame()
