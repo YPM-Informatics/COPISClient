@@ -1,12 +1,82 @@
 from Canon.EDSDKLib import *
 import time
 from ctypes import *
+import threading
+import pythoncom
+import queue
 
-edsdk = EDSDK()
-edsdk.EdsInitializeSDK()
+_errorMessageCallback = None
+_methodQueue = queue.Queue()
+_running = False
+_comThread = None
+_callbacksThread = None
+_callbackQueue = queue.Queue()
+_edsdk = None
+
+def _make_thread(target, name, args=[]):
+    return threading.Thread(target=target, name=name, args=args)
+
+def _run_com_thread():
+    pythoncom.CoInitialize()
+
+    while _running:
+        try:
+            while True:
+                func, args, callback = _methodQueue.get(block=False)
+                result = func(*args)
+                
+                if callback is not None:
+                    _callbackQueue.put((callback, result))
+        except queue.Empty:
+            pass
+
+        pythoncom.PumpWaitingMessages()
+        time.sleep(0.05)
+
+def _run_callbacks_thread():
+    while _running:
+        func, args = _callbackQueue.get(block=True)
+        func(args)
+
+def _run_in_com_thread(func, args=None, callback=None):
+    if args is None:
+        args = []
+    _methodQueue.put((func, args, callback))
+
+def initialize():
+    global _running
+    if _running:
+        return
+    _running = True
+
+    global _comThread
+    _comThread = _make_thread(_run_com_thread, "edsdk._run_com_thread")
+    _comThread.start()
+
+    global _callbacksThread
+    _callbacksThread = _make_thread(_run_callbacks_thread, "edsdk._run_callbacks_thread")
+    _callbacksThread.start()
+
+    global _edsdk
+    _edsdk = EDSDK()
+    _edsdk.EdsInitializeSDK()
+    
+def terminate():
+    global _running
+    if not _running:
+        return
+
+    def helper():
+        _callbacksThread.join()
+        global _running
+        _running = False
+
+    _callbackQueue.put((lambda x: x, None))
+    _run_in_com_thread(helper)
+
 
 ##############################################################################
-#  Function:   generateFileName
+#  Function:   _generate_file_name
 #
 #  Description:
 #      Generates the image file name consists of date and file extension
@@ -16,14 +86,14 @@ edsdk.EdsInitializeSDK()
 #
 #  Returns:    file_name - image file name
 ##############################################################################
-def generateFileName():
+def _generate_file_name():
     now = datetime.datetime.now()
     file_name = "IMG_" + now.isoformat()[:-7].replace(':', '-') + ".jpg"
     return file_name
 
 
 ##############################################################################
-#  Function:   downloadImage
+#  Function:   _download_image
 #
 #  Description:
 #      Using EDSDK, get the location of the image in camera, create the file
@@ -35,20 +105,20 @@ def generateFileName():
 #
 #  Returns:    None
 ##############################################################################
-def downloadImage(image):
-    dir_info = edsdk.EdsGetDirectoryItemInfo(image)
+def _download_image(image):
+    dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
     #self.panelRight.resultBox.AppendText("Picture is taken.")
-    file_name = generateFileName()
-    stream = edsdk.EdsCreateFileStream(file_name, 1, 2)
-    edsdk.EdsDownload(image, dir_info.size, stream)
-    edsdk.EdsDownloadComplete(image)
+    file_name = _generate_file_name()
+    stream = _edsdk.EdsCreateFileStream(file_name, 1, 2)
+    _edsdk.EdsDownload(image, dir_info.size, stream)
+    _edsdk.EdsDownloadComplete(image)
     #self.panelRight.resultBox.AppendText("Image is saved as " + file_name)
-    edsdk.EdsRelease(stream) 
+    _edsdk.EdsRelease(stream) 
 
 
 ObjectHandlerType = WINFUNCTYPE(c_int,c_int,c_void_p,c_void_p)
 ##############################################################################
-#  Function:   handleObject
+#  Function:   _handle_object
 #
 #  Description:
 #      Handles the group of events where request notifications are issued to
@@ -62,16 +132,16 @@ ObjectHandlerType = WINFUNCTYPE(c_int,c_int,c_void_p,c_void_p)
 #
 #  Returns:    None
 ##############################################################################
-def handleObject(event, object, context):
-    if event == edsdk.ObjectEvent_DirItemRequestTransfer:
-        downloadImage(object)
+def _handle_object(event, object, context):
+    if event == _edsdk.ObjectEvent_DirItemRequestTransfer:
+        _download_image(object)
     return 0
-object_handler = ObjectHandlerType(handleObject)
+object_handler = ObjectHandlerType(_handle_object)
 
 
 StateHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_void_p)
 ##############################################################################
-#  Function:   handleState
+#  Function:   _handle_state
 #
 #  Description:
 #      Handles the group of events where notifications are issued regarding
@@ -85,17 +155,17 @@ StateHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_void_p)
 #
 #  Returns:    None
 ##############################################################################
-def handleState(event, state, context):
-    if event == edsdk.StateEvent_WillSoonShutDown:
+def _handle_state(event, state, context):
+    if event == _edsdk.StateEvent_WillSoonShutDown:
         #self.panelRight.resultBox.AppendText("Camera is about to shut off.")
-        edsdk.EdsSendCommand(context, 1, 0)
+        _edsdk.EdsSendCommand(context, 1, 0)
     return 0
-state_handler = StateHandlerType(handleState)
+state_handler = StateHandlerType(_handle_state)
 
 
 PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
 ##############################################################################
-#  Function:   handleProperty
+#  Function:   _handle_property
 #
 #  Description:
 #      Handles the group of events where notifications are issued regarding
@@ -111,9 +181,9 @@ PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
 #
 #  Returns:    None
 ##############################################################################
-def handleProperty(event, property, param, context):
+def _handle_property(event, property, param, context):
     return 0
-property_handler = PropertyHandlerType(handleProperty)
+property_handler = PropertyHandlerType(_handle_property)
 
 
 class Camera:
@@ -125,64 +195,64 @@ class Camera:
         self.keep_evf_alive = False
         
         ## set the handlers
-        edsdk.EdsSetObjectEventHandler(self.camref, edsdk.ObjectEvent_All, object_handler, None)
-        edsdk.EdsSetPropertyEventHandler(self.camref, edsdk.PropertyEvent_All, property_handler, None)
-        edsdk.EdsSetCameraStateEventHandler(self.camref, edsdk.StateEvent_All, state_handler, self.camref)
+        _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
+        _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, None)
+        _edsdk.EdsSetCameraStateEventHandler(self.camref, _edsdk.StateEvent_All, state_handler, self.camref)
         
         ## connect to the camera
-        edsdk.EdsOpenSession(self.camref)
-        edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-        edsdk.EdsSetCapacity(self.camref, EdsCapacity(10000000,512,1))
+        _edsdk.EdsOpenSession(self.camref)
+        _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+        _edsdk.EdsSetCapacity(self.camref, EdsCapacity(10000000,512,1))
 
     def __del__(self):
         if self.camref is not None:
-            edsdk.EdsCloseSession(self.camref)
-            edsdk.EdsRelease(self.camref)
+            _edsdk.EdsCloseSession(self.camref)
+            _edsdk.EdsRelease(self.camref)
 
     def shoot(self):
         global Wait_For_Image
         Wait_For_Image = True
 
-        edsdk.EdsSendCommand(self.camref, 0, 0)
+        _edsdk.EdsSendCommand(self.camref, 0, 0)
 
     def startEvf(self):
         if not self.is_evf_on:
             ## start live view
-            self.device = edsdk.EvfOutputDevice_PC
-            self.device = edsdk.EdsSetPropertyData(self.camref, edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
+            self.device = _edsdk.EvfOutputDevice_PC
+            self.device = _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
             self.keep_evf_alive = True
 
     def getEvfData(self):
         if self.is_evf_on: return
 
         while self.keep_evf_alive:
-            evfStream = edsdk.EdsCreateMemoryStream(0)
-            evfImageRef = edsdk.EdsCreateEvfImageRef(evfStream)
-            edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
+            evfStream = _edsdk.EdsCreateMemoryStream(0)
+            evfImageRef = _edsdk.EdsCreateEvfImageRef(evfStream)
+            _edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
 
             dataset = EvfDataSet()
             dataset.stream = evfStream
-            dataset.zoom = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
-            dataset.imagePosition = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
-            dataset.zoomRect = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
-            dataset.sizeJpgLarge = edsdk.EdsGetPropertyData(evfImageRef, edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
+            dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef, _edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
+            dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef, _edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint), dataset.imagePosition)
+            dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef, _edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
+            dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef, _edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize), dataset.sizeJpgLarge)
 
-            edsdk.EdsRelease(evfStream)
-            edsdk.EdsRelease(evfImageRef)
+            _edsdk.EdsRelease(evfStream)
+            _edsdk.EdsRelease(evfImageRef)
     
 class CameraList:
     def __init__(self):
         self.list = c_void_p(None)
-        self.list = edsdk.EdsGetCameraList()
+        self.list = _edsdk.EdsGetCameraList()
         self.cam_model_list = []
         self.selected_camera = None
 
         ## transfer EDSDK camera object to custom camera object
         for i in range(self.get_count()):
-            self.cam_model_list.append(Camera(i, edsdk.EdsGetChildAtIndex(self.list, i)))
+            self.cam_model_list.append(Camera(i, _edsdk.EdsGetChildAtIndex(self.list, i)))
 
     def get_count(self):
-        return edsdk.EdsGetChildCount(self.list)
+        return _edsdk.EdsGetChildCount(self.list)
 
     def get_camera_by_index(self, index):
         return cam_model_list[index]
@@ -207,9 +277,15 @@ class CameraList:
     def set_selected_cam_by_id(self, id):
         self.selected_camera = self.get_camera_by_id(id)
 
+    def disconnect_cameras(self):
+        for cam in self.cam_model_list:
+            del cam
+
 class EvfDataSet(Structure):
     _fields_ = [('stream', c_void_p),
                ('zoom', c_uint),
                ('zoomRect', EdsRect),
                ('imagePosition', EdsPoint),
                ('sizeJpgLarge', EdsSize)]
+
+
