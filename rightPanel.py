@@ -1,5 +1,6 @@
 import wx
 from canvas import Canvas
+import util
 
 class RightPanel(wx.Panel):
     def __init__(self, parent):
@@ -116,11 +117,6 @@ class RightPanel(wx.Panel):
 
             self.cmd.InsertItems([selected], index)
             
-    def SetDialog(self, message):
-        msg = wx.MessageDialog(self, message, "Confirm Exit", wx.OK)
-        msg.ShowModal()
-        msg.Destroy()
-
     def OnReplaceCommand(self, event):
         selected = self.cmd.GetSelection()
 
@@ -131,9 +127,9 @@ class RightPanel(wx.Panel):
                 self.cmd.SetString(selected, replacement)
                 self.cmdWriter.SetValue("")
             else:
-                self.SetDialog("Please type command to replace.")
+                util.set_dialog("Please type command to replace.")
         else:
-            self.SetDialog("Please select the command to replace.")
+            util.set_dialog("Please select the command to replace.")
 
     def OnDeleteCommand(self, event):
         size = event.GetEventObject().size
@@ -142,6 +138,6 @@ class RightPanel(wx.Panel):
             if index != -1:
                 self.cmd.Delete(index)
             else:
-                self.SetDialog("Please select the command to delete.")
+                util.set_dialog("Please select the command to delete.")
         else:
             self.cmd.Clear()

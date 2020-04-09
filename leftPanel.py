@@ -2,6 +2,7 @@ import wx
 from enums import Axis
 from Canon.EDSDKLib import *
 from evfFrame import *
+import util
 
 class LeftPanel(wx.Panel):
     def __init__(self, parent):
@@ -273,11 +274,6 @@ class LeftPanel(wx.Panel):
 
         return vbox
 
-    def SetDialog(self, message):
-        msg = wx.MessageDialog(self, message, "Confirm Exit", wx.OK)
-        msg.ShowModal()
-        msg.Destroy()
-
     def OnMove(self, event):
         if self.canvas == "":
             self.canvas = self.parent.GetWindow2().canvas
@@ -306,7 +302,7 @@ class LeftPanel(wx.Panel):
             self.parent.GetParent().camera_models[cameraOption].onMove(axis, size)
             self.canvas.OnDraw()
         else:
-            self.SetDialog("Please select the camera to control.")
+            util.set_dialog("Please select the camera to control.")
 
     def OnFocusCenter(self, event):
         if self.canvas == "":
@@ -315,7 +311,7 @@ class LeftPanel(wx.Panel):
         if self.parent.GetParent().selected_cam is not None:
             self.parent.GetParent().camera_models[cameraOption].onFocusCenter()
         else:
-            self.SetDialog("Please select the camera to control.")
+            util.set_dialog("Please select the camera to control.")
 
     def OnMasterCombo(self, event):
         choice = self.masterCombo.GetStringSelection()
