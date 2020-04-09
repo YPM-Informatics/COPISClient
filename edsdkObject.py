@@ -4,6 +4,7 @@ from ctypes import *
 import threading
 import pythoncom
 import queue
+import util
 
 _errorMessageCallback = None
 _methodQueue = queue.Queue()
@@ -73,6 +74,10 @@ def terminate():
 
     _callbackQueue.put((lambda x: x, None))
     _run_in_com_thread(helper)
+
+def setErrorMessageCallback(callback):
+    global _errorMessageCallback
+    _errorMessageCallback = callback
 
 
 ##############################################################################
@@ -193,7 +198,19 @@ class Camera:
         self.device = c_void_p()
         self.is_evf_on = False
         self.keep_evf_alive = False
+        self.running = False
         
+    def connect(self):
+        if self.running:
+            return
+
+        self.running = True
+
+        self.picture_thread = _make_thread(self.check_picture_queue, "edsdk.check_picture_queue", args=(self,))
+        self.picture_thread.start()
+
+        _run_in_com_thread(self.camref.connect)
+
         ## set the handlers
         _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
         _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, None)
@@ -239,6 +256,9 @@ class Camera:
 
             _edsdk.EdsRelease(evfStream)
             _edsdk.EdsRelease(evfImageRef)
+
+    def liveViewMemoryView(self):
+        return memoryview(self.camref)
     
 class CameraList:
     def __init__(self):
@@ -247,9 +267,14 @@ class CameraList:
         self.cam_model_list = []
         self.selected_camera = None
 
-        ## transfer EDSDK camera object to custom camera object
-        for i in range(self.get_count()):
-            self.cam_model_list.append(Camera(i, _edsdk.EdsGetChildAtIndex(self.list, i)))
+        if self.get_count() == 0:
+            util.set_dialog("There is no camera connected.")
+        else:
+            ## transfer EDSDK camera object to custom camera object
+            for i in range(self.get_count()):
+                self.cam_model_list.append(Camera(i, _edsdk.EdsGetChildAtIndex(self.list, i)))
+
+        _edsdk.EdsRelease(self.list)
 
     def get_count(self):
         return _edsdk.EdsGetChildCount(self.list)
@@ -276,6 +301,7 @@ class CameraList:
 
     def set_selected_cam_by_id(self, id):
         self.selected_camera = self.get_camera_by_id(id)
+        self.selected_camera.connect()
 
     def disconnect_cameras(self):
         for cam in self.cam_model_list:
@@ -287,5 +313,4 @@ class EvfDataSet(Structure):
                ('zoomRect', EdsRect),
                ('imagePosition', EdsPoint),
                ('sizeJpgLarge', EdsSize)]
-
 
