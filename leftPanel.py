@@ -359,5 +359,9 @@ class LeftPanel(wx.Panel):
 
     def onStartEvf(self, event):
         #self.parent.GetParent().cam_list.selected_camera.getEvfData()
-        self.evfFrame = EvfFrame()
-        self.evfFrame.Show()
+        #self.evfFrame = EvfFrame()
+        #self.evfFrame.Show()
+        cam = self.parent.GetParent().cam_list.selected_camera
+        cam.startEvf()
+        data = cam.getEvfData()
+        cam.onDrawImage(data)
