@@ -1321,7 +1321,7 @@ class EDSDK():
 	##############################################################################
 	def EdsGetPointer(self, inStreamRef):
 		outPointer = c_void_p()
-		err = self.dll.EdsGetPointer(c_void_p(inStreamRef), byref(outPointer))
+		err = self.dll.EdsGetPointer(inStreamRef, byref(outPointer))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outPointer
@@ -1346,7 +1346,7 @@ class EDSDK():
 	def EdsRead(self, inStreamRef, inReadSize):
 		outBuffer = c_void_p()
 		outReadSize = c_uint64()
-		err = self.dll.EdsRead(c_void_p(inStreamRef), c_uint64(inReadSize), byref(outBuffer), byref(outReadSize))
+		err = self.dll.EdsRead(inStreamRef, c_uint64(inReadSize), byref(outBuffer), byref(outReadSize))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return {"buffer": outBuffer, "readSize": outReadSize}
@@ -1369,7 +1369,7 @@ class EDSDK():
 	##############################################################################
 	def EdsWrite(self, inStreamRef, inWriteSize, inBuffer):
 		outWrittenSize = c_uint()
-		err = self.dll.EdsWrite(c_void_p(inStreamRef), c_uint64(inWriteSize), c_void_p(inBuffer), byref(outWrittenSize))
+		err = self.dll.EdsWrite(inStreamRef, c_uint64(inWriteSize), c_void_p(inBuffer), byref(outWrittenSize))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outWrittenSize
@@ -1412,7 +1412,7 @@ class EDSDK():
 	##############################################################################
 	def EdsGetPosition(self, inStreamRef):
 		outPosition = c_uint64()
-		err = self.dll.EdsGetPosition(c_void_p(inStreamRef), byref(outPosition))
+		err = self.dll.EdsGetPosition(inStreamRef, byref(outPosition))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outPosition
@@ -1431,7 +1431,7 @@ class EDSDK():
 	##############################################################################
 	def EdsGetLength(self, inStreamRef):
 		outLength = c_uint64()
-		err = self.dll.EdsGetLength(c_void_p(inStreamRef), byref(outLength))
+		err = self.dll.EdsGetLength(inStreamRef, byref(outLength))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outLength
@@ -1456,7 +1456,7 @@ class EDSDK():
 	##############################################################################
 	def EdsCopyData(self, inStreamRef, inWriteSize):
 		outStreamRef = c_void_p()
-		err = self.dll.EdsCopyData(cc_void_p(inStreamRef), c_uint64(inWriteSize), byref(outStreamRef))
+		err = self.dll.EdsCopyData(inStreamRef, c_uint64(inWriteSize), byref(outStreamRef))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outStreamRef
@@ -1513,7 +1513,7 @@ class EDSDK():
 	##############################################################################
 	def EdsCreateImageRef(self, inStreamRef):
 		outImageRef = c_void_p()
-		err = self.dll.EdsCreateImageRef(c_void_p(inStreamRef), byref(outImageRef))
+		err = self.dll.EdsCreateImageRef(inStreamRef, byref(outImageRef))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return outImageRef
@@ -1544,8 +1544,10 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	#def EdsGetImageInfo( IntPtr inImageRef, EdsImageSource inImageSource, out EdsImageInfo outImageInfo):
-		
+	#def EdsGetImageInfo(inImageRef, inImageSource):
+	#	outImageInfo = c_void_p()
+	#	err = self.dll.EdsGetImageInfo()
+
 	##############################################################################
 	#  Function:   EdsGetImage                         
 	#
@@ -1585,7 +1587,12 @@ class EDSDK():
 	#                      the image.
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	#def EdsGetImage( IntPtr inImageRef, EdsImageSource inImageSource, EdsTargetImageType inImageType, EdsRect inSrcRect, EdsSize inDstSize, IntPtroutStreamRef ):
+	def EdsGetImage(self, inImageRef, inImageSource, inImageType, inSrcRect, inDstSize):
+		outStreamRef = c_void_p()
+		err = self.dll.EdsGetImage(inImageRef, inImageSource, inImageType, inSrcRect, inDstSize)
+		if err != self.EDS_ERR_OK:
+			raise Exception(hex(err))
+		return outStreamRef
 	
 	##################### Event handler registering functions ####################
 	##############################################################################
@@ -1720,17 +1727,19 @@ class EDSDK():
 		err = self.dll.EdsDownloadEvfImage(inCameraRef, inEvfImageRef)
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
-	
-class EdsRect(Structure):
+
+class EdsPoint(Structure):
 	_fields_ = [("x", c_int),
-			 ("y", c_int),
-			 ("width", c_int),
-			 ("height", c_int)]
-		
+			 ("y", c_int)]
+	
 class EdsSize(Structure):
 	_fields_ = [("width", c_int),
 			 ("height", c_int)]
 
+class EdsRect(Structure):
+	_fields_ = [("point", EdsPoint),
+			 ("size", EdsSize)]
+		
 class EdsFocusPoint(Structure):
 	_fields_ = [("valid", c_uint),
 			 ("selected", c_uint),
@@ -1749,10 +1758,6 @@ class EdsPropertyDesc(Structure):
 			 ("access", c_uint),
 			 ("numElements", c_int),
 			 ("propDesc", POINTER(c_int))]
-
-class EdsPoint(Structure):
-	_fields_ = [("x", c_int),
-			 ("y", c_int)]
 
 class DirectoryItemInfo(Structure):
 	_fields_ = [("size", c_int),
