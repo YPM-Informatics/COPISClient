@@ -123,35 +123,6 @@ def _download_image(image):
     _edsdk.EdsRelease(stream) 
 
 
-##############################################################################
-#  Function:   _download_evf
-#
-#  Description:
-#      Using EDSDK, handles live view mode depending on the state.
-#
-#  Parameters:
-#       In:    None
-#
-#  Returns:    None
-##############################################################################
-def _download_evf():
-    evfStream = _edsdk.EdsCreateMemoryStream(0)
-    evfImageRef = _edsdk.EdsCreateEvfImageRef(evfStream)
-    _edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
-
-    dataset = EvfDataSet()
-    dataset.stream = evfStream
-    dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
-    dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint),dataset.imagePosition)
-    dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
-    dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
-
-    _edsdk.EdsRelease(evfImageRef)
-    _edsdk.EdsRelease(evfStream)
-
-    return dataset
-
-
 ObjectHandlerType = WINFUNCTYPE(c_int,c_int,c_void_p,c_void_p)
 ##############################################################################
 #  Function:   _handle_object
@@ -218,14 +189,7 @@ PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
 #  Returns:    None
 ##############################################################################
 def _handle_property(event, property, param, context):
-    if not context:
-        return 0
-
-    if property == _edsdk.PropID_Evf_OutputDevice and not _keep_liveview_alive:
-        _keep_liveview_alive = True
-        _download_evf()
-    elif _keep_liveview_alive:
-        pass
+    return 0
 property_handler = PropertyHandlerType(_handle_property)
 
 
@@ -277,15 +241,22 @@ class Camera:
             self.device = _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
             _keep_liveview_alive = True
 
-    def onDrawImage(self, evfDataSet):
+    def _download_evf(self):
+        evfStream = _edsdk.EdsCreateMemoryStream(0)
         self.evfFrame = EvfFrame()
+        evfImageRef = _edsdk.EdsCreateEvfImageRef(evfStream)
+        _edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
+        
+        dataset = EvfDataSet()
+        #dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
+        #dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint),dataset.imagePosition)
+        dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
+        dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
 
-        stream = _edsdk.EdsGetPointer(evfDataSet.stream)
-        stream_length = _edsdk.EdsGetLength(evfDataSet.stream)
+        image_stream = _edsdk.EdsGetImage(evfImageRef, EdsImageSource.FullView.value, EdsTargetImageType.RGB.value, dataset.zoomRect, dataset.sizeJpgLarge)
 
-        array_type = c_void_p * stream_length * self.evfFrame.Size.GetWidth() * self.evfFrame.Size.GetHeight()
-        image_data_carray = array_type.from_address(addressof(stream))
-        image_data_bytearray = bytearray(image_data_carray)
+        _edsdk.EdsRelease(evfImageRef)
+        _edsdk.EdsRelease(evfStream)
 
         self.evfFrame.onDrawImage(image_data_bytearray)
         self.evfFrame.Show()
