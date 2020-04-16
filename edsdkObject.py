@@ -7,6 +7,7 @@ import queue
 import util
 from evfFrame import *
 
+_camera = None
 _errorMessageCallback = None
 _methodQueue = queue.Queue()
 _running = False
@@ -215,7 +216,7 @@ class Camera:
 
         ## set the handlers
         _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
-        _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, None)
+        _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, self.camref)
         _edsdk.EdsSetCameraStateEventHandler(self.camref, _edsdk.StateEvent_All, state_handler, self.camref)
         
         ## connect to the camera
@@ -227,6 +228,8 @@ class Camera:
         if self.camref is not None:
             _edsdk.EdsCloseSession(self.camref)
             _edsdk.EdsRelease(self.camref)
+            _camera = None
+            _running = False
 
     def shoot(self):
         global Wait_For_Image
@@ -250,10 +253,15 @@ class Camera:
         dataset = EvfDataSet()
         #dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
         #dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint),dataset.imagePosition)
-        dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
-        dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
+        #dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
+        #dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
 
-        image_stream = _edsdk.EdsGetImage(evfImageRef, EdsImageSource.FullView.value, EdsTargetImageType.RGB.value, dataset.zoomRect, dataset.sizeJpgLarge)
+        image_info = _edsdk.EdsGetImageInfo(evfImageRef, EdsImageSource.RAWFullView.value)
+        output_size = EdsSize()
+        output_size.width = image_info.effectiveRect.width
+        output_size.height = image_info.effectiveRect.height
+
+        image_stream = _edsdk.EdsGetImage(evfImageRef, EdsImageSource.RAWFullView.value, EdsTargetImageType.RGB.value, image_info.effectiveRect, output_size)
 
         _edsdk.EdsRelease(evfImageRef)
         _edsdk.EdsRelease(evfStream)
@@ -307,6 +315,7 @@ class CameraList:
     def set_selected_cam_by_id(self, id):
         self.selected_camera = self.get_camera_by_id(id)
         self.selected_camera.connect()
+        _camera = self.selected_camera
 
     def disconnect_cameras(self):
         for cam in self.cam_model_list:

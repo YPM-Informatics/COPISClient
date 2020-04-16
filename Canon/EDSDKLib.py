@@ -801,9 +801,9 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	###################################################################################
 	def EdsGetPropertySize(self, inRef, inPropertyID, inParam):
-		outDataType = self.EdsDataType()
+		outDataType = EdsDataType()
 		outSize = c_int()
-		err = self.dll.EdsGetPropertySize(c_int(inRef), c_uint(inPropertyID), c_int(inParam), byref(outDataType), byref(outSize))
+		err = self.dll.EdsGetPropertySize(inRef, c_uint(inPropertyID), c_int(inParam), byref(outDataType), byref(outSize))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 		return {"dataType": outDataType, "size": outSize}
@@ -963,7 +963,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsSendCommand(self, inCameraRef, inCommand, inParam):
-		err = self.dll.EdsSendCommand(inCameraRef, c_uint(inCommand), c_int(inParam))
+		err = self.dll.EdsSendCommand(c_void_p(inCameraRef), c_uint(inCommand), c_int(inParam))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
 	
@@ -1527,7 +1527,7 @@ class EDSDK():
 	#          number of color components, resolution, and effective image area.
 	#
 	#  Parameters:
-	#       In:    inStreamRef - Designate the object for which to get image information. 
+	#       In:    inImageRef - Designate the object for which to get image information. 
 	#              inImageSource - Of the various image data items in the image file,
 	#                  designate the type of image data representing the 
 	#                  information you want to get. Designate the image as
@@ -1544,9 +1544,13 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	#def EdsGetImageInfo(inImageRef, inImageSource):
-	#	outImageInfo = c_void_p()
-	#	err = self.dll.EdsGetImageInfo()
+	def EdsGetImageInfo(self, inImageRef, inImageSource):
+		outImageInfo = EdsImageInfo()
+		err = self.dll.EdsGetImageInfo(inImageRef, inImageSource, byref(outImageInfo))
+
+		if err != self.EDS_ERR_OK:
+			raise Exception(hex(err))
+		return outImageInfo
 
 	##############################################################################
 	#  Function:   EdsGetImage                         
@@ -1772,6 +1776,14 @@ class EdsCapacity(Structure):
 				("bytesPerSector", c_int),
 				("reset",c_int)]
 
+class EdsImageInfo(Structure):
+	_fields_ = [("width", c_uint),
+			 ("height", c_uint),
+			 ("numOfComponents", c_uint),
+			 ("componentDepth", c_uint),
+			 ("effectiveRect", EdsRect),
+			 ("reserved", c_uint)]
+
 		
 #################### Enum Classes ####################
 class EdsDataType(Enum):
@@ -1836,6 +1848,10 @@ class EdsTargetImageType(Enum):
 
 class EdsImageSource(Enum):
 	FullView = 0
+	Thumbnail = 1  
+	Preview = 2   
+	RAWThumbnail = 3
+	RAWFullView = 4
 
 class EdsProgrssOption(Enum):
 	NoReport = 0
