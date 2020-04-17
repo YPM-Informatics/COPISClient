@@ -5,7 +5,8 @@ import threading
 import pythoncom
 import queue
 import util
-from evfFrame import *
+import wx
+import io
 
 _camera = None
 _errorMessageCallback = None
@@ -250,27 +251,33 @@ class Camera:
         evfImageRef = _edsdk.EdsCreateEvfImageRef(evfStream)
         _edsdk.EdsDownloadEvfImage(self.camref, evfImageRef)
         
-        dataset = EvfDataSet()
+        #dataset = EvfDataSet()
         #dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
         #dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint),dataset.imagePosition)
         #dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
         #dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
 
-        image_info = _edsdk.EdsGetImageInfo(evfImageRef, EdsImageSource.RAWFullView.value)
-        output_size = EdsSize()
-        output_size.width = image_info.effectiveRect.width
-        output_size.height = image_info.effectiveRect.height
-
-        image_stream = _edsdk.EdsGetImage(evfImageRef, EdsImageSource.RAWFullView.value, EdsTargetImageType.RGB.value, image_info.effectiveRect, output_size)
+        output_length = _edsdk.EdsGetLength(evfStream)
+        image_data = (c_ubyte * output_length.value)()
+        image_data_pointer = _edsdk.EdsGetPointer(evfStream, image_data)
+        arr_bytes = bytearray(string_at(image_data_pointer, output_length.value))
 
         _edsdk.EdsRelease(evfImageRef)
         _edsdk.EdsRelease(evfStream)
 
-        self.evfFrame.onDrawImage(image_data_bytearray)
+        self.evfFrame.onDrawImage(arr_bytes)
         self.evfFrame.Show()
 
-    def liveViewMemoryView(self):
-        return memoryview(self.camref)
+    def end_evf(self):
+        dataType_size = _edsdk.EdsGetPropertySize(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0)
+        _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0, dataType_size["size"], _edsdk.EvfDepthOfFieldPreview_OFF)
+
+        time.sleep(5)
+
+        device = c_uint32()
+        device.value &= ~_edsdk.EvfOutputDevice_PC
+        _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(device), device.value)
+
     
 class CameraList:
     def __init__(self):
@@ -315,6 +322,7 @@ class CameraList:
     def set_selected_cam_by_id(self, id):
         self.selected_camera = self.get_camera_by_id(id)
         self.selected_camera.connect()
+        global _camera
         _camera = self.selected_camera
 
     def disconnect_cameras(self):
@@ -328,3 +336,20 @@ class EvfDataSet(Structure):
                ('imagePosition', EdsPoint),
                ('sizeJpgLarge', EdsSize)]
 
+class EvfFrame(wx.Frame):
+    def __init__(self):
+        wx.Frame.__init__(self, None, wx.ID_ANY, "Live View")
+        self.Centre()
+        self.Bind(wx.EVT_CLOSE, self.onClose)
+
+    def onDrawImage(self, data):
+        box = wx.BoxSizer()
+        img = wx.Image(io.BytesIO(data))
+        bitmap = wx.StaticBitmap(self, bitmap=wx.Bitmap(img))
+
+        box.Add(bitmap, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 10)
+        self.SetSizer(box)
+
+    def onClose(self, e):
+        self.Destroy()
+        _camera.end_evf()

@@ -801,11 +801,12 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	###################################################################################
 	def EdsGetPropertySize(self, inRef, inPropertyID, inParam):
-		outDataType = EdsDataType()
+		outDataType = c_uint()
 		outSize = c_int()
 		err = self.dll.EdsGetPropertySize(inRef, c_uint(inPropertyID), c_int(inParam), byref(outDataType), byref(outSize))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
+		outDataType = EdsDataType(outDataType.value)
 		return {"dataType": outDataType, "size": outSize}
 	
 	###################################################################################
@@ -1319,8 +1320,8 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	def EdsGetPointer(self, inStreamRef):
-		outPointer = c_void_p()
+	def EdsGetPointer(self, inStreamRef, data):
+		outPointer = (POINTER(c_ubyte))(data)
 		err = self.dll.EdsGetPointer(inStreamRef, byref(outPointer))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
@@ -1430,7 +1431,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsGetLength(self, inStreamRef):
-		outLength = c_uint64()
+		outLength = c_uint64(0)
 		err = self.dll.EdsGetLength(inStreamRef, byref(outLength))
 		if err != self.EDS_ERR_OK:
 			raise Exception(hex(err))
