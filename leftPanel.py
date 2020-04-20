@@ -360,4 +360,4 @@ class LeftPanel(wx.Panel):
     def onStartEvf(self, event):
         cam = self.parent.GetParent().cam_list.selected_camera
         cam.startEvf()
-        data = cam._download_evf()
+        
