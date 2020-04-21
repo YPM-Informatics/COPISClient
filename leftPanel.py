@@ -1,7 +1,6 @@
 import wx
 from enums import Axis
 from Canon.EDSDKLib import *
-from evfFrame import *
 import util
 
 class LeftPanel(wx.Panel):
