@@ -1,15 +1,14 @@
 from Canon.EDSDKLib import *
 import time
 from ctypes import *
-import asyncio
-import pythoncom
 import util
 import wx
 import io
+from PIL import Image
 
 _camera = None
 _edsdk = None
-_keep_liveview_alive = False
+
 
 def initialize():
     global _edsdk
@@ -178,55 +177,43 @@ class Camera:
             self.device = _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
             global _keep_liveview_alive
             _keep_liveview_alive = True
-            self.evfFrame_displayed = False
-            asyncio.get_event_loop().run_until_complete(self._download_evf())
+            self.evf_frame_displayed = False
 
-    async def _download_evf(self):
-        evfStream = _edsdk.EdsCreateMemoryStream(0)
-        evfImageRef = _edsdk.EdsCreateEvfImageRef(evfStream)
+            self.evfStream = _edsdk.EdsCreateMemoryStream(0)
+            self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
+            evf_frame = EvfFrame()
+            
+            self.download_evf()
+
+    def download_evf(self):
         time.sleep(0.1)
-        tasks = []
-        while _keep_liveview_alive:
-            task = asyncio.ensure_future(_edsdk.EdsDownloadEvfImage(self.camref, evfImageRef))
-            tasks.append(task)
+        _edsdk.EdsDownloadEvfImage(self.camref,self.evfImageRef)
         
-            #dataset = EvfDataSet()
-            #dataset.zoom = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeof(c_uint), c_uint(dataset.zoom))
-            #dataset.imagePosition = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0, sizeof(EdsPoint),dataset.imagePosition)
-            #dataset.zoomRect = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeof(EdsRect), dataset.zoomRect)
-            #dataset.sizeJpgLarge = _edsdk.EdsGetPropertyData(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0, sizeof(EdsSize),dataset.sizeJpgLarge)
+        #dataset = EvfDataSet()
+        #dataset.zoom = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeo(c_uint), c_uint(dataset.zoom))
+        #dataset.imagePosition = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0,sizeof(EdsPoint),dataset.imagePosition)
+        #dataset.zoomRect = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeo(EdsRect), dataset.zoomRect)
+        #dataset.sizeJpgLarge = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0,sizeof(EdsSize),dataset.sizeJpgLarge)
 
-            output_length = _edsdk.EdsGetLength(evfStream)
-            image_data = (c_ubyte * output_length.value)()
-            image_data_pointer = _edsdk.EdsGetPointer(evfStream, image_data)
-            arr_bytes = bytearray(string_at(image_data_pointer, output_length.value))
-
-            if not self.evfFrame_displayed:
-                self.evfFrame = EvfFrame()
-                draw_image_task = asyncio.ensure_future(self.evfFrame.onDrawImage(arr_bytes))
-                self.evfFrame.Show()
-                self.evfFrame_displayed = True
-            else:
-                draw_image_task = asyncio.ensure_future(self.evfFrame.onRefreshImage(arr_bytes))
-
-            await asyncio.gather(*tasks, return_exceptions=True)
-            tasks = []
-
-
-        _edsdk.EdsRelease(evfImageRef)
-        _edsdk.EdsRelease(evfStream)
+        output_length = _edsdk.EdsGetLength(self.evfStream)
+        image_data = (c_ubyte * output_length.value)()
+        image_data_pointer = _edsdk.EdsGetPointer(self.evfStream, image_data)
+        self.img_byte_data = bytearray(string_at(image_data_pointer, output_length.value))
+        
 
     def end_evf(self):
+        _edsdk.EdsRelease(self.evfImageRef)
+        _edsdk.EdsRelease(self.evfStream)
         dataType_size = _edsdk.EdsGetPropertySize(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0)
         _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0, dataType_size["size"], _edsdk.EvfDepthOfFieldPreview_OFF)
 
-        time.sleep(5)
+        time.sleep(2)
 
         device = c_uint32()
         device.value &= ~_edsdk.EvfOutputDevice_PC
         _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(device), device.value)
         self.evf_thread.join()
-        _keep_liveview_alive = False
+        
 
     
 class CameraList:
@@ -288,24 +275,45 @@ class EvfDataSet(Structure):
 
 class EvfFrame(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Live View", size=wx.Size(1000, 700))
-        self.bitmap = None
+        style = wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX
+        wx.Frame.__init__(self, None, wx.ID_ANY, "Live View", style=style)
+        self.panel = EvfPanel(self)
+        self.Fit()
         self.Centre()
+        self.Show()
         self.Bind(wx.EVT_CLOSE, self.onClose)
 
-    async def onDrawImage(self, data):
-        box = wx.BoxSizer()
-        img = wx.Image(io.BytesIO(data))
-        self.bitmap = wx.StaticBitmap(self, bitmap=wx.Bitmap(img))
-
-        box.Add(self.bitmap, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 10)
-        self.SetSizer(box)
-
-    async def onRefreshImage(self, data):
-        img = wx.Image(io.BytesIO(data))
-        self.bitmap.SetBitmap(wx.Bitmap(img))
-        self.bitmap.Refresh()
-
     def onClose(self, e):
+        _keep_liveview_alive = False
         self.Destroy()
         _camera.end_evf()
+
+class EvfPanel(wx.Panel):
+    def __init__(self, parent):
+        super(EvfPanel, self).__init__(parent, wx.ID_ANY, size=wx.Size(1000, 700))
+        self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.update()
+
+    def update(self):
+        global _camera
+        _camera.download_evf()
+
+        self.Refresh()
+        self.Update()
+        wx.CallLater(15, self.update)
+
+    def get_bitmap(self):
+        global _camera
+        if _camera.img_byte_data:
+            img = (Image.open(io.BytesIO(_camera.img_byte_data))).transpose(Image.FLIP_LEFT_RIGHT)
+            width, height = img.size
+            buffer = img.convert('RGB').tobytes()
+            bitmap = wx.Bitmap.FromBuffer(width, height, buffer)
+            return bitmap
+        return None
+
+    def on_paint(self, event):
+        bitmap = self.get_bitmap()
+        dc = wx.AutoBufferedPaintDC(self)
+        dc.DrawBitmap(bitmap, 0, 0)
