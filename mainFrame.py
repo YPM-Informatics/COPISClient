@@ -6,6 +6,8 @@ from ctypes import *
 import canvas
 from pathGeneratorFrame import *
 from configPreferenceFrame import *
+from cmdPanel import *
+import wx.lib.agw.aui as aui
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent):
@@ -32,7 +34,7 @@ class MainFrame(wx.Frame):
         super(MainFrame, self).__init__(*args, **kwargs, style = wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE, title = "COPIS")
 
         ## set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(1352, 850))
+        self.SetMinSize(wx.Size(1000, 795))
 
         ## initialize menu bar
         self.initMenubar()
@@ -43,13 +45,50 @@ class MainFrame(wx.Frame):
         ## initialize status bar
         self.initStatusbar()
 
-        ## split the window in a half
-        self.splitter = wx.SplitterWindow(self)
-        self.panelLeft = LeftPanel(self.splitter)
-        self.panelRight = RightPanel(self.splitter)
+        self._mgr = aui.AuiManager()
+        self._mgr.SetManagedWindow(self)
 
-        self.splitter.SplitVertically(self.panelLeft, self.panelRight)
-        self.panelLeft.SetFocus()
+        left_nb = aui.AuiNotebook(self, style=aui.AUI_NB_TOP | aui.AUI_NB_TAB_SPLIT | aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS | aui.AUI_NB_TAB_EXTERNAL_MOVE)
+        left = LeftPanel(left_nb)
+        self._mgr.AddPane(left_nb, aui.AuiPaneInfo().Name("LeftPane").Left().CloseButton(True))
+
+        right_nb = aui.AuiNotebook(self, style=aui.AUI_NB_TOP | aui.AUI_NB_TAB_SPLIT | aui.AUI_NB_TAB_MOVE | aui.AUI_NB_SCROLL_BUTTONS | aui.AUI_NB_TAB_EXTERNAL_MOVE)
+        right = RightPanel(right_nb)
+        self._mgr.AddPane(right_nb, aui.AuiPaneInfo().Name("RighttPane").Right().CloseButton(True))
+
+        
+        #bottom = CommandPanel(notebook)
+
+        
+        self._mgr.Update()
+
+
+        #self.vbox = wx.BoxSizer(wx.VERTICAL)
+        #self.bottom = wx.Notebook(self)
+        #self.bottom.AddPage(CommandPanel(self.bottom), "Command")
+
+        ## split the window in a half
+        #self.splitter = wx.SplitterWindow(self)
+
+        #self.hbox = wx.BoxSizer()
+        #self.left = fnb.FlatNotebook(self)
+        #self.left.AddPage(LeftPanel(self.left), "Control")
+        #self.hbox.Add(self.left, 1, wx.EXPAND)
+
+        #self.right = fnb.FlatNotebook(self)
+        #self.right.AddPage(RightPanel(self.right), "Visualizer")
+        #self.hbox.Add(self.right, 1, wx.EXPAND)
+
+        #self.panelLeft = LeftPanel(self.splitter)
+        #self.panelRight = RightPanel(self.splitter)
+
+        #self.splitter.SplitVertically(self.panelLeft, self.panelRight)
+
+        #self.vbox.Add(self.hbox, 2, wx.TOP | wx.EXPAND)
+        #self.vbox.Add(self.bottom, 1, wx.BOTTOM | wx.EXPAND)
+        #self.SetSizer(self.vbox)
+        
+        #self.panelLeft.SetFocus()
         self.Centre()
 
         self.cam_list = []
