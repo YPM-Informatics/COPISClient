@@ -3,9 +3,9 @@ from enums import Axis
 from Canon.EDSDKLib import *
 import util
 
-class LeftPanel(wx.Panel):
+class ControllerPanel(wx.Panel):
     def __init__(self, parent):
-        super(LeftPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
+        super(ControllerPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
         self.parent = parent
         self.InitPanel()
         self.canvas = ""
@@ -275,7 +275,7 @@ class LeftPanel(wx.Panel):
 
     def OnMove(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.GetWindow2().canvas
+            self.canvas = self.parent.visual_panel.canvas
             
         cameraOption = self.masterCombo.GetSelection()
         if cameraOption != -1:
@@ -283,7 +283,7 @@ class LeftPanel(wx.Panel):
             direction = event.GetEventObject().direction
             
             if axis in [Axis.X, Axis.Y, Axis.Z]:
-                cmdBox = self.parent.GetWindow2().cmd
+                cmdBox = self.parent.visual_panel.cmd
                 size = self.xyzSc.GetValue()
                 
                     
@@ -298,37 +298,37 @@ class LeftPanel(wx.Panel):
                     size = -size
             
                 
-            self.parent.GetParent().camera_models[cameraOption].onMove(axis, size)
+            self.parent.camera_models[cameraOption].onMove(axis, size)
             self.canvas.OnDraw()
         else:
             util.set_dialog("Please select the camera to control.")
 
     def OnFocusCenter(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.GetWindow2().canvas
+            self.canvas = self.parent.visual_panel.canvas
 
-        if self.parent.GetParent().selected_cam is not None:
-            self.parent.GetParent().camera_models[cameraOption].onFocusCenter()
+        if self.parent.selected_cam is not None:
+            self.parent.camera_models[cameraOption].onFocusCenter()
         else:
             util.set_dialog("Please select the camera to control.")
 
     def OnMasterCombo(self, event):
         choice = self.masterCombo.GetStringSelection()
         id = int(choice[-1]) - 1
-        self.parent.GetParent().cam_list.set_selected_cam_by_id(id)
+        self.parent.cam_list.set_selected_cam_by_id(id)
         
     def OnTakePicture(self, event):
         cameraOption = self.masterCombo.GetSelection()
-        if self.parent.GetParent().cam_list.selected_camera is not None:
-            self.parent.GetParent().cam_list.selected_camera.shoot()
+        if self.parent.cam_list.selected_camera is not None:
+            self.parent.cam_list.selected_camera.shoot()
         else:
             self.SetDialog("Please select the camera to take a picture.")
 
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
 
-        self.parent.GetParent().panelRight.canvas.camera_objects = []
-        self.parent.GetParent().panelRight.canvas.OnDraw()
+        self.parent.visual_panel.canvas.camera_objects = []
+        self.parent.visual_panel.canvas.OnDraw()
         self.masterCombo.Clear()
 
         if rb.Label == "USB":
@@ -340,23 +340,24 @@ class LeftPanel(wx.Panel):
             self.edsdkRb.Disable()
             self.ptpRb.Disable()
 
-            if self.parent.GetParent().is_edsdk_on:
-                self.parent.GetParent().terminateEDSDK()
+            if self.parent.is_edsdk_on:
+                self.parent.terminateEDSDK()
         elif rb.Label == "EDSDK":
-            self.parent.GetParent().initEDSDK()
+            self.parent.initEDSDK()
         else:
-            if self.parent.GetParent().is_edsdk_on:
-                self.parent.GetParent().terminateEDSDK()
+            if self.parent.is_edsdk_on:
+                self.parent.terminateEDSDK()
 
     def onDecreaseScale(self, event):
-        self.parent.GetWindow2().canvas.scale -= 0.1
-        self.parent.GetWindow2().canvas.OnDraw()
+        self.parent.visual_panel.canvas.scale -= 0.1
+        self.parent.visual_panel.canvas.OnDraw()
 
     def onIncreaseScale(self, event):
-        self.parent.GetWindow2().canvas.scale += 0.1
-        self.parent.GetWindow2().canvas.OnDraw()
+        self.parent.visual_panel.canvas.scale += 0.1
+        self.parent.visual_panel.canvas.OnDraw()
 
     def onStartEvf(self, event):
-        cam = self.parent.GetParent().cam_list.selected_camera
+        cam = self.parent.cam_list.selected_camera
         cam.startEvf()
+        self.parent.createEvfPane()
         
