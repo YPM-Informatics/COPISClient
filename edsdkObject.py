@@ -3,10 +3,7 @@ import time
 from ctypes import *
 import util
 import wx
-import io
-from PIL import Image
 
-_camera = None
 _edsdk = None
 
 
@@ -48,12 +45,10 @@ def _generate_file_name():
 ##############################################################################
 def _download_image(image):
     dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
-    #self.panelRight.resultBox.AppendText("Picture is taken.")
     file_name = _generate_file_name()
     stream = _edsdk.EdsCreateFileStream(file_name, 1, 2)
     _edsdk.EdsDownload(image, dir_info.size, stream)
     _edsdk.EdsDownloadComplete(image)
-    #self.panelRight.resultBox.AppendText("Image is saved as " + file_name)
     _edsdk.EdsRelease(stream) 
 
 
@@ -98,7 +93,6 @@ StateHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_void_p)
 ##############################################################################
 def _handle_state(event, state, context):
     if event == _edsdk.StateEvent_WillSoonShutDown:
-        #self.panelRight.resultBox.AppendText("Camera is about to shut off.")
         _edsdk.EdsSendCommand(context, 1, 0)
     return 0
 state_handler = StateHandlerType(_handle_state)
@@ -142,11 +136,6 @@ class Camera:
 
         self.running = True
 
-        #self.picture_thread = _make_thread(self.check_picture_queue, "edsdk.check_picture_queue", args=(self,))
-        #self.picture_thread.start()
-
-        #_run_in_com_thread(self.camref.connect)
-
         ## set the handlers
         _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
         _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, self.camref)
@@ -161,7 +150,6 @@ class Camera:
         if self.camref is not None:
             _edsdk.EdsCloseSession(self.camref)
             _edsdk.EdsRelease(self.camref)
-            _camera = None
             _running = False
 
     def shoot(self):
@@ -181,7 +169,7 @@ class Camera:
 
             self.evfStream = _edsdk.EdsCreateMemoryStream(0)
             self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
-            evf_frame = EvfFrame()
+            #evf_frame = EvfFrame()
             
             self.download_evf()
 
@@ -262,9 +250,11 @@ class CameraList:
         global _camera
         _camera = self.selected_camera
 
-    def disconnect_cameras(self):
+    def terminate(self):
         for cam in self.cam_model_list:
             del cam
+
+        _edsdk.EdsTerminateSDK()
 
 class EvfDataSet(Structure):
     _fields_ = [('stream', c_void_p),
@@ -273,47 +263,4 @@ class EvfDataSet(Structure):
                ('imagePosition', EdsPoint),
                ('sizeJpgLarge', EdsSize)]
 
-class EvfFrame(wx.Frame):
-    def __init__(self):
-        style = wx.DEFAULT_FRAME_STYLE & ~wx.RESIZE_BORDER & ~wx.MAXIMIZE_BOX
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Live View", style=style)
-        self.panel = EvfPanel(self)
-        self.Fit()
-        self.Centre()
-        self.Show()
-        self.Bind(wx.EVT_CLOSE, self.onClose)
 
-    def onClose(self, e):
-        _keep_liveview_alive = False
-        self.Destroy()
-        _camera.end_evf()
-
-class EvfPanel(wx.Panel):
-    def __init__(self, parent):
-        super(EvfPanel, self).__init__(parent, wx.ID_ANY, size=wx.Size(1000, 700))
-        self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.update()
-
-    def update(self):
-        global _camera
-        _camera.download_evf()
-
-        self.Refresh()
-        self.Update()
-        wx.CallLater(15, self.update)
-
-    def get_bitmap(self):
-        global _camera
-        if _camera.img_byte_data:
-            img = (Image.open(io.BytesIO(_camera.img_byte_data))).transpose(Image.FLIP_LEFT_RIGHT)
-            width, height = img.size
-            buffer = img.convert('RGB').tobytes()
-            bitmap = wx.Bitmap.FromBuffer(width, height, buffer)
-            return bitmap
-        return None
-
-    def on_paint(self, event):
-        bitmap = self.get_bitmap()
-        dc = wx.AutoBufferedPaintDC(self)
-        dc.DrawBitmap(bitmap, 0, 0)

@@ -2,9 +2,9 @@ import wx
 from canvas import Canvas
 import util
 
-class RightPanel(wx.Panel):
+class VisualizerPanel(wx.Panel):
     def __init__(self, parent):
-        super(RightPanel, self).__init__(parent)
+        super(VisualizerPanel, self).__init__(parent)
         self.parent = parent
         self.InitPanel()
 
