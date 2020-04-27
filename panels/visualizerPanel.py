@@ -1,5 +1,5 @@
 import wx
-from canvas import Canvas
+from components.canvas import Canvas
 import util
 
 class VisualizerPanel(wx.Panel):

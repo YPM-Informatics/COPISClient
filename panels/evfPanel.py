@@ -13,7 +13,6 @@ class EvfPanel(wx.Panel):
 
     def update(self):
         self.cam.download_evf()
-
         self.Refresh()
         self.Update()
         wx.CallLater(15, self.update)
