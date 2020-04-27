@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import wx
 import sys
-from mainFrame import MainFrame
+from frames.mainFrame import MainFrame
 
 APP_EXIT = 1
 

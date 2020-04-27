@@ -171,6 +171,7 @@ class Camera:
             self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
             #evf_frame = EvfFrame()
             
+            time.sleep(0.5)
             self.download_evf()
 
     def download_evf(self):
