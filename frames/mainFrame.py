@@ -1,7 +1,7 @@
 import wx
 import random
 from ctypes import *
-import components.canvas
+from components.canvas import Camera3D
 from components.auiManager import AuiManager
 from components.toolBar import ToolBar
 from components.menuBar import MenuBar
@@ -81,17 +81,18 @@ class MainFrame(wx.Frame):
         print(message)
 
         for i in range(cam_count):
+            canvas = self.auiManager.GetPane('Visualizer').window.canvas
             x = float(random.randrange(-100, 100)) / 100
             y = float(random.randrange(-100, 100)) / 100
             z = float(random.randrange(-100, 100)) / 100
             b = random.randrange(0, 360, 5)
             c = random.randrange(0, 360, 5)
             
-            cam_3d = canvas.Camera3D(i, x, y, z, b, c)
-            self.visual_panel.canvas.camera_objects.append(cam_3d)
+            cam_3d = Camera3D(i, x, y, z, b, c)
+            canvas.camera_objects.append(cam_3d)
             cam_3d.onDraw()
-            self.visual_panel.canvas.SwapBuffers()
-            self.control_panel.masterCombo.Append("camera " + str(i + 1))
+            canvas.SwapBuffers()
+            self.auiManager.GetPane('Controller').window.masterCombo.Append("camera " + str(i + 1))
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:

@@ -1,24 +1,33 @@
 import wx
+from enums import Tool_Ids
+from frames.settingsFrame import SettingsFrame
 
 class ToolBar(wx.ToolBar):
     def __init__(self, parent):
         super(ToolBar, self).__init__(parent)
 
-        ## port and baud options
+        # port and baud
         self.initPortBaudOptions()
+        self.AddStretchableSpace()
 
         ## play, pause and stop buttons to animate the commands
         self.initAnimationButtons()
+        self.AddStretchableSpace()
 
         ## import file
         self.initImport()
+        self.AddStretchableSpace()
 
-        ## setting options
+        ## general settings
         self.initSetting()
+
+        self.Bind(wx.EVT_TOOL, self.handleTool)
+
+        self.Realize()
         
 
     def initPortBaudOptions(self):
-        ## TO DO: it should detect ports and baud options when the machine is connected
+        ## TO DO: replace port and baud choices with dynamically detected ones
         self.AddStretchableSpace()
         portLabel = wx.StaticText(self, id = wx.ID_ANY, label = "Port: ", style = wx.ALIGN_LEFT)
         self.AddControl(portLabel)
@@ -29,30 +38,28 @@ class ToolBar(wx.ToolBar):
         baudCombo = wx.ComboBox(self, wx.ID_ANY, value = "", choices = ["Baud 1", "Baud 2", "Baud 3"])
         self.AddControl(baudCombo)
 
-        ## TO DO: create and bind functions
+        ## TO DO: connect and disconnect functionalities
         connectBtn = wx.Button(self, wx.ID_ANY, label = "Connect")
         self.AddControl(connectBtn)
         disconnectBtn = wx.Button(self, wx.ID_ANY, label = "Disconnect")
         self.AddControl(disconnectBtn)
 
     def initAnimationButtons(self):
-        ## TO DO: create and bind functions
-        self.AddStretchableSpace()
+        ## TO DO: 3D simulation functionalities -- play, pause and stop
         playImg = wx.Image('img/play.png')
         playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(1, 'Play', wx.Bitmap(playImg))
+        self.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp = "Play the simulation of commands.")
 
         pauseImg = wx.Image('img/pause.png')
         pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(1, 'Pause', wx.Bitmap(pauseImg))
+        self.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp = "Pause the simulation.")
         
         stopImg = wx.Image('img/stop.png')
         stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(1, 'Stop', wx.Bitmap(stopImg))
+        self.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp = "Stop the simulation.")
 
     def initImport(self):
-        ## TO DO: create and bind function to "Browse" button
-        self.AddStretchableSpace()
+        ## TO DO: browsing the file system and importing file functionalities
         fileLabel = wx.StaticText(self, id = wx.ID_ANY, label = "File: ", style = wx.ALIGN_LEFT)
         self.AddControl(fileLabel)
         fileBox = wx.TextCtrl(self)
@@ -61,8 +68,11 @@ class ToolBar(wx.ToolBar):
         self.AddControl(loadBtn)
 
     def initSetting(self):
-        ## TO DO: figure out what settings are needed and create a popup box with setting options
-        self.AddStretchableSpace()
         settingImg = wx.Image('img/setting.png')
         settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(1, 'Setting', wx.Bitmap(settingImg))
+        self.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp = "Set general settings of the application.")
+
+    def handleTool(self, event):
+        if event.GetId() == Tool_Ids.Settings.value:
+            settingsFrame = SettingsFrame()
+            settingsFrame.Show()
