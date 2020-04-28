@@ -8,3 +8,9 @@ class Axis(Enum):
     C = "c"
     Plus = "++"
     Minus = "-"
+
+class Tool_Ids(Enum):
+    Play = 1
+    Pause = 2
+    Stop = 3
+    Settings = 4

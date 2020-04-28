@@ -5,5 +5,6 @@ class StatusBar(wx.StatusBar):
         super(StatusBar, self).__init__(parent)
         self.SetStatusText('Ready')
 
+        ## TO DO: think about how to utilize status bar
 
 

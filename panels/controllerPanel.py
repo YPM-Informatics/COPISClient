@@ -4,9 +4,11 @@ from Canon.EDSDKLib import *
 import util
 
 class ControllerPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, aui_manager):
         super(ControllerPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
         self.parent = parent
+        self.auiManager = aui_manager
+        self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.InitPanel()
         self.canvas = ""
 
@@ -275,7 +277,7 @@ class ControllerPanel(wx.Panel):
 
     def OnMove(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.visual_panel.canvas
+            self.canvas = self.visualizer_panel.canvas
             
         cameraOption = self.masterCombo.GetSelection()
         if cameraOption != -1:
@@ -283,7 +285,7 @@ class ControllerPanel(wx.Panel):
             direction = event.GetEventObject().direction
             
             if axis in [Axis.X, Axis.Y, Axis.Z]:
-                cmdBox = self.parent.visual_panel.cmd
+                cmdBox = self.auiManager.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
                 
                     
@@ -305,7 +307,7 @@ class ControllerPanel(wx.Panel):
 
     def OnFocusCenter(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.visual_panel.canvas
+            self.canvas = self.visualizer_panel.canvas
 
         if self.parent.selected_cam is not None:
             self.parent.camera_models[cameraOption].onFocusCenter()
@@ -327,8 +329,8 @@ class ControllerPanel(wx.Panel):
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
 
-        self.parent.visual_panel.canvas.camera_objects = []
-        self.parent.visual_panel.canvas.OnDraw()
+        self.visualizer_panel.canvas.camera_objects = []
+        self.visualizer_panel.canvas.OnDraw()
         self.masterCombo.Clear()
 
         if rb.Label == "USB":
@@ -349,15 +351,15 @@ class ControllerPanel(wx.Panel):
                 self.parent.terminateEDSDK()
 
     def onDecreaseScale(self, event):
-        self.parent.visual_panel.canvas.scale -= 0.1
-        self.parent.visual_panel.canvas.OnDraw()
+        self.parent.auiManager.GetPane('Visualizer').window.canvas.scale -= 0.1
+        self.visualizer_panel.canvas.OnDraw()
 
     def onIncreaseScale(self, event):
-        self.parent.visual_panel.canvas.scale += 0.1
-        self.parent.visual_panel.canvas.OnDraw()
+        self.visualizer_panel.canvas.scale += 0.1
+        self.visualizer_panel.canvas.OnDraw()
 
     def onStartEvf(self, event):
         cam = self.parent.cam_list.selected_camera
         cam.startEvf()
-        self.parent.createEvfPane()
+        self.parent.auiManager.addEvfPane()
         

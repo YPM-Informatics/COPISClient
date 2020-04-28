@@ -169,7 +169,6 @@ class Camera:
 
             self.evfStream = _edsdk.EdsCreateMemoryStream(0)
             self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
-            #evf_frame = EvfFrame()
             
             time.sleep(0.5)
             self.download_evf()
@@ -196,15 +195,13 @@ class Camera:
         dataType_size = _edsdk.EdsGetPropertySize(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0)
         _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0, dataType_size["size"], _edsdk.EvfDepthOfFieldPreview_OFF)
 
-        time.sleep(2)
+        time.sleep(1)
 
         device = c_uint32()
         device.value &= ~_edsdk.EvfOutputDevice_PC
         _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(device), device.value)
-        self.evf_thread.join()
         
 
-    
 class CameraList:
     def __init__(self):
         self.list = c_void_p(None)
