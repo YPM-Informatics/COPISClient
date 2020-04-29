@@ -2,7 +2,7 @@ import wx
 import random
 from ctypes import *
 from components.canvas import Camera3D
-from components.auiManager import AuiManager
+from auiManager import AuiManager
 from components.toolBar import ToolBar
 from components.menuBar import MenuBar
 from components.statusBar import StatusBar

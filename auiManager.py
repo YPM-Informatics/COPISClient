@@ -4,6 +4,7 @@ from panels.controllerPanel import ControllerPanel
 from panels.visualizerPanel import VisualizerPanel
 from panels.cmdPanel import CommandPanel
 from panels.evfPanel import EvfPanel
+from panels.consolePanel import ConsolePanel
 
 # Reference
 # https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui.framemanager.AuiManager.html?highlight=auimanager#wx.lib.agw.aui.framemanager.AuiManager
@@ -15,10 +16,11 @@ class AuiManager(aui.AuiManager):
         ## AuiManager follows the rules specified in AuiPaneInfo for each pane
         super(AuiManager, self).__init__(managed_window=managed_window)
 
+        self.addConsolePane()
+        self.addCommandPane()
         self.addVisualizerPane()
         self.addControllerPane()
-        self.addCommandPane()
-
+        
         self.Bind(aui.EVT_AUI_PANE_CLOSE, self.onPaneClose)
         self.Update()
 
@@ -30,12 +32,12 @@ class AuiManager(aui.AuiManager):
 
     def addVisualizerPane(self):
         visual_panel = VisualizerPanel(self.GetManagedWindow())
-        pane_info =  aui.AuiPaneInfo().Name("Visualizer").MinSize(wx.Size(400, 500)).Center().Resizable(True).MaximizeButton(True).Layer(0).Position(0)
+        pane_info =  aui.AuiPaneInfo().Name("Visualizer").MinSize(wx.Size(400, 500)).Center().Resizable(True).MaximizeButton(True).Layer(1).Position(0)
         self.AddPane(visual_panel, pane_info)
 
     def addCommandPane(self):
         command_panel = CommandPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name("Command").MinSize(wx.Size(300, 200)).Bottom().Resizable(True).Layer(2)
+        pane_info = aui.AuiPaneInfo().Name("Command").MinSize(wx.Size(300, 200)).Bottom().Resizable(True).Layer(1)
         self.AddPane(command_panel, pane_info)
 
     def addEvfPane(self):
@@ -43,6 +45,11 @@ class AuiManager(aui.AuiManager):
         pane_info = aui.AuiPaneInfo().Name("Evf").Right().MinSize(wx.Size(600, 420)).DestroyOnClose(True).Layer(1).Position(1)
         self.AddPane(evf_panel, pane_info)
         self.Update()
+
+    def addConsolePane(self):
+        console_panel = ConsolePanel(self.GetManagedWindow())
+        pane_info = aui.AuiPaneInfo().Name("Console").Bottom().Resizable(True).Layer(1).Position(1)
+        self.AddPane(console_panel, pane_info)
         
     def onPaneClose(self, event):
         pane = event.GetPane()
