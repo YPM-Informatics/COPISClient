@@ -35,3 +35,4 @@ class EvfPanel(wx.Panel):
 
     def on_destroy(self):
         self.cam.end_evf()
+        self.timer.Stop()
