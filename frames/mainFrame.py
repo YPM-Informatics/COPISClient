@@ -35,7 +35,7 @@ class MainFrame(wx.Frame):
         self.is_edsdk_on = False
 
         ## set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(1000, 795))
+        self.SetMinSize(wx.Size(1000, 820))
 
         ## initialize menu bar
         self.SetMenuBar(MenuBar(self))
@@ -62,12 +62,13 @@ class MainFrame(wx.Frame):
         self.PopupMenu(MyPopupMenu(self), e.GetPosition())
 
     def initEDSDK(self):
+        console_panel = self.auiManager.GetPane("Console").window
         if self.is_edsdk_on:
             return
 
         import edsdkObject
 
-        edsdkObject.initialize()
+        edsdkObject.initialize(console_panel)
         self.is_edsdk_on = True
         self.cam_list = edsdkObject.CameraList()
         cam_count = self.cam_list.get_count()
@@ -78,7 +79,7 @@ class MainFrame(wx.Frame):
         else:
             message += " cameras are "
         message += "connected."
-        print(message)
+        console_panel.print(message)
 
         for i in range(cam_count):
             canvas = self.auiManager.GetPane('Visualizer').window.canvas
