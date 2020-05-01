@@ -80,14 +80,17 @@ class ControllerPanel(wx.Panel):
         vboxPositioning.Add(positionLabel, 0.5, flag = wx.BOTTOM|wx.TOP, border = 10)
         
         hboxTop = wx.BoxSizer()
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, choices = [])
+        camLabel = wx.StaticText(self, wx.ID_ANY, label="Camera: ", style=wx.ALIGN_LEFT)
+        hboxTop.Add(camLabel)
+        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY)
         self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         ## self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Set Center')
         ## hboxTop.Add(self.setCenterBtn, 1, flag = wx.LEFT, border = 5)
         
-        self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh From COPIS')
-        hboxTop.Add(self.setCenterBtn)
+        self.refreshBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh')
+        self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
+        hboxTop.Add(self.refreshBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag = wx.LEFT|wx.BOTTOM|wx.EXPAND, border = 15)
 
         hboxXyzbc = wx.BoxSizer()
@@ -183,19 +186,6 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxBc)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag = wx.LEFT, border = 15)
-
-        ## hboxExtra = wx.BoxSizer()
-        ## self.eMotorBtn = wx.Button(self, wx.ID_ANY, label = 'Enable Motors')
-        ## hboxExtra.Add(self.eMotorBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.dMotorBtn = wx.Button(self, wx.ID_ANY, label = 'Disable Motors')
-        ## hboxExtra.Add(self.dMotorBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.recordBtn = wx.Button(self, wx.ID_ANY, label = 'Record Position')
-        ## hboxExtra.Add(self.recordBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.homeBtn = wx.Button(self, wx.ID_ANY, label = 'Home')
-        ## hboxExtra.Add(self.homeBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.setHomeBtn = wx.Button(self, wx.ID_ANY, label = 'Set Home')
-        ## hboxExtra.Add(self.setHomeBtn)
-        ## vboxPositioning.Add(hboxExtra, 0.5, flag = wx.LEFT, border = 15)
         
         return vboxPositioning
 
@@ -324,7 +314,7 @@ class ControllerPanel(wx.Panel):
         if self.parent.cam_list.selected_camera is not None:
             self.parent.cam_list.selected_camera.shoot()
         else:
-            self.SetDialog("Please select the camera to take a picture.")
+            util.set_dialog("Please select the camera to take a picture.")
 
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
@@ -351,7 +341,7 @@ class ControllerPanel(wx.Panel):
                 self.parent.terminateEDSDK()
 
     def onDecreaseScale(self, event):
-        self.parent.auiManager.GetPane('Visualizer').window.canvas.scale -= 0.1
+        self.visualizer_panel.canvas.scale -= 0.1
         self.visualizer_panel.canvas.OnDraw()
 
     def onIncreaseScale(self, event):
@@ -359,7 +349,16 @@ class ControllerPanel(wx.Panel):
         self.visualizer_panel.canvas.OnDraw()
 
     def onStartEvf(self, event):
-        cam = self.parent.cam_list.selected_camera
-        cam.startEvf()
-        self.parent.auiManager.addEvfPane()
+        if self.parent.cam_list.selected_camera is not None:
+            self.parent.cam_list.selected_camera.startEvf()
+            self.auiManager.addEvfPane()
+        else:
+            util.set_dialog("Please select the camera to start live view.")
         
+    def onRefresh(self, event):
+        self.visualizer_panel.onClearCameras()
+        self.masterCombo.Clear()
+
+        if self.edsdkRb.GetValue():
+            self.parent.is_edsdk_on = False
+            self.parent.getCameraList()

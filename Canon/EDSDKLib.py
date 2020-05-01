@@ -805,7 +805,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsSendCommand(self, inCameraRef, inCommand, inParam):
-		err = self.dll.EdsSendCommand(c_void_p(inCameraRef), c_uint(inCommand), c_int(inParam))
+		err = self.dll.EdsSendCommand(inCameraRef, c_uint(inCommand), c_int(inParam))
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -1856,7 +1856,7 @@ class ImageQuality(Enum):
 	EdsImageQuality_Unknown =	0xffffffff
 
 
-def EdsErrorCodes(Enum):
+class EdsErrorCodes(Enum):
 	######################### ED-SDK Error Code Masks #########################
 	EDS_ISSPECIFIC_MASK =                                 0x80000000
 	EDS_COMPONENTID_MASK =                                0x7F000000

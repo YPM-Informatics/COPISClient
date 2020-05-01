@@ -202,7 +202,6 @@ class Camera3D():
         gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)	
         gluDeleteQuadric(quadric)	
         glPopMatrix()	
-
         glPopMatrix()	
 
     def getRotationAngle(self, v1, v2):	
