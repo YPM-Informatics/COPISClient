@@ -1,7 +1,5 @@
 import wx
-import random
 from ctypes import *
-from components.canvas import Camera3D
 from auiManager import AuiManager
 from components.toolBar import ToolBar
 from components.menuBar import MenuBar
@@ -33,6 +31,7 @@ class MainFrame(wx.Frame):
 
         self.cam_list = []
         self.is_edsdk_on = False
+        self.edsdkObject = None
 
         ## set minimum size to show whole interface properly
         self.SetMinSize(wx.Size(1000, 820))
@@ -49,6 +48,7 @@ class MainFrame(wx.Frame):
 
         ## initialize advanced user interface manager and panes
         self.auiManager = AuiManager(self)
+        self.console_panel = self.auiManager.GetPane("Console").window
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
@@ -62,47 +62,43 @@ class MainFrame(wx.Frame):
         self.PopupMenu(MyPopupMenu(self), e.GetPosition())
 
     def initEDSDK(self):
-        console_panel = self.auiManager.GetPane("Console").window
         if self.is_edsdk_on:
             return
 
         import edsdkObject
 
-        edsdkObject.initialize(console_panel)
+        self.edsdkObject = edsdkObject
+        self.edsdkObject.initialize(self.console_panel)
         self.is_edsdk_on = True
-        self.cam_list = edsdkObject.CameraList()
+        self.getCameraList()
+
+    def getCameraList(self):
+        self.cam_list = self.edsdkObject.CameraList()
         cam_count = self.cam_list.get_count()
 
         message = str(cam_count)
-        if cam_count < 2:
-            message += " cameara is "
+        if cam_count == 0:
+            message = "There is no camera "
+
+        elif cam_count == 1:
+            message += " camera is "
         else:
             message += " cameras are "
         message += "connected."
-        console_panel.print(message)
+        
+        self.console_panel.print(message)
 
         for i in range(cam_count):
-            canvas = self.auiManager.GetPane('Visualizer').window.canvas
-            x = float(random.randrange(-100, 100)) / 100
-            y = float(random.randrange(-100, 100)) / 100
-            z = float(random.randrange(-100, 100)) / 100
-            b = random.randrange(0, 360, 5)
-            c = random.randrange(0, 360, 5)
-            
-            cam_3d = Camera3D(i, x, y, z, b, c)
-            canvas.camera_objects.append(cam_3d)
-            cam_3d.onDraw()
-            canvas.SwapBuffers()
+            canvas = self.auiManager.GetPane('Visualizer').window.onDrawCamera(i)
             self.auiManager.GetPane('Controller').window.masterCombo.Append("camera " + str(i + 1))
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:
             return
-
-        self.cam_list.terminate()
-        self.cam_list = []
+        
         self.is_edsdk_on = False
 
-   
+        if self.cam_list:
+            self.cam_list.terminate()
+            self.cam_list = []
 
-   
