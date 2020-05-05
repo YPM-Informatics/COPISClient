@@ -1,10 +1,14 @@
 import wx
 from enums import Axis
+from Canon.EDSDKLib import *
+import util
 
-class LeftPanel(wx.Panel):
-    def __init__(self, parent):
-        super(LeftPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
+class ControllerPanel(wx.Panel):
+    def __init__(self, parent, aui_manager):
+        super(ControllerPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
         self.parent = parent
+        self.auiManager = aui_manager
+        self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.InitPanel()
         self.canvas = ""
 
@@ -20,8 +24,8 @@ class LeftPanel(wx.Panel):
         vboxLeft.Add(positioning_vbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
 
         ## Circular path generator section
-        circular_path_hbox = self.InitCircularPathGenerator()
-        vboxLeft.Add(circular_path_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
+        ##circular_path_hbox = self.InitCircularPathGenerator()
+        ##vboxLeft.Add(circular_path_hbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
 
         ## camera control section
         cam_control_vbox = self.InitCamControl()
@@ -76,14 +80,17 @@ class LeftPanel(wx.Panel):
         vboxPositioning.Add(positionLabel, 0.5, flag = wx.BOTTOM|wx.TOP, border = 10)
         
         hboxTop = wx.BoxSizer()
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, choices = [])
+        camLabel = wx.StaticText(self, wx.ID_ANY, label="Camera: ", style=wx.ALIGN_LEFT)
+        hboxTop.Add(camLabel)
+        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY)
         self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         ## self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Set Center')
         ## hboxTop.Add(self.setCenterBtn, 1, flag = wx.LEFT, border = 5)
         
-        self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh From COPIS')
-        hboxTop.Add(self.setCenterBtn)
+        self.refreshBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh')
+        self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
+        hboxTop.Add(self.refreshBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag = wx.LEFT|wx.BOTTOM|wx.EXPAND, border = 15)
 
         hboxXyzbc = wx.BoxSizer()
@@ -179,131 +186,9 @@ class LeftPanel(wx.Panel):
         hboxXyzbc.Add(vboxBc)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag = wx.LEFT, border = 15)
-
-        ## hboxExtra = wx.BoxSizer()
-        ## self.eMotorBtn = wx.Button(self, wx.ID_ANY, label = 'Enable Motors')
-        ## hboxExtra.Add(self.eMotorBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.dMotorBtn = wx.Button(self, wx.ID_ANY, label = 'Disable Motors')
-        ## hboxExtra.Add(self.dMotorBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.recordBtn = wx.Button(self, wx.ID_ANY, label = 'Record Position')
-        ## hboxExtra.Add(self.recordBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.homeBtn = wx.Button(self, wx.ID_ANY, label = 'Home')
-        ## hboxExtra.Add(self.homeBtn, 1, flag = wx.RIGHT, border = 10)
-        ## self.setHomeBtn = wx.Button(self, wx.ID_ANY, label = 'Set Home')
-        ## hboxExtra.Add(self.setHomeBtn)
-        ## vboxPositioning.Add(hboxExtra, 0.5, flag = wx.LEFT, border = 15)
         
         return vboxPositioning
 
-    def InitCircularPathGenerator(self):
-        ## LAYOUT
-
-     	##################################################################################################
-        ##                                                                                              ##
-        ## hbox --------------------------------------------------------------------------------------- ##
-        ##      | vbox1  ------------------------------  vbox2 --------------------  vbox3 ---------- | ##
-	    ##      |        | Circular Path Generator    |        |  Take Photo at   |        | rpm:   | | ##
-	    ##      |        | hbox   ------------------- |        |  Each Vertex     |        | X:     | | ##
-	    ##      |        | Points | No.Points: ____ | |        |                  |        | Y:     | | ##
-	    ##      |        |        ------------------- |        |  Generate Circle |        | Z:     | | ##
-	    ##      |        | hbox   ------------------- |        |                  |        | P:     | | ##
-	    ##      |        | Radius | Radius (mm): ___| |        |  Generate Sphere |        | T:     | | ##
-	    ##      |        |        ------------------- |        --------------------        ---------- | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartX | Start X: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartY | Start Y: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-	    ##      |        | hbox   ------------------- |                                               | ##
-	    ##      |        | StartZ | Start Z: ____   | |                                               | ##
-	    ##      |        |        ------------------- |                                               | ##
-        ##      |        | hbox   ------------------- |                                               | ##
-        ##      |        | Cameras| No. Cams: ____  | |                                               | ##
-        ##      |        |        ------------------- |                                               | ##
-        ##      |        ------------------------------                                               | ##
-        ##      --------------------------------------------------------------------------------------- ##
-        ##                                                                                              ##
-        ##################################################################################################
-        hbox = wx.BoxSizer()
-        vbox1 = wx.BoxSizer(wx.VERTICAL)
-        cGeneratorLabel = wx.StaticText(self, wx.ID_ANY, label = 'Circular Path Generator', style = wx.ALIGN_LEFT)
-        cGeneratorLabel.SetFont(self.font)
-        vbox1.Add(cGeneratorLabel, 1, flag = wx.TOP|wx.BOTTOM, border = 10)
-        hboxPoints = wx.BoxSizer()
-        noPointsLabel = wx.StaticText(self, wx.ID_ANY, label = 'No. Points: ')
-        hboxPoints.Add(noPointsLabel, 1, flag = wx.RIGHT, border = 5)
-        self.noPointsSc = wx.SpinCtrl(self, value = '0')
-        self.noPointsSc.SetRange(0, 100)
-        hboxPoints.Add(self.noPointsSc)
-        vbox1.Add(hboxPoints, 1, flag = wx.LEFT, border = 15)
-
-        hboxRadius = wx.BoxSizer()
-        radiusLabel = wx.StaticText(self, wx.ID_ANY, label = 'Radius (mm): ')
-        hboxRadius.Add(radiusLabel, 1, flag = wx.RIGHT, border = 5)
-        self.radiusSc = wx.SpinCtrl(self, value = '0')
-        self.radiusSc.SetRange(0, 100)
-        hboxRadius.Add(self.radiusSc)
-        vbox1.Add(hboxRadius, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartX = wx.BoxSizer()
-        startXLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start X: ')
-        hboxStartX.Add(startXLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startXSc = wx.SpinCtrl(self, value = '0')
-        self.startXSc.SetRange(0, 100)
-        hboxStartX.Add(self.startXSc)
-        vbox1.Add(hboxStartX, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartY = wx.BoxSizer()
-        startYLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start Y: ')
-        hboxStartY.Add(startYLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startYSc = wx.SpinCtrl(self, value = '0')
-        self.startYSc.SetRange(0, 100)
-        hboxStartY.Add(self.startYSc)
-        vbox1.Add(hboxStartY, 1, flag = wx.LEFT, border = 15)
-
-        hboxStartZ = wx.BoxSizer()
-        startZLabel = wx.StaticText(self, wx.ID_ANY, label = 'Start Z: ')
-        hboxStartZ.Add(startZLabel, 1, flag = wx.RIGHT, border = 5)
-        self.startZSc = wx.SpinCtrl(self, value = '0')
-        self.startZSc.SetRange(0, 100)
-        hboxStartZ.Add(self.startZSc)
-        vbox1.Add(hboxStartZ, 1, flag = wx.LEFT, border = 15)
-
-        hboxCameras = wx.BoxSizer()
-        noCamsLabel = wx.StaticText(self, wx.ID_ANY, label = 'No. Cams: ')
-        hboxCameras.Add(noCamsLabel, 1, flag = wx.RIGHT, border = 5)
-        self.noCamsSc = wx.SpinCtrl(self, value = '0')
-        self.noCamsSc.SetRange(0, 100)
-        hboxCameras.Add(self.noCamsSc)
-        vbox1.Add(hboxCameras, 1, flag = wx.LEFT, border = 15)
-        hbox.Add(vbox1)
-        
-        vbox2 = wx.BoxSizer(wx.VERTICAL)
-        self.vertextPhotoCb = wx.CheckBox(self, label = 'Take Photo at Each Vertex')
-        vbox2.Add(self.vertextPhotoCb)
-        self.generateCBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Circle')
-        vbox2.Add(self.generateCBtn, 1, flag = wx.TOP, border = 5)
-        self.generateSBtn = wx.Button(self, wx.ID_ANY, label = 'Generate Sphere')
-        vbox2.Add(self.generateSBtn, 1, flag = wx.TOP, border = 5)
-        hbox.Add(vbox2, 1, flag = wx.TOP|wx.LEFT, border = 30)
-
-        vbox3 = wx.BoxSizer(wx.VERTICAL)
-        self.rpmLabel = wx.StaticText(self, wx.ID_ANY, label = 'rpm: ')
-        vbox3.Add(self.rpmLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.xLabel = wx.StaticText(self, wx.ID_ANY, label = 'X: ')
-        vbox3.Add(self.xLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.yLabel = wx.StaticText(self, wx.ID_ANY, label = 'Y: ')
-        vbox3.Add(self.yLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.zLabel = wx.StaticText(self, wx.ID_ANY, label = 'Z: ')
-        vbox3.Add(self.zLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.bLabel = wx.StaticText(self, wx.ID_ANY, label = 'B: ')
-        vbox3.Add(self.bLabel, 1, flag = wx.BOTTOM, border = 10)
-        self.cLabel = wx.StaticText(self, wx.ID_ANY, label = 'C: ')
-        vbox3.Add(self.cLabel)
-        hbox.Add(vbox3, 1, flag = wx.TOP|wx.LEFT, border = 30)
-        
-        return hbox
 
     def InitCamControl(self):
         ## LAYOUT
@@ -336,48 +221,53 @@ class LeftPanel(wx.Panel):
 
         hbox = wx.BoxSizer()
         vbox1 = wx.BoxSizer(wx.VERTICAL)
-        hboxRemote = wx.BoxSizer()
-        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter')
-        hboxRemote.Add(self.remoteRb)
+        self.remoteRb = wx.RadioButton(self, label = 'Remote Shutter', style=wx.RB_GROUP)
+        vbox1.Add(self.remoteRb)
 
-        vboxAFShutter = wx.BoxSizer(wx.VERTICAL)
+        vboxAFShutter = wx.BoxSizer()
         self.afBtn = wx.Button(self, wx.ID_ANY, label = 'A/F')
         vboxAFShutter.Add(self.afBtn)
         self.shutterBtn = wx.Button(self, wx.ID_ANY, label = 'Shutter')
         vboxAFShutter.Add(self.shutterBtn)
-        hboxRemote.Add(vboxAFShutter, 1, flag = wx.LEFT, border = 5)
-        vbox1.Add(hboxRemote)
+        vbox1.Add(vboxAFShutter, 1, flag = wx.LEFT, border = 5)
 
-        hboxUSB = wx.BoxSizer()
-        self.usbRb = wx.RadioButton(self, label = 'USB/PTP')
-        hboxUSB.Add(self.usbRb)
-        
-        vboxF = wx.BoxSizer(wx.VERTICAL)
+        self.usbRb = wx.RadioButton(self, label = 'USB')
+        vbox1.Add(self.usbRb)
+        self.Bind(wx.EVT_RADIOBUTTON, self.onRemoteUSBRadioGroup)
+
+        self.edsdkRb = wx.RadioButton(self, label = 'EDSDK', style=wx.RB_GROUP)
+        vbox1.Add(self.edsdkRb, flag = wx.LEFT | wx.TOP, border = 10)
+        self.edsdkRb.SetValue(False)
+        self.edsdkRb.Disable()
+
+        self.ptpRb = wx.RadioButton(self, label = 'PTP')
+        vbox1.Add(self.ptpRb, flag = wx.LEFT | wx.TOP, border = 10)
+        self.ptpRb.Disable()
+
+        hboxF = wx.BoxSizer()
         self.frBtn = wx.Button(self, wx.ID_ANY, label = 'F-')
-        vboxF.Add(self.frBtn)
+        hboxF.Add(self.frBtn)
         self.fiBtn = wx.Button(self, wx.ID_ANY, label = 'F++')
-        vboxF.Add(self.fiBtn)
-        hboxUSB.Add(vboxF, 1, flag = wx.LEFT, border = 5)
-        vbox1.Add(hboxUSB, 1, flag = wx.TOP, border = 5)
+        hboxF.Add(self.fiBtn)
+        vbox1.Add(hboxF, 1, flag = wx.TOP, border = 15)
         hbox.Add(vbox1, 1, flag = wx.LEFT, border = 30)
 
         vbox2 = wx.BoxSizer(wx.VERTICAL)
         self.takePictureBtn = wx.Button(self, wx.ID_ANY, label = 'Take Picture')
         vbox2.Add(self.takePictureBtn)
         self.takePictureBtn.Bind(wx.EVT_BUTTON, self.OnTakePicture)
+
+        self.startEvfBtn = wx.Button(self, wx.ID_ANY, label = 'Start Liveview')
+        vbox2.Add(self.startEvfBtn)
+        self.startEvfBtn.Bind(wx.EVT_BUTTON, self.onStartEvf)
         hbox.Add(vbox2, 1, flag = wx.LEFT, border = 10)
         vbox.Add(hbox, 1, flag = wx.LEFT)
 
         return vbox
 
-    def SetDialog(self, message):
-        msg = wx.MessageDialog(self, message, "Confirm Exit", wx.OK)
-        msg.ShowModal()
-        msg.Destroy()
-
     def OnMove(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.GetWindow2().canvas
+            self.canvas = self.visualizer_panel.canvas
             
         cameraOption = self.masterCombo.GetSelection()
         if cameraOption != -1:
@@ -385,7 +275,7 @@ class LeftPanel(wx.Panel):
             direction = event.GetEventObject().direction
             
             if axis in [Axis.X, Axis.Y, Axis.Z]:
-                cmdBox = self.parent.GetWindow2().cmd
+                cmdBox = self.auiManager.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
                 
                     
@@ -400,28 +290,75 @@ class LeftPanel(wx.Panel):
                     size = -size
             
                 
-            self.parent.GetParent().camera_models[cameraOption].onMove(axis, size)
+            self.parent.camera_models[cameraOption].onMove(axis, size)
             self.canvas.OnDraw()
         else:
-            self.SetDialog("Please select the camera to control")
+            util.set_dialog("Please select the camera to control.")
 
     def OnFocusCenter(self, event):
         if self.canvas == "":
-            self.canvas = self.parent.GetWindow2().canvas
+            self.canvas = self.visualizer_panel.canvas
 
-        if self.parent.GetParent().selected_cam is not None:
-            self.parent.GetParent().camera_models[cameraOption].onFocusCenter()
+        if self.parent.selected_cam is not None:
+            self.parent.camera_models[cameraOption].onFocusCenter()
         else:
-            self.SetDialog("Please select the camera to control")
+            util.set_dialog("Please select the camera to control.")
 
     def OnMasterCombo(self, event):
-        choice = self.masterCombo.GetSelection()
-        self.parent.GetParent().selected_cam = self.parent.GetParent().camera_models[choice]
-        self.parent.GetParent().openCameraSession()
+        choice = self.masterCombo.GetStringSelection()
+        id = int(choice[-1]) - 1
+        self.parent.cam_list.set_selected_cam_by_id(id)
         
     def OnTakePicture(self, event):
         cameraOption = self.masterCombo.GetSelection()
-        if self.parent.GetParent().selected_cam is not None:
-            self.parent.GetParent().selected_cam.shoot()
+        if self.parent.cam_list.selected_camera is not None:
+            self.parent.cam_list.selected_camera.shoot()
         else:
-            pass
+            util.set_dialog("Please select the camera to take a picture.")
+
+    def onRemoteUSBRadioGroup(self, event):
+        rb = event.GetEventObject()
+
+        self.visualizer_panel.canvas.camera_objects = []
+        self.visualizer_panel.canvas.OnDraw()
+        self.masterCombo.Clear()
+
+        if rb.Label == "USB":
+            self.edsdkRb.Enable()
+            self.ptpRb.Enable()
+        elif rb.Label == "Remote Shutter":
+            self.edsdkRb.SetValue(False)
+            self.ptpRb.SetValue(False)
+            self.edsdkRb.Disable()
+            self.ptpRb.Disable()
+
+            if self.parent.is_edsdk_on:
+                self.parent.terminateEDSDK()
+        elif rb.Label == "EDSDK":
+            self.parent.initEDSDK()
+        else:
+            if self.parent.is_edsdk_on:
+                self.parent.terminateEDSDK()
+
+    def onDecreaseScale(self, event):
+        self.visualizer_panel.canvas.scale -= 0.1
+        self.visualizer_panel.canvas.OnDraw()
+
+    def onIncreaseScale(self, event):
+        self.visualizer_panel.canvas.scale += 0.1
+        self.visualizer_panel.canvas.OnDraw()
+
+    def onStartEvf(self, event):
+        if self.parent.cam_list.selected_camera is not None:
+            self.parent.cam_list.selected_camera.startEvf()
+            self.auiManager.addEvfPane()
+        else:
+            util.set_dialog("Please select the camera to start live view.")
+        
+    def onRefresh(self, event):
+        self.visualizer_panel.onClearCameras()
+        self.masterCombo.Clear()
+
+        if self.edsdkRb.GetValue():
+            self.parent.is_edsdk_on = False
+            self.parent.getCameraList()
