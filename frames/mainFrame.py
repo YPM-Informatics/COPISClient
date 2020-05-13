@@ -1,6 +1,6 @@
 import wx
 from ctypes import *
-from auiManager import AuiManager
+from controller.auiManager import AuiManager
 from components.toolBar import ToolBar
 from components.menuBar import MenuBar
 from components.statusBar import StatusBar
@@ -65,7 +65,7 @@ class MainFrame(wx.Frame):
         if self.is_edsdk_on:
             return
 
-        import edsdkObject
+        import controller.edsdkObject
 
         self.edsdkObject = edsdkObject
         self.edsdkObject.initialize(self.console_panel)
