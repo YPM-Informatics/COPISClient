@@ -1,6 +1,7 @@
 import wx
 from enums import Tool_Ids
 from frames.settingsFrame import SettingsFrame
+from controller.serialController import SerialController
 
 class ToolBar(wx.ToolBar):
     def __init__(self, parent):
@@ -8,6 +9,9 @@ class ToolBar(wx.ToolBar):
 
         # port and baud
         self.initPortBaudOptions()
+        self.controller = SerialController()
+        self.setPorts()
+        self.setBaudRates()
         self.AddStretchableSpace()
 
         ## play, pause and stop buttons to animate the commands
@@ -25,24 +29,22 @@ class ToolBar(wx.ToolBar):
 
         self.Realize()
         
-
     def initPortBaudOptions(self):
-        ## TO DO: replace port and baud choices with dynamically detected ones
         self.AddStretchableSpace()
         portLabel = wx.StaticText(self, id = wx.ID_ANY, label = "Port: ", style = wx.ALIGN_LEFT)
         self.AddControl(portLabel)
-        portCombo = wx.ComboBox(self, wx.ID_ANY, value = "", choices = ["Port 1", "Port 2", "Port 3"])
-        self.AddControl(portCombo)
+        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value = "")
+        self.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
+        self.AddControl(self.portCombo)
         baudLabel = wx.StaticText(self, id = wx.ID_ANY, label = " Baud: ", style = wx.ALIGN_RIGHT)
         self.AddControl(baudLabel)
-        baudCombo = wx.ComboBox(self, wx.ID_ANY, value = "", choices = ["Baud 1", "Baud 2", "Baud 3"])
-        self.AddControl(baudCombo)
+        self.baudCombo = wx.ComboBox(self, wx.ID_ANY, value = "")
+        self.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
+        self.AddControl(self.baudCombo)
 
-        ## TO DO: connect and disconnect functionalities
-        connectBtn = wx.Button(self, wx.ID_ANY, label = "Connect")
-        self.AddControl(connectBtn)
-        disconnectBtn = wx.Button(self, wx.ID_ANY, label = "Disconnect")
-        self.AddControl(disconnectBtn)
+        self.disconnectBtn = wx.Button(self, wx.ID_ANY, label = "Disconnect")
+        self.disconnectBtn.Bind(wx.EVT_BUTTON, self.onDisconnect)
+        self.AddControl(self.disconnectBtn)
 
     def initAnimationButtons(self):
         ## TO DO: 3D simulation functionalities -- play, pause and stop
@@ -76,3 +78,27 @@ class ToolBar(wx.ToolBar):
         if event.GetId() == Tool_Ids.Settings.value:
             settingsFrame = SettingsFrame()
             settingsFrame.Show()
+
+    def setPorts(self):
+        self.portCombo.Clear()
+        for port in self.controller.ports:
+            self.portCombo.Append(port)
+
+    def setBaudRates(self):
+        if self.controller.bauds:
+            self.baudCombo.Clear()
+            for baud in self.controller.bauds:
+                self.baudCombo.Append(str(baud))
+
+    def onSelectPort(self, event):
+        self.controller.setCurrentSerial(self.portCombo.GetStringSelection())
+        self.setBaudRates()
+
+    def onSelectBaud(self, event):
+        self.controller.selected_serial.baudrate = int(self.baudCombo.GetStringSelection())
+
+    def onDisconnect(self, event):
+        self.controller.selected_serial.close()
+        self.controller.selected_serial = None
+        self.setPorts()
+        self.baudCombo.Clear()
