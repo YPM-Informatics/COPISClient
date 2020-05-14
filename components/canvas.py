@@ -11,9 +11,15 @@ class CanvasBase(glcanvas.GLCanvas):
         self.init = False
         self.context = glcanvas.GLContext(self)
         
+        self.viewPoint = (0.0, 0.0, 0.0)
+
+        self.nearClip = -100.0
+        self.farClip = 100.0
+
         # initial mouse position
         self.lastx = self.x = 30
         self.lastz = self.z = 30
+        self.zoom = -1.5
         self.size = None
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -21,6 +27,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def OnEraseBackground(self, event):
         pass # Do nothing, to avoid flashing on MSW.
@@ -54,6 +61,23 @@ class CanvasBase(glcanvas.GLCanvas):
             self.x, self.z = evt.GetPosition()
             self.Refresh(False)
 
+    def OnMouseWheel(self, event):
+        wheelRotation = event.GetWheelRotation()
+        
+        if wheelRotation != 0:
+            if wheelRotation > 0:
+                self.zoom -= 0.1
+            elif wheelRotation < 0:
+                self.zoom += 0.1
+
+            if self.zoom < 0.1:
+                self.zoom = 0.1
+            elif self.zoom > 2.0:
+                self.zoom = 2.0
+
+        self.Refresh()
+
+
 class Canvas(CanvasBase):
     def __init__(self, parent):
         super().__init__(parent)
@@ -62,15 +86,15 @@ class Canvas(CanvasBase):
         self.camera_objects = []
 
     def InitGL(self):
-        global quadratic
-        quadratic = gluNewQuadric()
+        self.quadratic = gluNewQuadric()
         # set viewing projection
         glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
         glFrustum(-0.5, 0.5, -0.5, 0.5, 0.4, 5)
-
         # position viewer
         glMatrixMode(GL_MODELVIEW)
-        glTranslatef(0.0, 0.0, -1.5)
+        glShadeModel(GL_FLAT)
+        glTranslatef(self.viewPoint[0], self.viewPoint[1], self.zoom)
 
     def OnDraw(self):
         # clear color and depth buffers
@@ -89,7 +113,7 @@ class Canvas(CanvasBase):
         ## object
         glPushMatrix()
         glColor3ub(0, 0, 128)
-        gluSphere(quadratic, 0.2, 32, 32)
+        gluSphere(self.quadratic, 0.2, 32, 32)
         glPopMatrix()
         glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
         glRotatef((self.x - self.lastx) * xScale, 0.0, 0.0, 1.0)
