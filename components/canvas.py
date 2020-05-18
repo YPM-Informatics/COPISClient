@@ -12,7 +12,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.context = glcanvas.GLContext(self)
         
         self.viewPoint = (0.0, 0.0, 0.0)
-
+        self.zoom = 1
         self.nearClip = -100.0
         self.farClip = 100.0
 
@@ -85,11 +85,16 @@ class Canvas(CanvasBase):
         self.scale = 1.0
         self.camera_objects = []
 
+        if self.size is None:
+            self.size = self.GetClientSize()
+
     def InitGL(self):
         self.quadratic = gluNewQuadric()
         # set viewing projection
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
+        w, h = self.size
+        #gluPerspective(self.zoom, w / h, self.nearClip, self.farClip)
         glFrustum(-0.5, 0.5, -0.5, 0.5, 0.4, 5)
         # position viewer
         glMatrixMode(GL_MODELVIEW)
@@ -101,9 +106,7 @@ class Canvas(CanvasBase):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self.InitGrid()
-
-        if self.size is None:
-            self.size = self.GetClientSize()
+        
         w, h = self.size
         w = max(w, 1.0)
         h = max(h, 1.0)
@@ -146,7 +149,6 @@ class Canvas(CanvasBase):
 
     def OnDrawSphere(self):
         pass
-
 
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):
