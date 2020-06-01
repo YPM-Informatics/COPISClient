@@ -160,6 +160,7 @@ class Canvas(CanvasBase):
              0.0, 0.0, 0.0,
              0.0, 1.0, 0.0)
 
+
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):
         self.id = id
