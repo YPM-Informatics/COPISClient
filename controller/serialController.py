@@ -22,5 +22,6 @@ class SerialController(object):
 
     def setCurrentSerial(self, port):
         self.selected_serial = serial.Serial(port)
+        self.selected_serial.close()
         self.bauds = self.getBaudRates()
 
