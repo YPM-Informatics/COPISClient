@@ -157,14 +157,14 @@ class ControllerPanel(wx.Panel):
         ddLabel = wx.StaticText(self, wx.ID_ANY, label = 'dd', style = wx.ALIGN_LEFT)
         hboxBcSize.Add(ddLabel)
         vboxBc.Add(hboxBcSize)
-        self.ciBtn = wx.Button(self, wx.ID_ANY, label = 'C++')
+        self.ciBtn = wx.Button(self, wx.ID_ANY, label = 'T++')
         self.ciBtn.axis = Axis.C
         self.ciBtn.direction = Axis.Plus
         vboxBc.Add(self.ciBtn, 1, flag = wx.LEFT, border = 88)
         self.ciBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         
         hboxB = wx.BoxSizer()
-        self.brBtn = wx.Button(self, wx.ID_ANY, label = 'B-')
+        self.brBtn = wx.Button(self, wx.ID_ANY, label = 'P-')
         self.brBtn.axis = Axis.B
         self.brBtn.direction = Axis.Minus
         hboxB.Add(self.brBtn)
@@ -172,13 +172,13 @@ class ControllerPanel(wx.Panel):
         self.cBtn = wx.Button(self, wx.ID_ANY, label = 'center')
         hboxB.Add(self.cBtn)
         self.cBtn.Bind(wx.EVT_BUTTON, self.OnFocusCenter)
-        self.biBtn = wx.Button(self, wx.ID_ANY, label = 'B++')
+        self.biBtn = wx.Button(self, wx.ID_ANY, label = 'P++')
         self.biBtn.axis = Axis.B
         self.biBtn.direction = Axis.Plus
         hboxB.Add(self.biBtn)
         self.biBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxBc.Add(hboxB)
-        self.crBtn = wx.Button(self, wx.ID_ANY, label = 'C-')
+        self.crBtn = wx.Button(self, wx.ID_ANY, label = 'T-')
         self.crBtn.axis = Axis.C
         self.crBtn.direction = Axis.Minus
         vboxBc.Add(self.crBtn, 1, flag = wx.LEFT, border = 88)

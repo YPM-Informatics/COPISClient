@@ -42,9 +42,9 @@ class ToolBar(wx.ToolBar):
         self.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
         self.AddControl(self.baudCombo)
 
-        self.disconnectBtn = wx.Button(self, wx.ID_ANY, label = "Disconnect")
-        self.disconnectBtn.Bind(wx.EVT_BUTTON, self.onDisconnect)
-        self.AddControl(self.disconnectBtn)
+        self.connectBtn = wx.Button(self, wx.ID_ANY, label = "Connect")
+        self.connectBtn.Bind(wx.EVT_BUTTON, self.onConnect)
+        self.AddControl(self.connectBtn)
 
     def initAnimationButtons(self):
         ## TO DO: 3D simulation functionalities -- play, pause and stop
@@ -97,8 +97,10 @@ class ToolBar(wx.ToolBar):
     def onSelectBaud(self, event):
         self.controller.selected_serial.baudrate = int(self.baudCombo.GetStringSelection())
 
-    def onDisconnect(self, event):
-        self.controller.selected_serial.close()
-        self.controller.selected_serial = None
-        self.setPorts()
-        self.baudCombo.Clear()
+    def onConnect(self, event):
+        if self.controller.selected_serial.is_open:
+            self.controller.selected_serial.close()
+            self.connectBtn.SetLabel('Connect')
+        else:
+            self.controller.selected_serial.open()
+            self.connectBtn.SetLabel('Disconnect')
