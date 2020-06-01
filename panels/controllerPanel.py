@@ -56,10 +56,10 @@ class ControllerPanel(wx.Panel):
         ##             |       |      |         ----------------- |      |        ----------------- | | | ##
         ##             |       |      -----------------------------      ---------------------------- | | ##
 	    ##             |       | hbox  ----------------------------                                   | | ##
-	    ##             |       | YzInc |         Y++         Z++  |                   T++             | | ##
+	    ##             |       | YzInc |         Y+          Z+   |                   T+              | | ##
 	    ##             |       |       ----------------------------                                   | | ##
 	    ##             |       | hboxX ---------------------------- hboxP --------------------------- | | ##
-	    ##             |       |       |    X-          X++       |       |     P-     c      P++   | | | ##
+	    ##             |       |       |    X-          X+        |       |     P-     c      P+    | | | ##
 	    ##             |       |       ----------------------------       --------------------------- | | ##
 	    ##             |       | hbox  ----------------------------                                   | | ##
 	    ##             |       | YzDec |         Y-          Z-   |                   T-              | | ##
@@ -107,12 +107,12 @@ class ControllerPanel(wx.Panel):
         vboxXyz.Add(hboxXyzSize)
         
         hboxYzInc = wx.BoxSizer()
-        self.yiBtn = wx.Button(self, wx.ID_ANY, label = 'Y++')
+        self.yiBtn = wx.Button(self, wx.ID_ANY, label = 'Y+')
         self.yiBtn.axis = Axis.Y
         self.yiBtn.direction = Axis.Plus
         hboxYzInc.Add(self.yiBtn, 1, flag = wx.LEFT|wx.RIGHT, border = 55)
         self.yiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.ziBtn = wx.Button(self, wx.ID_ANY, label = 'Z++')
+        self.ziBtn = wx.Button(self, wx.ID_ANY, label = 'Z+')
         self.ziBtn.axis = Axis.Z
         self.ziBtn.direction = Axis.Plus
         hboxYzInc.Add(self.ziBtn)
@@ -125,7 +125,7 @@ class ControllerPanel(wx.Panel):
         self.xrBtn.direction = Axis.Minus
         hboxX.Add(self.xrBtn)
         self.xrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.xiBtn = wx.Button(self, wx.ID_ANY, label = 'X++')
+        self.xiBtn = wx.Button(self, wx.ID_ANY, label = 'X+')
         self.xiBtn.axis = Axis.X
         self.xiBtn.direction = Axis.Plus
         hboxX.Add(self.xiBtn, 1, flag = wx.LEFT, border = 20)
@@ -157,7 +157,7 @@ class ControllerPanel(wx.Panel):
         ddLabel = wx.StaticText(self, wx.ID_ANY, label = 'dd', style = wx.ALIGN_LEFT)
         hboxBcSize.Add(ddLabel)
         vboxBc.Add(hboxBcSize)
-        self.ciBtn = wx.Button(self, wx.ID_ANY, label = 'T++')
+        self.ciBtn = wx.Button(self, wx.ID_ANY, label = 'T+')
         self.ciBtn.axis = Axis.C
         self.ciBtn.direction = Axis.Plus
         vboxBc.Add(self.ciBtn, 1, flag = wx.LEFT, border = 88)
@@ -172,7 +172,7 @@ class ControllerPanel(wx.Panel):
         self.cBtn = wx.Button(self, wx.ID_ANY, label = 'center')
         hboxB.Add(self.cBtn)
         self.cBtn.Bind(wx.EVT_BUTTON, self.OnFocusCenter)
-        self.biBtn = wx.Button(self, wx.ID_ANY, label = 'P++')
+        self.biBtn = wx.Button(self, wx.ID_ANY, label = 'P+')
         self.biBtn.axis = Axis.B
         self.biBtn.direction = Axis.Plus
         hboxB.Add(self.biBtn)
@@ -207,7 +207,7 @@ class ControllerPanel(wx.Panel):
 	    ##      |        | hbox ------------------------- |        | hboxUSB ---------------------------    | | ##
 	    ##      |        | ZInc | Z Increment (mm): ____| |        |         | USB/PTP  vboxF -------- |    | | ##
 	    ##      |        |      ------------------------- |        |         |                |  F-  | |    | | ##
-	    ##      |        | ------------                   |        |         |                |  F++ | |    | | ##
+	    ##      |        | ------------                   |        |         |                |  F+  | |    | | ##
 	    ##      |        | | Generate |                   |        |         |                -------- |    | | ##
 	    ##      |        | ------------                   |        |         ---------------------------    | | ##
 	    ##      |        ----------------------------------        ------------------------------------------ | ##
@@ -247,7 +247,7 @@ class ControllerPanel(wx.Panel):
         hboxF = wx.BoxSizer()
         self.frBtn = wx.Button(self, wx.ID_ANY, label = 'F-')
         hboxF.Add(self.frBtn)
-        self.fiBtn = wx.Button(self, wx.ID_ANY, label = 'F++')
+        self.fiBtn = wx.Button(self, wx.ID_ANY, label = 'F+')
         hboxF.Add(self.fiBtn)
         vbox1.Add(hboxF, 1, flag = wx.TOP, border = 15)
         hbox.Add(vbox1, 1, flag = wx.LEFT, border = 30)
@@ -269,8 +269,8 @@ class ControllerPanel(wx.Panel):
         if self.canvas == "":
             self.canvas = self.visualizer_panel.canvas
             
-        cameraOption = self.masterCombo.GetSelection()
-        if cameraOption != -1:
+        camId = self.masterCombo.GetSelection()
+        if camId != -1:
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
             
@@ -289,8 +289,9 @@ class ControllerPanel(wx.Panel):
                 if direction == Axis.Minus:
                     size = -size
             
-                
-            self.parent.camera_models[cameraOption].onMove(axis, size)
+            cam = self.parent.visualizer_panel.getCamById(camId)
+            if cam:
+                cam.onMove(axis, size)
             self.canvas.OnDraw()
         else:
             util.set_dialog("Please select the camera to control.")
@@ -300,7 +301,7 @@ class ControllerPanel(wx.Panel):
             self.canvas = self.visualizer_panel.canvas
 
         if self.parent.selected_cam is not None:
-            self.parent.camera_models[cameraOption].onFocusCenter()
+            self.parent.visualizer_panel.getCamById(self.parent.selected_cam.id).onFocusCenter()
         else:
             util.set_dialog("Please select the camera to control.")
 
@@ -310,7 +311,7 @@ class ControllerPanel(wx.Panel):
         self.parent.cam_list.set_selected_cam_by_id(id)
         
     def OnTakePicture(self, event):
-        cameraOption = self.masterCombo.GetSelection()
+        camId = self.masterCombo.GetSelection()
         if self.parent.cam_list.selected_camera is not None:
             self.parent.cam_list.selected_camera.shoot()
         else:

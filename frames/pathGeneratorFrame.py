@@ -1,5 +1,4 @@
 import wx
-#from wx.lib.pubsub import Publisher
 
 class PathGeneratorFrame(wx.Frame):
     def __init__(self):

@@ -49,6 +49,8 @@ class MainFrame(wx.Frame):
         ## initialize advanced user interface manager and panes
         self.auiManager = AuiManager(self)
         self.console_panel = self.auiManager.GetPane("Console").window
+        self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
+        self.controller_panel = self.auiManager.GetPane('Controller').window
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
@@ -67,7 +69,7 @@ class MainFrame(wx.Frame):
 
         import controller.edsdkObject
 
-        self.edsdkObject = edsdkObject
+        self.edsdkObject = controller.edsdkObject
         self.edsdkObject.initialize(self.console_panel)
         self.is_edsdk_on = True
         self.getCameraList()
@@ -89,8 +91,8 @@ class MainFrame(wx.Frame):
         self.console_panel.print(message)
 
         for i in range(cam_count):
-            canvas = self.auiManager.GetPane('Visualizer').window.onDrawCamera(i)
-            self.auiManager.GetPane('Controller').window.masterCombo.Append("camera " + str(i + 1))
+            self.visualizer_panel.onDrawCamera(i)
+            self.controller_panel.masterCombo.Append("camera " + str(i + 1))
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:

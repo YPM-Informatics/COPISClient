@@ -51,3 +51,8 @@ class VisualizerPanel(wx.Panel):
         self.canvas.camera_objects = []
         self.canvas.SwapBuffers()
  
+    def getCamById(self, id):
+        for cam in self.canvas.camera_objects:
+            if cam.id == id:
+                return cam
+        return None
