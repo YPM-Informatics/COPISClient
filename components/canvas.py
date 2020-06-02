@@ -42,13 +42,8 @@ class CanvasBase(GLCanvas):
 
     def DoSetViewport(self):
         width, height = size = self.size = self.GetClientSize()
-        self.SetCurrent(self.context)
-
-        # set viewport dimensions to square (may change later)
-        min_size = min(width, height)
-        # glViewport(0, 0, min_size, min_size)
         glViewport(0, 0, width, height)
-
+        self.SetCurrent(self.context)
         self.aspect_ratio = width / height;
 
     def OnPaint(self, event):
@@ -63,7 +58,7 @@ class CanvasBase(GLCanvas):
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
     def OnMouseUp(self, evt):
-        # clear "residual movement"
+        # clear residual movement
         self.lastx, self.lastz = self.x, self.z
         self.ReleaseMouse()
 
