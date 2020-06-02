@@ -38,6 +38,8 @@ class CanvasBase(glcanvas.GLCanvas):
     def DoSetViewport(self):
         size = self.size = self.GetClientSize()
         self.SetCurrent(self.context)
+
+        # set viewport dimensions to square (may change later)
         min_size = min(size.width, size.height)
         glViewport(0, 0, min_size, min_size)
         
