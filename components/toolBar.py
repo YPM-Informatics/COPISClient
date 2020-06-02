@@ -3,6 +3,7 @@ from enums import Tool_Ids
 from frames.settingsFrame import SettingsFrame
 from controller.serialController import SerialController
 
+
 class ToolBar(wx.ToolBar):
     def __init__(self, parent):
         super(ToolBar, self).__init__(parent)
@@ -14,65 +15,65 @@ class ToolBar(wx.ToolBar):
         self.setBaudRates()
         self.AddStretchableSpace()
 
-        ## play, pause and stop buttons to animate the commands
+        # play, pause and stop buttons to animate the commands
         self.initAnimationButtons()
         self.AddStretchableSpace()
 
-        ## import file
+        # import file
         self.initImport()
         self.AddStretchableSpace()
 
-        ## general settings
+        # general settings
         self.initSetting()
 
         self.Bind(wx.EVT_TOOL, self.handleTool)
 
         self.Realize()
-        
+
     def initPortBaudOptions(self):
         self.AddStretchableSpace()
-        portLabel = wx.StaticText(self, id = wx.ID_ANY, label = "Port: ", style = wx.ALIGN_LEFT)
+        portLabel = wx.StaticText(self, id=wx.ID_ANY, label="Port: ", style=wx.ALIGN_LEFT)
         self.AddControl(portLabel)
-        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value = "")
+        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value="")
         self.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
         self.AddControl(self.portCombo)
-        baudLabel = wx.StaticText(self, id = wx.ID_ANY, label = " Baud: ", style = wx.ALIGN_RIGHT)
+        baudLabel = wx.StaticText(self, id=wx.ID_ANY, label=" Baud: ", style=wx.ALIGN_RIGHT)
         self.AddControl(baudLabel)
-        self.baudCombo = wx.ComboBox(self, wx.ID_ANY, value = "")
+        self.baudCombo = wx.ComboBox(self, wx.ID_ANY, value="")
         self.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
         self.AddControl(self.baudCombo)
 
-        self.connectBtn = wx.Button(self, wx.ID_ANY, label = "Connect")
+        self.connectBtn = wx.Button(self, wx.ID_ANY, label="Connect")
         self.connectBtn.Bind(wx.EVT_BUTTON, self.onConnect)
         self.AddControl(self.connectBtn)
 
     def initAnimationButtons(self):
-        ## TO DO: 3D simulation functionalities -- play, pause and stop
+        # TODO: 3D simulation functionalities -- play, pause and stop
         playImg = wx.Image('img/play.png')
         playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp = "Play the simulation of commands.")
+        self.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp="Play the simulation of commands.")
 
         pauseImg = wx.Image('img/pause.png')
         pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp = "Pause the simulation.")
-        
+        self.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp="Pause the simulation.")
+
         stopImg = wx.Image('img/stop.png')
         stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp = "Stop the simulation.")
+        self.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp="Stop the simulation.")
 
     def initImport(self):
-        ## TO DO: browsing the file system and importing file functionalities
-        fileLabel = wx.StaticText(self, id = wx.ID_ANY, label = "File: ", style = wx.ALIGN_LEFT)
+        # TODO: browsing the file system and importing file functionalities
+        fileLabel = wx.StaticText(self, id=wx.ID_ANY, label="File: ", style=wx.ALIGN_LEFT)
         self.AddControl(fileLabel)
         fileBox = wx.TextCtrl(self)
         self.AddControl(fileBox)
-        loadBtn = wx.Button(self, wx.ID_ANY, label = "Browse")
+        loadBtn = wx.Button(self, wx.ID_ANY, label="Browse")
         self.AddControl(loadBtn)
 
     def initSetting(self):
         settingImg = wx.Image('img/setting.png')
         settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp = "Set general settings of the application.")
+        self.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp="Set general settings of the application.")
 
     def handleTool(self, event):
         if event.GetId() == Tool_Ids.Settings.value:

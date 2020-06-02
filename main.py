@@ -6,11 +6,13 @@ from frames.mainFrame import MainFrame
 
 APP_EXIT = 1
 
+
 class COPISApp(wx.App):
     def OnInit(self):
         self.frame = MainFrame(None)
         self.frame.Show()
         return True
+
 
 if __name__ == '__main__':
     app = COPISApp()
