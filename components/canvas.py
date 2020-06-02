@@ -76,7 +76,6 @@ class CanvasBase(glcanvas.GLCanvas):
 
         self.Refresh()
 
-
 class Canvas(CanvasBase):
     def __init__(self, parent):
         super().__init__(parent)
