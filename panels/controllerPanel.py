@@ -91,6 +91,11 @@ class ControllerPanel(wx.Panel):
         self.refreshBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh')
         self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
         hboxTop.Add(self.refreshBtn)
+        hboxTop.AddStretchSpacer()
+
+        self.createVCamBtn = wx.Button(self, wx.ID_ANY, label = "Create 3D camera")
+        self.createVCamBtn.Bind(wx.EVT_BUTTON, self.onCreateVirtualCam)
+        hboxTop.Add(self.createVCamBtn, flag = wx.ALIGN_RIGHT)
         vboxPositioning.Add(hboxTop, 0.5 , flag = wx.LEFT|wx.BOTTOM|wx.EXPAND, border = 15)
 
         hboxXyzbc = wx.BoxSizer()
@@ -307,8 +312,10 @@ class ControllerPanel(wx.Panel):
 
     def OnMasterCombo(self, event):
         choice = self.masterCombo.GetStringSelection()
-        id = int(choice[-1]) - 1
-        self.parent.cam_list.set_selected_cam_by_id(id)
+        id = int(choice[-1])
+
+        if self.parent.cam_list:
+            self.parent.cam_list.set_selected_cam_by_id(id)
         
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
@@ -363,3 +370,7 @@ class ControllerPanel(wx.Panel):
         if self.edsdkRb.GetValue():
             self.parent.is_edsdk_on = False
             self.parent.getCameraList()
+
+    def onCreateVirtualCam(self, event):
+        cam = self.parent.visualizer_panel.onDrawCamera()
+        self.parent.controller_panel.masterCombo.Append("camera " + str(cam.id))

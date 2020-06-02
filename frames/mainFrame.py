@@ -91,8 +91,8 @@ class MainFrame(wx.Frame):
         self.console_panel.print(message)
 
         for i in range(cam_count):
-            self.visualizer_panel.onDrawCamera(i)
-            self.controller_panel.masterCombo.Append("camera " + str(i + 1))
+            cam = self.visualizer_panel.onDrawCamera(i)
+            self.controller_panel.masterCombo.Append("camera " + str(cam.id))
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:
