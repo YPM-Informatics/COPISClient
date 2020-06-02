@@ -26,7 +26,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def OnEraseBackground(self, event):
         pass # Do nothing, to avoid flashing on MSW.
@@ -38,7 +38,8 @@ class CanvasBase(glcanvas.GLCanvas):
     def DoSetViewport(self):
         size = self.size = self.GetClientSize()
         self.SetCurrent(self.context)
-        glViewport(0, 0, size.width, size.height)
+        min_size = min(size.width, size.height)
+        glViewport(0, 0, min_size, min_size)
         
     def OnPaint(self, event):
         self.SetCurrent(self.context)
