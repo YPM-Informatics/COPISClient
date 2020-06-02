@@ -12,6 +12,7 @@ class CanvasBase(GLCanvas):
     MAX_ZOOM = 5.0
     NEAR_CLIP = 3.0
     FAR_CLIP = 7.0
+    ASPECT_CONSTRAINT = 1.9
 
     def __init__(self, parent):
         GLCanvas.__init__(self, parent, -1)
@@ -100,7 +101,7 @@ class Canvas(CanvasBase):
     def InitGL(self):
         self.quadratic = gluNewQuadric()
         # set viewing projection
-        self.SetProjectionMatrix()
+        self.setProjectionMatrix()
 
         # initialize view
         glMatrixMode(GL_MODELVIEW)
@@ -113,7 +114,7 @@ class Canvas(CanvasBase):
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        self.SetProjectionMatrix()
+        self.setProjectionMatrix()
 
         w, h = self.size
         w = max(w, 1.0)
@@ -159,9 +160,14 @@ class Canvas(CanvasBase):
     def OnDrawSphere(self):
         pass
 
-    def SetProjectionMatrix(self):
+    def setProjectionMatrix(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
+
+        # setProjectionMatrix is called during OnDraw so this does not work right now
+        # if self.aspect_ratio < self.ASPECT_CONSTRAINT:
+        #     self.zoom *= self.aspect_ratio / self.ASPECT_CONSTRAINT
+
         gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.aspect_ratio, self.NEAR_CLIP, self.FAR_CLIP)
         # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
 
