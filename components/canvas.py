@@ -46,9 +46,10 @@ class CanvasBase(GLCanvas):
 
         # set viewport dimensions to square (may change later)
         min_size = min(width, height)
-        glViewport(0, 0, min_size, min_size)
+        # glViewport(0, 0, min_size, min_size)
+        glViewport(0, 0, width, height)
 
-        aspect = size.width / size.height;
+        self.aspect_ratio = width / height;
 
     def OnPaint(self, event):
         self.SetCurrent(self.context)
@@ -98,7 +99,7 @@ class Canvas(CanvasBase):
 
         if self.size is None:
             self.size = self.GetClientSize()
-            self.w, self.h = self.size
+            # self.w, self.h = self.size
 
     def InitGL(self):
         self.quadratic = gluNewQuadric()
@@ -117,13 +118,6 @@ class Canvas(CanvasBase):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self.setProjectionMatrix()
-
-        # there seems to be a difference between the commented chunk
-        # and the one below, but I'm not sure why they're different
-        # w = max(self.w, 1.0)
-        # h = max(self.h, 1.0)
-        # xScale = 180.0 / w
-        # zScale = 180.0 / h
 
         w, h = self.size
         w = max(w, 1.0)
@@ -172,14 +166,9 @@ class Canvas(CanvasBase):
     def setProjectionMatrix(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-
-        if self.w / self.h < 1:
-            self.zoom *= self.w / self.h
-
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.NEAR_CLIP, self.FAR_CLIP)
+        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.aspect_ratio, self.NEAR_CLIP, self.FAR_CLIP)
         # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
 
-        # set to position viewer
         glMatrixMode(GL_MODELVIEW)
 
 
