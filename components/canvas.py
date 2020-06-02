@@ -13,7 +13,6 @@ class CanvasBase(glcanvas.GLCanvas):
         
         self.viewPoint = (0.0, 0.0, 0.0)
         self.zoom = 1
-        self.lastZoom = 1
         self.nearClip = 3.0
         self.farClip = 7.0
 
@@ -70,7 +69,6 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnMouseWheel(self, event):
         wheelRotation = event.GetWheelRotation()
-        self.lastZoom = self.zoom
 
         if wheelRotation != 0:
             if wheelRotation > 0:
