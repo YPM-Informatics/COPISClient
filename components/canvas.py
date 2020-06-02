@@ -102,7 +102,7 @@ class Canvas(CanvasBase):
         # set viewing projection
         self.setProjectionMatrix()
 
-        # set camera
+        # initialize view
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0,
@@ -115,6 +115,8 @@ class Canvas(CanvasBase):
 
         self.setProjectionMatrix()
 
+        # there seems to be a difference between the commented chunk
+        # and the one below, but I'm not sure why they're different
         # w = max(self.w, 1.0)
         # h = max(self.h, 1.0)
         # xScale = 180.0 / w
@@ -171,8 +173,8 @@ class Canvas(CanvasBase):
         if self.w / self.h < 1:
             self.zoom *= self.w / self.h
 
-        # gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
-        glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
+        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
+        # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
 
         # set to position viewer
         glMatrixMode(GL_MODELVIEW)
