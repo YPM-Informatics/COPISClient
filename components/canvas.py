@@ -42,8 +42,9 @@ class CanvasBase(GLCanvas):
 
     def DoSetViewport(self):
         width, height = size = self.size = self.GetClientSize()
-        glViewport(0, 0, width, height)
         self.SetCurrent(self.context)
+
+        glViewport(0, 0, width, height)
         self.aspect_ratio = width / height;
 
     def OnPaint(self, event):
@@ -99,7 +100,7 @@ class Canvas(CanvasBase):
     def InitGL(self):
         self.quadratic = gluNewQuadric()
         # set viewing projection
-        self.setProjectionMatrix()
+        self.SetProjectionMatrix()
 
         # initialize view
         glMatrixMode(GL_MODELVIEW)
@@ -112,7 +113,7 @@ class Canvas(CanvasBase):
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        self.setProjectionMatrix()
+        self.SetProjectionMatrix()
 
         w, h = self.size
         w = max(w, 1.0)
@@ -158,7 +159,7 @@ class Canvas(CanvasBase):
     def OnDrawSphere(self):
         pass
 
-    def setProjectionMatrix(self):
+    def SetProjectionMatrix(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.aspect_ratio, self.NEAR_CLIP, self.FAR_CLIP)
