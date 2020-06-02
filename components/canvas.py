@@ -1,22 +1,25 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import wx
-from wx import glcanvas
+from wx.glcanvas import GLCanvas
+from wx.glcanvas import GLContext
 import numpy as np
 from enums import Axis
 
 
-class CanvasBase(glcanvas.GLCanvas):
+class CanvasBase(GLCanvas):
+    MIN_ZOOM = 0.5
+    MAX_ZOOM = 5.0
+    NEAR_CLIP = 3.0
+    FAR_CLIP = 7.0
+
     def __init__(self, parent):
-        glcanvas.GLCanvas.__init__(self, parent, -1)
+        GLCanvas.__init__(self, parent, -1)
         self.init = False
-        self.context = glcanvas.GLContext(self)
+        self.context = GLContext(self)
 
         self.viewPoint = (0.0, 0.0, 0.0)
         self.zoom = 1
-        self.maxZoom = (0.5, 5.0)
-        self.nearClip = 3.0
-        self.farClip = 7.0
 
         # initial mouse position
         self.lastx = self.x = 30
@@ -78,10 +81,10 @@ class CanvasBase(glcanvas.GLCanvas):
             elif wheelRotation < 0:
                 self.zoom -= 0.1
 
-            if self.zoom < 0.8:
-                self.zoom = 0.8
-            elif self.zoom > 5.0:
-                self.zoom = 5.0
+            if self.zoom < self.MIN_ZOOM:
+                self.zoom = self.MIN_ZOOM
+            elif self.zoom > self.MAX_ZOOM:
+                self.zoom = self.MAX_ZOOM
 
         self.Refresh()
 
@@ -173,7 +176,7 @@ class Canvas(CanvasBase):
         if self.w / self.h < 1:
             self.zoom *= self.w / self.h
 
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
+        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.NEAR_CLIP, self.FAR_CLIP)
         # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
 
         # set to position viewer
