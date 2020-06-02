@@ -13,6 +13,7 @@ class CanvasBase(glcanvas.GLCanvas):
         
         self.viewPoint = (0.0, 0.0, 0.0)
         self.zoom = 1
+        self.lastZoom = 1
         self.nearClip = 3.0
         self.farClip = 7.0
 
@@ -26,7 +27,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        # self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def OnEraseBackground(self, event):
         pass # Do nothing, to avoid flashing on MSW.
@@ -36,12 +37,14 @@ class CanvasBase(glcanvas.GLCanvas):
         event.Skip()
 
     def DoSetViewport(self):
-        size = self.size = self.GetClientSize()
+        width, height = size = self.size = self.GetClientSize()
         self.SetCurrent(self.context)
 
         # set viewport dimensions to square (may change later)
-        min_size = min(size.width, size.height)
+        min_size = min(width, height)
         glViewport(0, 0, min_size, min_size)
+
+        aspect = size.width / size.height;
         
     def OnPaint(self, event):
         self.SetCurrent(self.context)
@@ -55,6 +58,8 @@ class CanvasBase(glcanvas.GLCanvas):
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
     def OnMouseUp(self, evt):
+        # clear "residual movement"
+        self.lastx, self.lastz = self.x, self.z
         self.ReleaseMouse()
 
     def OnMouseMotion(self, evt):
@@ -65,7 +70,8 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnMouseWheel(self, event):
         wheelRotation = event.GetWheelRotation()
-        
+        self.lastZoom = self.zoom
+
         if wheelRotation != 0:
             if wheelRotation > 0:
                 self.zoom += 0.1
@@ -95,23 +101,33 @@ class Canvas(CanvasBase):
         self.quadratic = gluNewQuadric()
         # set viewing projection
         self.setProjectionMatrix()
-        #glTranslatef(0.0, 0.0, -1.5)
+
+        # set camera
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(0.0, 0.0, 5.0,
+             0.0, 0.0, 0.0,
+             0.0, 1.0, 0.0)
 
     def OnDraw(self):
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self.setProjectionMatrix()
-        
-        w = max(self.w, 1.0)
-        h = max(self.h, 1.0)
+
+        # w = max(self.w, 1.0)
+        # h = max(self.h, 1.0)
+        # xScale = 180.0 / w
+        # zScale = 180.0 / h
+
+        w, h = self.size
+        w = max(w, 1.0)
+        h = max(h, 1.0)
         xScale = 180.0 / w
         zScale = 180.0 / h
-
-        glTranslatef(0.0, 0.0, -1.5)
-        glRotatef(15, 1.0, 0.0, 0.0)
-        glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
+        
         glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0)
+        glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
 
         self.InitGrid()
         
@@ -155,14 +171,11 @@ class Canvas(CanvasBase):
         if self.w / self.h < 1:
             self.zoom *= self.w / self.h
 
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
-        #glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
-        # position viewer
+        # gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
+        glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
+
+        # set to position viewer
         glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0.0, 0.0, 5.0,
-             0.0, 0.0, 0.0,
-             0.0, 1.0, 0.0)
 
 
 class Camera3D():
