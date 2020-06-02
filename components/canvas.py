@@ -107,6 +107,7 @@ class Canvas(CanvasBase):
 
         glTranslatef(0.0, 0.0, -1.5)
         glRotatef(15, 1.0, 0.0, 0.0)
+        glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
         glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0)
 
         self.InitGrid()
