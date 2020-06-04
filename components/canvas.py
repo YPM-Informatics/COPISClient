@@ -56,6 +56,30 @@ class CanvasBase(glcanvas.GLCanvas):
         self.CaptureMouse()
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
+        x = 2.0 * self.x / self.size[0] - 1.0
+        y = 1.0 - 2.0 * self.z / self.size[1]
+
+        rayClip = np.array([x,y, -1.0, 1.0])
+        mPersp = glGetDoublev(GL_PROJECTION_MATRIX)
+        rayEye = np.linalg.inv(mPersp).dot(rayClip)
+        rayEye[2] = -1.0
+        rayEye[3] = 0.0
+
+        view = glGetDoublev(GL_MODELVIEW_MATRIX)
+        rayWorld = np.linalg.inv(view).dot(rayEye)
+        norm = np.linalg.norm(rayWorld)
+        rayWorld = rayWorld/norm
+
+        camList = self.camera_objects
+
+        if camList:
+            print(camList[0].x)
+        else:
+            print("Ain't got no cams")
+
+        print(camList)
+########
+
     def OnMouseUp(self, evt):
         # clear "residual movement"
         self.lastx, self.lastz = self.x, self.z
@@ -248,7 +272,7 @@ class Camera3D():
         glEnd()	
 
         glPushMatrix()	
-        glColor3ub(255, 255, 255)	
+        glColor3ub(255, 0, 255)	
         glTranslated(-0.05, 0.0, 0.0)	
         quadric = gluNewQuadric()	
         glRotatef(90.0, 0.0, 1.0, 0.0)	
