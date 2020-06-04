@@ -1,8 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import wx
-from wx.glcanvas import GLCanvas
-from wx.glcanvas import GLContext
+from wx.glcanvas import GLCanvas, GLContext
 import numpy as np
 from enums import Axis
 
