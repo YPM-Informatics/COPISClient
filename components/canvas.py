@@ -1,20 +1,25 @@
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import wx
-from wx import glcanvas
+from wx.glcanvas import GLCanvas, GLContext
 import numpy as np
 from enums import Axis
 
-class CanvasBase(glcanvas.GLCanvas):
+
+class CanvasBase(GLCanvas):
+    MIN_ZOOM = 0.5
+    MAX_ZOOM = 5.0
+    NEAR_CLIP = 3.0
+    FAR_CLIP = 7.0
+    ASPECT_CONSTRAINT = 1.9
+
     def __init__(self, parent):
-        glcanvas.GLCanvas.__init__(self, parent, -1)
+        GLCanvas.__init__(self, parent, -1)
         self.init = False
-        self.context = glcanvas.GLContext(self)
-        
+        self.context = GLContext(self)
+
         self.viewPoint = (0.0, 0.0, 0.0)
         self.zoom = 1
-        self.nearClip = 3.0
-        self.farClip = 7.0
 
         # initial mouse position
         self.lastx = self.x = 30
@@ -29,7 +34,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def OnEraseBackground(self, event):
-        pass # Do nothing, to avoid flashing on MSW.
+        pass  # Do nothing, to avoid flashing on MSW.
 
     def OnSize(self, event):
         wx.CallAfter(self.DoSetViewport)
@@ -39,12 +44,9 @@ class CanvasBase(glcanvas.GLCanvas):
         width, height = size = self.size = self.GetClientSize()
         self.SetCurrent(self.context)
 
-        # set viewport dimensions to square (may change later)
-        min_size = min(width, height)
-        glViewport(0, 0, min_size, min_size)
+        glViewport(0, 0, width, height)
+        self.aspect_ratio = width / height;
 
-        aspect = size.width / size.height;
-        
     def OnPaint(self, event):
         self.SetCurrent(self.context)
         if not self.init:
@@ -57,7 +59,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
     def OnMouseUp(self, evt):
-        # clear "residual movement"
+        # clear residual movement
         self.lastx, self.lastz = self.x, self.z
         self.ReleaseMouse()
 
@@ -76,10 +78,10 @@ class CanvasBase(glcanvas.GLCanvas):
             elif wheelRotation < 0:
                 self.zoom -= 0.1
 
-            if self.zoom < 0.8:
-                self.zoom = 0.8
-            elif self.zoom > 3.0:
-                self.zoom = 3.0
+            if self.zoom < self.MIN_ZOOM:
+                self.zoom = self.MIN_ZOOM
+            elif self.zoom > self.MAX_ZOOM:
+                self.zoom = self.MAX_ZOOM
 
         self.Refresh()
 
@@ -93,7 +95,7 @@ class Canvas(CanvasBase):
 
         if self.size is None:
             self.size = self.GetClientSize()
-            self.w, self.h = self.size
+            # self.w, self.h = self.size
 
     def InitGL(self):
         self.quadratic = gluNewQuadric()
@@ -113,28 +115,21 @@ class Canvas(CanvasBase):
 
         self.setProjectionMatrix()
 
-        # there seems to be a difference between the commented chunk
-        # and the one below, but I'm not sure why they're different
-        # w = max(self.w, 1.0)
-        # h = max(self.h, 1.0)
-        # xScale = 180.0 / w
-        # zScale = 180.0 / h
-
         w, h = self.size
         w = max(w, 1.0)
         h = max(h, 1.0)
         xScale = 180.0 / w
         zScale = 180.0 / h
-        
+
         glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0)
         glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
 
         self.InitGrid()
-        
-        ## object
+
+        # object
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.2, 32, 32)
-       
+
         for cam in self.camera_objects:
             cam.onDraw()
 
@@ -142,7 +137,7 @@ class Canvas(CanvasBase):
 
     def InitGrid(self):
         glColor3ub(255, 255, 255)
-        
+
         glBegin(GL_LINES)
         for i in np.arange(-1, 1, 0.05):
             glVertex3f(i,  1, 0)
@@ -168,13 +163,13 @@ class Canvas(CanvasBase):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
-        if self.w / self.h < 1:
-            self.zoom *= self.w / self.h
+        # setProjectionMatrix is called during OnDraw so this does not work right now
+        # if self.aspect_ratio < self.ASPECT_CONSTRAINT:
+        #     self.zoom *= self.aspect_ratio / self.ASPECT_CONSTRAINT
 
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.w / self.h, self.nearClip, self.farClip)
+        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.aspect_ratio, self.NEAR_CLIP, self.FAR_CLIP)
         # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
 
-        # set to position viewer
         glMatrixMode(GL_MODELVIEW)
 
 
@@ -193,93 +188,93 @@ class Camera3D():
         self.angle = 0
         self.rotationVector = []
 
-    def onDraw(self):	
-        glPushMatrix()	
-        glTranslatef(self.x, self.y, self.z)	
-        if self.mode == 'normal':	
-            if self.b != 0.0:	
-                glRotatef(self.b, 0, 0, 1)	
-            if self.c != 0.0:	
-                glRotatef(self.c, 0, 1, 0)	
-        elif self.mode == 'rotate':	
-            glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])	
+    def onDraw(self):
+        glPushMatrix()
+        glTranslatef(self.x, self.y, self.z)
+        if self.mode == 'normal':
+            if self.b != 0.0:
+                glRotatef(self.b, 0, 0, 1)
+            if self.c != 0.0:
+                glRotatef(self.c, 0, 1, 0)
+        elif self.mode == 'rotate':
+            glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
 
-        glBegin(GL_QUADS)	
-        ## bottom	
-        glColor3ub(255, 255, 255)	
-        glVertex3f(-0.025, -0.05, -0.05)	
-        glVertex3f( 0.025, -0.05, -0.05)	
-        glVertex3f( 0.025, -0.05,  0.05)	
-        glVertex3f(-0.025, -0.05,  0.05)	
+        glBegin(GL_QUADS)
+        ## bottom
+        glColor3ub(255, 255, 255)
+        glVertex3f(-0.025, -0.05, -0.05)
+        glVertex3f( 0.025, -0.05, -0.05)
+        glVertex3f( 0.025, -0.05,  0.05)
+        glVertex3f(-0.025, -0.05,  0.05)
 
-        ## right	
-        glColor3ub(255, 255, 255)	
-        glVertex3f(-0.025,  0.05, -0.05)	
-        glVertex3f( 0.025,  0.05, -0.05)	
-        glVertex3f( 0.025, -0.05, -0.05)	
+        ## right
+        glColor3ub(255, 255, 255)
+        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f( 0.025,  0.05, -0.05)
+        glVertex3f( 0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05, -0.05)
 
         ## top
-        glColor3ub(255, 255, 255)	
-        glVertex3f(-0.025,  0.05, -0.05)	
-        glVertex3f( 0.025,  0.05, -0.05)	
-        glVertex3f( 0.025,  0.05,  0.05)	
-        glVertex3f(-0.025,  0.05,  0.05)	
+        glColor3ub(255, 255, 255)
+        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f( 0.025,  0.05, -0.05)
+        glVertex3f( 0.025,  0.05,  0.05)
+        glVertex3f(-0.025,  0.05,  0.05)
 
-        ## left	
-        glColor3ub(255, 255, 255)	
-        glVertex3f(-0.025, -0.05,  0.05)	
-        glVertex3f( 0.025, -0.05,  0.05)	
-        glVertex3f( 0.025,  0.05,  0.05)	
-        glVertex3f(-0.025,  0.05,  0.05)	
+        ## left
+        glColor3ub(255, 255, 255)
+        glVertex3f(-0.025, -0.05,  0.05)
+        glVertex3f( 0.025, -0.05,  0.05)
+        glVertex3f( 0.025,  0.05,  0.05)
+        glVertex3f(-0.025,  0.05,  0.05)
 
-        ## back	
-        glColor3ub(255, 255, 255)	
-        glVertex3f( 0.025, -0.05, -0.05)	
-        glVertex3f( 0.025, -0.05,  0.05)	
-        glVertex3f( 0.025,  0.05,  0.05)	
+        ## back
+        glColor3ub(255, 255, 255)
+        glVertex3f( 0.025, -0.05, -0.05)
+        glVertex3f( 0.025, -0.05,  0.05)
+        glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025,  0.05, -0.05)
 
-        ## front	
-        glColor3ub(255, 255, 255)	
-        glVertex3f(-0.025, -0.05, -0.05)	
-        glVertex3f(-0.025, -0.05,  0.05)	
-        glVertex3f(-0.025,  0.05,  0.05)	
-        glVertex3f(-0.025,  0.05, -0.05)	
-        glEnd()	
+        ## front
+        glColor3ub(255, 255, 255)
+        glVertex3f(-0.025, -0.05, -0.05)
+        glVertex3f(-0.025, -0.05,  0.05)
+        glVertex3f(-0.025,  0.05,  0.05)
+        glVertex3f(-0.025,  0.05, -0.05)
+        glEnd()
 
-        glPushMatrix()	
-        glColor3ub(255, 255, 255)	
-        glTranslated(-0.05, 0.0, 0.0)	
-        quadric = gluNewQuadric()	
-        glRotatef(90.0, 0.0, 1.0, 0.0)	
-        gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)	
-        gluDeleteQuadric(quadric)	
-        glPopMatrix()	
-        glPopMatrix()	
+        glPushMatrix()
+        glColor3ub(255, 255, 255)
+        glTranslated(-0.05, 0.0, 0.0)
+        quadric = gluNewQuadric()
+        glRotatef(90.0, 0.0, 1.0, 0.0)
+        gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)
+        gluDeleteQuadric(quadric)
+        glPopMatrix()
+        glPopMatrix()
 
-    def getRotationAngle(self, v1, v2):	
-        v1_u = self.getUnitVector(v1)	
-        v2_u = self.getUnitVector(v2)	
-        return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1, 1)))	
+    def getRotationAngle(self, v1, v2):
+        v1_u = self.getUnitVector(v1)
+        v2_u = self.getUnitVector(v2)
+        return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1, 1)))
 
-    def getUnitVector(self, vector):	
-        return vector / np.linalg.norm(vector)	
+    def getUnitVector(self, vector):
+        return vector / np.linalg.norm(vector)
 
-    def onFocusCenter(self):	
-        self.mode = 'rotate'	
-        cameraCenterPoint = (self.x, self.y, self.z)	
-        currentFacingPoint = (self.x - 0.5, self.y, self.z)	
-        desirableFacingPoint = (0.0, 0.0, 0.0)	
+    def onFocusCenter(self):
+        self.mode = 'rotate'
+        cameraCenterPoint = (self.x, self.y, self.z)
+        currentFacingPoint = (self.x - 0.5, self.y, self.z)
+        desirableFacingPoint = (0.0, 0.0, 0.0)
 
-        v1 = np.subtract(currentFacingPoint, cameraCenterPoint)	
-        v2 = np.subtract(desirableFacingPoint, cameraCenterPoint)	
+        v1 = np.subtract(currentFacingPoint, cameraCenterPoint)
+        v2 = np.subtract(desirableFacingPoint, cameraCenterPoint)
 
-        self.angle = self.getRotationAngle(v1, v2)	
-        self.rotationVector = np.cross(self.getUnitVector(v1), self.getUnitVector(v2))	
-        self.onDraw()	
+        self.angle = self.getRotationAngle(v1, v2)
+        self.rotationVector = np.cross(self.getUnitVector(v1), self.getUnitVector(v2))
+        self.onDraw()
 
-    def getZbyAngle(self, angle):	
+    def getZbyAngle(self, angle):
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
     def onMove(self, axis, amount):
