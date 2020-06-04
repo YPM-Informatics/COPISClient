@@ -45,7 +45,7 @@ class CanvasBase(GLCanvas):
         self.SetCurrent(self.context)
 
         glViewport(0, 0, width, height)
-        self.aspect_ratio = width / height;
+        self.aspect_ratio = width / height
 
     def OnPaint(self, event):
         self.SetCurrent(self.context)
