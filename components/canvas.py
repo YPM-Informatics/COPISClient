@@ -56,28 +56,40 @@ class CanvasBase(glcanvas.GLCanvas):
         self.CaptureMouse()
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
+        #Get x,y coords of mouse click in Normalized Device Coords
         x = 2.0 * self.x / self.size[0] - 1.0
         y = 1.0 - 2.0 * self.z / self.size[1]
 
+        #4D homogenous clip coordinates
         rayClip = np.array([x,y, -1.0, 1.0])
+
+        #4D Eye (Camera) coordinates)
         mPersp = glGetDoublev(GL_PROJECTION_MATRIX)
         rayEye = np.linalg.inv(mPersp).dot(rayClip)
         rayEye[2] = -1.0
         rayEye[3] = 0.0
-
+        
+        #4D World Coordinates
         view = glGetDoublev(GL_MODELVIEW_MATRIX)
         rayWorld = np.linalg.inv(view).dot(rayEye)
+        #Normalize
         norm = np.linalg.norm(rayWorld)
         rayWorld = rayWorld/norm
-
+        print(rayWorld)
         camList = self.camera_objects
 
-        if camList:
-            print(camList[0].x)
-        else:
-            print("Ain't got no cams")
+        for cam in camList:
+            if rayWorld[0] < cam.x + 0.05 and rayWorld[0] > cam.x - 0.05:
+                print("In x")
+            else:
+                print(rayWorld[0], cam.x)
 
-        print(camList)
+        # if camList:
+        #     print(camList[0].x)
+        # else:
+        #     print("No cams")
+
+        # print(GL_QUADS[0])
 ########
 
     def OnMouseUp(self, evt):
