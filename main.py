@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import wx
 import sys
+import wx
 from frames.mainFrame import MainFrame
 
 APP_EXIT = 1
