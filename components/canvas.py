@@ -1,12 +1,15 @@
-from OpenGL.GL import *
-from OpenGL.GLU import *
+import sys
 import wx
-from wx.glcanvas import GLCanvas, GLContext
+
+from wx import glcanvas
 import numpy as np
 from enums import Axis
 
+from OpenGL.GL import *
+from OpenGL.GLU import *
 
-class CanvasBase(GLCanvas):
+
+class CanvasBase(glcanvas.GLCanvas):
     MIN_ZOOM = 0.5
     MAX_ZOOM = 5.0
     NEAR_CLIP = 3.0
@@ -14,9 +17,9 @@ class CanvasBase(GLCanvas):
     ASPECT_CONSTRAINT = 1.9
 
     def __init__(self, parent):
-        GLCanvas.__init__(self, parent, -1)
+        glcanvas.GLCanvas.__init__(self, parent, -1)
         self.init = False
-        self.context = GLContext(self)
+        self.context = glcanvas.GLContext(self)
 
         self.viewPoint = (0.0, 0.0, 0.0)
         self.zoom = 1
@@ -25,51 +28,51 @@ class CanvasBase(GLCanvas):
         self.lastx = self.x = 30
         self.lastz = self.z = 30
         self.size = None
-        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
-        self.Bind(wx.EVT_SIZE, self.OnSize)
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
-        self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
-        self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.onEraseBackground)
+        self.Bind(wx.EVT_SIZE, self.onSize)
+        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.onMouseDown)
+        self.Bind(wx.EVT_LEFT_UP, self.onMouseUp)
+        self.Bind(wx.EVT_MOTION, self.onMouseMotion)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
 
-    def OnEraseBackground(self, event):
+    def onEraseBackground(self, event):
         pass  # Do nothing, to avoid flashing on MSW.
 
-    def OnSize(self, event):
+    def onSize(self, event):
         wx.CallAfter(self.DoSetViewport)
         event.Skip()
 
-    def DoSetViewport(self):
+    def doSetViewport(self):
         width, height = size = self.size = self.GetClientSize()
         self.SetCurrent(self.context)
 
         glViewport(0, 0, width, height)
         self.aspect_ratio = width / height
 
-    def OnPaint(self, event):
+    def onPaint(self, event):
         self.SetCurrent(self.context)
         if not self.init:
             self.InitGL()
             self.init = True
         self.OnDraw()
 
-    def OnMouseDown(self, evt):
+    def onMouseDown(self, evt):
         self.CaptureMouse()
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
-    def OnMouseUp(self, evt):
+    def onMouseUp(self, evt):
         # clear residual movement
         self.lastx, self.lastz = self.x, self.z
         self.ReleaseMouse()
 
-    def OnMouseMotion(self, evt):
+    def onMouseMotion(self, evt):
         if evt.Dragging() and evt.LeftIsDown():
             self.lastx, self.lastz = self.x, self.z
             self.x, self.z = evt.GetPosition()
             self.Refresh(False)
 
-    def OnMouseWheel(self, event):
+    def onMouseWheel(self, event):
         wheelRotation = event.GetWheelRotation()
 
         if wheelRotation != 0:
@@ -106,8 +109,8 @@ class Canvas(CanvasBase):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0,
-             0.0, 0.0, 0.0,
-             0.0, 1.0, 0.0)
+                  0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0)
 
     def OnDraw(self):
         # clear color and depth buffers
@@ -116,13 +119,11 @@ class Canvas(CanvasBase):
         self.setProjectionMatrix()
 
         w, h = self.size
-        w = max(w, 1.0)
-        h = max(h, 1.0)
-        xScale = 180.0 / w
-        zScale = 180.0 / h
+        x_scale = 180.0 / max(w, 1.0)
+        z_scale = 180.0 / max(h, 1.0)
 
-        glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0)
-        glRotatef((self.z - self.lastz) * zScale, 1.0, 0.0, 0.0)
+        glRotatef((self.x - self.lastx) * x_scale, 0.0, 1.0, 0.0)
+        glRotatef((self.z - self.lastz) * z_scale, 1.0, 0.0, 0.0)
 
         self.InitGrid()
 
