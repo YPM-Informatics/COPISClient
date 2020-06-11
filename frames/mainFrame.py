@@ -39,18 +39,19 @@ class MainFrame(wx.Frame):
         ## initialize menu bar
         self.SetMenuBar(MenuBar(self))
 
-        ## initialize tool bar
+        ## initialize tool bar (This is the original code)
         # self.SetToolBar(ToolBar(self))
         # self.GetToolBar().Realize()
 
+        #This line is what I was using to make the toolbar appear on mac
         # self.toolbarsizer = ToolBar(self)
+
+        #This is code from PrintRun
         hpanel = wx.Panel(self, -1)
         panel = wx.Panel(hpanel, -1)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        # vbox = wx.BoxSizer(wx.VERTICAL)
         self.toolbar = ToolBar(self)
         vbox.Add(self.toolbar, 0, border = 5)
-
 
         ## initialize status bar
         self.SetStatusBar(StatusBar(self))
