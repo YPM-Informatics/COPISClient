@@ -27,7 +27,7 @@ class MyPopupMenu(wx.Menu):
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
-        super(MainFrame, self).__init__(*args, **kwargs, style = wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE, title = "COPIS")
+        super(MainFrame, self).__init__(*args, **kwargs)
 
         self.cam_list = []
         self.is_edsdk_on = False
