@@ -56,9 +56,16 @@ class CanvasBase(glcanvas.GLCanvas):
         self.CaptureMouse()
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
+        # transform Gui coordinates into GL
+        # self.size = GetClientSize()
+        # wxPoint pt = event.GetPosition()
+        # int gx = (2.0 * pt.x) / (siz.GetWidth() - 1) - 1.0
+        # int gy = 1.0 - (2.0 * pt.y) / (siz.GetHeight() - 1)
+
         #Get x,y coords of mouse click in Normalized Device Coords
         x = 2.0 * self.x / self.size[0] - 1.0
         y = 1.0 - 2.0 * self.z / self.size[1]
+        # print(x,y)
 
         #4D homogenous clip coordinates
         rayClip = np.array([x,y, -1.0, 1.0])
@@ -75,14 +82,16 @@ class CanvasBase(glcanvas.GLCanvas):
         #Normalize
         norm = np.linalg.norm(rayWorld)
         rayWorld = rayWorld/norm
-        print(rayWorld)
+
+        # print(rayWorld)
         camList = self.camera_objects
 
         for cam in camList:
-            if rayWorld[0] < cam.x + 0.05 and rayWorld[0] > cam.x - 0.05:
+            if rayWorld[0] < cam.x + 0.01 and rayWorld[0] > cam.x - 0.01:
                 print("In x")
             else:
-                print(rayWorld[0], cam.x)
+                print("X: ", rayWorld[0], cam.x)
+                print("Z: ", rayWorld[2], cam.z)
 
         # if camList:
         #     print(camList[0].x)

@@ -8,19 +8,19 @@ class ToolBar(wx.ToolBar):
         super(ToolBar, self).__init__(parent)
 
         # port and baud
-        self.initPortBaudOptions()
-        self.controller = SerialController()
-        self.setPorts()
-        self.setBaudRates()
-        self.AddStretchableSpace()
+        # self.initPortBaudOptions()
+        # self.controller = SerialController()
+        # self.setPorts()
+        # self.setBaudRates()
+        # self.AddStretchableSpace()
 
         ## play, pause and stop buttons to animate the commands
         self.initAnimationButtons()
-        self.AddStretchableSpace()
+        # self.AddStretchableSpace()
 
         ## import file
-        self.initImport()
-        self.AddStretchableSpace()
+        # self.initImport()
+        # self.AddStretchableSpace()
 
         ## general settings
         self.initSetting()
