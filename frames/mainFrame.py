@@ -40,8 +40,9 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(MenuBar(self))
 
         ## initialize tool bar
-        self.SetToolBar(ToolBar(self))
-        self.GetToolBar().Realize()
+        # self.SetToolBar(ToolBar(self))
+        # self.GetToolBar().Realize()
+        self.toolbarsizer = self.CreateToolBar()
 
         ## initialize status bar
         self.SetStatusBar(StatusBar(self))
