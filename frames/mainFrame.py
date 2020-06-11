@@ -42,7 +42,15 @@ class MainFrame(wx.Frame):
         ## initialize tool bar
         # self.SetToolBar(ToolBar(self))
         # self.GetToolBar().Realize()
-        self.toolbarsizer = self.CreateToolBar()
+
+        # self.toolbarsizer = ToolBar(self)
+        hpanel = wx.Panel(self, -1)
+        panel = wx.Panel(hpanel, -1)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        # vbox = wx.BoxSizer(wx.VERTICAL)
+        self.toolbar = ToolBar(self)
+        vbox.Add(self.toolbar, 0, border = 5)
+
 
         ## initialize status bar
         self.SetStatusBar(StatusBar(self))
