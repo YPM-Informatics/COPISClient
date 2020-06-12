@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""TODO: Fill in docstring"""
+
 import wx
 from frames.mainFrame import MainFrame
 

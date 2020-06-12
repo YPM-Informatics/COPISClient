@@ -6,7 +6,7 @@ from components.menuBar import MenuBar
 from components.statusBar import StatusBar
 
 class MyPopupMenu(wx.Menu):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(MyPopupMenu, self).__init__()
         self.parent = parent
 

@@ -71,7 +71,7 @@ class CanvasBase(glcanvas.GLCanvas):
                 self.gl_broken = True
                 print('OpenGL Failed:')
                 print(e)
-                # TODO: display error in console window
+                # TODO: display this error in console window
         event.Skip()
 
     def Destroy(self):
@@ -141,5 +141,13 @@ class CanvasBase(glcanvas.GLCanvas):
             elif self.zoom > self.MAX_ZOOM:
                 self.zoom = self.MAX_ZOOM
 
+        self.OnReshape()
         self.Refresh()
 
+    def handle_rotation(self, event):
+        # TODO: implement better rotation features
+        pass
+
+    def handle_translation(self, event):
+        # TODO: determine if this necessitates translation
+        pass
