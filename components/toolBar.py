@@ -8,7 +8,7 @@ from controller.serialController import SerialController
 
 
 class ToolBar(wx.ToolBar):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(ToolBar, self).__init__(parent)
 
         # port and baud
