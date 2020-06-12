@@ -1,8 +1,11 @@
-import wx
-from wx import glcanvas
+#!/usr/bin/env python3
+"""TODO: Fill in docstring"""
 
 import numpy as np
 from enums import Axis
+
+import wx
+from wx import glcanvas
 
 from OpenGL.GL import *
 from OpenGL.GLU import *

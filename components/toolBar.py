@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+"""TODO: Fill in docstring"""
+
 import wx
 from enums import Tool_Ids
 from frames.settingsFrame import SettingsFrame
