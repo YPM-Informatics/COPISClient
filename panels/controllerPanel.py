@@ -4,7 +4,7 @@ from Canon.EDSDKLib import *
 import util
 
 class ControllerPanel(wx.Panel):
-    def __init__(self, parent, aui_manager):
+    def __init__(self, parent, aui_manager, *args, **kwargs):
         super(ControllerPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
         self.parent = parent
         self.auiManager = aui_manager
@@ -14,7 +14,7 @@ class ControllerPanel(wx.Panel):
 
     def InitPanel(self):
         vboxLeft = wx.BoxSizer(wx.VERTICAL)
-        
+
         ## header font
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
@@ -30,12 +30,12 @@ class ControllerPanel(wx.Panel):
         ## camera control section
         cam_control_vbox = self.InitCamControl()
         vboxLeft.Add(cam_control_vbox, 0.5, flag = wx.LEFT|wx.TOP, border = 5)
-        
+
         self.SetSizerAndFit(vboxLeft)
 
     def InitPositioning(self):
         ## LAYOUT
-        
+
 	    ####################################################################################################
         ##                                                                                                ##
         ## vbox        ---------------------------------------------------------------------------------- ##
@@ -74,11 +74,11 @@ class ControllerPanel(wx.Panel):
         vboxPositioning = wx.BoxSizer(wx.VERTICAL)
         self.hboxCameraInfo = wx.BoxSizer()
         vboxPositioning.Add(self.hboxCameraInfo, 0.5, wx.EXPAND)
-        
+
         positionLabel = wx.StaticText(self, wx.ID_ANY, label = 'Positioning', style = wx.ALIGN_LEFT)
         positionLabel.SetFont(self.font)
         vboxPositioning.Add(positionLabel, 0.5, flag = wx.BOTTOM|wx.TOP, border = 10)
-        
+
         hboxTop = wx.BoxSizer()
         camLabel = wx.StaticText(self, wx.ID_ANY, label="Camera: ", style=wx.ALIGN_LEFT)
         hboxTop.Add(camLabel)
@@ -87,7 +87,7 @@ class ControllerPanel(wx.Panel):
         hboxTop.Add(self.masterCombo)
         ## self.setCenterBtn = wx.Button(self, wx.ID_ANY, label = 'Set Center')
         ## hboxTop.Add(self.setCenterBtn, 1, flag = wx.LEFT, border = 5)
-        
+
         self.refreshBtn = wx.Button(self, wx.ID_ANY, label = 'Refresh')
         self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
         hboxTop.Add(self.refreshBtn)
@@ -102,7 +102,7 @@ class ControllerPanel(wx.Panel):
         vboxXyz = wx.BoxSizer(wx.VERTICAL)
         xyzLabel = wx.StaticText(self, wx.ID_ANY, label = 'XYZ Increment Size', style = wx.ALIGN_LEFT)
         vboxXyz.Add(xyzLabel, 1, flag = wx.BOTTOM, border = 10)
-        
+
         hboxXyzSize = wx.BoxSizer()
         self.xyzSc = wx.SpinCtrl(self, value = '0')
         self.xyzSc.SetRange(0, 100)
@@ -110,7 +110,7 @@ class ControllerPanel(wx.Panel):
         mmLabel = wx.StaticText(self, wx.ID_ANY, label = 'mm', style = wx.ALIGN_LEFT)
         hboxXyzSize.Add(mmLabel)
         vboxXyz.Add(hboxXyzSize)
-        
+
         hboxYzInc = wx.BoxSizer()
         self.yiBtn = wx.Button(self, wx.ID_ANY, label = 'Y+')
         self.yiBtn.axis = Axis.Y
@@ -123,7 +123,7 @@ class ControllerPanel(wx.Panel):
         hboxYzInc.Add(self.ziBtn)
         self.ziBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxYzInc)
-        
+
         hboxX = wx.BoxSizer()
         self.xrBtn = wx.Button(self, wx.ID_ANY, label = 'X-')
         self.xrBtn.axis = Axis.X
@@ -136,7 +136,7 @@ class ControllerPanel(wx.Panel):
         hboxX.Add(self.xiBtn, 1, flag = wx.LEFT, border = 20)
         self.xiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxX)
-        
+
         hboxYzDec = wx.BoxSizer()
         self.yrBtn = wx.Button(self, wx.ID_ANY, label = 'Y-')
         self.yrBtn.axis = Axis.Y
@@ -154,7 +154,7 @@ class ControllerPanel(wx.Panel):
         vboxBc = wx.BoxSizer(wx.VERTICAL)
         bcLabel = wx.StaticText(self, wx.ID_ANY, label = 'BC Increment Size', style = wx.ALIGN_LEFT)
         vboxBc.Add(bcLabel, 1, flag = wx.BOTTOM, border = 10)
-        
+
         hboxBcSize = wx.BoxSizer()
         self.bcSc = wx.SpinCtrl(self, value = '0')
         self.bcSc.SetRange(0, 100)
@@ -167,7 +167,7 @@ class ControllerPanel(wx.Panel):
         self.ciBtn.direction = Axis.Plus
         vboxBc.Add(self.ciBtn, 1, flag = wx.LEFT, border = 88)
         self.ciBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        
+
         hboxB = wx.BoxSizer()
         self.brBtn = wx.Button(self, wx.ID_ANY, label = 'P-')
         self.brBtn.axis = Axis.B
@@ -191,7 +191,7 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxBc)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag = wx.LEFT, border = 15)
-        
+
         return vboxPositioning
 
 
@@ -273,27 +273,27 @@ class ControllerPanel(wx.Panel):
     def OnMove(self, event):
         if self.canvas == "":
             self.canvas = self.visualizer_panel.canvas
-            
+
         camId = self.masterCombo.GetSelection()
         if camId != -1:
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
-            
+
             if axis in [Axis.X, Axis.Y, Axis.Z]:
                 cmdBox = self.auiManager.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
-                
-                    
+
+
                 if direction == Axis.Minus:
                     size = -size
-                
+
                 size = size / 100
             else:
                 size = self.bcSc.GetValue()
-                
+
                 if direction == Axis.Minus:
                     size = -size
-            
+
             cam = self.parent.visualizer_panel.getCamById(camId)
             if cam:
                 cam.onMove(axis, size)
@@ -316,7 +316,7 @@ class ControllerPanel(wx.Panel):
 
         if self.parent.cam_list:
             self.parent.cam_list.set_selected_cam_by_id(id)
-        
+
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
         if self.parent.cam_list.selected_camera is not None:
@@ -362,7 +362,7 @@ class ControllerPanel(wx.Panel):
             self.auiManager.addEvfPane()
         else:
             util.set_dialog("Please select the camera to start live view.")
-        
+
     def onRefresh(self, event):
         self.visualizer_panel.onClearCameras()
         self.masterCombo.Clear()

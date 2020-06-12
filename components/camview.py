@@ -39,12 +39,52 @@ class Canvas(CanvasBase):
                   0.0, 0.0, 0.0,
                   0.0, 1.0, 0.0)
 
+        self.mousepos = (0, 0)
+
+        # self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
+
+    def move(self, event):
+        self.mousepos = event.GetPosition()
+        if event.Dragging() and event.LeftIsDown():
+            self.handle_rotation(event)
+        elif event.Dragging() and event.RightIsDown():
+            self.handle_translation(event)
+        elif event.ButtonUp(wx.MOUSE_BTN_LEFT):
+            pass
+        elif event.ButtonUp(wx.MOUSE_BTN_RIGHT):
+            pass
+        else:
+            event.Skip()
+            return
+        event.Skip()
+        wx.CallAfter(self.Refresh)
+
+    def handle_wheel(self, event):
+        return
+        delta = event.GetWheelRotation()
+        factor = 1.05
+        x, y = event.GetPosition()
+        # x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
+        # if delta > 0:
+        #     self.zoom(factor, (x, y))
+        # else:
+        #     self.zoom(1 / factor, (x, y))
+
+    def wheel(self, event):
+        self.handle_wheel(event)
+        wx.CallAfter(self.Refresh)
+
+    def double_click(self, event):
+        pass
+
     def draw_objects(self):
         width, height = self.width, self.height;
         x_scale = 180.0 / max(width, 1.0)
         z_scale = 180.0 / max(height, 1.0)
 
-        glRotatef((self.x - self.lastx) * x_scale, 0.0, 1.0, 0.0)
+        glRotatef((self.x - self.lastx) * x_scale, 0.0, 0.0, 1.0)
         glRotatef((self.z - self.lastz) * z_scale, 1.0, 0.0, 0.0)
 
         self.InitGrid()
