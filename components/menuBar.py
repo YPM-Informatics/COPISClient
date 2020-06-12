@@ -7,7 +7,7 @@ from frames.configPreferenceFrame import *
 
 
 class MenuBar(wx.MenuBar):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(MenuBar, self).__init__()
         self.parent = parent
 

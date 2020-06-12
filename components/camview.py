@@ -14,20 +14,23 @@ from .canvas import CanvasBase
 
 
 class Canvas(CanvasBase):
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, parent, *args, **kwargs):
+        super(Canvas, self).__init__(parent)
         self.parent = parent
         self.scale = 1.0
         self.camera_objects = []
 
-        if self.size is None:
-            self.size = self.GetClientSize()
-            # self.w, self.h = self.size
+    def OnReshape(self):
+        super(Canvas, self).OnReshape()
 
-    def InitGL(self):
+    def OnInitGL(self):
+        if self.GLinitialized:
+            return
+        self.GLinitialized = True
+
         self.quadratic = gluNewQuadric()
         # set viewing projection
-        self.setProjectionMatrix()
+        # self.setProjectionMatrix()
 
         # initialize view
         glMatrixMode(GL_MODELVIEW)
@@ -36,31 +39,25 @@ class Canvas(CanvasBase):
                   0.0, 0.0, 0.0,
                   0.0, 1.0, 0.0)
 
-    def OnDraw(self):
-        # clear color and depth buffers
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        self.setProjectionMatrix()
-
-        w, h = self.size
-        x_scale = 180.0 / max(w, 1.0)
-        z_scale = 180.0 / max(h, 1.0)
+    def draw_objects(self):
+        width, height = self.width, self.height;
+        x_scale = 180.0 / max(width, 1.0)
+        z_scale = 180.0 / max(height, 1.0)
 
         glRotatef((self.x - self.lastx) * x_scale, 0.0, 1.0, 0.0)
         glRotatef((self.z - self.lastz) * z_scale, 1.0, 0.0, 0.0)
 
         self.InitGrid()
 
-        # object
+        # makeshift sphere
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.2, 32, 32)
 
         for cam in self.camera_objects:
             cam.onDraw()
 
-        self.SwapBuffers()
-
     def InitGrid(self):
+        glPushMatrix()
         glColor3ub(255, 255, 255)
 
         glBegin(GL_LINES)
@@ -80,6 +77,7 @@ class Canvas(CanvasBase):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, 1.5)
         glEnd()
+        glPopMatrix()
 
     def OnDrawSphere(self):
         pass
