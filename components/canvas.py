@@ -1,7 +1,6 @@
-import sys
 import wx
-
 from wx import glcanvas
+
 import numpy as np
 from enums import Axis
 
@@ -29,8 +28,8 @@ class CanvasBase(glcanvas.GLCanvas):
         self.lastz = self.z = 30
         self.size = None
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.onEraseBackground)
-        self.Bind(wx.EVT_SIZE, self.onSize)
-        self.Bind(wx.EVT_PAINT, self.onPaint)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_LEFT_DOWN, self.onMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.onMouseUp)
         self.Bind(wx.EVT_MOTION, self.onMouseMotion)
@@ -39,8 +38,8 @@ class CanvasBase(glcanvas.GLCanvas):
     def onEraseBackground(self, event):
         pass  # Do nothing, to avoid flashing on MSW.
 
-    def onSize(self, event):
-        wx.CallAfter(self.DoSetViewport)
+    def OnSize(self, event):
+        wx.CallAfter(self.doSetViewport)
         event.Skip()
 
     def doSetViewport(self):
@@ -50,7 +49,7 @@ class CanvasBase(glcanvas.GLCanvas):
         glViewport(0, 0, width, height)
         self.aspect_ratio = width / height
 
-    def onPaint(self, event):
+    def OnPaint(self, event):
         self.SetCurrent(self.context)
         if not self.init:
             self.InitGL()
