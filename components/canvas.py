@@ -18,7 +18,7 @@ class CanvasBase(glcanvas.GLCanvas):
     ASPECT_CONSTRAINT = 1.9
 
     def __init__(self, parent, *args, **kwargs):
-        glcanvas.GLCanvas.__init__(self, parent, -1)
+        super(CanvasBase, self).__init__(parent, -1)
         self.GLinitialized = False
         self.context = glcanvas.GLContext(self)
 
@@ -39,11 +39,6 @@ class CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.processEraseBackgroundEvent)
         self.Bind(wx.EVT_SIZE, self.processSizeEvent)
         self.Bind(wx.EVT_PAINT, self.processPaintEvent)
-
-        self.Bind(wx.EVT_LEFT_DOWN, self.onMouseDown)
-        self.Bind(wx.EVT_LEFT_UP, self.onMouseUp)
-        self.Bind(wx.EVT_MOTION, self.onMouseMotion)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
 
     def processEraseBackgroundEvent(self, event):
         pass  # Do nothing, to avoid flashing on MSW.
