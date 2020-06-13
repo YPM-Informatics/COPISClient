@@ -42,6 +42,9 @@ class Canvas(CanvasBase):
         self.mousepos = (0, 0)
 
         # self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
+        self.Bind(wx.EVT_LEFT_DOWN, self.onMouseDown)
+        self.Bind(wx.EVT_LEFT_UP, self.onMouseUp)
+        self.Bind(wx.EVT_MOTION, self.onMouseMotion)
         self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
         self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
@@ -87,7 +90,7 @@ class Canvas(CanvasBase):
         glRotatef((self.x - self.lastx) * x_scale, 0.0, 0.0, 1.0)
         glRotatef((self.z - self.lastz) * z_scale, 1.0, 0.0, 0.0)
 
-        self.InitGrid()
+        self.draw_grid()
 
         # makeshift sphere
         glColor3ub(0, 0, 128)
@@ -96,15 +99,14 @@ class Canvas(CanvasBase):
         for cam in self.camera_objects:
             cam.onDraw()
 
-    def InitGrid(self):
-        glPushMatrix()
+    def draw_grid(self):
         glColor3ub(255, 255, 255)
 
         glBegin(GL_LINES)
         for i in np.arange(-1, 1, 0.05):
-            glVertex3f(i,  1, 0)
+            glVertex3f(i, 1, 0)
             glVertex3f(i, -1, 0)
-            glVertex3f( 1, i, 0)
+            glVertex3f(1, i, 0)
             glVertex3f(-1, i, 0)
 
         glColor3ub(255, 0, 0)
@@ -117,23 +119,6 @@ class Canvas(CanvasBase):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, 1.5)
         glEnd()
-        glPopMatrix()
-
-    def OnDrawSphere(self):
-        pass
-
-    def setProjectionMatrix(self):
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-
-        # setProjectionMatrix is called during OnDraw so this does not work right now
-        # if self.aspect_ratio < self.ASPECT_CONSTRAINT:
-        #     self.zoom *= self.aspect_ratio / self.ASPECT_CONSTRAINT
-
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, self.aspect_ratio, self.NEAR_CLIP, self.FAR_CLIP)
-        # glFrustum(-0.5 / self.zoom, 0.5 / self.zoom, -0.5 / self.zoom, 0.5 / self.zoom, self.nearClip, self.farClip)
-
-        glMatrixMode(GL_MODELVIEW)
 
 
 class Camera3D():
