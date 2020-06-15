@@ -11,12 +11,17 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
+# from .trackball import build_rotmatrix
 
 
 class Canvas(CanvasBase):
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
         self.parent = parent
+        self.initpos = None
+        self.mousepos = (0, 0)
+        self.dist = 1
+        self.basequat = [0, 0, 0, 1]
         self.scale = 1.0
         self.camera_objects = []
 
@@ -28,9 +33,8 @@ class Canvas(CanvasBase):
             return
         self.GLinitialized = True
 
+        self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
-        # set viewing projection
-        # self.setProjectionMatrix()
 
         # initialize view
         glMatrixMode(GL_MODELVIEW)
@@ -39,25 +43,22 @@ class Canvas(CanvasBase):
                   0.0, 0.0, 0.0,
                   0.0, 1.0, 0.0)
 
-        self.mousepos = (0, 0)
-
-        # self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
-        self.Bind(wx.EVT_LEFT_DOWN, self.onMouseDown)
-        self.Bind(wx.EVT_LEFT_UP, self.onMouseUp)
-        self.Bind(wx.EVT_MOTION, self.onMouseMotion)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.onMouseWheel)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
         self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
     def move(self, event):
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
             self.handle_rotation(event)
-        elif event.Dragging() and event.RightIsDown():
-            self.handle_translation(event)
+        # elif event.Dragging() and event.RightIsDown():
+            # self.handle_translation(event)
         elif event.ButtonUp(wx.MOUSE_BTN_LEFT):
-            pass
+            if self.initpos is not None:
+                self.initpos = None
         elif event.ButtonUp(wx.MOUSE_BTN_RIGHT):
-            pass
+            if self.initpos is not None:
+                self.initpos = None
         else:
             event.Skip()
             return
@@ -76,19 +77,16 @@ class Canvas(CanvasBase):
         #     self.zoom(1 / factor, (x, y))
 
     def wheel(self, event):
-        self.handle_wheel(event)
+        # temporary
+        self.onMouseWheel(event)
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
         pass
 
     def draw_objects(self):
-        width, height = self.width, self.height;
-        x_scale = 180.0 / max(width, 1.0)
-        z_scale = 180.0 / max(height, 1.0)
-
-        glRotatef((self.x - self.lastx) * x_scale, 0.0, 0.0, 1.0)
-        glRotatef((self.z - self.lastz) * z_scale, 1.0, 0.0, 0.0)
+        # glTranslatef(0, 0, -self.dist)
+        # glMultMatrixd(build_rotmatrix(self.basequat))
 
         self.draw_grid()
 
@@ -100,7 +98,7 @@ class Canvas(CanvasBase):
             cam.onDraw()
 
     def draw_grid(self):
-        glColor3ub(255, 255, 255)
+        glColor3ub(180, 180, 180)
 
         glBegin(GL_LINES)
         for i in np.arange(-1, 1, 0.05):
