@@ -139,10 +139,51 @@ class CanvasBase(glcanvas.GLCanvas):
         self.OnReshape()
         self.Refresh()
 
+    def get_modelview_mat(self, local_transform):
+        mvmat = (GLdouble * 16)()
+        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
+        return mvmat
+
+    def mouse_to_3d(self, x, y, z=1.0, local_transform=False):
+        x = float(x)
+        y = self.height - float(y)
+        pmat = (GLdouble * 16)()
+        mvmat = self.get_modelview_mat(local_transform)
+        viewport = (GLint * 4)()
+        px = (GLdouble)()
+        py = (GLdouble)()
+        pz = (GLdouble)()
+        glGetIntegerv(GL_VIEWPORT, viewport)
+        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
+        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
+        gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
+        return (px.value, py.value, pz.value)
+
     def handle_rotation(self, event):
-        # TODO: implement better rotation features
-        pass
+        if self.initpos is None:
+            self.initpos = event.GetPosition()
+        # else:
+        #     p1 = self.initpos
+        #     p2 = event.GetPosition()
+        #     sz = self.GetClientSize()
+        #     p1x = float(p1[0]) / (sz[0] / 2) - 1
+        #     p1y = 1 - float(p1[1]) / (sz[1] / 2)
+        #     p2x = float(p2[0]) / (sz[0] / 2) - 1
+        #     p2y = 1 - float(p2[1]) / (sz[1] / 2)
+        #     quat = trackball(p1x, p1y, p2x, p2y, self.dist / 250.0)
+        #     with self.rot_lock:
+        #         if self.orbit_control:
+        #             self.basequat = self.orbit(p1x, p1y, p2x, p2y)
+        #         else:
+        #             self.basequat = mulquat(self.basequat, quat)
+        #     self.initpos = p2
+
 
     def handle_translation(self, event):
-        # TODO: determine if this necessitates translation
-        pass
+        if self.initpos is None:
+            self.initpos = event.GetPosition()
+        else:
+            p1 = self.initpos
+            p2 = event.GetPosition()
+            # Do stuff
+            self.initpos = p2
