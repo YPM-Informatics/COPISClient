@@ -27,10 +27,6 @@ class CanvasBase(glcanvas.GLCanvas):
 
         self.width = None
         self.height = None
-
-        # initial mouse position
-        self.lastx = self.x = 30
-        self.lastz = self.z = 30
         
         self.viewpoint = (0.0, 0.0, 0.0)
         self.basequat = [0, 0, 0, 1]
