@@ -24,12 +24,14 @@ class CanvasBase(glcanvas.GLCanvas):
         super(CanvasBase, self).__init__(parent, -1)
         self.GLinitialized = False
         self.context = glcanvas.GLContext(self)
-
+        self.context_attrs = glcanvas.GLContextAttrs()
+        self.display_attrs = glcanvas.GLAttributes()
         self.width = None
         self.height = None
 
         self.viewpoint = (0.0, 0.0, 0.0)
         self.basequat = [0, 0, 0, 1]
+        self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
         self.zoom = 1
@@ -131,6 +133,7 @@ class CanvasBase(glcanvas.GLCanvas):
         and takes into consideration the zoom boundaries.
         """
         wheelRotation = event.GetWheelRotation()
+        print(wheelRotation)
 
         if wheelRotation != 0:
             if wheelRotation > 0:
@@ -167,7 +170,7 @@ class CanvasBase(glcanvas.GLCanvas):
         glGetIntegerv(GL_VIEWPORT, viewport)
         glGetDoublev(GL_PROJECTION_MATRIX, pmat)
         glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
-        gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
+        gluUnProject(x, y, z, mvmat, pmat, viewport)#, px, py, pz)
         return (px.value, py.value, pz.value)
 
     def mouse_to_ray(self, x, y, local_transform=False):
@@ -203,6 +206,18 @@ class CanvasBase(glcanvas.GLCanvas):
         if t < 0:
             return None
         return ray_near + t * ray_dir
+
+    def zooom(self, factor, to = None):
+        glMatrixMode(GL_MODELVIEW)
+        if to:
+            delta_x = to[0]
+            delta_y = to[1]
+            glTranslatef(delta_x, delta_y, 0)
+        glScalef(factor, factor, 1)
+        self.zoom_factor *= factor
+        if to:
+            glTranslatef(-delta_x, -delta_y, 0)
+        wx.CallAfter(self.Refresh)
 
     def orbit(self, p1x, p1y, p2x, p2y):
         pass
