@@ -34,7 +34,7 @@ class ToolBar(wx.ToolBar):
         self.AddStretchableSpace()
         portLabel = wx.StaticText(self, id=wx.ID_ANY, label="Port: ", style=wx.ALIGN_LEFT)
         self.AddControl(portLabel)
-        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value="")
+        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value="", style = wx.CB_DROPDOWN)
         self.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
         self.AddControl(self.portCombo)
         baudLabel = wx.StaticText(self, id=wx.ID_ANY, label=" Baud: ", style=wx.ALIGN_RIGHT)
