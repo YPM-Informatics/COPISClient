@@ -56,42 +56,59 @@ class CanvasBase(glcanvas.GLCanvas):
         self.CaptureMouse()
         self.x, self.z = self.lastx, self.lastz = evt.GetPosition()
 
+        x = float(self.x)
+        y = self.size[1] - float(self.z)
+        pmat = (GLdouble * 16)()
+        mvmat = (GLdouble * 16)()
+        viewport = (GLint * 4)()
+        px = (GLdouble)()
+        py = (GLdouble)()
+        pz = (GLdouble)()
+        glGetIntegerv(GL_VIEWPORT, viewport)
+        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
+        mvmat = self.get_modelview_mat(local_transform)
+        gluUnProject(x, y, 1, mvmat, pmat, viewport, px, py, pz)
+        ray_far = (px.value, py.value, pz.value)
+        gluUnProject(x, y, 0., mvmat, pmat, viewport, px, py, pz)
+        ray_near = (px.value, py.value, pz.value)
+        print (ray_near, ray_far)
+
         # transform Gui coordinates into GL
         # self.size = GetClientSize()
         # wxPoint pt = event.GetPosition()
         # int gx = (2.0 * pt.x) / (siz.GetWidth() - 1) - 1.0
         # int gy = 1.0 - (2.0 * pt.y) / (siz.GetHeight() - 1)
 
-        #Get x,y coords of mouse click in Normalized Device Coords
-        x = 2.0 * self.x / self.size[0] - 1.0
-        y = 1.0 - 2.0 * self.z / self.size[1]
-        # print(x,y)
+        # # Get x,y coords of mouse click in Normalized Device Coords
+        # x = 2.0 * self.x / self.size[0] - 1.0
+        # y = 1.0 - 2.0 * self.z / self.size[1]
+        # # print(x,y)
 
-        #4D homogenous clip coordinates
-        rayClip = np.array([x,y, -1.0, 1.0])
+        # #4D homogenous clip coordinates
+        # rayClip = np.array([x,y, -1.0, 1.0])
 
-        #4D Eye (Camera) coordinates)
-        mPersp = glGetDoublev(GL_PROJECTION_MATRIX)
-        rayEye = np.linalg.inv(mPersp).dot(rayClip)
-        rayEye[2] = -1.0
-        rayEye[3] = 0.0
+        # #4D Eye (Camera) coordinates)
+        # mPersp = glGetDoublev(GL_PROJECTION_MATRIX)
+        # rayEye = np.linalg.inv(mPersp).dot(rayClip)
+        # rayEye[2] = -1.0
+        # rayEye[3] = 0.0
         
-        #4D World Coordinates
-        view = glGetDoublev(GL_MODELVIEW_MATRIX)
-        rayWorld = np.linalg.inv(view).dot(rayEye)
-        #Normalize
-        norm = np.linalg.norm(rayWorld)
-        rayWorld = rayWorld/norm
+        # #4D World Coordinates
+        # view = glGetDoublev(GL_MODELVIEW_MATRIX)
+        # rayWorld = np.linalg.inv(view).dot(rayEye)
+        # #Normalize
+        # norm = np.linalg.norm(rayWorld)
+        # rayWorld = rayWorld/norm
 
-        # print(rayWorld)
-        camList = self.camera_objects
+        # # print(rayWorld)
+        # camList = self.camera_objects
 
-        for cam in camList:
-            if rayWorld[0] < cam.x + 0.01 and rayWorld[0] > cam.x - 0.01:
-                print("In x")
-            else:
-                print("X: ", rayWorld[0], cam.x)
-                print("Z: ", rayWorld[2], cam.z)
+        # for cam in camList:
+        #     if rayWorld[0] < cam.x + 0.01 and rayWorld[0] > cam.x - 0.01:
+        #         print("In x")
+        #     else:
+        #         print("X: ", rayWorld[0], cam.x)
+        #         print("Z: ", rayWorld[2], cam.z)
 
         # if camList:
         #     print(camList[0].x)
