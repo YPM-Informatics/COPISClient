@@ -48,6 +48,10 @@ class Canvas(CanvasBase):
         self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
     def move(self, event):
+        """React to mouse events.
+        LMB: move viewport
+        ButtonUp: reset initpos
+        """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
             self.handle_rotation(event)
@@ -66,6 +70,7 @@ class Canvas(CanvasBase):
         wx.CallAfter(self.Refresh)
 
     def handle_wheel(self, event):
+        # currently unused.
         return
         delta = event.GetWheelRotation()
         factor = 1.05
@@ -77,7 +82,7 @@ class Canvas(CanvasBase):
         #     self.zoom(1 / factor, (x, y))
 
     def wheel(self, event):
-        # temporary
+        """React to scroll wheel event."""
         self.onMouseWheel(event)
         wx.CallAfter(self.Refresh)
 
