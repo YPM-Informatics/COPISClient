@@ -47,11 +47,13 @@ class MainFrame(wx.Frame):
         # self.toolbarsizer = ToolBar(self)
 
         #This is code from PrintRun
-        hpanel = wx.Panel(self, -1)
-        panel = wx.Panel(hpanel, -1)
+        # hpanel = wx.Panel(self, -1)
+        self.panel = wx.Panel(self, -1)
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.toolbar = ToolBar(self)
-        vbox.Add(self.toolbar, 0, border = 5)
+        vbox.Add(self.toolbar, 0, border = 3)
+        self.panel.SetSizer(vbox)
+        # self.SetToolBar(panel)
 
         ## initialize status bar
         self.SetStatusBar(StatusBar(self))
