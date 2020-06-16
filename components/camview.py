@@ -50,14 +50,15 @@ class Canvas(CanvasBase):
 
     def move(self, event):
         """React to mouse events.
-        LMB:        move viewport
-        ButtonUp:   reset position
+        LMB drag:   move viewport
+        RMB drag:   unused
+        LMB/RMB up: reset position
         """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
             self.handle_rotation(event)
-        # elif event.Dragging() and event.RightIsDown():
-            # self.handle_translation(event)
+        elif event.Dragging() and event.RightIsDown():
+            self.handle_translation(event)
         elif event.ButtonUp(wx.MOUSE_BTN_LEFT):
             if self.initpos is not None:
                 self.initpos = None
@@ -111,7 +112,7 @@ class Canvas(CanvasBase):
         gluSphere(self.quadratic, 0.2, 32, 32)
 
     def draw_grid(self):
-        """Draw cordinate grid."""
+        """Draw coordinate grid."""
         glColor3ub(180, 180, 180)
 
         glBegin(GL_LINES)
