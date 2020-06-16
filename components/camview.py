@@ -29,6 +29,7 @@ class Canvas(CanvasBase):
         super(Canvas, self).OnReshape()
 
     def OnInitGL(self):
+        """Initialize OpenGL."""
         if self.GLinitialized:
             return
         self.GLinitialized = True
@@ -49,8 +50,8 @@ class Canvas(CanvasBase):
 
     def move(self, event):
         """React to mouse events.
-        LMB: move viewport
-        ButtonUp: reset initpos
+        LMB:        move viewport
+        ButtonUp:   reset position
         """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
@@ -70,39 +71,47 @@ class Canvas(CanvasBase):
         wx.CallAfter(self.Refresh)
 
     def handle_wheel(self, event):
-        # currently unused.
+        """(Currently unused) Reacts to mouse wheel changes."""
         return
+
         delta = event.GetWheelRotation()
         factor = 1.05
         x, y = event.GetPosition()
-        # x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
-        # if delta > 0:
-        #     self.zoom(factor, (x, y))
-        # else:
-        #     self.zoom(1 / factor, (x, y))
+        x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
+        if delta > 0:
+            self.zoom(factor, (x, y))
+        else:
+            self.zoom(1 / factor, (x, y))
 
     def wheel(self, event):
-        """React to scroll wheel event."""
+        """React to the scroll wheel event."""
         self.onMouseWheel(event)
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
+        """React to the double click event."""
         pass
 
     def draw_objects(self):
+        """Called in OnDraw after the buffer has been cleared."""
+        self.create_objects()
+
         # glTranslatef(0, 0, -self.dist)
         # glMultMatrixd(build_rotmatrix(self.basequat))
-
-        self.draw_grid()
-
-        # makeshift sphere
-        glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.2, 32, 32)
 
         for cam in self.camera_objects:
             cam.onDraw()
 
+    def create_objects(self):
+        """Create OpenGL objects when OpenGL is initialized."""
+        self.draw_grid()
+
+        # draw sphere
+        glColor3ub(0, 0, 128)
+        gluSphere(self.quadratic, 0.2, 32, 32)
+
     def draw_grid(self):
+        """Draw cordinate grid."""
         glColor3ub(180, 180, 180)
 
         glBegin(GL_LINES)

@@ -27,7 +27,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
         self.width = None
         self.height = None
-        
+
         self.viewpoint = (0.0, 0.0, 0.0)
         self.basequat = [0, 0, 0, 1]
         self.angle_z = 0
@@ -46,8 +46,8 @@ class CanvasBase(glcanvas.GLCanvas):
         pass  # Do nothing, to avoid flashing on MSW.
 
     def processSizeEvent(self, event):
-        """Process the resize event.
-        Only calls OnReshape() if window is visible on screen.
+        """Process the resize event. Calls OnReshape() if window
+        is not frozen and visible on screen.
         """
         if self.IsFrozen():
             event.Skip()
@@ -66,6 +66,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
         if not self.gl_broken:
             try:
+                # make sure OpenGL works properly
                 self.OnInitGL()
                 self.OnDraw()
             except Exception as e: # TODO: add specific glcanvas exception
@@ -90,7 +91,9 @@ class CanvasBase(glcanvas.GLCanvas):
         glClearDepth(1.0)
 
     def OnReshape(self):
-        """Reshape the OpenGL viewport based on the size of the window."""
+        """Reshape the OpenGL viewport based on the size of the window.
+        Called from processSizeEvent().
+        """
         size = self.GetClientSize()
         width, height = size.width, size.height
 
@@ -104,30 +107,29 @@ class CanvasBase(glcanvas.GLCanvas):
         glMatrixMode(GL_MODELVIEW)
 
     def OnDraw(self):
-        """Draw the window. Calls draw_objects(),
-        which is to be implemented in a subclass.
-        """
+        """Draw the window. Called from processPaintEvents()."""
         self.SetCurrent(self.context)
         glClearColor(*self.color_background)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.draw_objects()
         self.SwapBuffers()
 
-    #
+    # -------------------------------
     # To be implemented by a subclass
-    #
+    # -------------------------------
+
+    def draw_objects(self):
+        """Called in OnDraw after the buffer has been cleared."""
+        pass
 
     def create_objects(self):
         """Create OpenGL objects when window is initialized."""
         pass
 
-    def draw_objects(self):
-        """Called in the OnDraw after the buffer has been cleared."""
-        pass
-
     def onMouseWheel(self, event):
         """Process mouse wheel event. Adjusts zoom accordingly
-        and takes into consideration the zoom boundaries."""
+        and takes into consideration the zoom boundaries.
+        """
         wheelRotation = event.GetWheelRotation()
 
         if wheelRotation != 0:
@@ -144,9 +146,9 @@ class CanvasBase(glcanvas.GLCanvas):
         self.OnReshape()
         self.Refresh()
 
-    #
-    # util functions
-    #
+    # --------------
+    # Util functions
+    # --------------
 
     def get_modelview_mat(self, local_transform):
         mvmat = (GLdouble * 16)()
