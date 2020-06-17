@@ -6,7 +6,7 @@ from components.menuBar import MenuBar
 from components.statusBar import StatusBar
 
 class MyPopupMenu(wx.Menu):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(MyPopupMenu, self).__init__()
         self.parent = parent
 
@@ -23,7 +23,7 @@ class MyPopupMenu(wx.Menu):
 
     def close(self, e):
         self.parent.Close()
-        
+
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -87,7 +87,7 @@ class MainFrame(wx.Frame):
         else:
             message += " cameras are "
         message += "connected."
-        
+
         self.console_panel.print(message)
 
         for i in range(cam_count):
@@ -97,7 +97,7 @@ class MainFrame(wx.Frame):
     def terminateEDSDK(self):
         if not self.is_edsdk_on:
             return
-        
+
         self.is_edsdk_on = False
 
         if self.cam_list:
