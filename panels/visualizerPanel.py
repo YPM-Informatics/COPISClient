@@ -1,10 +1,14 @@
-import wx
-from components.canvas import Canvas, Camera3D
-import random
+#!/usr/bin/env python3
+"""TODO: Fill in docstring"""
+
 import util
+import random
+
+import wx
+from components.camview import Canvas, Camera3D
 
 class VisualizerPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(VisualizerPanel, self).__init__(parent)
         self.parent = parent
         self.canvas = Canvas(self)
@@ -12,7 +16,7 @@ class VisualizerPanel(wx.Panel):
 
     def InitPanel(self):
         ## LAYOUT
-        
+
         #################################################################################################
         ##                                                                                             ##
         ## hbox  ------------------------------------------------------------------------------------- ##
@@ -54,7 +58,7 @@ class VisualizerPanel(wx.Panel):
     def onClearCameras(self):
         self.canvas.camera_objects = []
         self.canvas.SwapBuffers()
- 
+
     def getCamById(self, id):
         for cam in self.canvas.camera_objects:
             if cam.id == id:

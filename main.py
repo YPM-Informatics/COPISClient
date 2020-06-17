@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""TODO: Fill in docstring"""
+
 import wx
-import sys
 from frames.mainFrame import MainFrame
 
 APP_EXIT = 1

@@ -3,7 +3,7 @@ from PIL import Image
 import io
 
 class EvfPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(EvfPanel, self).__init__(parent, wx.ID_ANY, size=wx.Size(600, 420))
         self.parent = parent
         self.timer = wx.CallLater(15, self.update)
