@@ -1,7 +1,7 @@
 import wx
 from ctypes import *
 from controller.auiManager import AuiManager
-from components.toolBar import ToolBar
+from components.toolBar import ToolBarPanel
 from components.menuBar import MenuBar
 from components.statusBar import StatusBar
 
@@ -48,11 +48,11 @@ class MainFrame(wx.Frame):
 
         #This is code from PrintRun
         # hpanel = wx.Panel(self, -1)
-        self.panel = wx.Panel(self, -1)
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        self.toolbar = ToolBar(self)
-        vbox.Add(self.toolbar, 0, border = 3)
-        self.panel.SetSizer(vbox)
+        # self.panel = wx.Panel(self, -1)
+        # vbox = wx.BoxSizer(wx.VERTICAL)
+        # self.toolbar = ToolBar(self.panel)
+        # vbox.Add(self.panel, 0, border = 3)
+        # self.SetSizer(vbox)
         # self.SetToolBar(panel)
 
         ## initialize status bar
@@ -63,6 +63,7 @@ class MainFrame(wx.Frame):
         self.console_panel = self.auiManager.GetPane("Console").window
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.controller_panel = self.auiManager.GetPane('Controller').window
+        
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
