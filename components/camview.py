@@ -59,10 +59,7 @@ class Canvas(CanvasBase):
             self.handle_rotation(event)
         elif event.Dragging() and event.RightIsDown():
             self.handle_translation(event)
-        elif event.ButtonUp(wx.MOUSE_BTN_LEFT):
-            if self.initpos is not None:
-                self.initpos = None
-        elif event.ButtonUp(wx.MOUSE_BTN_RIGHT):
+        elif event.ButtonUp():
             if self.initpos is not None:
                 self.initpos = None
         else:
@@ -73,28 +70,20 @@ class Canvas(CanvasBase):
 
     def handle_wheel(self, event):
         """(Currently unused) Reacts to mouse wheel changes."""
-        # return
+        return
 
         delta = event.GetWheelRotation()
-        print(delta)
         factor = 1.05
-        conditionalaspect
-
         x, y = event.GetPosition()
-        print(x,y)
         x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
-        print(x,y,_)
-        
-        # return
         if delta > 0:
-            self.zooom(factor, (x, y))
+            self.zoom(factor, (x, y))
         else:
-            self.zooom(1 / factor, (x, y))
+            self.zoom(1 / factor, (x, y))
 
     def wheel(self, event):
         """React to the scroll wheel event."""
         self.onMouseWheel(event)
-        # self.handle_wheel(event)
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
@@ -117,7 +106,7 @@ class Canvas(CanvasBase):
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.25, 32, 32)
+        gluSphere(self.quadratic, 0.2, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
