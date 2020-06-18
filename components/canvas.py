@@ -209,7 +209,7 @@ class CanvasBase(glcanvas.GLCanvas):
             return None
         return ray_near + t * ray_dir
 
-    def zooom(self, factor, to = None):
+    def zoom_test(self, factor, to = None):
         glMatrixMode(GL_MODELVIEW)
         if to:
             delta_x = to[0]

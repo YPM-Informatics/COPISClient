@@ -76,9 +76,9 @@ class Canvas(CanvasBase):
         print(x, y, _)
 
         if delta > 0:
-            self.zooom(factor, (x, y))
+            self.zoom_test(factor, (x, y))
         else:
-            self.zooom(1 / factor, (x, y))
+            self.zoom_test(1 / factor, (x, y))
 
     def wheel(self, event):
         """React to the scroll wheel event."""
@@ -94,10 +94,10 @@ class Canvas(CanvasBase):
         """Called in OnDraw after the buffer has been cleared."""
         self.create_objects()
 
-        # glTranslatef(0, 0, -self.dist)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        # multiply modelview matrix according to rotation quat
         glMultMatrixd(quat_to_mat(self.basequat))
 
         for cam in self.camera_objects:
