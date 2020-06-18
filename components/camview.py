@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-# from .trackball import build_rotmatrix
+from .arcball import quat_to_rotmatrix
 
 
 class Canvas(CanvasBase):
@@ -25,28 +25,21 @@ class Canvas(CanvasBase):
         self.scale = 1.0
         self.camera_objects = []
 
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
+
     def OnReshape(self):
         super(Canvas, self).OnReshape()
 
     def OnInitGL(self):
         """Initialize OpenGL."""
-        if self.GLinitialized:
+        if self.gl_init:
             return
-        self.GLinitialized = True
+        self.gl_init = True
 
         self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
-
-        # initialize view
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0.0, 0.0, 5.0,
-                  0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0)
-
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
-        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
     def move(self, event):
         """React to mouse events.
@@ -59,7 +52,7 @@ class Canvas(CanvasBase):
             self.handle_rotation(event)
         elif event.Dragging() and event.RightIsDown():
             self.handle_translation(event)
-        elif event.ButtonUp():
+        elif event.ButtonUp() or event.Leaving():
             if self.initpos is not None:
                 self.initpos = None
         else:
@@ -70,19 +63,25 @@ class Canvas(CanvasBase):
 
     def handle_wheel(self, event):
         """(Currently unused) Reacts to mouse wheel changes."""
-        return
+        # return
 
         delta = event.GetWheelRotation()
+        print(delta)
+
         factor = 1.05
         x, y = event.GetPosition()
+        print(x, y)
         x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
+        print(x, y, _)
+
         if delta > 0:
-            self.zoom(factor, (x, y))
+            self.zooom(factor, (x, y))
         else:
-            self.zoom(1 / factor, (x, y))
+            self.zooom(1 / factor, (x, y))
 
     def wheel(self, event):
         """React to the scroll wheel event."""
+        # self.handle_wheel(event)
         self.onMouseWheel(event)
         wx.CallAfter(self.Refresh)
 
@@ -95,7 +94,10 @@ class Canvas(CanvasBase):
         self.create_objects()
 
         # glTranslatef(0, 0, -self.dist)
-        # glMultMatrixd(build_rotmatrix(self.basequat))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        glMultMatrixd(quat_to_rotmatrix(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
@@ -106,14 +108,15 @@ class Canvas(CanvasBase):
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.2, 32, 32)
+        gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
         glColor3ub(180, 180, 180)
 
         glBegin(GL_LINES)
-        for i in np.arange(-1, 1, 0.05):
+        for i in np.arange(-10, 11, 1):
+            i *= 0.1
             glVertex3f(i, 1, 0)
             glVertex3f(i, -1, 0)
             glVertex3f(1, i, 0)

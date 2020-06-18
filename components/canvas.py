@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """TODO: Fill in docstring"""
 
+from threading import Lock
 import numpy as np
 
 import wx
@@ -8,7 +9,7 @@ from wx import glcanvas
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
-# from .trackball import trackball, mulquat, axis_to_quat
+from .arcball import trackball, mul_quat, axis_to_quat
 
 
 class CanvasBase(glcanvas.GLCanvas):
@@ -16,13 +17,12 @@ class CanvasBase(glcanvas.GLCanvas):
     MAX_ZOOM = 5.0
     NEAR_CLIP = 3.0
     FAR_CLIP = 7.0
-    ASPECT_CONSTRAINT = 1.9
-    orbit_control = True
+    orbit_control = False
     color_background = (0.941, 0.941, 0.941, 1)
 
     def __init__(self, parent, *args, **kwargs):
         super(CanvasBase, self).__init__(parent, -1)
-        self.GLinitialized = False
+        self.gl_init = False
         self.context = glcanvas.GLContext(self)
         self.context_attrs = glcanvas.GLContextAttrs()
         self.display_attrs = glcanvas.GLAttributes()
@@ -30,6 +30,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.height = None
 
         self.viewpoint = (0.0, 0.0, 0.0)
+        self.rot_lock = Lock()
         self.basequat = [0, 0, 0, 1]
         self.zoom_factor = 1.0
         self.angle_z = 0
@@ -64,6 +65,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def processPaintEvent(self, event):
         """Process the drawing event."""
+        dc = wx.PaintDC(self)
         self.SetCurrent(self.context)
 
         if not self.gl_broken:
@@ -85,9 +87,9 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnInitGL(self):
         """Initialize OpenGL."""
-        if self.GLinitialized:
+        if self.gl_init:
             return
-        self.GLinitialized = True
+        self.gl_init = True
         self.SetCurrent(self.context)
         glClearColor(*self.color_background)
         glClearDepth(1.0)
@@ -110,7 +112,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnDraw(self):
         """Draw the window. Called from processPaintEvents()."""
-        self.SetCurrent(self.context)
+        # self.SetCurrent(self.context)
         glClearColor(*self.color_background)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.draw_objects()
@@ -132,13 +134,13 @@ class CanvasBase(glcanvas.GLCanvas):
         """Process mouse wheel event. Adjusts zoom accordingly
         and takes into consideration the zoom boundaries.
         """
-        wheelRotation = event.GetWheelRotation()
-        print(wheelRotation)
+        delta = event.GetWheelRotation()
+        print(delta)
 
-        if wheelRotation != 0:
-            if wheelRotation > 0:
+        if delta != 0:
+            if delta > 0:
                 self.zoom += 0.1
-            elif wheelRotation < 0:
+            elif delta < 0:
                 self.zoom -= 0.1
 
             if self.zoom < self.MIN_ZOOM:
@@ -219,28 +221,46 @@ class CanvasBase(glcanvas.GLCanvas):
             glTranslatef(-delta_x, -delta_y, 0)
         wx.CallAfter(self.Refresh)
 
-    def orbit(self, p1x, p1y, p2x, p2y):
-        pass
+    def orbit_rotation(self, p1x, p1y, p2x, p2y):
+        delta_z = p2x - p1x
+        self.angle_z -= delta_z
+        rot_z = axis_to_quat([0.0, 0.0, 1.0], self.angle_z)
+
+        delta_x = p2y - p1y
+        self.angle_x += delta_x
+        rot_x = axis_to_quat([1.0, 0.0, 0.0], self.angle_x)
+        return mul_quat(rot_z, rot_x)
+
+    def arcball_rotation(self, p1x, p1y, p2x, p2y):
+        quat = trackball(p1x, p1y, p2x, p2y, 1)
+        return mul_quat(self.basequat, quat)
 
     def handle_rotation(self, event):
         if self.initpos is None:
             self.initpos = event.GetPosition()
-        else:
-            p1 = self.initpos
-            p2 = event.GetPosition()
+            return
+        
+        last = self.initpos
+        cur = event.GetPosition()
 
-            width, height = self.width, self.height
-            x_scale = 180.0 / max(width, 1.0)
-            z_scale = 180.0 / max(height, 1.0)
-            glRotatef((p2.x - p1.x) * x_scale, 0.0, 0.0, 1.0)
-            glRotatef((p2.y - p1.y) * z_scale, 1.0, 0.0, 0.0)
-            self.initpos = p2
+        last_x = float(last.x) * 2.0 / self.width - 1.0
+        last_y = 1 - float(last.y) * 2.0 / self.height
+        cur_x = float(cur.x) * 2.0 / self.width - 1.0
+        cur_y = 1 - float(cur.y) * 2.0 / self.height
+        
+        with self.rot_lock:
+            if self.orbit_control:
+                self.basequat = self.orbit_rotation(last_x, last_y, cur_x, cur_y)
+            else:
+                self.basequat = self.arcball_rotation(last_x, last_y, cur_x, cur_y)
+        self.initpos = cur
 
     def handle_translation(self, event):
         if self.initpos is None:
             self.initpos = event.GetPosition()
-        else:
-            p1 = self.initpos
-            p2 = event.GetPosition()
-            # Do stuff
-            self.initpos = p2
+            return
+        
+        p1 = self.initpos
+        p2 = event.GetPosition()
+        # Do stuff
+        self.initpos = p2
