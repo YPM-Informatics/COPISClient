@@ -88,7 +88,8 @@ class Canvas(CanvasBase):
 
     def double_click(self, event):
         """React to the double click event."""
-        pass
+        
+        
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
@@ -247,3 +248,9 @@ class Camera3D():
                 self.b += amount
             elif axis == Axis.C:
                 self.c += amount
+
+    def translate(self, newx):
+        transx = newx - self.x
+        increx = transx/10
+        while self.x != newx:
+            self.x += increx
