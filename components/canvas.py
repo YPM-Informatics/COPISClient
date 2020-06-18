@@ -243,8 +243,8 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def handle_rotation(self, event, use_arcball=True):
         """Update basequat based on mouse position.
-        arcball = True:     Use arcball_rotation to rotate canvas.
-        arcball = False:    Use orbit_rotation to rotate canvas.
+        use_arcball = True:     Use arcball_rotation to rotate canvas.
+        use_arcball = False:    Use orbit_rotation to rotate canvas.
         """
         if self.initpos is None:
             self.initpos = event.GetPosition()
