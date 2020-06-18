@@ -124,18 +124,17 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
-        pass
+        return
 
     def create_objects(self):
         """Create OpenGL objects when window is initialized."""
-        pass
+        return
 
     def onMouseWheel(self, event):
         """Process mouse wheel event. Adjusts zoom accordingly
         and takes into consideration the zoom boundaries.
         """
         delta = event.GetWheelRotation()
-        print(delta)
 
         if delta != 0:
             if delta > 0:
@@ -196,11 +195,11 @@ class CanvasBase(glcanvas.GLCanvas):
     def mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
         # Ray/plane intersection
         ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
-        ray_near = numpy.array(ray_near)
-        ray_far = numpy.array(ray_far)
+        ray_near = np.array(ray_near)
+        ray_far = np.array(ray_far)
         ray_dir = ray_far - ray_near
         ray_dir = ray_dir / numpy.linalg.norm(ray_dir)
-        plane_normal = numpy.array(plane_normal)
+        plane_normal = np.array(plane_normal)
         q = ray_dir.dot(plane_normal)
         if q == 0:
             return None
