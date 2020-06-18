@@ -1,51 +1,53 @@
 #!/usr/bin/env python3
-"""Helper math functions to implement arcball rotation."""
+"""Helper math functions to implement arcball rotation.
+TODO: Give attribution to Printrun
+"""
 
 import math
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
+from OpenGL.GL import GLdouble
 
 
-def trackball(p1x, p1y, p2x, p2y, r):
-    if p1x == p2x and p1y == p2y:
-        return [0.0, 0.0, 0.0, 1.0]
+def arcball(p1x, p1y, p2x, p2y, r):
+    """Update arcball rotation."""
+    last = sphere_coords(p1x, p1y, r)
+    cur = sphere_coords(p2x, p2y, r)
+    rot_axis = cross(cur, last)
 
-    v1 = [p1x, p1y, sphere_coords(p1x, p1y, r)]
-    v2 = [p2x, p2y, sphere_coords(p2x, p2y, r)]
-    # rot_axis = cross(v2, v1)
-    rot_axis = cross(v1, v2)
-
-    d = map(lambda x, y: x - y, v1, v2)
+    # calculate angle between last and cur
+    d = map(lambda x, y: x - y, last, cur)
     t = math.sqrt(sum(x*x for x in d)) / (2.0*r)
-
     if t > 1.0:
         t = 1.0
     if t < -1.0:
         t = -1.0
     phi = 2.0 * math.asin(t)
-    # phi = math.acos(t)
 
     return axis_to_quat(rot_axis, phi)
 
 
-def cross(v1, v2):
-    """Find the cross product between two vectors."""
-    return [v1[1]*v2[2] - v1[2]*v2[1],
-            v1[2]*v2[0] - v1[0]*v2[2],
-            v1[0]*v2[1] - v1[1]*v2[0]]
+def dot(a, b):
+    """Compute the dot product of two vectors."""
+    return sum([i*j for (i, j) in zip(a, b)])
 
 
-def axis_to_quat(a, phi):
-    lena = math.sqrt(sum(x*x for x in a))
-    q = [x*(1 / lena) for x in a]
-    q = [x*math.sin(phi / 2.0) for x in q]
-    q.append(math.cos(phi / 2.0))
+def cross(a, b):
+    """Compute the cross product of two vectors."""
+    return [a[1]*b[2] - a[2]*b[1],
+            a[2]*b[0] - a[0]*b[2],
+            a[0]*b[1] - a[1]*b[0]]
+
+
+def axis_to_quat(axis, angle):
+    """Compute quaternion from rotation axis and angle."""
+    axis_len = math.sqrt(sum(x*x for x in axis))
+    q = [x*(1 / axis_len) for x in axis]
+    q = [x*math.sin(angle / 2.0) for x in q]
+    q.append(math.cos(angle / 2.0))
     return q
 
 
-def quat_to_rotmatrix(q):
-    """Convert from a quaternion to a rotation matrix.
+def quat_to_mat(q):
+    """Convert the quaternion into a rotation matrix.
     x: q[0], y: q[1], z: q[2], w: q[3]
     """
     m = (GLdouble*16)()
@@ -72,18 +74,19 @@ def quat_to_rotmatrix(q):
 
 
 def sphere_coords(x, y, r):
-    """Find the intersection from screen coords to the arcball sphere."""
+    """Compute the intersection from screen coords to the arcball sphere."""
     d2 = x*x + y*y
     r2 = r * r
-    if (math.sqrt(d2) <= r * 0.70710678118654752440):
-        return math.sqrt(r2 - d2)
-    else:
-        return r2 * 0.5 / math.sqrt(d2)
+    if math.sqrt(d2) <= r * 0.70710678118654752440:
+        # use pythagorean theorem to compute point on sphere
+        return [x, y, math.sqrt(r2 - d2)]
+    # if out of bounds, find the nearest point
+    return [x, y, r2 * 0.5 / math.sqrt(d2)]
 
 
-def mul_quat(q1, rq):
-    """Multiply two quaternions."""
-    return [q1[3]*rq[0] + q1[0]*rq[3] + q1[1]*rq[2] - q1[2]*rq[1],  # 1
-            q1[3]*rq[1] + q1[1]*rq[3] + q1[2]*rq[0] - q1[0]*rq[2],  # i
-            q1[3]*rq[2] + q1[2]*rq[3] + q1[0]*rq[1] - q1[1]*rq[0],  # j
-            q1[3]*rq[3] - q1[0]*rq[0] - q1[1]*rq[1] - q1[2]*rq[2]]  # k
+def mul_quat(a, b):
+    """Compute the product of two quaternions."""
+    return [a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1], # 1
+            a[3]*b[1] + a[1]*b[3] + a[2]*b[0] - a[0]*b[2], # i
+            a[3]*b[2] + a[2]*b[3] + a[0]*b[1] - a[1]*b[0], # j
+            a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]] # k

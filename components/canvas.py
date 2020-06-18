@@ -6,10 +6,10 @@ import numpy as np
 
 import wx
 from wx import glcanvas
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from .arcball import trackball, mul_quat, axis_to_quat
+
+from .arcball import arcball, axis_to_quat, mul_quat
 
 
 class CanvasBase(glcanvas.GLCanvas):
@@ -17,15 +17,16 @@ class CanvasBase(glcanvas.GLCanvas):
     MAX_ZOOM = 5.0
     NEAR_CLIP = 3.0
     FAR_CLIP = 7.0
-    orbit_control = False
     color_background = (0.941, 0.941, 0.941, 1)
 
     def __init__(self, parent, *args, **kwargs):
         super(CanvasBase, self).__init__(parent, -1)
         self.gl_init = False
+        self.gl_broken = False
         self.context = glcanvas.GLContext(self)
         self.context_attrs = glcanvas.GLContextAttrs()
         self.display_attrs = glcanvas.GLAttributes()
+
         self.width = None
         self.height = None
 
@@ -36,8 +37,7 @@ class CanvasBase(glcanvas.GLCanvas):
         self.angle_z = 0
         self.angle_x = 0
         self.zoom = 1
-
-        self.gl_broken = False
+        self.initpos = None
 
         # bind events
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.processEraseBackgroundEvent)
@@ -193,7 +193,7 @@ class CanvasBase(glcanvas.GLCanvas):
         ray_near = (px.value, py.value, pz.value)
         return ray_near, ray_far
 
-    def mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform = False):
+    def mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
         # Ray/plane intersection
         ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
         ray_near = numpy.array(ray_near)
@@ -222,6 +222,9 @@ class CanvasBase(glcanvas.GLCanvas):
         wx.CallAfter(self.Refresh)
 
     def orbit_rotation(self, p1x, p1y, p2x, p2y):
+        """Rotate canvas using two orbits."""
+        if p1x == p2x and p1y == p2y:
+            return [0.0, 0.0, 0.0, 1.0]
         delta_z = p2x - p1x
         self.angle_z -= delta_z
         rot_z = axis_to_quat([0.0, 0.0, 1.0], self.angle_z)
@@ -232,14 +235,20 @@ class CanvasBase(glcanvas.GLCanvas):
         return mul_quat(rot_z, rot_x)
 
     def arcball_rotation(self, p1x, p1y, p2x, p2y):
-        quat = trackball(p1x, p1y, p2x, p2y, 1)
+        """Rotate canvas using an arcball."""
+        if p1x == p2x and p1y == p2y:
+            return [0.0, 0.0, 0.0, 1.0]
+        quat = arcball(p1x, p1y, p2x, p2y, 1)
         return mul_quat(self.basequat, quat)
 
-    def handle_rotation(self, event):
+    def handle_rotation(self, event, arcball=True):
+        """Update basequat based on mouse position.
+        arcball = True:     Use arcball_rotation to rotate canvas.
+        arcball = False:    Use orbit_rotation to rotate canvas.
+        """
         if self.initpos is None:
             self.initpos = event.GetPosition()
             return
-        
         last = self.initpos
         cur = event.GetPosition()
 
@@ -249,18 +258,17 @@ class CanvasBase(glcanvas.GLCanvas):
         cur_y = 1 - float(cur.y) * 2.0 / self.height
         
         with self.rot_lock:
-            if self.orbit_control:
-                self.basequat = self.orbit_rotation(last_x, last_y, cur_x, cur_y)
-            else:
+            if arcball:
                 self.basequat = self.arcball_rotation(last_x, last_y, cur_x, cur_y)
+            else:
+                self.basequat = self.orbit_rotation(last_x, last_y, cur_x, cur_y)
         self.initpos = cur
 
     def handle_translation(self, event):
         if self.initpos is None:
             self.initpos = event.GetPosition()
             return
-        
-        p1 = self.initpos
-        p2 = event.GetPosition()
+        last = self.initpos
+        cur = event.GetPosition()
         # Do stuff
-        self.initpos = p2
+        self.initpos = cur

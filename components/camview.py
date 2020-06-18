@@ -5,25 +5,26 @@ import numpy as np
 from enums import Axis
 
 import wx
-from wx import glcanvas
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .arcball import quat_to_rotmatrix
+from .arcball import quat_to_mat
 
 
 class Canvas(CanvasBase):
+    arcball_control = True
+
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
         self.parent = parent
-        self.initpos = None
+
         self.mousepos = (0, 0)
         self.dist = 1
         self.basequat = [0, 0, 0, 1]
         self.scale = 1.0
         self.camera_objects = []
+        self.initpos = None
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
         self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
@@ -49,7 +50,7 @@ class Canvas(CanvasBase):
         """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
-            self.handle_rotation(event)
+            self.handle_rotation(event, arcball=self.arcball_control)
         elif event.Dragging() and event.RightIsDown():
             self.handle_translation(event)
         elif event.ButtonUp() or event.Leaving():
@@ -71,7 +72,7 @@ class Canvas(CanvasBase):
         factor = 1.05
         x, y = event.GetPosition()
         print(x, y)
-        x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
+        x, y, _ = self.mouse_to_3d(x, y, local_transform=True)
         print(x, y, _)
 
         if delta > 0:
@@ -87,7 +88,7 @@ class Canvas(CanvasBase):
 
     def double_click(self, event):
         """React to the double click event."""
-        pass
+        return
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
@@ -97,7 +98,7 @@ class Canvas(CanvasBase):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        glMultMatrixd(quat_to_rotmatrix(self.basequat))
+        glMultMatrixd(quat_to_mat(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
