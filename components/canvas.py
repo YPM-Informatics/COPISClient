@@ -241,7 +241,7 @@ class CanvasBase(glcanvas.GLCanvas):
         quat = arcball(p1x, p1y, p2x, p2y, 1)
         return mul_quat(self.basequat, quat)
 
-    def handle_rotation(self, event, arcball=True):
+    def handle_rotation(self, event, use_arcball=True):
         """Update basequat based on mouse position.
         arcball = True:     Use arcball_rotation to rotate canvas.
         arcball = False:    Use orbit_rotation to rotate canvas.
@@ -258,7 +258,7 @@ class CanvasBase(glcanvas.GLCanvas):
         cur_y = 1 - float(cur.y) * 2.0 / self.height
         
         with self.rot_lock:
-            if arcball:
+            if use_arcball:
                 self.basequat = self.arcball_rotation(last_x, last_y, cur_x, cur_y)
             else:
                 self.basequat = self.orbit_rotation(last_x, last_y, cur_x, cur_y)
