@@ -98,7 +98,7 @@ class Canvas(CanvasBase):
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         # multiply modelview matrix according to rotation quat
-        glMultMatrixd(quat_to_mat(self.basequat))
+        glMultMatrixf(quat_to_mat(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
