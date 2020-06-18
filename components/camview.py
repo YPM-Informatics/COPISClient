@@ -50,7 +50,7 @@ class Canvas(CanvasBase):
         """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
-            self.handle_rotation(event, arcball=self.arcball_control)
+            self.handle_rotation(event, use_arcball=self.arcball_control)
         elif event.Dragging() and event.RightIsDown():
             self.handle_translation(event)
         elif event.ButtonUp() or event.Leaving():
