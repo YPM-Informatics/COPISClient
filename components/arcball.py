@@ -4,7 +4,7 @@ TODO: Give attribution to Printrun
 """
 
 import math
-from OpenGL.GL import GLdouble
+from OpenGL.GL import GLfloat
 
 
 def arcball(p1x, p1y, p2x, p2y, r):
@@ -50,7 +50,7 @@ def quat_to_mat(q):
     """Convert the quaternion into a rotation matrix.
     x: q[0], y: q[1], z: q[2], w: q[3]
     """
-    m = (GLdouble*16)()
+    m = (GLfloat*16)()
     m[0] = 1.0 - 2.0*q[1]*q[1] - 2.0*q[2]*q[2]
     m[1] = 2.0*q[0]*q[1] - 2.0*q[2]*q[3]
     m[2] = 2.0*q[2]*q[0] + 2.0*q[1]*q[3]
