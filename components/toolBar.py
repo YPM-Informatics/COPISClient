@@ -7,19 +7,9 @@ from controller.serialController import SerialController
 class ToolBarPanel(wx.Panel):
     def __init__(self, parent):
         super(ToolBarPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
-
-        # self.panel = wx.Panel(self, -1)
-        # vbox = wx.BoxSizer(wx.VERTICAL)
-        # self.toolbar = ToolBar(self.panel)
-        # vbox.Add(self.panel, 0, border = 3)
-        # self.SetSizer(vbox)
-        # self.SetToolBar(panel)
-
-        # vbox = wx.BoxSizer(wx.VERTICAL)
-        self.toolbar = wx.ToolBar(self)
-        # vbox.Add(self, 0, border = 5)
-        # self.parent = parent
-        # self.parent.SetSizer(vbox)
+        hbox = wx.BoxSizer()
+        self.toolbar = wx.ToolBar(self, -1, style = wx.TB_HORIZONTAL | wx.NO_BORDER)
+        hbox.Add(self.toolbar, 1, flag=wx.EXPAND)
 
         # port and baud
         self.initPortBaudOptions()
@@ -40,7 +30,7 @@ class ToolBarPanel(wx.Panel):
         self.initSetting()
 
         self.toolbar.Bind(wx.EVT_TOOL, self.handleTool)
-        
+        self.SetSizerAndFit(hbox)
         self.toolbar.Realize()
 
     def initPortBaudOptions(self):

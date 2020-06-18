@@ -56,8 +56,6 @@ class AuiManager(aui.AuiManager):
     def addToolBarPane(self):
         toolbar_panel = ToolBarPanel(self.GetManagedWindow())
         pane_info = aui.AuiPaneInfo().Name("ToolBar").Caption("ToolBar").Top().Resizable(True).Layer(1).Position(0).Movable(False).DestroyOnClose(False)
-        if pane_info.IsResizeable():
-            print("Yeah girl")
         self.AddPane(toolbar_panel, pane_info)
 
     def onPaneClose(self, event):

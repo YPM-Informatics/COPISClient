@@ -34,7 +34,7 @@ class MainFrame(wx.Frame):
         self.edsdkObject = None
 
         ## set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(1000, 820))
+        self.SetMinSize(wx.Size(1000, 900))
 
         ## initialize menu bar
         self.SetMenuBar(MenuBar(self))
