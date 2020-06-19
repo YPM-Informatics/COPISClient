@@ -3,16 +3,18 @@
 
 import numpy as np
 from enums import Axis
+import math
 
 import wx
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .arcball import quat_to_mat
+from .arcball import dot, cross, axis_to_quat, quat_to_mat
 
 
 class Canvas(CanvasBase):
+    # True: use arcball controls, False: use orbit controls
     arcball_control = True
 
     def __init__(self, parent, *args, **kwargs):
@@ -101,6 +103,10 @@ class Canvas(CanvasBase):
     def create_objects(self):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
+        glColor3ub(180, 180, 180)
+        self.draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
+        self.draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
+        self.draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
 
         # draw sphere
         glColor3ub(0, 0, 128)
@@ -128,6 +134,43 @@ class Canvas(CanvasBase):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, 1.5)
         glEnd()
+
+    def draw_circle(self, p, n, r, sides=36):
+        """Draw circle outline given point, plane normal vector, radius, and # sides."""
+        n = np.array(n)
+        if not n.any():
+            raise ValueError('zero magnitude normal vector')
+        n = n / np.linalg.norm(n)
+        ex = np.array([1, 0, 0])
+        ey = np.array([0, 1, 0])
+
+        # rotates x, y, z basis vectors such that the basis vector for the z axis
+        # aligns with the given normal vector n
+        if (n != np.array([0, 0, 1])).any():
+            phi = math.acos(np.dot(n, np.array([0, 0, 1])))
+            axis = np.cross(n, np.array([0, 0, 1]))
+            l = list(quat_to_mat(axis_to_quat(axis.tolist(), phi)))
+            rot = np.array([[l[0], l[1], l[2]], [l[4], l[5], l[6]], [l[8], l[9], l[10]]])
+            ex = rot.dot(np.array([1, 0, 0])) # apply rotation matrices to x and y basis vectors
+            ey = rot.dot(np.array([0, 1, 0]))
+
+        # calculate coordinates of vertices given the sides resolution
+        verts = sides + 1
+        tau = 6.28318530717958647692
+        circle_verts = (GLfloat * (verts*3))()
+        for i in range(verts):
+            circle_verts[i*3] = GLfloat(
+                p[0] + r * (ex[0] * math.cos(i*tau/sides) + ey[0] * math.sin(i*tau/sides)))
+            circle_verts[i*3 + 1] = GLfloat(
+                p[1] + r * (ex[1] * math.cos(i*tau/sides) + ey[1] * math.sin(i*tau/sides)))
+            circle_verts[i*3 + 2] = GLfloat(
+                p[2] + r * (ex[2] * math.cos(i*tau/sides) + ey[2] * math.sin(i*tau/sides)))
+
+        # draw circle
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 0, circle_verts)
+        glDrawArrays(GL_LINE_STRIP, 0, verts)
+        glDisableClientState(GL_VERTEX_ARRAY)
 
 
 class Camera3D():
