@@ -254,7 +254,7 @@ class Camera3D():
                 self.c += amount
 
     def translate(self, newx):
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT)
         # transx = newx - self.x
         # increx = transx/10
         # while self.x != newx:

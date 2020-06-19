@@ -18,7 +18,8 @@ class CanvasBase(glcanvas.GLCanvas):
     FAR_CLIP = 7.0
     ASPECT_CONSTRAINT = 1.9
     orbit_control = True
-    color_background = (0.941, 0.941, 0.941, 1)
+    # color_background = (0.941, 0.941, 0.941, 1)
+    color_background = (0.7, 0.7, 0.7, 1)
 
     def __init__(self, parent, *args, **kwargs):
         super(CanvasBase, self).__init__(parent, -1)
