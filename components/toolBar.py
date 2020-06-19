@@ -28,6 +28,7 @@ class ToolBarPanel(wx.Panel):
 
         # general settings
         self.initSetting()
+        self.toolbar.AddStretchableSpace()
 
         self.toolbar.Bind(wx.EVT_TOOL, self.handleTool)
         self.SetSizerAndFit(hbox)
