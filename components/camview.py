@@ -136,16 +136,16 @@ class Canvas(CanvasBase):
         glEnd()
 
     def draw_circle(self, p, n, r, sides=36):
-        """Draw circle outline given point, plane normal vector, radius, and # sides."""
+        """Draw circle given point, plane normal vector, radius, and # sides."""
         n = np.array(n)
         if not n.any():
             raise ValueError('zero magnitude normal vector')
         n = n / np.linalg.norm(n)
-        ex = np.array([1, 0, 0])
-        ey = np.array([0, 1, 0])
+        ex = np.array([1, 0, 0]) # x axis normal basis vector
+        ey = np.array([0, 1, 0]) # y axis normal basis vector
 
-        # rotates x, y, z basis vectors such that the basis vector for the z axis
-        # aligns with the given normal vector n
+        # rotates x, y, z basis vectors so that the basis vector for the z axis
+        # aligns with the normalized normal vector n
         if (n != np.array([0, 0, 1])).any():
             phi = math.acos(np.dot(n, np.array([0, 0, 1])))
             axis = np.cross(n, np.array([0, 0, 1]))
@@ -166,7 +166,7 @@ class Canvas(CanvasBase):
             circle_verts[i*3 + 2] = GLfloat(
                 p[2] + r * (ex[2] * math.cos(i*tau/sides) + ey[2] * math.sin(i*tau/sides)))
 
-        # draw circle
+        # draw circle using GL_LINE_STRIP
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(3, GL_FLOAT, 0, circle_verts)
         glDrawArrays(GL_LINE_STRIP, 0, verts)
