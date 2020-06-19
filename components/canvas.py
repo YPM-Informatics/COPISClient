@@ -3,6 +3,7 @@
 
 from threading import Lock
 import numpy as np
+import math
 
 import wx
 from wx import glcanvas
@@ -237,7 +238,7 @@ class CanvasBase(glcanvas.GLCanvas):
         """Rotate canvas using an arcball."""
         if p1x == p2x and p1y == p2y:
             return [0.0, 0.0, 0.0, 1.0]
-        quat = arcball(p1x, p1y, p2x, p2y, 1)
+        quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
         return mul_quat(self.basequat, quat)
 
     def handle_rotation(self, event, use_arcball=True):
