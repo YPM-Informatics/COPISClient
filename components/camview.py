@@ -10,7 +10,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .arcball import dot, cross, axis_to_quat, quat_to_mat
+from .arcball import axis_to_quat, quat_to_mat
 
 
 class Canvas(CanvasBase):
