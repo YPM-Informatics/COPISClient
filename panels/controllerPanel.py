@@ -95,7 +95,7 @@ class ControllerPanel(wx.Panel):
 
         self.createVCamBtn = wx.Button(self, wx.ID_ANY, label = "Create 3D camera")
         self.createVCamBtn.Bind(wx.EVT_BUTTON, self.onCreateVirtualCam)
-        hboxTop.Add(self.createVCamBtn, flag = wx.ALIGN_RIGHT)
+        hboxTop.Add(self.createVCamBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag = wx.LEFT|wx.BOTTOM|wx.EXPAND, border = 15)
 
         hboxXyzbc = wx.BoxSizer()
