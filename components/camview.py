@@ -64,16 +64,11 @@ class Canvas(CanvasBase):
 
     def handle_wheel(self, event):
         """(Currently unused) Reacts to mouse wheel changes."""
-        # return
-
         delta = event.GetWheelRotation()
-        print(delta)
 
         factor = 1.05
         x, y = event.GetPosition()
-        print(x, y)
         x, y, _ = self.mouse_to_3d(x, y, local_transform=True)
-        print(x, y, _)
 
         if delta > 0:
             self.zoom_test(factor, (x, y))

@@ -171,7 +171,7 @@ class CanvasBase(glcanvas.GLCanvas):
         glGetIntegerv(GL_VIEWPORT, viewport)
         glGetDoublev(GL_PROJECTION_MATRIX, pmat)
         glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
-        gluUnProject(x, y, z, mvmat, pmat, viewport)#, px, py, pz)
+        gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
         return (px.value, py.value, pz.value)
 
     def mouse_to_ray(self, x, y, local_transform=False):
@@ -198,7 +198,7 @@ class CanvasBase(glcanvas.GLCanvas):
         ray_near = np.array(ray_near)
         ray_far = np.array(ray_far)
         ray_dir = ray_far - ray_near
-        ray_dir = ray_dir / numpy.linalg.norm(ray_dir)
+        ray_dir = ray_dir / np.linalg.norm(ray_dir)
         plane_normal = np.array(plane_normal)
         q = ray_dir.dot(plane_normal)
         if q == 0:
@@ -208,7 +208,7 @@ class CanvasBase(glcanvas.GLCanvas):
             return None
         return ray_near + t * ray_dir
 
-    def zoom_test(self, factor, to = None):
+    def zoom_test(self, factor, to=None):
         glMatrixMode(GL_MODELVIEW)
         if to:
             delta_x = to[0]
