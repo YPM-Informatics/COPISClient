@@ -154,7 +154,7 @@ class Canvas(CanvasBase):
             ex = rot.dot(np.array([1, 0, 0])) # apply rotation matrices to x and y basis vectors
             ey = rot.dot(np.array([0, 1, 0]))
 
-        # calculate coordinates of vertices given the sides resolution
+        # calculate coordinates of vertices in circle
         verts = sides + 1
         tau = 6.28318530717958647692
         circle_verts = (GLfloat * (verts*3))()
