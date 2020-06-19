@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+"""TODO: Fill in docstring"""
+
 import wx
 from frames.pathGeneratorFrame import *
 from frames.configPreferenceFrame import *
 
 
 class MenuBar(wx.MenuBar):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(MenuBar, self).__init__()
         self.parent = parent
 
