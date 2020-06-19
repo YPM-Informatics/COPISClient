@@ -107,7 +107,7 @@ class CanvasBase(glcanvas.GLCanvas):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, float(width) / height, self.NEAR_CLIP, self.FAR_CLIP)
+        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
         glMatrixMode(GL_MODELVIEW)
 
     def OnDraw(self):
@@ -255,7 +255,7 @@ class CanvasBase(glcanvas.GLCanvas):
         last_y = 1 - float(last.y) * 2.0 / self.height
         cur_x = float(cur.x) * 2.0 / self.width - 1.0
         cur_y = 1 - float(cur.y) * 2.0 / self.height
-        
+
         with self.rot_lock:
             if use_arcball:
                 self.basequat = self.arcball_rotation(last_x, last_y, cur_x, cur_y)
