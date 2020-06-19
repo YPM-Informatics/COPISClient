@@ -38,7 +38,7 @@ def cross(a, b):
 
 
 def axis_to_quat(axis, angle):
-    """Compute quaternion from rotation axis and angle."""
+    """Compute the quaternion given rotation axis and angle."""
     axis_len = math.sqrt(sum(x*x for x in axis))
     q = [x*(1 / axis_len) for x in axis]
     q = [x*math.sin(angle / 2.0) for x in q]
