@@ -7,76 +7,80 @@ from frames.settingsFrame import SettingsFrame
 from controller.serialController import SerialController
 
 
-class ToolBar(wx.ToolBar):
-    def __init__(self, parent, *args, **kwargs):
-        super(ToolBar, self).__init__(parent)
+class ToolBarPanel(wx.Panel):
+    def __init__(self, parent):
+        super(ToolBarPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
+        hbox = wx.BoxSizer()
+        self.toolbar = wx.ToolBar(self, -1, style = wx.TB_HORIZONTAL | wx.NO_BORDER)
+        hbox.Add(self.toolbar, 1, flag=wx.EXPAND)
 
         # port and baud
         self.initPortBaudOptions()
         self.controller = SerialController()
         self.setPorts()
         self.setBaudRates()
-        self.AddStretchableSpace()
+        self.toolbar.AddStretchableSpace()
 
         # play, pause and stop buttons to animate the commands
         self.initAnimationButtons()
-        self.AddStretchableSpace()
+        self.toolbar.AddStretchableSpace()
 
         # import file
         self.initImport()
-        self.AddStretchableSpace()
+        self.toolbar.AddStretchableSpace()
 
         # general settings
         self.initSetting()
+        self.toolbar.AddStretchableSpace()
 
-        self.Bind(wx.EVT_TOOL, self.handleTool)
-
-        self.Realize()
+        self.toolbar.Bind(wx.EVT_TOOL, self.handleTool)
+        self.SetSizerAndFit(hbox)
+        self.toolbar.Realize()
 
     def initPortBaudOptions(self):
-        self.AddStretchableSpace()
-        portLabel = wx.StaticText(self, id=wx.ID_ANY, label="Port: ", style=wx.ALIGN_LEFT)
-        self.AddControl(portLabel)
-        self.portCombo = wx.ComboBox(self, wx.ID_ANY, value="")
-        self.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
-        self.AddControl(self.portCombo)
-        baudLabel = wx.StaticText(self, id=wx.ID_ANY, label=" Baud: ", style=wx.ALIGN_RIGHT)
-        self.AddControl(baudLabel)
-        self.baudCombo = wx.ComboBox(self, wx.ID_ANY, value="")
-        self.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
-        self.AddControl(self.baudCombo)
+        self.toolbar.AddStretchableSpace()
+        portLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label="Port: ", style=wx.ALIGN_LEFT)
+        self.toolbar.AddControl(portLabel)
+        self.toolbar.portCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value="", style = wx.CB_DROPDOWN)
+        self.toolbar.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
+        self.toolbar.AddControl(self.toolbar.portCombo)
+        baudLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label=" Baud: ", style=wx.ALIGN_RIGHT)
+        self.toolbar.AddControl(baudLabel)
+        self.toolbar.baudCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value="")
+        self.toolbar.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
+        self.toolbar.AddControl(self.toolbar.baudCombo)
 
-        self.connectBtn = wx.Button(self, wx.ID_ANY, label="Connect")
-        self.connectBtn.Bind(wx.EVT_BUTTON, self.onConnect)
-        self.AddControl(self.connectBtn)
+        self.toolbar.connectBtn = wx.Button(self.toolbar, wx.ID_ANY, label="Connect")
+        self.toolbar.connectBtn.Bind(wx.EVT_BUTTON, self.onConnect)
+        self.toolbar.AddControl(self.toolbar.connectBtn)
 
     def initAnimationButtons(self):
         # TODO: 3D simulation functionalities -- play, pause and stop
         playImg = wx.Image('img/play.png')
         playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp="Play the simulation of commands.")
+        self.toolbar.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp="Play the simulation of commands.")
 
         pauseImg = wx.Image('img/pause.png')
         pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp="Pause the simulation.")
+        self.toolbar.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp="Pause the simulation.")
 
         stopImg = wx.Image('img/stop.png')
         stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp="Stop the simulation.")
+        self.toolbar.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp="Stop the simulation.")
 
     def initImport(self):
         # TODO: browsing the file system and importing file functionalities
-        fileLabel = wx.StaticText(self, id=wx.ID_ANY, label="File: ", style=wx.ALIGN_LEFT)
-        self.AddControl(fileLabel)
-        fileBox = wx.TextCtrl(self)
-        self.AddControl(fileBox)
-        loadBtn = wx.Button(self, wx.ID_ANY, label="Browse")
-        self.AddControl(loadBtn)
+        fileLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label="File: ", style=wx.ALIGN_LEFT)
+        self.toolbar.AddControl(fileLabel)
+        fileBox = wx.TextCtrl(self.toolbar)
+        self.toolbar.AddControl(fileBox)
+        loadBtn = wx.Button(self.toolbar, wx.ID_ANY, label="Browse")
+        self.toolbar.AddControl(loadBtn)
 
     def initSetting(self):
         settingImg = wx.Image('img/setting.png')
         settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        self.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp="Set general settings of the application.")
+        self.toolbar.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp="Set general settings of the application.")
 
     def handleTool(self, event):
         if event.GetId() == Tool_Ids.Settings.value:
@@ -84,9 +88,9 @@ class ToolBar(wx.ToolBar):
             settingsFrame.Show()
 
     def setPorts(self):
-        self.portCombo.Clear()
+        self.toolbar.portCombo.Clear()
         for port in self.controller.ports:
-            self.portCombo.Append(port)
+            self.toolbar.portCombo.Append(port)
 
     def setBaudRates(self):
         if self.controller.bauds:

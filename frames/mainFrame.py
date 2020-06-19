@@ -1,7 +1,7 @@
 import wx
 from ctypes import *
 from controller.auiManager import AuiManager
-from components.toolBar import ToolBar
+from components.toolBar import ToolBarPanel
 from components.menuBar import MenuBar
 from components.statusBar import StatusBar
 
@@ -27,30 +27,28 @@ class MyPopupMenu(wx.Menu):
 
 class MainFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
-        super(MainFrame, self).__init__(*args, **kwargs, style = wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE, title = "COPIS")
+        super(MainFrame, self).__init__(*args, **kwargs)
 
         self.cam_list = []
         self.is_edsdk_on = False
         self.edsdkObject = None
 
         ## set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(1000, 820))
+        self.SetMinSize(wx.Size(1000, 900))
 
         ## initialize menu bar
         self.SetMenuBar(MenuBar(self))
-
-        ## initialize tool bar
-        self.SetToolBar(ToolBar(self))
-        self.GetToolBar().Realize()
 
         ## initialize status bar
         self.SetStatusBar(StatusBar(self))
 
         ## initialize advanced user interface manager and panes
         self.auiManager = AuiManager(self)
+        self.toolbar_panel = self.auiManager.GetPane("ToolBar").window
         self.console_panel = self.auiManager.GetPane("Console").window
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.controller_panel = self.auiManager.GetPane('Controller').window
+        
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
