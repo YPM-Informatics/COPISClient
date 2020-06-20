@@ -109,7 +109,7 @@ class Canvas(CanvasBase):
         draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
         draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
         draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        draw_helix([0, 0, -1], [0, 0, 1], 1.41421356237, 0.05, 40)
+        draw_helix([0, 0, -2], [0, 0, 1], 1.41421356237, 0.05, 80, 100)
         self.a += time.time() - start
         self.b += 1
         print(self.a / self.b)
