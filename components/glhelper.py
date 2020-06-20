@@ -68,7 +68,7 @@ def mul_quat(quat1, quat2):
         w1*z2 + x1*y2 - y1*x2 + z1*w2])
 
 
-def rotate_to(v):
+def rotate_basis(v):
     """Compute normal basis vectors after a change of basis.
     Calculates rotation matrix such that R*(0,0,1) = v."""
     v = np.array(v)
@@ -90,7 +90,7 @@ def rotate_to(v):
 
 def draw_circle(p, n, r, sides=36):
     """Draw circle given point, normal vector, radius, and # sides."""
-    a, b, n = rotate_to(n)
+    a, b, n = rotate_basis(n)
     tau = 6.28318530717958647692
 
     count = sides + 1
@@ -109,7 +109,7 @@ def draw_circle(p, n, r, sides=36):
 
 def draw_helix(p, n, r, pitch=1, turns=1.0, sides=36):
     """Draw helix given point, normal vector, radius, pitch, # turns, and # sides."""
-    a, b, n = rotate_to(n)
+    a, b, n = rotate_basis(n)
     tau = 6.28318530717958647692
 
     count = int(sides * turns) + 1
