@@ -44,8 +44,8 @@ def vector_to_quat(axis, angle):
     axis_len = math.sqrt(sum(x*x for x in axis))
     q = [x*(1 / axis_len) for x in axis]
     q = [x*math.sin(angle / 2.0) for x in q]
-    q.append(math.cos(angle / 2.0))
-    return [q[3], q[0], q[1], q[2]]
+    q.insert(0, math.cos(angle / 2.0))
+    return q
 
 
 def quat_to_matrix(quat):
@@ -81,31 +81,22 @@ def rotate_basis(v):
 
     # rotate such that that the basis vector for the z axis aligns with v
     if (v != np.array([0, 0, 1])).any():
-        phi = math.acos(np.dot(v, np.array([0, 0, 1])))
-        axis = np.cross(np.array([0, 0, 1]), v)
-        rot = quat_to_matrix(vector_to_quat(axis.tolist(), phi)).reshape(4, 4)[:3, :3]
+        phi = math.acos(v[2])
+        axis = (-v[1], v[0], 0.0)
+        rot = quat_to_matrix(vector_to_quat(axis, phi)).reshape(4, 4)[:3, :3]
         x = rot.dot(x)
         y = rot.dot(y)
     return x, y, v
 
 
-def draw_circle_trig(p, n, r, sides=36):
-    """Draw circle given point, normal vector, radius, and # sides."""
-    a, b, n = rotate_basis(n)
-    tau = 6.28318530717958647692
+def draw_circle(*args):
+    """Wrapper function to draw circle."""
+    draw_circle_approx(*args)
 
-    count = sides + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i*3] = p[0] + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
-        vertices[i*3 + 1] = p[1] + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
-        vertices[i*3 + 2] = p[2] + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
 
-    # draw vertices
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glDrawArrays(GL_LINE_STRIP, 0, count)
-    glDisableClientState(GL_VERTEX_ARRAY)
+def draw_helix(*args):
+    """Wrapper function to draw helix."""
+    draw_helix_approx(*args)
 
 
 def draw_circle_approx(p, n, r, sides=36):
@@ -123,39 +114,12 @@ def draw_circle_approx(p, n, r, sides=36):
         vertices[i*3] = x + p[0]
         vertices[i*3 + 1] = y + p[1]
         vertices[i*3 + 2] = z + p[2]
-        tx = y*n[2] - z*n[1]
-        ty = z*n[0] - x*n[2]
-        tz = x*n[1] - y*n[0]
-        x += tx * tangential_factor
-        y += ty * tangential_factor
-        z += tz * tangential_factor
-        x *= radial_factor
-        y *= radial_factor
-        z *= radial_factor
-
-    # draw vertices
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glDrawArrays(GL_LINE_STRIP, 0, count)
-    glDisableClientState(GL_VERTEX_ARRAY)
-
-
-def draw_circle(*args):
-    """Wrapper function to draw circle."""
-    draw_circle_approx(*args)
-
-
-def draw_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
-    """Draw helix given point, normal vector, radius, pitch, # turns, and # sides."""
-    a, b, n = rotate_basis(n)
-    tau = 6.28318530717958647692
-
-    count = int(sides * turns) + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i*3] = p[0] + n[0]*(i*pitch/sides) + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
-        vertices[i*3 + 1] = p[1] + n[1]*(i*pitch/sides) + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
-        vertices[i*3 + 2] = p[2] + n[2]*(i*pitch/sides) + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
+        tx = (y*n[2] - z*n[1]) * tangential_factor
+        ty = (z*n[0] - x*n[2]) * tangential_factor
+        tz = (x*n[1] - y*n[0]) * tangential_factor
+        x = (x + tx) * radial_factor
+        y = (y + ty) * radial_factor
+        z = (z + tz) * radial_factor
 
     # draw vertices
     glEnableClientState(GL_VERTEX_ARRAY)
@@ -193,6 +157,39 @@ def draw_helix_approx(p, n, r, pitch=1, turns=1.0, sides=36):
     glDisableClientState(GL_VERTEX_ARRAY)
 
 
-def draw_helix(*args):
-    """Wrapper function to draw helix."""
-    draw_helix_approx(*args)
+def draw_circle_trig(p, n, r, sides=36):
+    """Draw circle given point, normal vector, radius, and # sides."""
+    a, b, n = rotate_basis(n)
+    tau = 6.28318530717958647692
+
+    count = sides + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = p[0] + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
+        vertices[i*3 + 1] = p[1] + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
+        vertices[i*3 + 2] = p[2] + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)
+
+
+def draw_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
+    """Draw helix given point, normal vector, radius, pitch, # turns, and # sides."""
+    a, b, n = rotate_basis(n)
+    tau = 6.28318530717958647692
+
+    count = int(sides * turns) + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = p[0] + n[0]*(i*pitch/sides) + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
+        vertices[i*3 + 1] = p[1] + n[1]*(i*pitch/sides) + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
+        vertices[i*3 + 2] = p[2] + n[2]*(i*pitch/sides) + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)
