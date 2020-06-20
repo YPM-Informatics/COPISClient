@@ -5,6 +5,8 @@ TODO: Give attribution to Printrun
 
 import math
 import numpy as np
+from OpenGL.GL import (GL_VERTEX_ARRAY, GL_FLOAT, GL_LINE_STRIP,
+    glEnableClientState, glVertexPointer, glDrawArrays, glDisableClientState)
 
 
 def arcball(p1x, p1y, p2x, p2y, r):
@@ -46,8 +48,7 @@ def vector_to_quat(axis, angle):
 
 
 def quat_to_matrix(quat):
-    """Convert quaternion into a 4x4 rotation matrix.
-    """
+    """Convert quaternion into a 4x4 rotation matrix."""
     w, x, y, z = quat
     return np.array([
         1.0 - 2.0*y*y - 2.0*z*z, 2.0*x*y - 2.0*w*z, 2.0*x*z + 2.0*w*y, 0.0,
@@ -65,3 +66,61 @@ def mul_quat(quat1, quat2):
         w1*x2 + x1*w2 + y1*z2 - z1*y2,
         w1*y2 - x1*z2 + y1*w2 + z1*x2,
         w1*z2 + x1*y2 - y1*x2 + z1*w2])
+
+
+def rotate_to(v):
+    """Compute normal basis vectors after a change of basis.
+    Calculates rotation matrix such that R*(0,0,1) = v."""
+    v = np.array(v)
+    if not v.any():
+        raise ValueError('zero magnitude vector')
+    v = v / np.linalg.norm(v)
+    x = np.array([1, 0, 0]) # x axis normal basis vector
+    y = np.array([0, 1, 0]) # y axis normal basis vector
+
+    # rotate such that that the basis vector for the z axis aligns with v
+    if (v != np.array([0, 0, 1])).any():
+        phi = math.acos(np.dot(v, np.array([0, 0, 1])))
+        axis = np.cross(v, np.array([0, 0, 1]))
+        rot = quat_to_matrix(vector_to_quat(axis.tolist(), phi)).reshape(4, 4)[:3, :3]
+        x = rot.dot(x)
+        y = rot.dot(y)
+    return x, y, v
+
+
+def draw_circle(p, n, r, sides=36):
+    """Draw circle given point, normal vector, radius, and # sides."""
+    a, b, n = rotate_to(n)
+    tau = 6.28318530717958647692
+
+    count = sides + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = p[0] + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
+        vertices[i*3 + 1] = p[1] + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
+        vertices[i*3 + 2] = p[2] + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)
+
+
+def draw_helix(p, n, r, pitch=1, turns=1.0, sides=36):
+    """Draw helix given point, normal vector, radius, pitch, # turns, and # sides."""
+    a, b, n = rotate_to(n)
+    tau = 6.28318530717958647692
+
+    count = int(sides * turns) + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = p[0] + n[0]*(i*pitch/sides) + r*(a[0]*math.cos(i*tau/sides) + b[0]*math.sin(i*tau/sides))
+        vertices[i*3 + 1] = p[1] + n[1]*(i*pitch/sides) + r*(a[1]*math.cos(i*tau/sides) + b[1]*math.sin(i*tau/sides))
+        vertices[i*3 + 2] = p[2] + n[2]*(i*pitch/sides) + r*(a[2]*math.cos(i*tau/sides) + b[2]*math.sin(i*tau/sides))
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)

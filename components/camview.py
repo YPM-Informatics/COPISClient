@@ -10,7 +10,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .glhelper import vector_to_quat, quat_to_matrix
+from .glhelper import vector_to_quat, quat_to_matrix, draw_circle, draw_helix
 
 
 class Canvas(CanvasBase):
@@ -102,9 +102,12 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
         glColor3ub(180, 180, 180)
-        self.draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
-        self.draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
-        self.draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
+        # draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
+        # draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
+        # draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
+        draw_helix([0, 0, 0], [0, 0, 1], 1.41421356237, 0.2, 10)
+        draw_helix([0, 0, 0], [0, 1, 0], 1.41421356237, 0.2, 10)
+        draw_helix([0, 0, 0], [1, 0, 0], 1.41421356237, 0.2, 10)
 
         # draw sphere
         glColor3ub(0, 0, 128)
@@ -132,38 +135,6 @@ class Canvas(CanvasBase):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, 1.5)
         glEnd()
-
-    def draw_circle(self, p, n, r, sides=36):
-        """Draw circle given point, plane normal vector, radius, and # sides."""
-        n = np.array(n)
-        if not n.any():
-            raise ValueError('zero magnitude normal vector')
-        n = n / np.linalg.norm(n)
-        ex = np.array([1, 0, 0]) # x axis normal basis vector
-        ey = np.array([0, 1, 0]) # y axis normal basis vector
-
-        # rotate such that that the basis vector for the z axis aligns with n
-        if (n != np.array([0, 0, 1])).any():
-            phi = math.acos(np.dot(n, np.array([0, 0, 1])))
-            axis = np.cross(n, np.array([0, 0, 1]))
-            rot = quat_to_matrix(vector_to_quat(axis.tolist(), phi)).reshape(4, 4)[:3, :3]
-            ex = rot.dot(ex) # apply rotation matrices to x and y basis vectors
-            ey = rot.dot(ey)
-
-        # calculate coordinates of vertices in circle
-        verts = sides + 1
-        tau = 6.28318530717958647692
-        circle_verts = np.empty(verts * 3)
-        for i in range(verts):
-            circle_verts[i*3] = p[0] + r * (ex[0] * math.cos(i*tau/sides) + ey[0] * math.sin(i*tau/sides))
-            circle_verts[i*3 + 1] = p[1] + r * (ex[1] * math.cos(i*tau/sides) + ey[1] * math.sin(i*tau/sides))
-            circle_verts[i*3 + 2] = p[2] + r * (ex[2] * math.cos(i*tau/sides) + ey[2] * math.sin(i*tau/sides))
-
-        # draw circle using GL_LINE_STRIP
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, circle_verts)
-        glDrawArrays(GL_LINE_STRIP, 0, verts)
-        glDisableClientState(GL_VERTEX_ARRAY)
 
 
 class Camera3D():
