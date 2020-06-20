@@ -10,7 +10,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .arcball import axis_to_quat, quat_to_mat
+from .glhelper import vector_to_quat, quat_to_matrix
 
 
 class Canvas(CanvasBase):
@@ -21,11 +21,9 @@ class Canvas(CanvasBase):
         super(Canvas, self).__init__(parent)
         self.parent = parent
 
-        self.mousepos = (0, 0)
-        self.dist = 1
-        self.basequat = [0, 0, 0, 1]
         self.scale = 1.0
         self.camera_objects = []
+        self.mousepos = (0, 0)
         self.initpos = None
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
@@ -95,7 +93,7 @@ class Canvas(CanvasBase):
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         # multiply modelview matrix according to rotation quat
-        glMultMatrixf(quat_to_mat(self.basequat))
+        glMultMatrixf(quat_to_matrix(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
@@ -144,27 +142,22 @@ class Canvas(CanvasBase):
         ex = np.array([1, 0, 0]) # x axis normal basis vector
         ey = np.array([0, 1, 0]) # y axis normal basis vector
 
-        # rotates x, y, z basis vectors so that the basis vector for the z axis
-        # aligns with the normalized normal vector n
+        # rotate such that that the basis vector for the z axis aligns with n
         if (n != np.array([0, 0, 1])).any():
             phi = math.acos(np.dot(n, np.array([0, 0, 1])))
             axis = np.cross(n, np.array([0, 0, 1]))
-            l = list(quat_to_mat(axis_to_quat(axis.tolist(), phi)))
-            rot = np.array([[l[0], l[1], l[2]], [l[4], l[5], l[6]], [l[8], l[9], l[10]]])
-            ex = rot.dot(np.array([1, 0, 0])) # apply rotation matrices to x and y basis vectors
-            ey = rot.dot(np.array([0, 1, 0]))
+            rot = quat_to_matrix(vector_to_quat(axis.tolist(), phi)).reshape(4, 4)[:3, :3]
+            ex = rot.dot(ex) # apply rotation matrices to x and y basis vectors
+            ey = rot.dot(ey)
 
         # calculate coordinates of vertices in circle
         verts = sides + 1
         tau = 6.28318530717958647692
-        circle_verts = (GLfloat * (verts*3))()
+        circle_verts = np.empty(verts * 3)
         for i in range(verts):
-            circle_verts[i*3] = GLfloat(
-                p[0] + r * (ex[0] * math.cos(i*tau/sides) + ey[0] * math.sin(i*tau/sides)))
-            circle_verts[i*3 + 1] = GLfloat(
-                p[1] + r * (ex[1] * math.cos(i*tau/sides) + ey[1] * math.sin(i*tau/sides)))
-            circle_verts[i*3 + 2] = GLfloat(
-                p[2] + r * (ex[2] * math.cos(i*tau/sides) + ey[2] * math.sin(i*tau/sides)))
+            circle_verts[i*3] = p[0] + r * (ex[0] * math.cos(i*tau/sides) + ey[0] * math.sin(i*tau/sides))
+            circle_verts[i*3 + 1] = p[1] + r * (ex[1] * math.cos(i*tau/sides) + ey[1] * math.sin(i*tau/sides))
+            circle_verts[i*3 + 2] = p[2] + r * (ex[2] * math.cos(i*tau/sides) + ey[2] * math.sin(i*tau/sides))
 
         # draw circle using GL_LINE_STRIP
         glEnableClientState(GL_VERTEX_ARRAY)

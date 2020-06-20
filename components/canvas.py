@@ -10,7 +10,7 @@ from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from .arcball import arcball, axis_to_quat, mul_quat
+from .glhelper import arcball, vector_to_quat, mul_quat
 
 
 class CanvasBase(glcanvas.GLCanvas):
@@ -33,7 +33,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
         self.viewpoint = (0.0, 0.0, 0.0)
         self.rot_lock = Lock()
-        self.basequat = [0, 0, 0, 1]
+        self.basequat = np.array([1, 0, 0, 0])
         self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
@@ -224,20 +224,20 @@ class CanvasBase(glcanvas.GLCanvas):
     def orbit_rotation(self, p1x, p1y, p2x, p2y):
         """Rotate canvas using two orbits."""
         if p1x == p2x and p1y == p2y:
-            return [0.0, 0.0, 0.0, 1.0]
+            return np.array([1.0, 0.0, 0.0, 0.0])
         delta_z = p2x - p1x
         self.angle_z -= delta_z
-        rot_z = axis_to_quat([0.0, 0.0, 1.0], self.angle_z)
+        rot_z = vector_to_quat([0.0, 0.0, 1.0], self.angle_z)
 
         delta_x = p2y - p1y
         self.angle_x += delta_x
-        rot_x = axis_to_quat([1.0, 0.0, 0.0], self.angle_x)
+        rot_x = vector_to_quat([1.0, 0.0, 0.0], self.angle_x)
         return mul_quat(rot_z, rot_x)
 
     def arcball_rotation(self, p1x, p1y, p2x, p2y):
         """Rotate canvas using an arcball."""
         if p1x == p2x and p1y == p2y:
-            return [0.0, 0.0, 0.0, 1.0]
+            return np.array([1.0, 0.0, 0.0, 0.0])
         quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
         return mul_quat(self.basequat, quat)
 
