@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Helper functions for quaternion math and arcball rotation.
+"""Helper functions for quaternion math, arcball rotation, and paths.
 TODO: Give attribution to Printrun
 """
 
@@ -7,6 +7,7 @@ import math
 import numpy as np
 from OpenGL.GL import (GL_VERTEX_ARRAY, GL_FLOAT, GL_LINE_STRIP,
     glEnableClientState, glVertexPointer, glDrawArrays, glDisableClientState)
+import time
 
 
 def arcball(p1x, p1y, p2x, p2y, r):
@@ -35,7 +36,7 @@ def sphere_coords(x, y, r):
         # use pythagorean theorem to compute point on sphere
         return [x, y, math.sqrt(r2 - d2)]
     # if out of bounds, find the nearest point
-    return np.array([x, y, r2 * 0.5 / math.sqrt(d2)])
+    return [x, y, r2 * 0.5 / math.sqrt(d2)]
 
 
 def vector_to_quat(axis, angle):
@@ -81,14 +82,14 @@ def rotate_basis(v):
     # rotate such that that the basis vector for the z axis aligns with v
     if (v != np.array([0, 0, 1])).any():
         phi = math.acos(np.dot(v, np.array([0, 0, 1])))
-        axis = np.cross(v, np.array([0, 0, 1]))
+        axis = np.cross(np.array([0, 0, 1]), v)
         rot = quat_to_matrix(vector_to_quat(axis.tolist(), phi)).reshape(4, 4)[:3, :3]
         x = rot.dot(x)
         y = rot.dot(y)
     return x, y, v
 
 
-def draw_circle(p, n, r, sides=36):
+def draw_circle_trig(p, n, r, sides=36):
     """Draw circle given point, normal vector, radius, and # sides."""
     a, b, n = rotate_basis(n)
     tau = 6.28318530717958647692
@@ -107,7 +108,44 @@ def draw_circle(p, n, r, sides=36):
     glDisableClientState(GL_VERTEX_ARRAY)
 
 
-def draw_helix(p, n, r, pitch=1, turns=1.0, sides=36):
+def draw_circle_approx(p, n, r, sides=36):
+    """Draw circle given point, normal vector, radius, and # sides.
+    Uses an approximation method, up to 4x faster than draw_circle_trig."""
+    a, b, n = rotate_basis(n)
+    theta = 6.28318530717958647692 / sides
+    tangential_factor = math.tan(theta)
+    radial_factor = math.cos(theta)
+
+    x, y, z = r*a[0], r*a[1], r*a[2]
+    count = sides + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = x + p[0]
+        vertices[i*3 + 1] = y + p[1]
+        vertices[i*3 + 2] = z + p[2]
+        tx = y*n[2] - z*n[1]
+        ty = z*n[0] - x*n[2]
+        tz = x*n[1] - y*n[0]
+        x += tx * tangential_factor
+        y += ty * tangential_factor
+        z += tz * tangential_factor
+        x *= radial_factor
+        y *= radial_factor
+        z *= radial_factor
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)
+
+
+def draw_circle(*args):
+    """Wrapper function to draw circle."""
+    draw_circle_approx(*args)
+
+
+def draw_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
     """Draw helix given point, normal vector, radius, pitch, # turns, and # sides."""
     a, b, n = rotate_basis(n)
     tau = 6.28318530717958647692
@@ -124,3 +162,37 @@ def draw_helix(p, n, r, pitch=1, turns=1.0, sides=36):
     glVertexPointer(3, GL_FLOAT, 0, vertices)
     glDrawArrays(GL_LINE_STRIP, 0, count)
     glDisableClientState(GL_VERTEX_ARRAY)
+
+
+def draw_helix_approx(p, n, r, pitch=1, turns=1.0, sides=36):
+    """Draw helix given point, normal vector, radius, pitch, # turns, and # sides.
+    Uses an approximation method, up to 4x faster than draw_helix_trig."""
+    a, b, n = rotate_basis(n)
+    theta = 6.28318530717958647692 / sides
+    tangential_factor = math.tan(theta)
+    radial_factor = math.cos(theta)
+
+    x, y, z = r*a[0], r*a[1], r*a[2]
+    count = int(sides * turns) + 1
+    vertices = np.empty(count * 3)
+    for i in range(count):
+        vertices[i*3] = x + p[0] + n[0]*(i*pitch/sides)
+        vertices[i*3 + 1] = y + p[1] + n[1]*(i*pitch/sides)
+        vertices[i*3 + 2] = z + p[2] + n[2]*(i*pitch/sides)
+        tx = (y*n[2] - z*n[1]) * tangential_factor
+        ty = (z*n[0] - x*n[2]) * tangential_factor
+        tz = (x*n[1] - y*n[0]) * tangential_factor
+        x = (x + tx) * radial_factor
+        y = (y + ty) * radial_factor
+        z = (z + tz) * radial_factor
+
+    # draw vertices
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointer(3, GL_FLOAT, 0, vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, count)
+    glDisableClientState(GL_VERTEX_ARRAY)
+
+
+def draw_helix(*args):
+    """Wrapper function to draw helix."""
+    draw_helix_approx(*args)
