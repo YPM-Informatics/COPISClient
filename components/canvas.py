@@ -58,6 +58,9 @@ class CanvasBase(glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         self.OnReshape()
         self.Refresh(False)
+        timer = wx.CallLater(100, self.Refresh)
+        timer.Start()
+        event.Skip()
 
     def processPaintEvent(self, event):
         """Process the drawing event."""
