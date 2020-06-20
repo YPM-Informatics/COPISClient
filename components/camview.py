@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .glhelper import vector_to_quat, quat_to_matrix, draw_circle, draw_helix, draw_helix_approx, draw_helix_trig
+from .glhelper import vector_to_quat, quat_to_matrix, draw_circle, draw_helix
 
 
 class Canvas(CanvasBase):
@@ -26,6 +26,8 @@ class Canvas(CanvasBase):
         self.camera_objects = []
         self.mousepos = (0, 0)
         self.initpos = None
+        self.a = 0
+        self.b = 0
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
         self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
@@ -103,10 +105,14 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
         glColor3ub(150, 150, 150)
+        start = time.time()
         draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
         draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
         draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        draw_helix([0, 0, -1], [0, 0, 1], 1.41421356237, 0.2, 10)
+        draw_helix([0, 0, -1], [0, 0, 1], 1.41421356237, 0.05, 40)
+        self.a += time.time() - start
+        self.b += 1
+        print(self.a / self.b)
 
         # draw sphere
         glColor3ub(0, 0, 128)
