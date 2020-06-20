@@ -101,13 +101,14 @@ def draw_helix(*args):
 
 def draw_circle_approx(p, n, r, sides=36):
     """Draw circle given point, normal vector, radius, and # sides.
-    Uses an approximation method, up to 4x faster than draw_circle_trig."""
+    Uses an approximation method to compute vertices, up to 4x faster than draw_circle_trig.
+    """
     a, b, n = rotate_basis(n)
     theta = 6.28318530717958647692 / sides
     tangential_factor = math.tan(theta)
     radial_factor = math.cos(theta)
 
-    x, y, z = r*a[0], r*a[1], r*a[2]
+    x, y, z = r * a[0], r * a[1], r * a[2]
     count = sides + 1
     vertices = np.empty(count * 3)
     for i in range(count):
@@ -130,19 +131,21 @@ def draw_circle_approx(p, n, r, sides=36):
 
 def draw_helix_approx(p, n, r, pitch=1, turns=1.0, sides=36):
     """Draw helix given point, normal vector, radius, pitch, # turns, and # sides.
-    Uses an approximation method, up to 4x faster than draw_helix_trig."""
+    Uses an approximation method to compute vertices, up to 4x faster than draw_helix_trig.
+    """
     a, b, n = rotate_basis(n)
     theta = 6.28318530717958647692 / sides
     tangential_factor = math.tan(theta)
     radial_factor = math.cos(theta)
 
-    x, y, z = r*a[0], r*a[1], r*a[2]
+    x, y, z = r * a[0], r * a[1], r * a[2]
+    n0, n1, n2 = n[0]*pitch / sides, n[1]*pitch / sides, n[2]*pitch / sides
     count = int(sides * turns) + 1
     vertices = np.empty(count * 3)
     for i in range(count):
-        vertices[i*3] = x + p[0] + n[0]*(i*pitch/sides)
-        vertices[i*3 + 1] = y + p[1] + n[1]*(i*pitch/sides)
-        vertices[i*3 + 2] = z + p[2] + n[2]*(i*pitch/sides)
+        vertices[i*3] = x + p[0] + n0*i
+        vertices[i*3 + 1] = y + p[1] + n1*i
+        vertices[i*3 + 2] = z + p[2] + n2*i
         tx = (y*n[2] - z*n[1]) * tangential_factor
         ty = (z*n[0] - x*n[2]) * tangential_factor
         tz = (x*n[1] - y*n[0]) * tangential_factor
