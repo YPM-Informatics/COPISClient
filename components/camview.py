@@ -102,12 +102,9 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
         glColor3ub(180, 180, 180)
-        # draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
-        # draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
-        # draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        draw_helix([0, 0, 0], [0, 0, 1], 1.41421356237, 0.2, 10)
-        draw_helix([0, 0, 0], [0, 1, 0], 1.41421356237, 0.2, 10)
-        draw_helix([0, 0, 0], [1, 0, 0], 1.41421356237, 0.2, 10)
+        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
+        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
+        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
 
         # draw sphere
         glColor3ub(0, 0, 128)
