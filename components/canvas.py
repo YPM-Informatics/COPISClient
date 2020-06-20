@@ -31,9 +31,8 @@ class CanvasBase(glcanvas.GLCanvas):
         self.width = None
         self.height = None
 
-        self.viewpoint = (0.0, 0.0, 0.0)
-        self.rot_lock = Lock()
         self.basequat = np.array([1, 0, 0, 0])
+        self.rot_lock = Lock()
         self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
@@ -56,13 +55,9 @@ class CanvasBase(glcanvas.GLCanvas):
         if self.IsFrozen():
             event.Skip()
             return
-        if self.IsShownOnScreen():
-            self.SetCurrent(self.context)
-            self.OnReshape()
-            self.Refresh(False)
-            timer = wx.CallLater(100, self.Refresh)
-            timer.Start()
-        event.Skip()
+        self.SetCurrent(self.context)
+        self.OnReshape()
+        self.Refresh(False)
 
     def processPaintEvent(self, event):
         """Process the drawing event."""
@@ -108,7 +103,7 @@ class CanvasBase(glcanvas.GLCanvas):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
+        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self.zoom) * 180 / np.pi, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
         glMatrixMode(GL_MODELVIEW)
 
     def OnDraw(self):
