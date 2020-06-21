@@ -159,8 +159,8 @@ def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     """
     a, _, n = rotate_basis(n0, n1, n2)
     theta = 6.28318530717958647692 / sides
+    tangential_factor = math.tan(theta)
     radial_factor = math.cos(theta)
-    tangential_factor = math.sin(theta) / radial_factor
 
     x, y, z = r * a[0], r * a[1], r * a[2]
     count = sides + 1
@@ -169,9 +169,9 @@ def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
         vertices[i*3] = x + p0
         vertices[i*3 + 1] = y + p1
         vertices[i*3 + 2] = z + p2
-        tx = (y*n2 - z*n1) * tangential_factor
-        ty = (z*n0 - x*n2) * tangential_factor
-        tz = (x*n1 - y*n0) * tangential_factor
+        tx = (y*n[2] - z*n[1]) * tangential_factor
+        ty = (z*n[0] - x*n[2]) * tangential_factor
+        tz = (x*n[1] - y*n[0]) * tangential_factor
         x = (x + tx) * radial_factor
         y = (y + ty) * radial_factor
         z = (z + tz) * radial_factor
@@ -186,8 +186,8 @@ def compute_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
     """
     a, _, n = rotate_basis(n0, n1, n2)
     theta = 6.28318530717958647692 / sides
+    tangential_factor = math.tan(theta)
     radial_factor = math.cos(theta)
-    tangential_factor = math.sin(theta) / radial_factor
 
     x, y, z = r * a[0], r * a[1], r * a[2]
     d0, d1, d2 = n[0]*pitch / sides, n[1]*pitch / sides, n[2]*pitch / sides
