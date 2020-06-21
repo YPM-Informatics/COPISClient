@@ -39,9 +39,18 @@ class Canvas(CanvasBase):
         if self.gl_init:
             return
         self.gl_init = True
-
         self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
+
+        glClearColor(*self.color_background)
+        glClearDepth(1.0)
+        glDepthFunc(GL_LEQUAL)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
 
     def move(self, event):
         """React to mouse events.
@@ -102,28 +111,33 @@ class Canvas(CanvasBase):
     def create_objects(self):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
+
+        # draw hemispheres
         glColor3ub(225, 225, 225)
-        draw_circle([0, 0, 0], [1, 1, 0], 1.41421356237)
-        draw_circle([0, 0, 0], [1, -1, 0], 1.41421356237)
-        for i in np.arange(0, 180, 10):
-            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)))
+        draw_circle([0, 0, 0], [1, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, -1, 0], math.sqrt(2), 128)
+        for i in np.arange(0, 180, 30):
+            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)), 128)
+
         glColor3ub(160, 160, 160)
-        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
-        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
-        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
+        draw_circle([0, 0, 0], [0, 0, 1], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [0, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, 0, 0], math.sqrt(2), 128)
+
         # for i in np.arange(-1, 1, 0.05):
-            # draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 400)
-            # draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 400)
-            # draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 400)
+        #     draw_circle([0, 0, i], [0, 0, 1], math.sqrt(2), 500)
+        #     draw_circle([0, i, 0], [0, 1, 0], math.sqrt(2), 500)
+        #     draw_circle([i, 0, 0], [1, 0, 0], math.sqrt(2), 500)
 
         # draw sphere
-        glColor3ub(0, 0, 128)
+        # glColor3ub(0, 0, 128)
         # gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
-        glColor3ub(180, 180, 180)
-
+        glColor3ub(200, 200, 200)
+        
+        # TODO: remove glBegin/glEnd in favor of modern OpenGL methods
         glBegin(GL_LINES)
         for i in np.arange(-10, 11, 1):
             i *= 0.1
@@ -134,13 +148,13 @@ class Canvas(CanvasBase):
 
         glColor3ub(255, 0, 0)
         glVertex3f(0, 0, 0)
-        glVertex3f(1.5, 0, 0)
+        glVertex3f(math.sqrt(2), 0, 0)
         glColor3ub(0, 255, 0)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 1.5, 0)
+        glVertex3f(0, math.sqrt(2), 0)
         glColor3ub(0, 0, 255)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 0, 1.5)
+        glVertex3f(0, 0, math.sqrt(2))
         glEnd()
 
 

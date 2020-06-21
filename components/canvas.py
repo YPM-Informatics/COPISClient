@@ -25,8 +25,10 @@ class CanvasBase(glcanvas.GLCanvas):
         self.gl_init = False
         self.gl_broken = False
         self.context = glcanvas.GLContext(self)
-        self.context_attrs = glcanvas.GLContextAttrs()
-        self.display_attrs = glcanvas.GLAttributes()
+        context_attrs = glcanvas.GLContextAttrs()
+        context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
+        display_attrs = glcanvas.GLAttributes()
+        display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
 
         self.width = None
         self.height = None
@@ -90,8 +92,15 @@ class CanvasBase(glcanvas.GLCanvas):
             return
         self.gl_init = True
         self.SetCurrent(self.context)
+
         glClearColor(*self.color_background)
         glClearDepth(1.0)
+        glDepthFunc(GL_LEQUAL)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def OnReshape(self):
         """Reshape the OpenGL viewport based on the size of the window.
