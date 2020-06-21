@@ -107,11 +107,11 @@ def rotate_basis(v0, v1, v2):
 
     # rotate such that that the basis vector for the z axis aligns with v
     if (v != np.array([0, 0, 1])).any():
-        phi = math.acos(v[2])       # np.dot(v, [0, 0, 1])
-        axis = (-v[1], v[0], 0.0)   # np.cross([0, 0, 1], v)
+        phi = math.acos(v[2])                   # np.dot(v, [0, 0, 1])
+        axis = (-v[1], v[0], 0.0)               # np.cross([0, 0, 1], v)
         rot = quat_to_matrix3(vector_to_quat(axis, phi))
-        x = [rot[0][0], rot[1][0], rot[2][0]]
-        y = [rot[0][1], rot[1][1], rot[2][1]]
+        x = [rot[0][0], rot[1][0], rot[2][0]]   # rot.dot(x)
+        y = [rot[0][1], rot[1][1], rot[2][1]]   # rot.dot(y)
     return x, y, v
 
 
