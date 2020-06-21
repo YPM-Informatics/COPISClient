@@ -26,8 +26,6 @@ class Canvas(CanvasBase):
         self.camera_objects = []
         self.mousepos = (0, 0)
         self.initpos = None
-        self.a = 0
-        self.b = 0
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
         self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
@@ -105,20 +103,13 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
         glColor3ub(150, 150, 150)
-        # draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
-        # draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
-        # draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        start = time.time()
-        for i in np.arange(-1, 1, 0.05):
-            draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 100)
-            draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 100)
-            draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 100)
-        # draw_helix([0, 0, -2], [0, 0, 1], 1.41421356237, 0.05, 80, 200)
-        # draw_helix([0, -2, 0], [0, 1, 1], 1.41421356237, 0.05, 80, 200)
-        # draw_helix([-2, 0, 0], [1, 0, 0], 1.41421356237, 0.05, 80, 200)
-        self.a += time.time() - start
-        self.b += 1
-        print(self.a / self.b)
+        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237, 128)
+        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237, 128)
+        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237, 128)
+        # for i in np.arange(-1, 1, 0.05):
+        #     draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 400)
+        #     draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 400)
+        #     draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 400)
 
         # draw sphere
         glColor3ub(0, 0, 128)
