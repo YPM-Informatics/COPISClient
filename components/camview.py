@@ -11,7 +11,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .glhelper import vector_to_quat, quat_to_matrix, draw_circle, draw_helix
+from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
 
 
 class Canvas(CanvasBase):
@@ -96,7 +96,7 @@ class Canvas(CanvasBase):
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         # multiply modelview matrix according to rotation quat
-        glMultMatrixf(quat_to_matrix(self.basequat))
+        glMultMatrixf(quat_to_matrix4(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
@@ -105,18 +105,24 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
         glColor3ub(150, 150, 150)
-        start = time.time()
-        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
-        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
-        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        draw_helix([0, 0, -2], [0, 0, 1], 1.41421356237, 0.05, 80, 100)
-        self.a += time.time() - start
-        self.b += 1
-        print(self.a / self.b)
+        # draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
+        # draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
+        # draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
+        # start = time.time()
+        for i in np.arange(-1, 1, 0.05):
+            draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 200)
+            draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 200)
+            draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 200)
+        # draw_helix([0, 0, -2], [0, 0, 1], 1.41421356237, 0.05, 80, 200)
+        # draw_helix([0, -2, 0], [0, 1, 1], 1.41421356237, 0.05, 80, 200)
+        # draw_helix([-2, 0, 0], [1, 0, 0], 1.41421356237, 0.05, 80, 200)
+        # self.a += time.time() - start
+        # self.b += 1
+        # print(self.a / self.b)
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.25, 32, 32)
+        # gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
