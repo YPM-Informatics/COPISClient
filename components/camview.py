@@ -102,14 +102,19 @@ class Canvas(CanvasBase):
     def create_objects(self):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
-        glColor3ub(150, 150, 150)
-        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237, 128)
-        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237, 128)
-        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237, 128)
+        glColor3ub(225, 225, 225)
+        draw_circle([0, 0, 0], [1, 1, 0], 1.41421356237)
+        draw_circle([0, 0, 0], [1, -1, 0], 1.41421356237)
+        for i in np.arange(0, 180, 10):
+            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)))
+        glColor3ub(160, 160, 160)
+        draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
+        draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
+        draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
         # for i in np.arange(-1, 1, 0.05):
-        #     draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 400)
-        #     draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 400)
-        #     draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 400)
+            # draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 400)
+            # draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 400)
+            # draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 400)
 
         # draw sphere
         glColor3ub(0, 0, 128)
