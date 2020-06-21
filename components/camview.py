@@ -108,17 +108,17 @@ class Canvas(CanvasBase):
         # draw_circle([0, 0, 0], [0, 0, 1], 1.41421356237)
         # draw_circle([0, 0, 0], [0, 1, 0], 1.41421356237)
         # draw_circle([0, 0, 0], [1, 0, 0], 1.41421356237)
-        # start = time.time()
+        start = time.time()
         for i in np.arange(-1, 1, 0.05):
-            draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 200)
-            draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 200)
-            draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 200)
+            draw_circle([0, 0, i], [0, 0, 1], 1.41421356237, 100)
+            draw_circle([0, i, 0], [0, 1, 0], 1.41421356237, 100)
+            draw_circle([i, 0, 0], [1, 0, 0], 1.41421356237, 100)
         # draw_helix([0, 0, -2], [0, 0, 1], 1.41421356237, 0.05, 80, 200)
         # draw_helix([0, -2, 0], [0, 1, 1], 1.41421356237, 0.05, 80, 200)
         # draw_helix([-2, 0, 0], [1, 0, 0], 1.41421356237, 0.05, 80, 200)
-        # self.a += time.time() - start
-        # self.b += 1
-        # print(self.a / self.b)
+        self.a += time.time() - start
+        self.b += 1
+        print(self.a / self.b)
 
         # draw sphere
         glColor3ub(0, 0, 128)

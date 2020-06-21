@@ -151,7 +151,7 @@ def draw_helix_memoized(p, n, r, pitch=1, turns=1.0, sides=64):
     glDisableClientState(GL_VERTEX_ARRAY)
 
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=None)
 def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     """Compute vertices of circle given point, normal vector, radius, and # sides.
     Uses an approximation method to compute vertices versus many trig calls.
@@ -178,7 +178,7 @@ def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     return vertices, count
 
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=None)
 def compute_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
     """Compute vertices of helix given point, normal vector, radius, pitch, # turns, and # sides.
     Uses an approximation method to compute vertices versus many trig calls.
