@@ -3,13 +3,14 @@
 
 from threading import Lock
 import numpy as np
+import math
 
 import wx
 from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from .arcball import arcball, axis_to_quat, mul_quat
+from .glhelper import arcball, vector_to_quat, mul_quat
 
 
 class CanvasBase(glcanvas.GLCanvas):
@@ -24,15 +25,20 @@ class CanvasBase(glcanvas.GLCanvas):
         self.gl_init = False
         self.gl_broken = False
         self.context = glcanvas.GLContext(self)
-        self.context_attrs = glcanvas.GLContextAttrs()
-        self.display_attrs = glcanvas.GLAttributes()
+
+        # set context and display attributes to their default values
+        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLContextAttrs.html#wx-glcanvas-glcontextattrs
+        context_attrs = glcanvas.GLContextAttrs()
+        context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
+        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLAttributes.html#wx-glcanvas-glattributes
+        display_attrs = glcanvas.GLAttributes()
+        display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
 
         self.width = None
         self.height = None
 
-        self.viewpoint = (0.0, 0.0, 0.0)
+        self.basequat = np.array([1, 0, 0, 0])
         self.rot_lock = Lock()
-        self.basequat = [0, 0, 0, 1]
         self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
@@ -55,12 +61,11 @@ class CanvasBase(glcanvas.GLCanvas):
         if self.IsFrozen():
             event.Skip()
             return
-        if self.IsShownOnScreen():
-            self.SetCurrent(self.context)
-            self.OnReshape()
-            self.Refresh(False)
-            timer = wx.CallLater(100, self.Refresh)
-            timer.Start()
+        self.SetCurrent(self.context)
+        self.OnReshape()
+        self.Refresh(False)
+        timer = wx.CallLater(100, self.Refresh)
+        timer.Start()
         event.Skip()
 
     def processPaintEvent(self, event):
@@ -91,8 +96,17 @@ class CanvasBase(glcanvas.GLCanvas):
             return
         self.gl_init = True
         self.SetCurrent(self.context)
+
         glClearColor(*self.color_background)
         glClearDepth(1.0)
+        glDepthFunc(GL_LEQUAL)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+
+        # draw antialiased lines and specify blend function
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def OnReshape(self):
         """Reshape the OpenGL viewport based on the size of the window.
@@ -107,12 +121,12 @@ class CanvasBase(glcanvas.GLCanvas):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(50.0 * 3.14159 / 360.0) / self.zoom) * 360.0 / 3.14159, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
+        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self.zoom) * 180 / np.pi, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
         glMatrixMode(GL_MODELVIEW)
 
     def OnDraw(self):
         """Draw the window. Called from processPaintEvents()."""
-        # self.SetCurrent(self.context)
+        self.SetCurrent(self.context)
         glClearColor(*self.color_background)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.draw_objects()
@@ -223,21 +237,21 @@ class CanvasBase(glcanvas.GLCanvas):
     def orbit_rotation(self, p1x, p1y, p2x, p2y):
         """Rotate canvas using two orbits."""
         if p1x == p2x and p1y == p2y:
-            return [0.0, 0.0, 0.0, 1.0]
+            return np.array([1.0, 0.0, 0.0, 0.0])
         delta_z = p2x - p1x
         self.angle_z -= delta_z
-        rot_z = axis_to_quat([0.0, 0.0, 1.0], self.angle_z)
+        rot_z = vector_to_quat([0.0, 0.0, 1.0], self.angle_z)
 
         delta_x = p2y - p1y
         self.angle_x += delta_x
-        rot_x = axis_to_quat([1.0, 0.0, 0.0], self.angle_x)
+        rot_x = vector_to_quat([1.0, 0.0, 0.0], self.angle_x)
         return mul_quat(rot_z, rot_x)
 
     def arcball_rotation(self, p1x, p1y, p2x, p2y):
         """Rotate canvas using an arcball."""
         if p1x == p2x and p1y == p2y:
-            return [0.0, 0.0, 0.0, 1.0]
-        quat = arcball(p1x, p1y, p2x, p2y, 1)
+            return np.array([1.0, 0.0, 0.0, 0.0])
+        quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
         return mul_quat(self.basequat, quat)
 
     def handle_rotation(self, event, use_arcball=True):

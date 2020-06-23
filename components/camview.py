@@ -3,27 +3,27 @@
 
 import numpy as np
 from enums import Axis
+import math
 
 import wx
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from .canvas import CanvasBase
-from .arcball import quat_to_mat
+from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
 
 
 class Canvas(CanvasBase):
+    # True: use arcball controls, False: use orbit controls
     arcball_control = True
 
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
         self.parent = parent
 
-        self.mousepos = (0, 0)
-        self.dist = 1
-        self.basequat = [0, 0, 0, 1]
         self.scale = 1.0
         self.camera_objects = []
+        self.mousepos = (0, 0)
         self.initpos = None
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
@@ -38,9 +38,20 @@ class Canvas(CanvasBase):
         if self.gl_init:
             return
         self.gl_init = True
-
         self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
+
+        glClearColor(*self.color_background)
+        glClearDepth(1.0)
+        glDepthFunc(GL_LEQUAL)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+
+        # draw antialiased lines and specify blend function
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
 
     def move(self, event):
         """React to mouse events.
@@ -93,7 +104,7 @@ class Canvas(CanvasBase):
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
         # multiply modelview matrix according to rotation quat
-        glMultMatrixf(quat_to_mat(self.basequat))
+        glMultMatrixf(quat_to_matrix4(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
@@ -102,14 +113,28 @@ class Canvas(CanvasBase):
         """Create OpenGL objects when OpenGL is initialized."""
         self.draw_grid()
 
+        # draw hemispheres
+        glColor3ub(225, 225, 225)
+        draw_circle([0, 0, 0], [1, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, -1, 0], math.sqrt(2), 128)
+        for i in np.arange(0, 180, 45):
+            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)), 128)
+
+        # draw axes circles
+        glColor3ub(160, 160, 160)
+        draw_circle([0, 0, 0], [0, 0, 1], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [0, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, 0, 0], math.sqrt(2), 128)
+
         # draw sphere
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
-        glColor3ub(180, 180, 180)
-
+        glColor3ub(200, 200, 200)
+        
+        # TODO: remove glBegin/glEnd in favor of modern OpenGL methods
         glBegin(GL_LINES)
         for i in np.arange(-10, 11, 1):
             i *= 0.1
@@ -120,13 +145,13 @@ class Canvas(CanvasBase):
 
         glColor3ub(255, 0, 0)
         glVertex3f(0, 0, 0)
-        glVertex3f(1.5, 0, 0)
+        glVertex3f(math.sqrt(2), 0, 0)
         glColor3ub(0, 255, 0)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 1.5, 0)
+        glVertex3f(0, math.sqrt(2), 0)
         glColor3ub(0, 0, 255)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 0, 1.5)
+        glVertex3f(0, 0, math.sqrt(2))
         glEnd()
 
 
