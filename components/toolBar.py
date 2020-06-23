@@ -82,6 +82,8 @@ class ToolBar(wx.ToolBar):
         if event.GetId() == Tool_Ids.Settings.value:
             settingsFrame = SettingsFrame()
             settingsFrame.Show()
+        elif event.GetId() == Tool_Ids.Play.value:
+            print("Play!!")
 
     def setPorts(self):
         self.portCombo.Clear()
