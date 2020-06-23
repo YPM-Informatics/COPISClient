@@ -119,6 +119,7 @@ class Canvas(CanvasBase):
         for i in np.arange(0, 180, 45):
             draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)), 128)
 
+        # draw axes circles
         glColor3ub(160, 160, 160)
         draw_circle([0, 0, 0], [0, 0, 1], math.sqrt(2), 128)
         draw_circle([0, 0, 0], [0, 1, 0], math.sqrt(2), 128)
