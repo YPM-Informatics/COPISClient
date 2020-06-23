@@ -46,6 +46,8 @@ class Canvas(CanvasBase):
         glDepthFunc(GL_LEQUAL)
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
+
+        # draw antialiased lines and specify blend function
         glEnable(GL_LINE_SMOOTH)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
