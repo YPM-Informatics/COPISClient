@@ -9,10 +9,14 @@ from wx import glcanvas
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
 
 from .canvas import CanvasBase
 # from .trackball import build_rotmatrix
 
+def hello(int):
+    print("hello %d" % int)
+    # glutTimerFunc(1000, hello(int + 1), 0)
 
 class Canvas(CanvasBase):
     def __init__(self, parent, *args, **kwargs):
@@ -90,7 +94,7 @@ class Canvas(CanvasBase):
         """React to the double click event."""
 
         for cam in self.camera_objects:
-            cam.translate(0.5)
+            cam.translate(0.62)
 
         
         
@@ -151,6 +155,8 @@ class Camera3D():
         self.angle = 0
         self.rotationVector = []
 
+        self.trans = False
+
     def onDraw(self):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
@@ -161,6 +167,10 @@ class Camera3D():
                 glRotatef(self.c, 0, 1, 0)
         elif self.mode == 'rotate':
             glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
+
+        if self.trans:
+            # glutTimerFunc(1000.0/60, self.translate(62), 62)
+            self.translate(0.62)
 
         glBegin(GL_QUADS)
         ## bottom
@@ -254,12 +264,13 @@ class Camera3D():
                 self.c += amount
 
     def translate(self, newx):
-        glClear(GL_COLOR_BUFFER_BIT)
-        # transx = newx - self.x
-        # increx = transx/10
-        # while self.x != newx:
-        #     self.x += increx
-        #     self.onDraw()
-            # glPushMatrix()
-            # glTranslatef(self.x + increx, self.y, self.z)
-            # glPopMatrix()
+        self.trans = True
+        distance = newx - self.x
+        if distance > 0:
+            self.x = round(self.x + 0.01, 2)
+        elif distance < 0:
+            self.x = round(self.x - 0.01, 2)
+        else:
+            self.trans = False
+
+
