@@ -25,8 +25,12 @@ class CanvasBase(glcanvas.GLCanvas):
         self.gl_init = False
         self.gl_broken = False
         self.context = glcanvas.GLContext(self)
+
+        # set context and display attributes to their default values
+        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLContextAttrs.html#wx-glcanvas-glcontextattrs
         context_attrs = glcanvas.GLContextAttrs()
         context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
+        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLAttributes.html#wx-glcanvas-glattributes
         display_attrs = glcanvas.GLAttributes()
         display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
 

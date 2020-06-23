@@ -4,7 +4,6 @@
 import numpy as np
 from enums import Axis
 import math
-import time
 
 import wx
 from OpenGL.GL import *
