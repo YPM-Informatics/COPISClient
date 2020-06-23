@@ -33,10 +33,10 @@ def sphere_coords(x, y, r):
     """Compute the intersection from screen coords to the arcball sphere."""
     d2 = x*x + y*y
     r2 = r * r
+    # https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball#Of_mice_and_manipulation
+    # combines a sphere and a hyperbolic sheet for smooth transitions
     if math.sqrt(d2) <= r * 0.70710678118654752440:
-        # use pythagorean theorem to compute point on sphere
         return [x, y, math.sqrt(r2 - d2)]
-    # if out of bounds, find the nearest point
     return [x, y, r2 * 0.5 / math.sqrt(d2)]
 
 
