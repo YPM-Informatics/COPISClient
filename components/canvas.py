@@ -120,7 +120,7 @@ class CanvasBase(glcanvas.GLCanvas):
 
     def OnDraw(self):
         """Draw the window. Called from processPaintEvents()."""
-        # self.SetCurrent(self.context)
+        self.SetCurrent(self.context)
         glClearColor(*self.color_background)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self.draw_objects()
