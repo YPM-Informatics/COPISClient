@@ -5,7 +5,7 @@ import wx
 from enums import Tool_Ids
 from frames.settingsFrame import SettingsFrame
 from controller.serialController import SerialController
-
+import util
 
 class ToolBarPanel(wx.Panel):
     def __init__(self, parent):
@@ -88,8 +88,13 @@ class ToolBarPanel(wx.Panel):
             settingsFrame = SettingsFrame()
             settingsFrame.Show()
         elif event.GetId() == Tool_Ids.Play.value:
-            for cam in self.parent.visualizer_panel.canvas.camera_objects:
-                cam.translate(0.62, 0.62, 0.62)
+            camId = self.parent.controller_panel.masterCombo.GetSelection()
+            if camId != -1:
+                cam = self.parent.visualizer_panel.getCamById(camId)
+                if cam:
+                   cam.translate(0.62, 0.62, 0.62)
+            else:
+                util.set_dialog("Please select the camera to control.")
 
     def setPorts(self):
         self.toolbar.portCombo.Clear()
