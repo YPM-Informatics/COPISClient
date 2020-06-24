@@ -163,8 +163,7 @@ class Camera3D():
             glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
 
         if self.trans:
-            # glutTimerFunc(1000.0/60, self.translate(62), 62)
-            self.translate(0.62, 0.62, 0.62)
+            self.translate()
 
         glBegin(GL_QUADS)
         ## bottom
@@ -257,12 +256,12 @@ class Camera3D():
             elif axis == Axis.C:
                 self.c += amount
 
-    def translate(self, newx, newy, newz):
+    def translate(self, newx=0, newy=0, newz=0):
         if not self.trans:
             dx = round(newx - self.x, 2)
             dy = round(newy - self.y, 2)
             dz = round(newz - self.z, 2)
-s
+            
             maxd = max(dx, dy, dz)
             scale = maxd/0.01
 
@@ -272,19 +271,15 @@ s
             self.increz = dz/scale
             
             self.trans = True
-        else:
-            if self.nIncre > 0:
-                self.x += self.increx
-                self.y += self.increy
-                self.z += self.increz
             
-                self.nIncre -= 1
-            else:
-                self.x = round(self.x, 2)
-                self.y = round(self.y, 2)
-                self.z = round(self.z, 2)
-                self.trans = False
-                
-                
-
-
+        if self.nIncre > 0:
+            self.x += self.increx
+            self.y += self.increy
+            self.z += self.increz
+        
+            self.nIncre -= 1
+        else:
+            self.x = round(self.x, 2)
+            self.y = round(self.y, 2)
+            self.z = round(self.z, 2)
+            self.trans = False
