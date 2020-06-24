@@ -5,52 +5,42 @@ import numpy as np
 from enums import Axis
 
 import wx
-from wx import glcanvas
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from .canvas import CanvasBase
-# from .trackball import build_rotmatrix
-
-def hello(int):
-    print("hello %d" % int)
-    # glutTimerFunc(1000, hello(int + 1), 0)
+from .arcball import quat_to_mat
 
 class Canvas(CanvasBase):
+    arcball_control = True
+
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
         self.parent = parent
-        self.initpos = None
+
         self.mousepos = (0, 0)
         self.dist = 1
         self.basequat = [0, 0, 0, 1]
         self.scale = 1.0
         self.camera_objects = []
+        self.initpos = None
+
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
     def OnReshape(self):
         super(Canvas, self).OnReshape()
 
     def OnInitGL(self):
         """Initialize OpenGL."""
-        if self.GLinitialized:
+        if self.gl_init:
             return
-        self.GLinitialized = True
+        self.gl_init = True
 
         self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
-
-        # initialize view
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0.0, 0.0, 5.0,
-                  0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0)
-
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
-        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
 
     def move(self, event):
         """React to mouse events.
@@ -60,10 +50,10 @@ class Canvas(CanvasBase):
         """
         self.mousepos = event.GetPosition()
         if event.Dragging() and event.LeftIsDown():
-            self.handle_rotation(event)
+            self.handle_rotation(event, use_arcball=self.arcball_control)
         elif event.Dragging() and event.RightIsDown():
             self.handle_translation(event)
-        elif event.ButtonUp():
+        elif event.ButtonUp() or event.Leaving():
             if self.initpos is not None:
                 self.initpos = None
         else:
@@ -74,37 +64,36 @@ class Canvas(CanvasBase):
 
     def handle_wheel(self, event):
         """(Currently unused) Reacts to mouse wheel changes."""
-        return
-
         delta = event.GetWheelRotation()
+
         factor = 1.05
         x, y = event.GetPosition()
-        x, y, _ = self.mouse_to_3d(x, y, local_transform = True)
+        x, y, _ = self.mouse_to_3d(x, y, local_transform=True)
+
         if delta > 0:
-            self.zoom(factor, (x, y))
+            self.zoom_test(factor, (x, y))
         else:
-            self.zoom(1 / factor, (x, y))
+            self.zoom_test(1 / factor, (x, y))
 
     def wheel(self, event):
         """React to the scroll wheel event."""
+        # self.handle_wheel(event)
         self.onMouseWheel(event)
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
-        """React to the double click event."""
-
-        for cam in self.camera_objects:
-            cam.translate(0.62)
-
-        
-        
+        """React to the double click event."""    
+        pass
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
         self.create_objects()
 
-        # glTranslatef(0, 0, -self.dist)
-        # glMultMatrixd(build_rotmatrix(self.basequat))
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        # multiply modelview matrix according to rotation quat
+        glMultMatrixf(quat_to_mat(self.basequat))
 
         for cam in self.camera_objects:
             cam.onDraw()
@@ -115,14 +104,15 @@ class Canvas(CanvasBase):
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.2, 32, 32)
+        gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
         glColor3ub(180, 180, 180)
 
         glBegin(GL_LINES)
-        for i in np.arange(-1, 1, 0.05):
+        for i in np.arange(-10, 11, 1):
+            i *= 0.1
             glVertex3f(i, 1, 0)
             glVertex3f(i, -1, 0)
             glVertex3f(1, i, 0)
@@ -156,6 +146,10 @@ class Camera3D():
         self.rotationVector = []
 
         self.trans = False
+        self.nIncre = 0
+        self.increx = 0
+        self.increy = 0
+        self.increz = 0
 
     def onDraw(self):
         glPushMatrix()
@@ -170,7 +164,7 @@ class Camera3D():
 
         if self.trans:
             # glutTimerFunc(1000.0/60, self.translate(62), 62)
-            self.translate(0.62)
+            self.translate(0.62, 0.62, 0.62)
 
         glBegin(GL_QUADS)
         ## bottom
@@ -263,14 +257,34 @@ class Camera3D():
             elif axis == Axis.C:
                 self.c += amount
 
-    def translate(self, newx):
-        self.trans = True
-        distance = newx - self.x
-        if distance > 0:
-            self.x = round(self.x + 0.01, 2)
-        elif distance < 0:
-            self.x = round(self.x - 0.01, 2)
+    def translate(self, newx, newy, newz):
+        if not self.trans:
+            dx = round(newx - self.x, 2)
+            dy = round(newy - self.y, 2)
+            dz = round(newz - self.z, 2)
+s
+            maxd = max(dx, dy, dz)
+            scale = maxd/0.01
+
+            self.nIncre = scale
+            self.increx = dx/scale
+            self.increy = dy/scale
+            self.increz = dz/scale
+            
+            self.trans = True
         else:
-            self.trans = False
+            if self.nIncre > 0:
+                self.x += self.increx
+                self.y += self.increy
+                self.z += self.increz
+            
+                self.nIncre -= 1
+            else:
+                self.x = round(self.x, 2)
+                self.y = round(self.y, 2)
+                self.z = round(self.z, 2)
+                self.trans = False
+                
+                
 
 
