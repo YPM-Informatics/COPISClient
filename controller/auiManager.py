@@ -5,6 +5,7 @@ from panels.visualizerPanel import VisualizerPanel
 from panels.cmdPanel import CommandPanel
 from panels.evfPanel import EvfPanel
 from panels.consolePanel import ConsolePanel
+from components.toolBar import ToolBarPanel
 
 # Reference
 # https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui.framemanager.AuiManager.html?highlight=auimanager#wx.lib.agw.aui.framemanager.AuiManager
@@ -16,6 +17,7 @@ class AuiManager(aui.AuiManager):
         ## AuiManager follows the rules specified in AuiPaneInfo for each pane
         super(AuiManager, self).__init__(managed_window=managed_window)
 
+        self.addToolBarPane()
         self.addConsolePane()
         self.addCommandPane()
         self.addVisualizerPane()
@@ -50,7 +52,12 @@ class AuiManager(aui.AuiManager):
         console_panel = ConsolePanel(self.GetManagedWindow())
         pane_info = aui.AuiPaneInfo().Name("Console").Caption("Console").Bottom().MinSize(wx.Size(600, 210)).Resizable(True).Layer(1).Position(0)
         self.AddPane(console_panel, pane_info)
-        
+
+    def addToolBarPane(self):
+        toolbar_panel = ToolBarPanel(self.GetManagedWindow())
+        pane_info = aui.AuiPaneInfo().Name("ToolBar").Caption("ToolBar").Top().Resizable(True).Layer(1).Position(0).Movable(False).DestroyOnClose(False)
+        self.AddPane(toolbar_panel, pane_info)
+
     def onPaneClose(self, event):
         pane = event.GetPane()
         if pane.name == "Evf":
