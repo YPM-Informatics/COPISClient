@@ -257,6 +257,7 @@ class Camera3D():
                 self.c += amount
 
     def translate(self, newx=0, newy=0, newz=0):
+        #Initialize nIncre and increxyz, skip if already initialized
         if not self.trans:
             dx = round(newx - self.x, 2)
             dy = round(newy - self.y, 2)
@@ -270,6 +271,7 @@ class Camera3D():
             self.increy = dy/scale
             self.increz = dz/scale
             
+            #Setting trans to true allows this function to be called on cam.onDraw
             self.trans = True
             
         if self.nIncre > 0:

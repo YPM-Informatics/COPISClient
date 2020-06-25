@@ -18,7 +18,6 @@ class CanvasBase(glcanvas.GLCanvas):
     NEAR_CLIP = 3.0
     FAR_CLIP = 7.0
     color_background = (0.941, 0.941, 0.941, 1)
-    # color_background = (0.7, 0.7, 0.7, 1)
 
     def __init__(self, parent, *args, **kwargs):
         super(CanvasBase, self).__init__(parent, -1)
