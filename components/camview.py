@@ -8,10 +8,10 @@ import math
 import wx
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
 
 from .canvas import CanvasBase
 from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
-
 
 class Canvas(CanvasBase):
     # True: use arcball controls, False: use orbit controls
@@ -93,8 +93,8 @@ class Canvas(CanvasBase):
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
-        """React to the double click event."""
-        return
+        """React to the double click event."""    
+        pass
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
@@ -170,6 +170,12 @@ class Camera3D():
         self.angle = 0
         self.rotationVector = []
 
+        self.trans = False
+        self.nIncre = 0
+        self.increx = 0
+        self.increy = 0
+        self.increz = 0
+
     def onDraw(self):
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
@@ -180,6 +186,9 @@ class Camera3D():
                 glRotatef(self.c, 0, 1, 0)
         elif self.mode == 'rotate':
             glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
+
+        if self.trans:
+            self.translate()
 
         glBegin(GL_QUADS)
         ## bottom
@@ -271,3 +280,33 @@ class Camera3D():
                 self.b += amount
             elif axis == Axis.C:
                 self.c += amount
+
+    def translate(self, newx=0, newy=0, newz=0):
+        #Initialize nIncre and increxyz, skip if already initialized
+        if not self.trans:
+            dx = round(newx - self.x, 2)
+            dy = round(newy - self.y, 2)
+            dz = round(newz - self.z, 2)
+            
+            maxd = max(dx, dy, dz)
+            scale = maxd/0.01
+
+            self.nIncre = scale
+            self.increx = dx/scale
+            self.increy = dy/scale
+            self.increz = dz/scale
+            
+            #Setting trans to true allows this function to be called on cam.onDraw
+            self.trans = True
+            
+        if self.nIncre > 0:
+            self.x += self.increx
+            self.y += self.increy
+            self.z += self.increz
+        
+            self.nIncre -= 1
+        else:
+            self.x = round(self.x, 2)
+            self.y = round(self.y, 2)
+            self.z = round(self.z, 2)
+            self.trans = False
