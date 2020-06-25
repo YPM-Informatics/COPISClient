@@ -177,6 +177,7 @@ class Camera3D():
         self.increz = 0
 
     def onDraw(self):
+        color = [125, 125, 125]
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         if self.mode == 'normal':
@@ -191,43 +192,39 @@ class Camera3D():
             self.translate()
 
         glBegin(GL_QUADS)
+        
         ## bottom
-        glColor3ub(255, 255, 255)
+        glColor3ub(*color)
         glVertex3f(-0.025, -0.05, -0.05)
         glVertex3f( 0.025, -0.05, -0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f(-0.025, -0.05,  0.05)
 
         ## right
-        glColor3ub(255, 255, 255)
         glVertex3f(-0.025,  0.05, -0.05)
         glVertex3f( 0.025,  0.05, -0.05)
         glVertex3f( 0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05, -0.05)
 
         ## top
-        glColor3ub(255, 255, 255)
-        glVertex3f(-0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f(-0.025,  0.05,  0.05)
-
+        glVertex3f( 0.025,  0.05,  0.05)
+        glVertex3f( 0.025,  0.05, -0.05)
+        glVertex3f(-0.025,  0.05, -0.05)
+        
         ## left
-        glColor3ub(255, 255, 255)
         glVertex3f(-0.025, -0.05,  0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f(-0.025,  0.05,  0.05)
 
         ## back
-        glColor3ub(255, 255, 255)
-        glVertex3f( 0.025, -0.05, -0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025,  0.05, -0.05)
-
+        glVertex3f( 0.025,  0.05,  0.05)
+        glVertex3f( 0.025, -0.05,  0.05)
+        glVertex3f( 0.025, -0.05, -0.05)
+        
         ## front
-        glColor3ub(255, 255, 255)
         glVertex3f(-0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05,  0.05)
         glVertex3f(-0.025,  0.05,  0.05)
@@ -235,12 +232,22 @@ class Camera3D():
         glEnd()
 
         glPushMatrix()
-        glColor3ub(255, 255, 255)
+
+        ## lens
+        glColor3ub(110, 110, 110)
         glTranslated(-0.05, 0.0, 0.0)
         quadric = gluNewQuadric()
         glRotatef(90.0, 0.0, 1.0, 0.0)
         gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)
         gluDeleteQuadric(quadric)
+
+        ## cap
+        glColor3ub(100, 100, 100)
+        circleQuad = gluNewQuadric()
+        gluQuadricOrientation(circleQuad, GLU_INSIDE)
+        gluDisk(circleQuad, 0.0, 0.025, 16, 1)
+        gluDeleteQuadric(circleQuad)
+
         glPopMatrix()
         glPopMatrix()
 
