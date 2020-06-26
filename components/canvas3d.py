@@ -139,10 +139,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self.draw_objects()
         self.SwapBuffers()
 
-    # -------------------------------
-    # To be implemented by a subclass
-    # -------------------------------
-
     def move(self, event):
         """React to mouse events.
         LMB drag:   move viewport
