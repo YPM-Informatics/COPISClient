@@ -12,6 +12,8 @@ class ControllerPanel(wx.Panel):
         self.InitPanel()
         self.canvas = ""
 
+        self.selectedCam = None
+
     def InitPanel(self):
         vboxLeft = wx.BoxSizer(wx.VERTICAL)
 
@@ -316,6 +318,14 @@ class ControllerPanel(wx.Panel):
 
         if self.parent.cam_list:
             self.parent.cam_list.set_selected_cam_by_id(id)
+        elif self.parent.visualizer_panel.canvas.camera_objects:
+            if self.selectedCam:
+                self.selectedCam.isSelected = False
+
+            self.selectedCam = self.parent.visualizer_panel.getCamById(id)
+            self.selectedCam.isSelected = True
+        
+        self.parent.visualizer_panel.canvas.OnDraw()
 
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()

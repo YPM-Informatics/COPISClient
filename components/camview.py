@@ -176,8 +176,15 @@ class Camera3D():
         self.increy = 0
         self.increz = 0
 
+        self.isSelected = False
+
     def onDraw(self):
-        color = [125, 125, 125]
+
+        if self.isSelected:
+            color = [75, 230, 150]
+        else:
+            color = [125, 125, 125]
+
         glPushMatrix()
         glTranslatef(self.x, self.y, self.z)
         if self.mode == 'normal':
@@ -192,7 +199,7 @@ class Camera3D():
             self.translate()
 
         glBegin(GL_QUADS)
-        
+
         ## bottom
         glColor3ub(*color)
         glVertex3f(-0.025, -0.05, -0.05)
@@ -234,7 +241,7 @@ class Camera3D():
         glPushMatrix()
 
         ## lens
-        glColor3ub(110, 110, 110)
+        glColor3ub(*[x - 15 for x in color])
         glTranslated(-0.05, 0.0, 0.0)
         quadric = gluNewQuadric()
         glRotatef(90.0, 0.0, 1.0, 0.0)
@@ -242,7 +249,7 @@ class Camera3D():
         gluDeleteQuadric(quadric)
 
         ## cap
-        glColor3ub(100, 100, 100)
+        glColor3ub(*[x - 25 for x in color])
         circleQuad = gluNewQuadric()
         gluQuadricOrientation(circleQuad, GLU_INSIDE)
         gluDisk(circleQuad, 0.0, 0.025, 16, 1)
