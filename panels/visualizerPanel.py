@@ -5,13 +5,14 @@ import util
 import random
 
 import wx
-from components.camview import Canvas, Camera3D
+from components.camera3d import Camera3D
+from components.canvas3d import Canvas3D
 
 class VisualizerPanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super(VisualizerPanel, self).__init__(parent)
         self.parent = parent
-        self.canvas = Canvas(self)
+        self.canvas = Canvas3D(self)
         self.InitPanel()
 
     def InitPanel(self):
