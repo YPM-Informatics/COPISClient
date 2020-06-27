@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """TODO: Fill in docstring"""
 
-from threading import Lock
-import numpy as np
 import math
+import numpy as np
+from threading import Lock
 
 import wx
 from wx import glcanvas
@@ -180,7 +180,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def double_click(self, event):
         """React to the double click event."""    
-        pass
+        print('double click')
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
