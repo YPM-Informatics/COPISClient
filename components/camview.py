@@ -15,7 +15,7 @@ from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
 
 class Canvas(CanvasBase):
     # True: use arcball controls, False: use orbit controls
-    arcball_control = True
+    arcball_control = False
 
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
@@ -180,6 +180,7 @@ class Camera3D():
 
     def onDraw(self):
 
+        ## Set color based on selection
         if self.isSelected:
             color = [75, 230, 150]
         else:

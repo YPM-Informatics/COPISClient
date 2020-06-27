@@ -318,13 +318,19 @@ class ControllerPanel(wx.Panel):
 
         if self.parent.cam_list:
             self.parent.cam_list.set_selected_cam_by_id(id)
+
+        ## Selection for virtual cameras
         elif self.parent.visualizer_panel.canvas.camera_objects:
+
+            ## Disable previously selected camera
             if self.selectedCam:
                 self.selectedCam.isSelected = False
 
+            ## Update selected camera
             self.selectedCam = self.parent.visualizer_panel.getCamById(id)
             self.selectedCam.isSelected = True
         
+        ## Refresh canvas
         self.parent.visualizer_panel.canvas.OnDraw()
 
     def OnTakePicture(self, event):
