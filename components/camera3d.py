@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """TODO: Fill in docstring"""
 
+import math
 import numpy as np
 from enums import Axis
-import math
 
 import wx
 from OpenGL.GL import *
