@@ -8,6 +8,7 @@ import wx
 from components.camera3d import Camera3D
 from components.canvas3d import Canvas3D
 
+
 class VisualizerPanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super(VisualizerPanel, self).__init__(parent)
@@ -40,7 +41,7 @@ class VisualizerPanel(wx.Panel):
 
         self.SetSizerAndFit(hboxRight)
 
-    def onDrawCamera(self, id = -1):
+    def onDrawCamera(self, id=-1):
         x = float(random.randrange(-100, 100)) / 100
         y = float(random.randrange(-100, 100)) / 100
         z = float(random.randrange(-100, 100)) / 100
@@ -58,6 +59,7 @@ class VisualizerPanel(wx.Panel):
 
     def onClearCameras(self):
         self.canvas.camera_objects = []
+        self.canvas.Refresh()
         self.canvas.SwapBuffers()
 
     def getCamById(self, id):
