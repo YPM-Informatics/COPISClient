@@ -15,7 +15,7 @@ from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
 
 class Canvas(CanvasBase):
     # True: use arcball controls, False: use orbit controls
-    arcball_control = False
+    arcball_control = True
 
     def __init__(self, parent, *args, **kwargs):
         super(Canvas, self).__init__(parent)
