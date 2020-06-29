@@ -9,9 +9,9 @@ import util
 
 class ToolBarPanel(wx.Panel):
     def __init__(self, parent):
-        super(ToolBarPanel, self).__init__(parent, style = wx.BORDER_SUNKEN)
+        super(ToolBarPanel, self).__init__(parent, style=wx.BORDER_SUNKEN)
         hbox = wx.BoxSizer()
-        self.toolbar = wx.ToolBar(self, -1, style = wx.TB_HORIZONTAL | wx.NO_BORDER)
+        self.toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
         hbox.Add(self.toolbar, 1, flag=wx.EXPAND)
         self.parent = parent
 
@@ -42,7 +42,7 @@ class ToolBarPanel(wx.Panel):
         self.toolbar.AddStretchableSpace()
         portLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label="Port: ", style=wx.ALIGN_LEFT)
         self.toolbar.AddControl(portLabel)
-        self.toolbar.portCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value="", style = wx.CB_DROPDOWN)
+        self.toolbar.portCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value="", style=wx.CB_DROPDOWN)
         self.toolbar.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
         self.toolbar.AddControl(self.toolbar.portCombo)
         baudLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label=" Baud: ", style=wx.ALIGN_RIGHT)
