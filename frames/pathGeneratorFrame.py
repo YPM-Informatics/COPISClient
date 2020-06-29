@@ -1,15 +1,15 @@
 import wx
 
 class PathGeneratorFrame(wx.Frame):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, "Path Generator", size = (250, 400))
         self.SetMinSize(wx.Size(250, 400))
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
-        
+
         self.initPanel()
         self.Centre()
-        
+
     def initPanel(self):
         ## LAYOUT
 

@@ -1,7 +1,7 @@
 import wx
 
 class ConsolePanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         super(ConsolePanel, self).__init__(parent)
         self.init_ui()
 
