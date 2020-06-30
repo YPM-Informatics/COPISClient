@@ -27,13 +27,15 @@ class Canvas3D(glcanvas.GLCanvas):
         self.gl_init = False
         self.gl_broken = False
 
-        # initialize canvas and context with attributes
+        # these attributes cannot be set for the time being
         display_attrs = glcanvas.GLAttributes()
-        display_attrs.Defaults().EndList()
+        display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
         context_attrs = glcanvas.GLContextAttrs()
         context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
-        self.canvas = glcanvas.GLCanvas(self, display_attrs)
-        self.context = glcanvas.GLContext(self.canvas, ctxAttrs=context_attrs)
+
+        # initialize canvas and context
+        self.canvas = glcanvas.GLCanvas(self)
+        self.context = glcanvas.GLContext(self.canvas)
 
         self.width = None
         self.height = None
@@ -158,7 +160,7 @@ class Canvas3D(glcanvas.GLCanvas):
             return
         event.Skip()
         wx.CallAfter(self.Refresh)
-    
+
     def handle_wheel(self, event):
         """(Currently unused) Reacts to mouse wheel changes."""
         delta = event.GetWheelRotation()
@@ -179,7 +181,7 @@ class Canvas3D(glcanvas.GLCanvas):
         wx.CallAfter(self.Refresh)
 
     def double_click(self, event):
-        """React to the double click event."""    
+        """React to the double click event."""
         print('double click')
 
     def draw_objects(self):
@@ -215,11 +217,11 @@ class Canvas3D(glcanvas.GLCanvas):
         # draw sphere
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
-    
+
     def draw_grid(self):
         """Draw coordinate grid."""
         glColor3ub(200, 200, 200)
-        
+
         # TODO: remove glBegin/glEnd in favor of modern OpenGL methods
         glBegin(GL_LINES)
         for i in np.arange(-10, 11, 1):
