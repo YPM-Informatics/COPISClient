@@ -26,15 +26,14 @@ class Canvas3D(glcanvas.GLCanvas):
         super(Canvas3D, self).__init__(parent, -1)
         self.gl_init = False
         self.gl_broken = False
-        self.context = glcanvas.GLContext(self)
 
-        # set context and display attributes to their default values
-        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLContextAttrs.html#wx-glcanvas-glcontextattrs
+        # initialize canvas and context with attributes
+        display_attrs = glcanvas.GLAttributes()
+        display_attrs.Defaults().EndList()
         context_attrs = glcanvas.GLContextAttrs()
         context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
-        # https://wxpython.org/Phoenix/docs/html/wx.glcanvas.GLAttributes.html#wx-glcanvas-glattributes
-        display_attrs = glcanvas.GLAttributes()
-        display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
+        self.canvas = glcanvas.GLCanvas(self, display_attrs)
+        self.context = glcanvas.GLContext(self.canvas, ctxAttrs=context_attrs)
 
         self.width = None
         self.height = None
@@ -67,11 +66,12 @@ class Canvas3D(glcanvas.GLCanvas):
         if self.IsFrozen():
             event.Skip()
             return
-        self.SetCurrent(self.context)
-        self.OnReshape()
-        self.Refresh(False)
-        timer = wx.CallLater(100, self.Refresh)
-        timer.Start()
+        if self.canvas.IsShownOnScreen():
+            self.SetCurrent(self.context)
+            self.OnReshape()
+            self.Refresh(False)
+            timer = wx.CallLater(100, self.Refresh)
+            timer.Start()
         event.Skip()
 
     def processPaintEvent(self, event):
