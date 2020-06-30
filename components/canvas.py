@@ -185,8 +185,8 @@ class CanvasBase(glcanvas.GLCanvas):
         glGetIntegerv(GL_VIEWPORT, viewport)
         glGetDoublev(GL_PROJECTION_MATRIX, pmat)
         glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
-        gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
-        return (px.value, py.value, pz.value)
+        result = gluUnProject(x, y, z, mvmat, pmat, viewport)
+        return result
 
     def mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
@@ -200,10 +200,8 @@ class CanvasBase(glcanvas.GLCanvas):
         glGetIntegerv(GL_VIEWPORT, viewport)
         glGetDoublev(GL_PROJECTION_MATRIX, pmat)
         mvmat = self.get_modelview_mat(local_transform)
-        gluUnProject(x, y, 1, mvmat, pmat, viewport, px, py, pz)
-        ray_far = (px.value, py.value, pz.value)
-        gluUnProject(x, y, 0., mvmat, pmat, viewport, px, py, pz)
-        ray_near = (px.value, py.value, pz.value)
+        ray_far = gluUnProject(x, y, 1, mvmat, pmat, viewport)
+        ray_near = gluUnProject(x, y, 0., mvmat, pmat, viewport)
         return ray_near, ray_far
 
     def mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
