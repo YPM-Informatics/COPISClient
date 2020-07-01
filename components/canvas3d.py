@@ -174,7 +174,7 @@ class Canvas3D(glcanvas.GLCanvas):
         # elif event.Moving():
         else:
             event.Skip()
-        self._dirty = True;
+        self._dirty = True
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
