@@ -14,18 +14,19 @@ from components.glhelper import arcball, vector_to_quat, quat_to_matrix4, mul_qu
 
 
 class Canvas3D(glcanvas.GLCanvas):
-    MIN_ZOOM = 0.5  # TODO: make these default
-    MAX_ZOOM = 5.0
-    NEAR_CLIP = 3.0
-    FAR_CLIP = 7.0
+    zoom_min = 0.5
+    zoom_max = 5.0
+    clip_near = 3.0
+    clip_far = 7.0
     # True: use arcball controls, False: use orbit controls
     arcball_control = True
     color_background = (0.941, 0.941, 0.941, 1)
 
     def __init__(self, parent, *args, **kwargs):
         super(Canvas3D, self).__init__(parent, -1)
-        self.gl_init = False
+        self.gl_initialized = False
         self.gl_broken = False
+        self.gl_dirty = False
 
         # these attributes cannot be set for the time being
         display_attrs = glcanvas.GLAttributes()
@@ -42,68 +43,34 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self.rot_quat = [1, 0, 0, 0]
         self.rot_lock = Lock()
+        self.zoom = 1
         self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
-        self.zoom = 1
         self.initpos = None
         self.camera_objects = []
 
         # bind events
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
-        self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
-        self.Bind(wx.EVT_LEFT_DCLICK, self.double_click)
-        self.Bind(wx.EVT_ERASE_BACKGROUND, self.processEraseBackgroundEvent)
-        self.Bind(wx.EVT_SIZE, self.processSizeEvent)
-        self.Bind(wx.EVT_PAINT, self.processPaintEvent)
+        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_IDLE, self.on_idle)
+        self.Bind(wx.EVT_KEY_DOWN, self.on_key)
+        self.Bind(wx.EVT_KEY_UP, self.on_key)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
 
-    def processEraseBackgroundEvent(self, event):
-        """Process the erase background event."""
-        pass  # Do nothing, to avoid flashing on MSW.
-
-    def processSizeEvent(self, event):
-        """Process the resize event. Calls OnReshape() if window
-        is not frozen and visible on screen.
-        """
-        if self.IsFrozen():
-            event.Skip()
-            return
-        if self.canvas.IsShownOnScreen():
-            self.SetCurrent(self.context)
-            self.OnReshape()
-            self.Refresh(False)
-            timer = wx.CallLater(100, self.Refresh)
-            timer.Start()
-        event.Skip()
-
-    def processPaintEvent(self, event):
-        """Process the drawing event."""
-        dc = wx.PaintDC(self)
-        self.SetCurrent(self.context)
-
-        if not self.gl_broken:
-            try:
-                # make sure OpenGL works properly
-                self.OnInitGL()
-                self.OnDraw()
-            except Exception as e: # TODO: add specific glcanvas exception
-                self.gl_broken = True
-                print('OpenGL Failed:')
-                print(e)
-                # TODO: display this error in the console window
-        event.Skip()
-
-    def Destroy(self):
-        """Clean up the OpenGL context."""
-        self.context.destroy()
-        glcanvas.GLCanvas.Destroy()
-
-    def OnInitGL(self):
+    def init_opengl(self):
         """Initialize OpenGL."""
-        if self.gl_init:
-            return
-        self.gl_init = True
-        self.SetCurrent(self.context)
+        if self.gl_initialized:
+            return True
+
+        if self.canvas is None or self.context is None:
+            return False
+
+        # self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
 
         glClearColor(*self.color_background)
@@ -117,31 +84,76 @@ class Canvas3D(glcanvas.GLCanvas):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-    def OnReshape(self):
-        """Reshape the OpenGL viewport based on the size of the window.
-        Called from processSizeEvent().
-        """
+        self.gl_initialized = True
+        return True
+
+    def render(self):
+        """Render frame."""
+        # ensure that canvas exists
+        if self.canvas is None:
+            return
+
+        # ensure that canvas is current and initialized
+        if not self._is_shown_on_screen() or not self._set_current():
+            return
+
+        # ensure that opengl is initialized
+        if not self.init_opengl():
+            return
+
         size = self.GetClientSize()
-        width, height = size.width, size.height
+        self.width = max(size.width, 1)
+        self.height = max(size.height, 1)
 
-        self.width = max(float(width), 1.0)
-        self.height = max(float(height), 1.0)
+        # multiply modelview matrix according to rotation quat
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        glMultMatrixd(quat_to_matrix4(self.rot_quat))
 
-        glViewport(0, 0, width, height)
+        # TODO: add toggle between perspective and orthographic view modes
+        glViewport(0, 0, self.width, self.height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self.zoom) * 180 / np.pi, float(self.width) / self.height, self.NEAR_CLIP, self.FAR_CLIP)
+        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self.zoom) * 180 / np.pi, float(self.width) / self.height, self.clip_near, self.clip_far)
         glMatrixMode(GL_MODELVIEW)
 
-    def OnDraw(self):
-        """Draw the window. Called from processPaintEvents()."""
-        self.SetCurrent(self.context)
-        glClearColor(*self.color_background)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        self.draw_objects()
+        self._render_background()
+        self._render_objects()
+
         self.SwapBuffers()
 
-    def move(self, event):
+    def on_size(self, event):
+        self.gl_dirty = True
+
+    def on_idle(self, event):
+        if not self.gl_initialized or not self.gl_dirty:
+            return
+
+        if self.IsFrozen():
+            return
+
+        self._refresh_if_shown_on_screen()
+        self.gl_dirty = False
+
+    def on_key(self, event):
+        pass
+
+    def on_mouse_wheel(self, event):
+        """Process mouse wheel event. Adjusts zoom accordingly
+        and takes into consideration the zoom boundaries.
+        """
+        if not self.gl_initialized:
+            return
+
+        # ignore if middle mouse button is pressed
+        if event.MiddleIsDown():
+            return
+
+        self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
+
+    def on_mouse(self, event):
         """React to mouse events.
         LMB drag:   move viewport
         RMB drag:   unused
@@ -161,45 +173,53 @@ class Canvas3D(glcanvas.GLCanvas):
         event.Skip()
         wx.CallAfter(self.Refresh)
 
-    def handle_wheel(self, event):
-        """(Currently unused) Reacts to mouse wheel changes."""
-        delta = event.GetWheelRotation()
-
-        factor = 1.05
-        x, y = event.GetPosition()
-        x, y, _ = self.mouse_to_3d(x, y, local_transform=True)
-
-        if delta > 0:
-            self.zoom_test(factor, (x, y))
-        else:
-            self.zoom_test(1 / factor, (x, y))
-
-    def wheel(self, event):
-        """React to the scroll wheel event."""
-        # self.handle_wheel(event)
-        self.onMouseWheel(event)
-        wx.CallAfter(self.Refresh)
-
-    def double_click(self, event):
+    def on_left_dclick(self, event):
         """React to the double click event."""
         print('double click')
 
-    def draw_objects(self):
-        """Called in OnDraw after the buffer has been cleared."""
-        self.create_objects()
+    def on_erase_background(self, event):
+        """Process the erase background event."""
+        pass  # Do nothing, to avoid flashing on MSW.
 
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        # multiply modelview matrix according to rotation quat
-        glMultMatrixf(quat_to_matrix4(self.rot_quat))
+    def on_paint(self, event):
+        if self.gl_initialized:
+            self.gl_dirty = True
+        else:
+            self.render()
 
-        for cam in self.camera_objects:
-            cam.onDraw()
+    def on_set_focus(self, event):
+        self._refresh_if_shown_on_screen()
 
-    def create_objects(self):
+    def destroy(self):
+        """Clean up the OpenGL context."""
+        self.context.destroy()
+        glcanvas.GLCanvas.Destroy()
+
+    # --------------
+    # Util functions
+    # --------------
+
+    def _is_shown_on_screen(self):
+        return False if self.canvas is None else self.canvas.IsShownOnScreen()
+
+    def _set_current(self):
+        return False if self.context is None else self.SetCurrent(self.context)
+
+    def _update_camera_zoom(self, delta_zoom):
+        zoom = self.zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
+        self.zoom = max(min(zoom, self.zoom_max), self.zoom_min)
+        self.gl_dirty = True
+
+    def _refresh_if_shown_on_screen(self):
+        if self._is_shown_on_screen():
+            self.render()
+
+    def _render_background(self):
+        glClearColor(*self.color_background)
+
+    def _render_objects(self):
         """Create OpenGL objects when OpenGL is initialized."""
-        self.draw_grid()
+        self._render_grid()
 
         # draw hemispheres
         glColor3ub(225, 225, 225)
@@ -218,7 +238,11 @@ class Canvas3D(glcanvas.GLCanvas):
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
-    def draw_grid(self):
+        # draw ca,eras
+        for cam in self.camera_objects:
+            cam.onDraw()
+
+    def _render_grid(self):
         """Draw coordinate grid."""
         glColor3ub(200, 200, 200)
 
@@ -241,30 +265,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, math.sqrt(2))
         glEnd()
-
-    def onMouseWheel(self, event):
-        """Process mouse wheel event. Adjusts zoom accordingly
-        and takes into consideration the zoom boundaries.
-        """
-        delta = event.GetWheelRotation()
-
-        if delta != 0:
-            if delta > 0:
-                self.zoom += 0.1
-            elif delta < 0:
-                self.zoom -= 0.1
-
-            if self.zoom < self.MIN_ZOOM:
-                self.zoom = self.MIN_ZOOM
-            elif self.zoom > self.MAX_ZOOM:
-                self.zoom = self.MAX_ZOOM
-
-        self.OnReshape()
-        self.Refresh()
-
-    # --------------
-    # Util functions
-    # --------------
 
     def get_modelview_mat(self, local_transform):
         mvmat = (GLdouble * 16)()
@@ -319,18 +319,6 @@ class Canvas3D(glcanvas.GLCanvas):
         if t < 0:
             return None
         return ray_near + t * ray_dir
-
-    def zoom_test(self, factor, to=None):
-        glMatrixMode(GL_MODELVIEW)
-        if to:
-            delta_x = to[0]
-            delta_y = to[1]
-            glTranslatef(delta_x, delta_y, 0)
-        glScalef(factor, factor, 1)
-        self.zoom_factor *= factor
-        if to:
-            glTranslatef(-delta_x, -delta_y, 0)
-        wx.CallAfter(self.Refresh)
 
     def orbit_rotation(self, p1x, p1y, p2x, p2y):
         """Rotate canvas using two orbits."""
