@@ -47,7 +47,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self.zoom_factor = 1.0
         self.angle_z = 0
         self.angle_x = 0
-        self.initpos = None
+        self.mouse_pos = None
         self.camera_objects = []
 
         # bind events
@@ -70,19 +70,22 @@ class Canvas3D(glcanvas.GLCanvas):
         if self.canvas is None or self.context is None:
             return False
 
-        # self.SetCurrent(self.context)
         self.quadratic = gluNewQuadric()
 
         glClearColor(*self.color_background)
         glClearDepth(1.0)
+
         glDepthFunc(GL_LEQUAL)
+
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
-
-        # draw antialiased lines and specify blend function
-        glEnable(GL_LINE_SMOOTH)
         glEnable(GL_BLEND)
+
+        # set antialiasing
+        glEnable(GL_LINE_SMOOTH)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        glEnable(GL_MULTISAMPLE)
 
         self.gl_initialized = True
         return True
@@ -159,19 +162,22 @@ class Canvas3D(glcanvas.GLCanvas):
         RMB drag:   unused
         LMB/RMB up: reset position
         """
-        self.mousepos = event.GetPosition()
-        if event.Dragging() and event.LeftIsDown():
-            self.handle_rotation(event, use_arcball=self.arcball_control)
-        elif event.Dragging() and event.RightIsDown():
-            self.handle_translation(event)
-        elif event.ButtonUp() or event.Leaving():
-            if self.initpos is not None:
-                self.initpos = None
+        if not self.gl_initialized or not self._set_current():
+            return
+
+        if event.Dragging():
+            # self.mouse_pos = event.GetPosition()
+            if event.LeftIsDown():
+                self.rotate_camera(event, use_arcball=self.arcball_control)
+            elif event.RightIsDown() or event.MiddleIsDown():
+                self.translate_camera(event)
+        elif event.LeftUp() or event.MiddleUp() or event.RightUp() or event.Leaving():
+            if self.mouse_pos is not None:
+                self.mouse_pos = None
+        # elif event.Moving():
         else:
             event.Skip()
-            return
-        event.Skip()
-        wx.CallAfter(self.Refresh)
+        self.gl_dirty = True;
 
     def on_left_dclick(self, event):
         """React to the double click event."""
@@ -320,54 +326,45 @@ class Canvas3D(glcanvas.GLCanvas):
             return None
         return ray_near + t * ray_dir
 
-    def orbit_rotation(self, p1x, p1y, p2x, p2y):
-        """Rotate canvas using two orbits."""
-        if p1x == p2x and p1y == p2y:
-            return [1.0, 0.0, 0.0, 0.0]
-        delta_z = p2x - p1x
-        self.angle_z -= delta_z
-        rot_z = vector_to_quat([0.0, 0.0, 1.0], self.angle_z)
-
-        delta_x = p2y - p1y
-        self.angle_x += delta_x
-        rot_x = vector_to_quat([1.0, 0.0, 0.0], self.angle_x)
-        return mul_quat(rot_z, rot_x)
-
-    def arcball_rotation(self, p1x, p1y, p2x, p2y):
-        """Rotate canvas using an arcball."""
-        if p1x == p2x and p1y == p2y:
-            return [1.0, 0.0, 0.0, 0.0]
-        quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
-        return mul_quat(self.rot_quat, quat)
-
-    def handle_rotation(self, event, use_arcball=True):
+    def rotate_camera(self, event, use_arcball=True):
         """Update rot_quat based on mouse position.
         use_arcball = True:     Use arcball_rotation to rotate canvas.
         use_arcball = False:    Use orbit_rotation to rotate canvas.
         """
-        if self.initpos is None:
-            self.initpos = event.GetPosition()
+        if self.mouse_pos is None:
+            self.mouse_pos = event.GetPosition()
             return
-        last = self.initpos
+        last = self.mouse_pos
         cur = event.GetPosition()
 
-        last_x = float(last.x) * 2.0 / self.width - 1.0
-        last_y = 1 - float(last.y) * 2.0 / self.height
-        cur_x = float(cur.x) * 2.0 / self.width - 1.0
-        cur_y = 1 - float(cur.y) * 2.0 / self.height
+        p1x = float(last.x) * 2.0 / self.width - 1.0
+        p1y = 1 - float(last.y) * 2.0 / self.height
+        p2x = float(cur.x) * 2.0 / self.width - 1.0
+        p2y = 1 - float(cur.y) * 2.0 / self.height
+
+        if p1x == p2x and p1y == p2y:
+            return [1.0, 0.0, 0.0, 0.0]
 
         with self.rot_lock:
             if use_arcball:
-                self.rot_quat = self.arcball_rotation(last_x, last_y, cur_x, cur_y)
+                quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
+                self.rot_quat = mul_quat(self.rot_quat, quat)
             else:
-                self.rot_quat = self.orbit_rotation(last_x, last_y, cur_x, cur_y)
-        self.initpos = cur
+                delta_z = p2x - p1x
+                self.angle_z -= delta_z
+                rot_z = vector_to_quat([0.0, 0.0, 1.0], self.angle_z)
 
-    def handle_translation(self, event):
-        if self.initpos is None:
-            self.initpos = event.GetPosition()
+                delta_x = p2y - p1y
+                self.angle_x += delta_x
+                rot_x = vector_to_quat([1.0, 0.0, 0.0], self.angle_x)
+                self.rot_quat = mul_quat(rot_z, rot_x)
+        self.mouse_pos = cur
+
+    def translate_camera(self, event):
+        if self.mouse_pos is None:
+            self.mouse_pos = event.GetPosition()
             return
-        last = self.initpos
+        last = self.mouse_pos
         cur = event.GetPosition()
         # Do stuff
-        self.initpos = cur
+        self.mouse_pos = cur
