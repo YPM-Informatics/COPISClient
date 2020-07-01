@@ -24,9 +24,17 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def __init__(self, parent, *args, **kwargs):
         super(Canvas3D, self).__init__(parent, -1)
-        self.gl_initialized = False
-        self.gl_broken = False
-        self.gl_dirty = False
+        self._initialized = False
+        self._dirty = False
+        self._zoom = 1
+        self._width = None
+        self._height = None
+        self._rot_quat = [1, 0, 0, 0]
+        self._rot_lock = Lock()
+        self._angle_z = 0
+        self._angle_x = 0
+        self._mouse_pos = None
+        self.camera_objects = []
 
         # these attributes cannot be set for the time being
         display_attrs = glcanvas.GLAttributes()
@@ -37,18 +45,6 @@ class Canvas3D(glcanvas.GLCanvas):
         # initialize canvas and context
         self.canvas = glcanvas.GLCanvas(self)
         self.context = glcanvas.GLContext(self.canvas)
-
-        self.width = None
-        self.height = None
-
-        self.rot_quat = [1, 0, 0, 0]
-        self.rot_lock = Lock()
-        self.zoom = 1
-        self.zoom_factor = 1.0
-        self.angle_z = 0
-        self.angle_x = 0
-        self.mouse_pos = None
-        self.camera_objects = []
 
         # bind events
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -64,7 +60,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def init_opengl(self):
         """Initialize OpenGL."""
-        if self.gl_initialized:
+        if self._initialized:
             return True
 
         if self.canvas is None or self.context is None:
@@ -87,7 +83,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glEnable(GL_MULTISAMPLE)
 
-        self.gl_initialized = True
+        self._initialized = True
         return True
 
     def render(self):
@@ -105,20 +101,20 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
         size = self.GetClientSize()
-        self.width = max(size.width, 1)
-        self.height = max(size.height, 1)
+        self._width = max(size.width, 1)
+        self._height = max(size.height, 1)
 
         # multiply modelview matrix according to rotation quat
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        glMultMatrixd(quat_to_matrix4(self.rot_quat))
+        glMultMatrixd(quat_to_matrix4(self._rot_quat))
 
         # TODO: add toggle between perspective and orthographic view modes
-        glViewport(0, 0, self.width, self.height)
+        glViewport(0, 0, self._width, self._height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self.zoom) * 180 / np.pi, float(self.width) / self.height, self.clip_near, self.clip_far)
+        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self._zoom) * 180 / np.pi, float(self._width) / self._height, self.clip_near, self.clip_far)
         glMatrixMode(GL_MODELVIEW)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -128,26 +124,27 @@ class Canvas3D(glcanvas.GLCanvas):
         self.SwapBuffers()
 
     def on_size(self, event):
-        self.gl_dirty = True
+        """Handle EVT_SIZE."""
+        self._dirty = True
 
     def on_idle(self, event):
-        if not self.gl_initialized or not self.gl_dirty:
+        """Handle EVT_IDLE."""
+        if not self._initialized or not self._dirty:
             return
 
         if self.IsFrozen():
             return
 
         self._refresh_if_shown_on_screen()
-        self.gl_dirty = False
+        self._dirty = False
 
     def on_key(self, event):
+        """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
         pass
 
     def on_mouse_wheel(self, event):
-        """Process mouse wheel event. Adjusts zoom accordingly
-        and takes into consideration the zoom boundaries.
-        """
-        if not self.gl_initialized:
+        """Handle mouse wheel event and adjust zoom."""
+        if not self._initialized:
             return
 
         # ignore if middle mouse button is pressed
@@ -157,43 +154,45 @@ class Canvas3D(glcanvas.GLCanvas):
         self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
 
     def on_mouse(self, event):
-        """React to mouse events.
-        LMB drag:   move viewport
-        RMB drag:   unused
-        LMB/RMB up: reset position
+        """Handle mouse events.
+            LMB drag:   move viewport
+            RMB drag:   unused
+            LMB/RMB up: reset position
         """
-        if not self.gl_initialized or not self._set_current():
+        if not self._initialized or not self._set_current():
             return
 
         if event.Dragging():
-            # self.mouse_pos = event.GetPosition()
+            # self._mouse_pos = event.GetPosition()
             if event.LeftIsDown():
                 self.rotate_camera(event, use_arcball=self.arcball_control)
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
         elif event.LeftUp() or event.MiddleUp() or event.RightUp() or event.Leaving():
-            if self.mouse_pos is not None:
-                self.mouse_pos = None
+            if self._mouse_pos is not None:
+                self._mouse_pos = None
         # elif event.Moving():
         else:
             event.Skip()
-        self.gl_dirty = True;
+        self._dirty = True;
 
     def on_left_dclick(self, event):
-        """React to the double click event."""
+        """Handle EVT_LEFT_DCLICK."""
         print('double click')
 
     def on_erase_background(self, event):
-        """Process the erase background event."""
+        """Handle the erase background event."""
         pass  # Do nothing, to avoid flashing on MSW.
 
     def on_paint(self, event):
-        if self.gl_initialized:
-            self.gl_dirty = True
+        """Handle EVT_PAINT."""
+        if self._initialized:
+            self._dirty = True
         else:
             self.render()
 
     def on_set_focus(self, event):
+        """Handle EVT_SET_FOCUS."""
         self._refresh_if_shown_on_screen()
 
     def destroy(self):
@@ -206,15 +205,17 @@ class Canvas3D(glcanvas.GLCanvas):
     # --------------
 
     def _is_shown_on_screen(self):
+        """Return whether or not the canvas is physically visible on the screen."""
         return False if self.canvas is None else self.canvas.IsShownOnScreen()
 
     def _set_current(self):
+        """Set current OpenGL context as current."""
         return False if self.context is None else self.SetCurrent(self.context)
 
     def _update_camera_zoom(self, delta_zoom):
-        zoom = self.zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
-        self.zoom = max(min(zoom, self.zoom_max), self.zoom_min)
-        self.gl_dirty = True
+        zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
+        self._zoom = max(min(zoom, self._zoom_max), self._zoom_min)
+        self._dirty = True
 
     def _refresh_if_shown_on_screen(self):
         if self._is_shown_on_screen():
@@ -224,7 +225,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glClearColor(*self.color_background)
 
     def _render_objects(self):
-        """Create OpenGL objects when OpenGL is initialized."""
         self._render_grid()
 
         # draw hemispheres
@@ -244,12 +244,11 @@ class Canvas3D(glcanvas.GLCanvas):
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
-        # draw ca,eras
+        # draw cameras
         for cam in self.camera_objects:
             cam.onDraw()
 
     def _render_grid(self):
-        """Draw coordinate grid."""
         glColor3ub(200, 200, 200)
 
         # TODO: remove glBegin/glEnd in favor of modern OpenGL methods
@@ -279,7 +278,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def mouse_to_3d(self, x, y, z=1.0, local_transform=False):
         x = float(x)
-        y = self.height - float(y)
+        y = self._height - float(y)
         pmat = (GLdouble * 16)()
         mvmat = self.get_modelview_mat(local_transform)
         viewport = (GLint * 4)()
@@ -294,7 +293,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
-        y = self.height - float(y)
+        y = self._height - float(y)
         pmat = (GLdouble * 16)()
         mvmat = (GLdouble * 16)()
         viewport = (GLint * 4)()
@@ -327,44 +326,44 @@ class Canvas3D(glcanvas.GLCanvas):
         return ray_near + t * ray_dir
 
     def rotate_camera(self, event, use_arcball=True):
-        """Update rot_quat based on mouse position.
-        use_arcball = True:     Use arcball_rotation to rotate canvas.
-        use_arcball = False:    Use orbit_rotation to rotate canvas.
+        """Update _rot_quat based on mouse position.
+            use_arcball = True:     Use arcball_rotation to rotate canvas.
+            use_arcball = False:    Use orbit_rotation to rotate canvas.
         """
-        if self.mouse_pos is None:
-            self.mouse_pos = event.GetPosition()
+        if self._mouse_pos is None:
+            self._mouse_pos = event.GetPosition()
             return
-        last = self.mouse_pos
+        last = self._mouse_pos
         cur = event.GetPosition()
 
-        p1x = float(last.x) * 2.0 / self.width - 1.0
-        p1y = 1 - float(last.y) * 2.0 / self.height
-        p2x = float(cur.x) * 2.0 / self.width - 1.0
-        p2y = 1 - float(cur.y) * 2.0 / self.height
+        p1x = float(last.x) * 2.0 / self._width - 1.0
+        p1y = 1 - float(last.y) * 2.0 / self._height
+        p2x = float(cur.x) * 2.0 / self._width - 1.0
+        p2y = 1 - float(cur.y) * 2.0 / self._height
 
         if p1x == p2x and p1y == p2y:
             return [1.0, 0.0, 0.0, 0.0]
 
-        with self.rot_lock:
+        with self._rot_lock:
             if use_arcball:
                 quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
-                self.rot_quat = mul_quat(self.rot_quat, quat)
+                self._rot_quat = mul_quat(self._rot_quat, quat)
             else:
                 delta_z = p2x - p1x
-                self.angle_z -= delta_z
-                rot_z = vector_to_quat([0.0, 0.0, 1.0], self.angle_z)
+                self._angle_z -= delta_z
+                rot_z = vector_to_quat([0.0, 0.0, 1.0], self._angle_z)
 
                 delta_x = p2y - p1y
-                self.angle_x += delta_x
-                rot_x = vector_to_quat([1.0, 0.0, 0.0], self.angle_x)
-                self.rot_quat = mul_quat(rot_z, rot_x)
-        self.mouse_pos = cur
+                self._angle_x += delta_x
+                rot_x = vector_to_quat([1.0, 0.0, 0.0], self._angle_x)
+                self._rot_quat = mul_quat(rot_z, rot_x)
+        self._mouse_pos = cur
 
     def translate_camera(self, event):
-        if self.mouse_pos is None:
-            self.mouse_pos = event.GetPosition()
+        if self._mouse_pos is None:
+            self._mouse_pos = event.GetPosition()
             return
-        last = self.mouse_pos
+        last = self._mouse_pos
         cur = event.GetPosition()
         # Do stuff
-        self.mouse_pos = cur
+        self._mouse_pos = cur
