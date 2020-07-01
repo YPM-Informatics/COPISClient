@@ -214,7 +214,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def _update_camera_zoom(self, delta_zoom):
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
-        self._zoom = max(min(zoom, self._zoom_max), self._zoom_min)
+        self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
 
     def _refresh_if_shown_on_screen(self):
