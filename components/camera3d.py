@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+    #!/usr/bin/env python3
 """TODO: Fill in docstring"""
 
 import math
@@ -75,7 +75,7 @@ class Camera3D():
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025,  0.05, -0.05)
         glVertex3f(-0.025,  0.05, -0.05)
-        
+
         ## left
         glVertex3f(-0.025, -0.05,  0.05)
         glVertex3f( 0.025, -0.05,  0.05)
@@ -87,7 +87,7 @@ class Camera3D():
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f( 0.025, -0.05, -0.05)
-        
+
         ## front
         glVertex3f(-0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05,  0.05)
@@ -158,7 +158,7 @@ class Camera3D():
             dx = round(newx - self.x, 2)
             dy = round(newy - self.y, 2)
             dz = round(newz - self.z, 2)
-            
+
             maxd = max(dx, dy, dz)
             scale = maxd/0.01
 
@@ -166,15 +166,15 @@ class Camera3D():
             self.increx = dx/scale
             self.increy = dy/scale
             self.increz = dz/scale
-            
+
             #Setting trans to true allows this function to be called on cam.onDraw
             self.trans = True
-            
+
         if self.nIncre > 0:
             self.x += self.increx
             self.y += self.increy
             self.z += self.increz
-        
+
             self.nIncre -= 1
         else:
             self.x = round(self.x, 2)
