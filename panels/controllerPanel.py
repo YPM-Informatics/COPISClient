@@ -302,7 +302,7 @@ class ControllerPanel(wx.Panel):
             cam = self.parent.visualizer_panel.getCamById(camId)
             if cam:
                 cam.onMove(axis, size)
-            self.canvas.OnDraw()
+            self.canvas.set_dirty
         else:
             util.set_dialog('Please select the camera to control.')
 
@@ -332,9 +332,9 @@ class ControllerPanel(wx.Panel):
             ## Update selected camera
             self.selectedCam = self.parent.visualizer_panel.getCamById(id)
             self.selectedCam.isSelected = True
-        
+
         ## Refresh canvas
-        self.parent.visualizer_panel.canvas.OnDraw()
+        self.parent.visualizer_panel.canvas.set_dirty()
 
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
@@ -346,8 +346,7 @@ class ControllerPanel(wx.Panel):
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
 
-        self.visualizer_panel.canvas.camera_objects = []
-        self.visualizer_panel.canvas.OnDraw()
+        self.visualizer_panel.canvas.clear_camera_objects()
         self.masterCombo.Clear()
 
         if rb.Label == 'USB':
@@ -369,11 +368,11 @@ class ControllerPanel(wx.Panel):
 
     def onDecreaseScale(self, event):
         self.visualizer_panel.canvas.scale -= 0.1
-        self.visualizer_panel.canvas.OnDraw()
+        self.visualizer_panel.canvas.set_dirty()
 
     def onIncreaseScale(self, event):
         self.visualizer_panel.canvas.scale += 0.1
-        self.visualizer_panel.canvas.OnDraw()
+        self.visualizer_panel.canvas.set_dirty()
 
     def onStartEvf(self, event):
         if self.parent.cam_list.selected_camera is not None:
