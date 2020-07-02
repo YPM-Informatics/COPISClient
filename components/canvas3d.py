@@ -194,20 +194,18 @@ class Canvas3D(glcanvas.GLCanvas):
     # Canvas util functions
     # ---------------------
 
-    def set_dirty(self):
-        self._dirty = True
-
     def destroy(self):
         """Clean up the OpenGL context."""
         self.context.destroy()
         glcanvas.GLCanvas.Destroy()
 
+    def set_dirty(self):
+        self._dirty = True
+
     def _is_shown_on_screen(self):
-        """Return whether or not the canvas is physically visible on the screen."""
         return False if self.canvas is None else self.canvas.IsShownOnScreen()
 
     def _set_current(self):
-        """Set current OpenGL context as current."""
         return False if self.context is None else self.SetCurrent(self.context)
 
     def _update_camera_zoom(self, delta_zoom):
