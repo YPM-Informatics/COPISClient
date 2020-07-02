@@ -53,14 +53,12 @@ class VisualizerPanel(wx.Panel):
 
         cam_3d = Camera3D(id, x, y, z, b, c)
         self.canvas.camera_objects.append(cam_3d)
-        self.canvas.OnDraw()
+        self.canvas.set_dirty()
 
         return cam_3d
 
     def onClearCameras(self):
-        self.canvas.camera_objects = []
-        self.canvas.Refresh()
-        self.canvas.SwapBuffers()
+        self.canvas.clear_camera_objects()
 
     def getCamById(self, id):
         for cam in self.canvas.camera_objects:

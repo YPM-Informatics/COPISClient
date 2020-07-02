@@ -101,27 +101,22 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
         size = self.GetClientSize()
-        self._width = max(size.width, 1)
-        self._height = max(size.height, 1)
-
-        # multiply modelview matrix according to rotation quat
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        glMultMatrixd(quat_to_matrix4(self._rot_quat))
-
-        # TODO: add toggle between perspective and orthographic view modes
+        self._width = max(10, size.width)
+        self._height = max(10, size.height)
         glViewport(0, 0, self._width, self._height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self._zoom) * 180 / np.pi, float(self._width) / self._height, self.clip_near, self.clip_far)
-        glMatrixMode(GL_MODELVIEW)
+
+        self.apply_view_matrix()
+        self.apply_projection()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_objects()
 
         self.SwapBuffers()
+
+    # ---------------------
+    # Canvas event handlers
+    # ---------------------
 
     def on_size(self, event):
         """Handle EVT_SIZE."""
@@ -195,14 +190,17 @@ class Canvas3D(glcanvas.GLCanvas):
         """Handle EVT_SET_FOCUS."""
         self._refresh_if_shown_on_screen()
 
+    # ---------------------
+    # Canvas util functions
+    # ---------------------
+
+    def set_dirty(self):
+        self._dirty = True
+
     def destroy(self):
         """Clean up the OpenGL context."""
         self.context.destroy()
         glcanvas.GLCanvas.Destroy()
-
-    # --------------
-    # Util functions
-    # --------------
 
     def _is_shown_on_screen(self):
         """Return whether or not the canvas is physically visible on the screen."""
@@ -219,6 +217,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def _refresh_if_shown_on_screen(self):
         if self._is_shown_on_screen():
+            self._set_current()
             self.render()
 
     def _render_background(self):
@@ -270,6 +269,81 @@ class Canvas3D(glcanvas.GLCanvas):
         glVertex3f(0, 0, 0)
         glVertex3f(0, 0, math.sqrt(2))
         glEnd()
+
+    # ------------------
+    # Camera3D functions
+    # ------------------
+
+    def clear_camera_objects(self):
+        self.camera_objects = []
+        self._dirty = True
+
+    # ----------------
+    # Path3D functions
+    # ----------------
+
+    # -----------------------
+    # Canvas camera functions
+    # -----------------------
+
+    def apply_view_matrix(self):
+        """Apply modelview matrix according to rotation quat."""
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
+        glMultMatrixd(quat_to_matrix4(self._rot_quat))
+
+    def apply_projection(self):
+        """Set camera projection. Also updates zoom."""
+        # TODO: add toggle between perspective and orthographic view modes
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self._zoom) * 180 / np.pi, float(self._width) / self._height, self.clip_near, self.clip_far)
+        glMatrixMode(GL_MODELVIEW)
+
+    def rotate_camera(self, event, use_arcball=True):
+        """Update _rot_quat based on mouse position.
+            use_arcball = True:     Use arcball_rotation to rotate canvas.
+            use_arcball = False:    Use orbit_rotation to rotate canvas.
+        """
+        if self._mouse_pos is None:
+            self._mouse_pos = event.GetPosition()
+            return
+        last = self._mouse_pos
+        cur = event.GetPosition()
+
+        p1x = float(last.x) * 2.0 / self._width - 1.0
+        p1y = 1 - float(last.y) * 2.0 / self._height
+        p2x = float(cur.x) * 2.0 / self._width - 1.0
+        p2y = 1 - float(cur.y) * 2.0 / self._height
+
+        if p1x == p2x and p1y == p2y:
+            return [1.0, 0.0, 0.0, 0.0]
+
+        with self._rot_lock:
+            if use_arcball:
+                quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
+                self._rot_quat = mul_quat(self._rot_quat, quat)
+            else:
+                delta_z = p2x - p1x
+                self._angle_z -= delta_z
+                rot_z = vector_to_quat([0.0, 0.0, 1.0], self._angle_z)
+
+                delta_x = p2y - p1y
+                self._angle_x += delta_x
+                rot_x = vector_to_quat([1.0, 0.0, 0.0], self._angle_x)
+                self._rot_quat = mul_quat(rot_z, rot_x)
+        self._mouse_pos = cur
+
+    def translate_camera(self, event):
+        if self._mouse_pos is None:
+            self._mouse_pos = event.GetPosition()
+            return
+        last = self._mouse_pos
+        cur = event.GetPosition()
+        # Do stuff
+        self._mouse_pos = cur
+
 
     def get_modelview_mat(self, local_transform):
         mvmat = (GLdouble * 16)()
@@ -324,46 +398,3 @@ class Canvas3D(glcanvas.GLCanvas):
         if t < 0:
             return None
         return ray_near + t * ray_dir
-
-    def rotate_camera(self, event, use_arcball=True):
-        """Update _rot_quat based on mouse position.
-            use_arcball = True:     Use arcball_rotation to rotate canvas.
-            use_arcball = False:    Use orbit_rotation to rotate canvas.
-        """
-        if self._mouse_pos is None:
-            self._mouse_pos = event.GetPosition()
-            return
-        last = self._mouse_pos
-        cur = event.GetPosition()
-
-        p1x = float(last.x) * 2.0 / self._width - 1.0
-        p1y = 1 - float(last.y) * 2.0 / self._height
-        p2x = float(cur.x) * 2.0 / self._width - 1.0
-        p2y = 1 - float(cur.y) * 2.0 / self._height
-
-        if p1x == p2x and p1y == p2y:
-            return [1.0, 0.0, 0.0, 0.0]
-
-        with self._rot_lock:
-            if use_arcball:
-                quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
-                self._rot_quat = mul_quat(self._rot_quat, quat)
-            else:
-                delta_z = p2x - p1x
-                self._angle_z -= delta_z
-                rot_z = vector_to_quat([0.0, 0.0, 1.0], self._angle_z)
-
-                delta_x = p2y - p1y
-                self._angle_x += delta_x
-                rot_x = vector_to_quat([1.0, 0.0, 0.0], self._angle_x)
-                self._rot_quat = mul_quat(rot_z, rot_x)
-        self._mouse_pos = cur
-
-    def translate_camera(self, event):
-        if self._mouse_pos is None:
-            self._mouse_pos = event.GetPosition()
-            return
-        last = self._mouse_pos
-        cur = event.GetPosition()
-        # Do stuff
-        self._mouse_pos = cur

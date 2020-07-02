@@ -181,3 +181,4 @@ class Camera3D():
             self.y = round(self.y, 2)
             self.z = round(self.z, 2)
             self.trans = False
+            
