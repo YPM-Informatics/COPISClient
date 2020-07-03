@@ -4,6 +4,7 @@
 import math
 import numpy as np
 from enums import Axis
+import threading
 
 import wx
 from OpenGL.GL import *
@@ -35,8 +36,7 @@ class Camera3D():
         self.increy = 0
         self.increz = 0
 
-
-    def onDraw(self):
+    def render(self):
         ## Set color based on selection
         if self.is_selected:
             color = [75, 230, 150]
@@ -55,6 +55,7 @@ class Camera3D():
 
         if self.trans:
             self.translate()
+            self._dirty = True
 
         glBegin(GL_QUADS)
 
@@ -120,6 +121,10 @@ class Camera3D():
     def get_id(self):
         return self._id
 
+    @property
+    def get_dirty(self):
+        return self._dirty
+
     def getRotationAngle(self, v1, v2):
         v1_u = self.getUnitVector(v1)
         v2_u = self.getUnitVector(v2)
@@ -139,12 +144,12 @@ class Camera3D():
 
         self.angle = self.getRotationAngle(v1, v2)
         self.rotationVector = np.cross(self.getUnitVector(v1), self.getUnitVector(v2))
-        self.onDraw()
+        self.render()
 
     def getZbyAngle(self, angle):
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
-    def onMove(self, axis, amount):
+    def on_move(self, axis, amount):
         if axis in Axis and amount != 0:
             if axis == Axis.X:
                 self._x += amount
@@ -172,7 +177,7 @@ class Camera3D():
             self.increy = dy/scale
             self.increz = dz/scale
 
-            #Setting trans to true allows this function to be called on cam.onDraw
+            #Setting trans to true allows this function to be called on cam.render
             self.trans = True
 
         if self.nIncre > 0:
@@ -186,3 +191,5 @@ class Camera3D():
             self._y = round(self._y, 2)
             self._z = round(self._z, 2)
             self.trans = False
+
+        self._dirty = True

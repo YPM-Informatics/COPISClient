@@ -12,4 +12,3 @@ from OpenGL.GLU import *
 class Path3D():
     def __init__(self, *args, **kwargs):
         self.path = None
-    
