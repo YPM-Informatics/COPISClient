@@ -90,7 +90,7 @@ class ToolBarPanel(wx.Panel):
         elif event.GetId() == Tool_Ids.Play.value:
             camId = self.parent.controller_panel.masterCombo.GetSelection()
             if camId != -1:
-                cam = self.parent.visualizer_panel.getCamById(camId)
+                cam = self.parent.visualizer_panel.get_cam_by_id(camId)
                 if cam:
                    cam.translate(0.62, 0.62, 0.62)
             else:

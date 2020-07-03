@@ -2,10 +2,8 @@
 """TODO: Fill in docstring"""
 
 import util
-import random
 
 import wx
-from components.camera3d import Camera3D
 from components.canvas3d import Canvas3D
 
 
@@ -14,9 +12,9 @@ class VisualizerPanel(wx.Panel):
         super(VisualizerPanel, self).__init__(parent)
         self.parent = parent
         self.canvas = Canvas3D(self)
-        self.InitPanel()
+        self.init_panel()
 
-    def InitPanel(self):
+    def init_panel(self):
         ## LAYOUT
 
         #################################################################################################
@@ -41,33 +39,27 @@ class VisualizerPanel(wx.Panel):
 
         self.SetSizerAndFit(hboxRight)
 
-    def onDrawCamera(self, id=-1):
-        x = float(random.randrange(-100, 100)) / 100
-        y = float(random.randrange(-100, 100)) / 100
-        z = float(random.randrange(-100, 100)) / 100
-        b = random.randrange(0, 360, 5)
-        c = random.randrange(0, 360, 5)
+    def get_camera_objects(self):
+        return False if self.canvas is None else self.canvas.get_camera_objects()
 
-        if id == -1:
-            id = self.generateCamId()
+    def add_camera(self, id=-1):
+        return None if self.canvas is None else self.canvas.add_camera(id)
+        # x = float(random.randrange(-100, 100)) / 100
+        # y = float(random.randrange(-100, 100)) / 100
+        # z = float(random.randrange(-100, 100)) / 100
+        # b = random.randrange(0, 360, 5)
+        # c = random.randrange(0, 360, 5)
 
-        cam_3d = Camera3D(id, x, y, z, b, c)
-        self.canvas.camera_objects.append(cam_3d)
-        self.canvas.set_dirty()
+        # if id == -1:
+        #     id = self.generate_cam_id()
 
-        return cam_3d
+        # cam_3d = Camera3D(id, x, y, z, b, c)
+        # self.canvas.camera_objects.append(cam_3d)
+        # self.canvas.set_dirty()
+        # return str(cam_3d._id)
 
-    def onClearCameras(self):
-        self.canvas.clear_camera_objects()
+    def on_clear_cameras(self):
+        return False if self.canvas is None else self.canvas.clear_camera_objects()
 
-    def getCamById(self, id):
-        for cam in self.canvas.camera_objects:
-            if cam.id == id:
-                return cam
-        return None
-
-    def generateCamId(self):
-        self.canvas.camera_objects.sort(key=lambda x: x.id)
-        if self.canvas.camera_objects:
-            return self.canvas.camera_objects[-1].id + 1
-        return 0
+    def get_cam_by_id(self, id):
+        return None if self.canvas is None else self.canvas.get_camera_by_id(id)

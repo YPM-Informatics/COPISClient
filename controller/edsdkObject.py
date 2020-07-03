@@ -21,7 +21,7 @@ def initialize(console):
         _edsdk.EdsInitializeSDK()
     except Exception as e:
         _console.print("An exception occurred while initializing Canon API: " + e.args[0])
-    
+
 
 
 ##############################################################################
@@ -61,7 +61,7 @@ def _download_image(image):
         stream = _edsdk.EdsCreateFileStream(file_name, 1, 2)
         _edsdk.EdsDownload(image, dir_info.size, stream)
         _edsdk.EdsDownloadComplete(image)
-        _edsdk.EdsRelease(stream) 
+        _edsdk.EdsRelease(stream)
         _console.print("Image is saved as " + file_name + ".")
     except Exception as e:
         _console.print("An exception occurred while downloading an image: " + e.args[0])
@@ -128,7 +128,7 @@ PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
 #       In:    event - EdsPropertyEvent event type supplemented
 #              property - EdsPropertyID property ID created by the event
 #              param - EdsUInt32 used to identify information created by the
-#                      event for custom function properties or other 
+#                      event for custom function properties or other
 #                      properties that have multiple items of information
 #              context - EdsVoid any data needed for the application
 #
@@ -142,11 +142,11 @@ property_handler = PropertyHandlerType(_handle_property)
 class Camera:
     def __init__(self, id, camref):
         self.camref = camref
-        self.id = id   
+        self.id = id
         self.device = c_void_p()
         self.is_evf_on = False
         self.running = False
-        
+
     def connect(self):
         if self.running:
             return
@@ -158,7 +158,7 @@ class Camera:
             _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
             _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, self.camref)
             _edsdk.EdsSetCameraStateEventHandler(self.camref, _edsdk.StateEvent_All, state_handler, self.camref)
-        
+
             ## connect to the camera
             _edsdk.EdsOpenSession(self.camref)
             _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
@@ -195,7 +195,7 @@ class Camera:
                 self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
             except Exception as e:
                 _console.print("An exception occurred while starting a live view with camera" + str(self.id + 1) + ": " + e.args[0])
-            
+
             time.sleep(0.5)
             self.download_evf()
             _console.print("Live view is on.")
@@ -204,7 +204,7 @@ class Camera:
         time.sleep(0.1)
         try:
             _edsdk.EdsDownloadEvfImage(self.camref,self.evfImageRef)
-        
+
             #dataset = EvfDataSet()
             #dataset.zoom = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeo(c_uint), c_uint(dataset.zoom))
             #dataset.imagePosition = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0,sizeof(EdsPoint),dataset.imagePosition)
@@ -217,7 +217,7 @@ class Camera:
             self.img_byte_data = bytearray(string_at(image_data_pointer, output_length.value))
         except Exception as e:
             _console.print("An exception occurred while downloading a live view image with camera" + str(self.id + 1) + ": " + e.args[0])
-        
+
 
     def end_evf(self):
         try:
@@ -234,7 +234,7 @@ class Camera:
             _console.print("Live view is off.")
         except Exception as e:
             _console.print("An exception occurred while closing a live view with camera" + str(self.id + 1) + ": " + e.args[0])
-        
+
 
 class CameraList:
     def __init__(self):
@@ -280,13 +280,13 @@ class CameraList:
 
     def set_selected_cam_by_id(self, id):
         ## Uncomment commented lines to enable selection for physical cameras
-        # self.selected_camera.isSelected = False
+        # self.selected_camera.is_selected = False
         self.selected_camera = self.get_camera_by_id(id)
         self.selected_camera.connect()
 
         global _camera
         _camera = self.selected_camera
-        # _camera.isSelected = True
+        # _camera.is_selected = True
 
     def terminate(self):
         for cam in self.cam_model_list:
@@ -305,5 +305,3 @@ class EvfDataSet(Structure):
                ('zoomRect', EdsRect),
                ('imagePosition', EdsPoint),
                ('sizeJpgLarge', EdsSize)]
-
-
