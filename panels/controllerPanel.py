@@ -11,12 +11,12 @@ class ControllerPanel(wx.Panel):
         self.parent = parent
         self.auiManager = aui_manager
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
-        self.InitPanel()
+        self.init_panel()
         self.canvas = None
 
         self.selectedCam = None
 
-    def InitPanel(self):
+    def init_panel(self):
         vboxLeft = wx.BoxSizer(wx.VERTICAL)
 
         # header font
@@ -299,7 +299,7 @@ class ControllerPanel(wx.Panel):
                 if direction == Axis.Minus:
                     size = -size
 
-            cam = self.parent.visualizer_panel.getCamById(camId)
+            cam = self.parent.visualizer_panel.get_cam_by_id(camId)
             if cam:
                 cam.onMove(axis, size)
             self.canvas.set_dirty
@@ -311,7 +311,7 @@ class ControllerPanel(wx.Panel):
             self.canvas = self.visualizer_panel.canvas
 
         if self.parent.selected_cam is not None:
-            self.parent.visualizer_panel.getCamById(self.parent.selected_cam.id).onFocusCenter()
+            self.parent.visualizer_panel.get_cam_by_id(self.parent.selected_cam._id).onFocusCenter()
         else:
             util.set_dialog('Please select the camera to control.')
 
@@ -323,15 +323,15 @@ class ControllerPanel(wx.Panel):
             self.parent.cam_list.set_selected_cam_by_id(id)
 
         ## Selection for virtual cameras
-        elif self.parent.visualizer_panel.canvas.camera_objects:
+        elif self.parent.visualizer_panel.get_camera_objects():
 
             ## Disable previously selected camera
             if self.selectedCam:
-                self.selectedCam.isSelected = False
+                self.selectedCam.is_selected = False
 
             ## Update selected camera
-            self.selectedCam = self.parent.visualizer_panel.getCamById(id)
-            self.selectedCam.isSelected = True
+            self.selectedCam = self.parent.visualizer_panel.get_cam_by_id(id)
+            self.selectedCam.is_selected = True
 
         ## Refresh canvas
         self.parent.visualizer_panel.canvas.set_dirty()
@@ -346,7 +346,7 @@ class ControllerPanel(wx.Panel):
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
 
-        self.visualizer_panel.canvas.clear_camera_objects()
+        self.visualizer_panel.on_clear_cameras()
         self.masterCombo.Clear()
 
         if rb.Label == 'USB':
@@ -382,7 +382,7 @@ class ControllerPanel(wx.Panel):
             util.set_dialog('Please select the camera to start live view.')
 
     def onRefresh(self, event):
-        self.visualizer_panel.onClearCameras()
+        self.visualizer_panel.on_clear_cameras()
         self.masterCombo.Clear()
 
         if self.edsdkRb.GetValue():
@@ -390,5 +390,5 @@ class ControllerPanel(wx.Panel):
             self.parent.getCameraList()
 
     def onCreateVirtualCam(self, event):
-        cam = self.parent.visualizer_panel.onDrawCamera()
-        self.parent.controller_panel.masterCombo.Append('camera ' + str(cam.id))
+        cam_id = self.parent.visualizer_panel.add_camera()
+        self.parent.controller_panel.masterCombo.Append('camera ' + cam_id)

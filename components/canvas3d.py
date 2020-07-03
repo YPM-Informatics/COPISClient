@@ -2,6 +2,7 @@
 """TODO: Fill in docstring"""
 
 import math
+import random
 import numpy as np
 from threading import Lock
 
@@ -11,7 +12,8 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 from components.glhelper import arcball, vector_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
-
+from components.path3d import Path3D
+from components.camera3d import Camera3D
 
 class Canvas3D(glcanvas.GLCanvas):
     zoom_min = 0.5
@@ -34,7 +36,9 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._mouse_pos = None
-        self.camera_objects = []
+
+        self._camera3d_list = []
+        self._path3d_list = []
 
         # these attributes cannot be set for the time being
         display_attrs = glcanvas.GLAttributes()
@@ -242,7 +246,7 @@ class Canvas3D(glcanvas.GLCanvas):
         gluSphere(self.quadratic, 0.25, 32, 32)
 
         # draw cameras
-        for cam in self.camera_objects:
+        for cam in self._camera3d_list:
             cam.onDraw()
 
     def _render_grid(self):
@@ -268,17 +272,56 @@ class Canvas3D(glcanvas.GLCanvas):
         glVertex3f(0, 0, math.sqrt(2))
         glEnd()
 
+    def _render_paths(self):
+        if not self._path3d_list:
+            return
+
+
+
     # ------------------
     # Camera3D functions
     # ------------------
 
     def clear_camera_objects(self):
-        self.camera_objects = []
+        self._camera3d_list = []
         self._dirty = True
+
+    def get_camera_objects(self):
+        return self._camera3d_list
+
+    def add_camera(self, id):
+        x = float(random.randrange(-100, 100)) / 100
+        y = float(random.randrange(-100, 100)) / 100
+        z = float(random.randrange(-100, 100)) / 100
+        b = random.randrange(0, 360, 5)
+        c = random.randrange(0, 360, 5)
+
+        if id == -1:
+            id = self._generate_camera_id()
+
+        cam_3d = Camera3D(id, x, y, z, b, c)
+        self._camera3d_list.append(cam_3d)
+        self._dirty = True
+
+        return str(cam_3d._id)
+
+    def get_camera_by_id(self, id):
+        if self._camera3d_list:
+            for cam in self._camera3d_list:
+                if cam._id == id:
+                    return cam
+        return None
+
+    def _generate_camera_id(self):
+        self._camera3d_list.sort(key=lambda x: x._id)
+        if self._camera3d_list:
+            return self._camera3d_list[-1]._id + 1
+        return 0
 
     # ----------------
     # Path3D functions
     # ----------------
+
 
     # -----------------------
     # Canvas camera functions

@@ -13,14 +13,17 @@ from OpenGL.GLUT import *
 
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):
-        self.id = id
-        self.x = float(x)
-        self.y = float(y)
-        self.z = float(z)
-        self.b = float(b)
-        self.c = float(c)
+        self._dirty = False
+        self.is_selected = False
 
-        self.start = (self.x, self.y, self.z, self.b, self.c)
+        self._id = id
+        self._x = float(x)
+        self._y = float(y)
+        self._z = float(z)
+        self._b = float(b)
+        self._c = float(c)
+
+        self.start = (self._x, self._y, self._z, self._b, self._c)
         self.mode = "normal"
 
         self.angle = 0
@@ -32,25 +35,23 @@ class Camera3D():
         self.increy = 0
         self.increz = 0
 
-        self.isSelected = False
 
     def onDraw(self):
-
         ## Set color based on selection
-        if self.isSelected:
+        if self.is_selected:
             color = [75, 230, 150]
         else:
             color = [125, 125, 125]
 
         glPushMatrix()
-        glTranslatef(self.x, self.y, self.z)
+        glTranslatef(self._x, self._y, self._z)
         if self.mode == 'normal':
-            if self.b != 0.0:
-                glRotatef(self.b, 0, 0, 1)
-            if self.c != 0.0:
-                glRotatef(self.c, 0, 1, 0)
+            if self._b != 0.0:
+                glRotatef(self._b, 0, 0, 1)
+            if self._c != 0.0:
+                glRotatef(self._c, 0, 1, 0)
         elif self.mode == 'rotate':
-            glRotatef(self.angle, self.rotationVector[0], self.rotationVector[1], self.rotationVector[2])
+            glRotatef(self.angle, *self.rotationVector)
 
         if self.trans:
             self.translate()
@@ -115,6 +116,10 @@ class Camera3D():
         glPopMatrix()
         glPopMatrix()
 
+    @property
+    def get_id(self):
+        return self._id
+
     def getRotationAngle(self, v1, v2):
         v1_u = self.getUnitVector(v1)
         v2_u = self.getUnitVector(v2)
@@ -125,8 +130,8 @@ class Camera3D():
 
     def onFocusCenter(self):
         self.mode = 'rotate'
-        cameraCenterPoint = (self.x, self.y, self.z)
-        currentFacingPoint = (self.x - 0.5, self.y, self.z)
+        cameraCenterPoint = (self._x, self._y, self._z)
+        currentFacingPoint = (self._x - 0.5, self._y, self._z)
         desirableFacingPoint = (0.0, 0.0, 0.0)
 
         v1 = np.subtract(currentFacingPoint, cameraCenterPoint)
@@ -142,22 +147,22 @@ class Camera3D():
     def onMove(self, axis, amount):
         if axis in Axis and amount != 0:
             if axis == Axis.X:
-                self.x += amount
+                self._x += amount
             elif axis == Axis.Y:
-                self.y += amount
+                self._y += amount
             elif axis == Axis.Z:
-                self.z += amount
+                self._z += amount
             elif axis == Axis.B:
-                self.b += amount
+                self._b += amount
             elif axis == Axis.C:
-                self.c += amount
+                self._c += amount
 
     def translate(self, newx=0, newy=0, newz=0):
         #Initialize nIncre and increxyz, skip if already initialized
         if not self.trans:
-            dx = round(newx - self.x, 2)
-            dy = round(newy - self.y, 2)
-            dz = round(newz - self.z, 2)
+            dx = round(newx - self._x, 2)
+            dy = round(newy - self._y, 2)
+            dz = round(newz - self._z, 2)
 
             maxd = max(dx, dy, dz)
             scale = maxd/0.01
@@ -171,14 +176,13 @@ class Camera3D():
             self.trans = True
 
         if self.nIncre > 0:
-            self.x += self.increx
-            self.y += self.increy
-            self.z += self.increz
+            self._x += self.increx
+            self._y += self.increy
+            self._z += self.increz
 
             self.nIncre -= 1
         else:
-            self.x = round(self.x, 2)
-            self.y = round(self.y, 2)
-            self.z = round(self.z, 2)
+            self._x = round(self._x, 2)
+            self._y = round(self._y, 2)
+            self._z = round(self._z, 2)
             self.trans = False
-            
