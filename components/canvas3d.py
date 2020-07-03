@@ -114,7 +114,10 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
+        self._render_grid()
         self._render_objects()
+        self._render_cameras()
+        self._render_paths()
 
         self.SwapBuffers()
 
@@ -128,14 +131,22 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_idle(self, event):
         """Handle EVT_IDLE."""
-        if not self._initialized or not self._dirty:
+        if not self._initialized:
             return
 
         if self.IsFrozen():
             return
 
+        for camera in self._camera3d_list:
+            self._dirty = self._dirty or camera._dirty
+
+        if not self._dirty:
+            return
+
         self._refresh_if_shown_on_screen()
         self._dirty = False
+        for camera in self._camera3d_list:
+            camera._dirty = False
 
     def on_key(self, event):
         """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
@@ -225,34 +236,8 @@ class Canvas3D(glcanvas.GLCanvas):
     def _render_background(self):
         glClearColor(*self.color_background)
 
-    def _render_objects(self):
-        self._render_grid()
-
-        # draw hemispheres
-        glColor3ub(225, 225, 225)
-        draw_circle([0, 0, 0], [1, 1, 0], math.sqrt(2), 128)
-        draw_circle([0, 0, 0], [1, -1, 0], math.sqrt(2), 128)
-        for i in np.arange(0, 180, 45):
-            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)), 128)
-
-        # draw axes circles
-        glColor3ub(160, 160, 160)
-        draw_circle([0, 0, 0], [0, 0, 1], math.sqrt(2), 128)
-        draw_circle([0, 0, 0], [0, 1, 0], math.sqrt(2), 128)
-        draw_circle([0, 0, 0], [1, 0, 0], math.sqrt(2), 128)
-
-        # draw sphere
-        glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.25, 32, 32)
-
-        # draw cameras
-        for cam in self._camera3d_list:
-            cam.onDraw()
-
     def _render_grid(self):
         glColor3ub(200, 200, 200)
-
-        # TODO: remove glBegin/glEnd in favor of modern OpenGL methods
         glBegin(GL_LINES)
         for i in np.arange(-10, 11, 1):
             i *= 0.1
@@ -272,11 +257,33 @@ class Canvas3D(glcanvas.GLCanvas):
         glVertex3f(0, 0, math.sqrt(2))
         glEnd()
 
+    def _render_objects(self):
+        # draw hemispheres
+        glColor3ub(225, 225, 225)
+        draw_circle([0, 0, 0], [1, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, -1, 0], math.sqrt(2), 128)
+        for i in np.arange(0, 180, 45):
+            draw_circle([0, 0, math.sqrt(2) * math.cos(np.deg2rad(i))], [0, 0, 1], math.sqrt(2) * math.sin(np.deg2rad(i)), 128)
+
+        # draw axes circles
+        glColor3ub(160, 160, 160)
+        draw_circle([0, 0, 0], [0, 0, 1], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [0, 1, 0], math.sqrt(2), 128)
+        draw_circle([0, 0, 0], [1, 0, 0], math.sqrt(2), 128)
+
+        # draw sphere
+        glColor3ub(0, 0, 128)
+        gluSphere(self.quadratic, 0.25, 32, 32)
+
+    def _render_cameras(self):
+        if not self._camera3d_list:
+            return
+        for cam in self._camera3d_list:
+            cam.render()
+
     def _render_paths(self):
         if not self._path3d_list:
             return
-
-
 
     # ------------------
     # Camera3D functions
@@ -313,8 +320,8 @@ class Canvas3D(glcanvas.GLCanvas):
         return None
 
     def _generate_camera_id(self):
-        self._camera3d_list.sort(key=lambda x: x._id)
         if self._camera3d_list:
+            self._camera3d_list.sort(key=lambda x: x._id)
             return self._camera3d_list[-1]._id + 1
         return 0
 
@@ -384,7 +391,6 @@ class Canvas3D(glcanvas.GLCanvas):
         cur = event.GetPosition()
         # Do stuff
         self._mouse_pos = cur
-
 
     def get_modelview_mat(self, local_transform):
         mvmat = (GLdouble * 16)()

@@ -301,7 +301,7 @@ class ControllerPanel(wx.Panel):
 
             cam = self.parent.visualizer_panel.get_cam_by_id(camId)
             if cam:
-                cam.onMove(axis, size)
+                cam.on_move(axis, size)
             self.canvas.set_dirty
         else:
             util.set_dialog('Please select the camera to control.')
