@@ -9,7 +9,7 @@ from components.canvas3d import Canvas3D
 
 class VisualizerPanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
-        super(VisualizerPanel, self).__init__(parent)
+        super().__init__(parent)
         self.parent = parent
         self.canvas = Canvas3D(self)
         self.init_panel()

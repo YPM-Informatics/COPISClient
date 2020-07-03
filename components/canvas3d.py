@@ -25,7 +25,7 @@ class Canvas3D(glcanvas.GLCanvas):
     color_background = (0.941, 0.941, 0.941, 1)
 
     def __init__(self, parent, *args, **kwargs):
-        super(Canvas3D, self).__init__(parent, -1)
+        super().__init__(parent, -1)
         self._initialized = False
         self._dirty = False
         self._zoom = 1
