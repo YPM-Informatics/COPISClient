@@ -10,6 +10,7 @@ import wx
 from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
 
 from components.glhelper import arcball, vector_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
 from components.path3d import Path3D
@@ -47,8 +48,8 @@ class Canvas3D(glcanvas.GLCanvas):
         context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
 
         # initialize canvas and context
-        self.canvas = glcanvas.GLCanvas(self)
-        self.context = glcanvas.GLContext(self.canvas)
+        self._canvas = glcanvas.GLCanvas(self)
+        self._context = glcanvas.GLContext(self._canvas)
 
         # bind events
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -67,7 +68,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._initialized:
             return True
 
-        if self.canvas is None or self.context is None:
+        if self._canvas is None or self._context is None:
             return False
 
         self.quadratic = gluNewQuadric()
@@ -93,7 +94,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def render(self):
         """Render frame."""
         # ensure that canvas exists
-        if self.canvas is None:
+        if self._canvas is None:
             return
 
         # ensure that canvas is current and initialized
@@ -189,6 +190,10 @@ class Canvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
         print('double click')
+        mouse_pos = event.GetPosition()
+        z = None
+        x, y, z = self._mouse_to_3d(mouse_pos, z)
+        print(x, y, z)
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -211,17 +216,17 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def destroy(self):
         """Clean up the OpenGL context."""
-        self.context.destroy()
+        self._context.destroy()
         glcanvas.GLCanvas.Destroy()
 
     def set_dirty(self):
         self._dirty = True
 
     def _is_shown_on_screen(self):
-        return False if self.canvas is None else self.canvas.IsShownOnScreen()
+        return False if self._canvas is None else self._canvas.IsShownOnScreen()
 
     def _set_current(self):
-        return False if self.context is None else self.SetCurrent(self.context)
+        return False if self._context is None else self.SetCurrent(self._context)
 
     def _update_camera_zoom(self, delta_zoom):
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
@@ -349,6 +354,21 @@ class Canvas3D(glcanvas.GLCanvas):
         gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self._zoom) * 180 / np.pi, float(self._width) / self._height, self.clip_near, self.clip_far)
         glMatrixMode(GL_MODELVIEW)
 
+    def get_view_matrix(self):
+        mat = (GLdouble * 16)()
+        glGetDoublev(GL_MODELVIEW_MATRIX, mat)
+        return mat
+
+    def get_projection_matrix(self):
+        mat = (GLdouble * 16)()
+        glGetDoublev(GL_PROJECTION_MATRIX, mat)
+        return mat
+
+    def get_viewport(self):
+        vec = (GLint * 4)()
+        glGetIntegerv(GL_VIEWPORT, vec)
+        return vec
+
     def rotate_camera(self, event, use_arcball=True):
         """Update _rot_quat based on mouse position.
             use_arcball = True:     Use arcball_rotation to rotate canvas.
@@ -392,11 +412,6 @@ class Canvas3D(glcanvas.GLCanvas):
         # Do stuff
         self._mouse_pos = cur
 
-    def get_modelview_mat(self, local_transform):
-        mvmat = (GLdouble * 16)()
-        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
-        return mvmat
-
     def mouse_to_3d(self, x, y, z=1.0, local_transform=False):
         x = float(x)
         y = self._height - float(y)
@@ -412,7 +427,36 @@ class Canvas3D(glcanvas.GLCanvas):
         gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
         return (px.value, py.value, pz.value)
 
-    def mouse_to_ray(self, x, y, local_transform=False):
+    def _mouse_to_3d(self, mouse_pos, z):
+        print(mouse_pos)
+        if self._canvas is None:
+            return None
+
+        # viewport = self.get_viewport()
+        # mview_mat = self.get_view_matrix()
+        # proj_mat = self.get_projection_matrix()
+
+        y = self._height - mouse_pos[1]
+        mouse_z = (GLfloat)()
+        if z is None:
+            glReadPixels(mouse_pos[0], y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, mouse_z)
+        else:
+            mouse_z = z
+
+        out_x = (GLdouble)()
+        out_y = (GLdouble)()
+        out_z = (GLdouble)()
+
+        pmat = (GLdouble * 16)()
+        mvmat = self.get_view_matrix()
+        viewport = (GLint * 4)()
+        glGetIntegerv(GL_VIEWPORT, viewport)
+        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
+        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
+        gluUnProject(mouse_pos[0], y, mouse_z, mvmat, pmat, viewport, out_x, out_z, out_y)
+        return (out_x, out_y, out_z)
+
+    def _mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
         y = self._height - float(y)
         pmat = (GLdouble * 16)()
@@ -430,7 +474,7 @@ class Canvas3D(glcanvas.GLCanvas):
         ray_near = (px.value, py.value, pz.value)
         return ray_near, ray_far
 
-    def mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
+    def _mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
         # Ray/plane intersection
         ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
         ray_near = np.array(ray_near)
