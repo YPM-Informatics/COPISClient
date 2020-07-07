@@ -48,7 +48,7 @@ class Canvas3D(glcanvas.GLCanvas):
         # initialize opengl context
         context_attrs = glcanvas.GLContextAttrs()
         context_attrs.CoreProfile().Robust().ResetIsolation().EndList()
-        self._context = glcanvas.GLContext(self, ctxAttrs=context_attrs)
+        self._context = glcanvas.GLContext(self)
 
         # bind events
         self.Bind(wx.EVT_SIZE, self.on_size)
