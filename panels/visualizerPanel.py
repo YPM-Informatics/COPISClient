@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TODO: Fill in docstring"""
+"""Visualizer panel. Creates a Canvas3D OpenGL canvas."""
 
 import util
 
@@ -8,8 +8,11 @@ from components.canvas3d import Canvas3D
 
 
 class VisualizerPanel(wx.Panel):
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent)
+    def __init__(self, parent, id=-1, pos=wx.DefaultPosition,
+                 size=wx.DefaultSize, style=0):
+        style = style | wx.NO_FULL_REPAINT_ON_RESIZE
+        super().__init__(parent, id, pos, size, style)
+
         self.parent = parent
         self.canvas = Canvas3D(self)
         self.init_panel()
@@ -38,14 +41,17 @@ class VisualizerPanel(wx.Panel):
         hboxRight.Add(self.canvas, 1, wx.EXPAND)
         self.SetSizerAndFit(hboxRight)
 
+    def set_dirty(self):
+        self.canvas.set_dirty()
+
     def on_clear_cameras(self):
-        return False if self.canvas is None else self.canvas.clear_camera_objects()
+        return self.canvas.on_clear_cameras()
 
     def get_camera_objects(self):
-        return False if self.canvas is None else self.canvas.get_camera_objects()
+        return self.canvas.get_camera_objects()
 
     def add_camera(self, id=-1):
-        return None if self.canvas is None else self.canvas.add_camera(id)
+        return self.canvas.add_camera(id)
 
-    def get_cam_by_id(self, id):
-        return None if self.canvas is None else self.canvas.get_camera_by_id(id)
+    def get_camera_by_id(self, id):
+        return self.canvas.get_camera_by_id(id)

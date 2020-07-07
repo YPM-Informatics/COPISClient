@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""TODO: Fill in docstring"""
+"""Canvas3D class."""
 
 import math
 import random
@@ -21,12 +21,16 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_max = 5.0
     clip_near = 3.0
     clip_far = 7.0
+
     # True: use arcball controls, False: use orbit controls
     arcball_control = True
     color_background = (0.941, 0.941, 0.941, 1)
 
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, -1)
+    def __init__(self, parent):
+        display_attrs = glcanvas.GLAttributes()
+        display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
+        super().__init__(parent, display_attrs, -1)
+
         self._initialized = False
         self._dirty = False
         self._zoom = 1
@@ -41,15 +45,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self._camera3d_list = []
         self._path3d_list = []
 
-        # these attributes cannot be set for the time being
-        display_attrs = glcanvas.GLAttributes()
-        display_attrs.PlatformDefaults().MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(32).EndList()
+        # initialize opengl context
         context_attrs = glcanvas.GLContextAttrs()
-        context_attrs.CoreProfile().OGLVersion(4, 5).Robust().ResetIsolation().EndList()
-
-        # initialize canvas and context
-        self._canvas = glcanvas.GLCanvas(self)
-        self._context = glcanvas.GLContext(self._canvas)
+        context_attrs.CoreProfile().Robust().ResetIsolation().EndList()
+        self._context = glcanvas.GLContext(self, ctxAttrs=context_attrs)
 
         # bind events
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -68,7 +67,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._initialized:
             return True
 
-        if self._canvas is None or self._context is None:
+        if self._context is None:
             return False
 
         self.quadratic = gluNewQuadric()
@@ -77,7 +76,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glClearDepth(1.0)
 
         glDepthFunc(GL_LEQUAL)
-
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
         glEnable(GL_BLEND)
@@ -85,7 +83,6 @@ class Canvas3D(glcanvas.GLCanvas):
         # set antialiasing
         glEnable(GL_LINE_SMOOTH)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
         glEnable(GL_MULTISAMPLE)
 
         self._initialized = True
@@ -93,10 +90,6 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def render(self):
         """Render frame."""
-        # ensure that canvas exists
-        if self._canvas is None:
-            return
-
         # ensure that canvas is current and initialized
         if not self._is_shown_on_screen() or not self._set_current():
             return
@@ -174,7 +167,6 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
         if event.Dragging():
-            # self._mouse_pos = event.GetPosition()
             if event.LeftIsDown():
                 self.rotate_camera(event, use_arcball=self.arcball_control)
             elif event.RightIsDown() or event.MiddleIsDown():
@@ -182,7 +174,8 @@ class Canvas3D(glcanvas.GLCanvas):
         elif event.LeftUp() or event.MiddleUp() or event.RightUp() or event.Leaving():
             if self._mouse_pos is not None:
                 self._mouse_pos = None
-        # elif event.Moving():
+        elif event.Moving():
+            pass
         else:
             event.Skip()
         self._dirty = True
@@ -192,7 +185,7 @@ class Canvas3D(glcanvas.GLCanvas):
         print('double click')
         mouse_pos = event.GetPosition()
         z = None
-        x, y, z = self._mouse_to_3d(mouse_pos, z)
+        x, y, z = self._mouse_to_3d(*mouse_pos, z)
         print(x, y, z)
 
     def on_erase_background(self, event):
@@ -220,10 +213,11 @@ class Canvas3D(glcanvas.GLCanvas):
         glcanvas.GLCanvas.Destroy()
 
     def set_dirty(self):
+        """Set dirty flag true."""
         self._dirty = True
 
     def _is_shown_on_screen(self):
-        return False if self._canvas is None else self._canvas.IsShownOnScreen()
+        return self.IsShownOnScreen()
 
     def _set_current(self):
         return False if self._context is None else self.SetCurrent(self._context)
@@ -294,14 +288,17 @@ class Canvas3D(glcanvas.GLCanvas):
     # Camera3D functions
     # ------------------
 
-    def clear_camera_objects(self):
+    def on_clear_cameras(self):
+        """Clear Camera3D list."""
         self._camera3d_list = []
         self._dirty = True
 
     def get_camera_objects(self):
+        """Return Camera3D list."""
         return self._camera3d_list
 
-    def add_camera(self, id):
+    def add_camera(self, id=-1):
+        """Add new Camera3D."""
         x = float(random.randrange(-100, 100)) / 100
         y = float(random.randrange(-100, 100)) / 100
         z = float(random.randrange(-100, 100)) / 100
@@ -318,6 +315,7 @@ class Canvas3D(glcanvas.GLCanvas):
         return str(cam_3d._id)
 
     def get_camera_by_id(self, id):
+        """Return Camera3D by id."""
         if self._camera3d_list:
             for cam in self._camera3d_list:
                 if cam._id == id:
@@ -354,17 +352,20 @@ class Canvas3D(glcanvas.GLCanvas):
         gluPerspective(np.arctan(np.tan(np.deg2rad(50.0)) / self._zoom) * 180 / np.pi, float(self._width) / self._height, self.clip_near, self.clip_far)
         glMatrixMode(GL_MODELVIEW)
 
-    def get_view_matrix(self):
+    def get_modelview_matrix(self):
+        """Return GL_MODELVIEW_MATRIX."""
         mat = (GLdouble * 16)()
         glGetDoublev(GL_MODELVIEW_MATRIX, mat)
         return mat
 
     def get_projection_matrix(self):
+        """Return GL_PROJECTION_MATRIX."""
         mat = (GLdouble * 16)()
         glGetDoublev(GL_PROJECTION_MATRIX, mat)
         return mat
 
     def get_viewport(self):
+        """Return GL_VIEWPORT."""
         vec = (GLint * 4)()
         glGetIntegerv(GL_VIEWPORT, vec)
         return vec
@@ -412,62 +413,28 @@ class Canvas3D(glcanvas.GLCanvas):
         # Do stuff
         self._mouse_pos = cur
 
-    def mouse_to_3d(self, x, y, z=1.0, local_transform=False):
+    def _mouse_to_3d(self, x, y, z=1.0, local_transform=False):
         x = float(x)
         y = self._height - float(y)
-        pmat = (GLdouble * 16)()
-        mvmat = self.get_modelview_mat(local_transform)
-        viewport = (GLint * 4)()
+        pmat = self.get_projection_matrix()
+        mvmat = self.get_modelview_matrix()
+        viewport = self.get_viewport()
         px = (GLdouble)()
         py = (GLdouble)()
         pz = (GLdouble)()
-        glGetIntegerv(GL_VIEWPORT, viewport)
-        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
-        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
         gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
         return (px.value, py.value, pz.value)
-
-    def _mouse_to_3d(self, mouse_pos, z):
-        print(mouse_pos)
-        if self._canvas is None:
-            return None
-
-        # viewport = self.get_viewport()
-        # mview_mat = self.get_view_matrix()
-        # proj_mat = self.get_projection_matrix()
-
-        y = self._height - mouse_pos[1]
-        mouse_z = (GLfloat)()
-        if z is None:
-            glReadPixels(mouse_pos[0], y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, mouse_z)
-        else:
-            mouse_z = z
-
-        out_x = (GLdouble)()
-        out_y = (GLdouble)()
-        out_z = (GLdouble)()
-
-        pmat = (GLdouble * 16)()
-        mvmat = self.get_view_matrix()
-        viewport = (GLint * 4)()
-        glGetIntegerv(GL_VIEWPORT, viewport)
-        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
-        glGetDoublev(GL_MODELVIEW_MATRIX, mvmat)
-        gluUnProject(mouse_pos[0], y, mouse_z, mvmat, pmat, viewport, out_x, out_z, out_y)
-        return (out_x, out_y, out_z)
+    #     return (out_x, out_y, out_z)
 
     def _mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
         y = self._height - float(y)
-        pmat = (GLdouble * 16)()
-        mvmat = (GLdouble * 16)()
-        viewport = (GLint * 4)()
+        pmat = self.get_projection_matrix()
+        mvmat = self.get_modelview_matrix()
+        viewport = self.get_viewport()
         px = (GLdouble)()
         py = (GLdouble)()
         pz = (GLdouble)()
-        glGetIntegerv(GL_VIEWPORT, viewport)
-        glGetDoublev(GL_PROJECTION_MATRIX, pmat)
-        mvmat = self.get_modelview_mat(local_transform)
         gluUnProject(x, y, 1, mvmat, pmat, viewport, px, py, pz)
         ray_far = (px.value, py.value, pz.value)
         gluUnProject(x, y, 0., mvmat, pmat, viewport, px, py, pz)
