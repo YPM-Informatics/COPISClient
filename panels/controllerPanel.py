@@ -12,7 +12,7 @@ class ControllerPanel(wx.Panel):
         self.auiManager = aui_manager
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.init_panel()
-        self.canvas = None
+        # self.canvas = None
 
         self.selectedCam = None
 
@@ -276,9 +276,6 @@ class ControllerPanel(wx.Panel):
         return vbox
 
     def OnMove(self, event):
-        if self.canvas is None:
-            self.canvas = self.visualizer_panel.canvas
-
         camId = self.masterCombo.GetSelection()
         if camId != -1:
             axis = event.GetEventObject().axis
@@ -299,19 +296,16 @@ class ControllerPanel(wx.Panel):
                 if direction == Axis.Minus:
                     size = -size
 
-            cam = self.parent.visualizer_panel.get_cam_by_id(camId)
+            cam = self.parent.visualizer_panel.get_camera_by_id(camId)
             if cam:
                 cam.on_move(axis, size)
-            self.canvas.set_dirty
+            self.visualizer_panel.set_dirty()
         else:
             util.set_dialog('Please select the camera to control.')
 
     def OnFocusCenter(self, event):
-        if self.canvas is None:
-            self.canvas = self.visualizer_panel.canvas
-
         if self.parent.selected_cam is not None:
-            self.parent.visualizer_panel.get_cam_by_id(self.parent.selected_cam._id).onFocusCenter()
+            self.parent.visualizer_panel.get_camera_by_id(self.parent.selected_cam._id).onFocusCenter()
         else:
             util.set_dialog('Please select the camera to control.')
 
@@ -330,11 +324,11 @@ class ControllerPanel(wx.Panel):
                 self.selectedCam.is_selected = False
 
             ## Update selected camera
-            self.selectedCam = self.parent.visualizer_panel.get_cam_by_id(id)
+            self.selectedCam = self.parent.visualizer_panel.get_camera_by_id(id)
             self.selectedCam.is_selected = True
 
         ## Refresh canvas
-        self.parent.visualizer_panel.canvas.set_dirty()
+        self.parent.visualizer_panel.set_dirty()
 
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
@@ -365,14 +359,6 @@ class ControllerPanel(wx.Panel):
         else:
             if self.parent.is_edsdk_on:
                 self.parent.terminateEDSDK()
-
-    def onDecreaseScale(self, event):
-        self.visualizer_panel.canvas.scale -= 0.1
-        self.visualizer_panel.canvas.set_dirty()
-
-    def onIncreaseScale(self, event):
-        self.visualizer_panel.canvas.scale += 0.1
-        self.visualizer_panel.canvas.set_dirty()
 
     def onStartEvf(self, event):
         if self.parent.cam_list.selected_camera is not None:

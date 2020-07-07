@@ -1,5 +1,5 @@
-    #!/usr/bin/env python3
-"""TODO: Fill in docstring"""
+#!/usr/bin/env python3
+"""Camera3D class."""
 
 import math
 import numpy as np
@@ -37,6 +37,7 @@ class Camera3D():
         self.increz = 0
 
     def render(self):
+        """Render camera."""
         ## Set color based on selection
         if self.is_selected:
             color = [75, 230, 150]
