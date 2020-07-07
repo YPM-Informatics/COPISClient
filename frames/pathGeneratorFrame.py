@@ -52,6 +52,7 @@ class PathGeneratorFrame(wx.Frame):
         cGeneratorLabel.SetFont(self.font)
         self.vbox1.Add(cGeneratorLabel, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
+        ## Style
         hboxStyle = wx.BoxSizer()
         styleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
         hboxStyle.Add(styleLabel, 1, flag=wx.RIGHT | wx.TOP, border = 6)
