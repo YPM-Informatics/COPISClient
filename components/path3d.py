@@ -30,7 +30,7 @@ class Path3DWorker(threading.Thread):
     def __init__(self, notify_window):
         super().__init__(self)
         self._notify_window = notify_window
-        self._want_abort = 0
+        self._want_abort = False
         self.start()
 
     def run(self):
@@ -40,7 +40,7 @@ class Path3DWorker(threading.Thread):
         wx.PostEvent(self._notify_window, ResultEvent(1))
 
     def abort(self):
-        self._want_abort = 1
+        self._want_abort = True
 
 
 class Path3D():

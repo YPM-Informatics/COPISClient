@@ -31,7 +31,7 @@ class Canvas3D(glcanvas.GLCanvas):
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
 
-        self._initialized = False
+        self._gl_initialized = False
         self._dirty = False
         self._zoom = 1
         self._width = None
@@ -46,8 +46,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._path3d_list = []
 
         # initialize opengl context
-        context_attrs = glcanvas.GLContextAttrs()
-        context_attrs.CoreProfile().Robust().ResetIsolation().EndList()
         self._context = glcanvas.GLContext(self)
 
         # bind events
@@ -64,7 +62,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def init_opengl(self):
         """Initialize OpenGL."""
-        if self._initialized:
+        if self._gl_initialized:
             return True
 
         if self._context is None:
@@ -85,7 +83,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_MULTISAMPLE)
 
-        self._initialized = True
+        self._gl_initialized = True
         return True
 
     def render(self):
@@ -125,10 +123,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_idle(self, event):
         """Handle EVT_IDLE."""
-        if not self._initialized:
-            return
-
-        if self.IsFrozen():
+        if not self._gl_initialized or self.IsFrozen():
             return
 
         for camera in self._camera3d_list:
@@ -148,11 +143,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_mouse_wheel(self, event):
         """Handle mouse wheel event and adjust zoom."""
-        if not self._initialized:
-            return
-
-        # ignore if middle mouse button is pressed
-        if event.MiddleIsDown():
+        if not self._gl_initialized or event.MiddleIsDown():
             return
 
         self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
@@ -163,7 +154,7 @@ class Canvas3D(glcanvas.GLCanvas):
             RMB drag:   unused
             LMB/RMB up: reset position
         """
-        if not self._initialized or not self._set_current():
+        if not self._gl_initialized or not self._set_current():
             return
 
         if event.Dragging():
@@ -182,11 +173,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
-        print('double click')
-        mouse_pos = event.GetPosition()
-        z = None
-        x, y, z = self._mouse_to_3d(*mouse_pos, z)
-        print(x, y, z)
+        pass
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -194,7 +181,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_paint(self, event):
         """Handle EVT_PAINT."""
-        if self._initialized:
+        if self._gl_initialized:
             self._dirty = True
         else:
             self.render()
@@ -424,7 +411,6 @@ class Canvas3D(glcanvas.GLCanvas):
         pz = (GLdouble)()
         gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
         return (px.value, py.value, pz.value)
-    #     return (out_x, out_y, out_z)
 
     def _mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
