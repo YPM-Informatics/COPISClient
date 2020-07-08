@@ -95,7 +95,7 @@ class Canvas(CanvasBase):
     def double_click(self, event):
         """React to the double click event."""    
         pass
-    
+
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
         self.create_objects()
@@ -128,7 +128,7 @@ class Canvas(CanvasBase):
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        # gluSphere(self.quadratic, 0.25, 32, 32)
+        gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
