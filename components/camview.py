@@ -94,13 +94,8 @@ class Canvas(CanvasBase):
 
     def double_click(self, event):
         """React to the double click event."""    
-        point = self.mouse_to_3d(self.mousepos[0], self.mousepos[1])
-
-        glColor3ub(255,0,0)
-        quad = gluNewQuadric()
-        # glTranslatef(0.5, 0, 0)
-        gluSphere(self.quadratic, 0.25, 5, 5)
-
+        pass
+    
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
         self.create_objects()
