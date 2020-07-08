@@ -2,7 +2,7 @@
 """TODO: Fill in docstring"""
 
 import wx
-from enums import Tool_Ids
+from enums import ToolIds
 from frames.settingsFrame import SettingsFrame
 from controller.serialController import SerialController
 import util
@@ -59,15 +59,15 @@ class ToolBarPanel(wx.Panel):
         # TODO: 3D simulation functionalities -- play, pause and stop
         playImg = wx.Image('img/play.png')
         playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(Tool_Ids.Play.value, 'Play', wx.Bitmap(playImg), shortHelp="Play the simulation of commands.")
+        self.toolbar.AddTool(ToolIds.PLAY.value, 'Play', wx.Bitmap(playImg), shortHelp="Play the simulation of commands.")
 
         pauseImg = wx.Image('img/pause.png')
         pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(Tool_Ids.Pause.value, 'Pause', wx.Bitmap(pauseImg), shortHelp="Pause the simulation.")
+        self.toolbar.AddTool(ToolIds.PAUSE.value, 'Pause', wx.Bitmap(pauseImg), shortHelp="Pause the simulation.")
 
         stopImg = wx.Image('img/stop.png')
         stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(Tool_Ids.Stop.value, 'Stop', wx.Bitmap(stopImg), shortHelp="Stop the simulation.")
+        self.toolbar.AddTool(ToolIds.STOP.value, 'Stop', wx.Bitmap(stopImg), shortHelp="Stop the simulation.")
 
     def initImport(self):
         # TODO: browsing the file system and importing file functionalities
@@ -81,13 +81,13 @@ class ToolBarPanel(wx.Panel):
     def initSetting(self):
         settingImg = wx.Image('img/setting.png')
         settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(Tool_Ids.Settings.value, 'Setting', wx.Bitmap(settingImg), shortHelp="Set general settings of the application.")
+        self.toolbar.AddTool(ToolIds.SETTINGS.value, 'Setting', wx.Bitmap(settingImg), shortHelp="Set general settings of the application.")
 
     def handleTool(self, event):
-        if event.GetId() == Tool_Ids.Settings.value:
+        if event.GetId() == ToolIds.SETTINGS.value:
             settingsFrame = SettingsFrame()
             settingsFrame.Show()
-        elif event.GetId() == Tool_Ids.Play.value:
+        elif event.GetId() == ToolIds.PLAY.value:
             camId = self.parent.controller_panel.masterCombo.GetSelection()
             if camId != -1:
                 cam = self.parent.visualizer_panel.get_camera_by_id(camId)
