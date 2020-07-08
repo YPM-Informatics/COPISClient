@@ -14,7 +14,7 @@ from OpenGL.GLUT import *
 
 class Camera3D():
     def __init__(self, id, x, y, z, b, c):
-        self._dirty = False
+        self._dirty = False  # dirty flag to track when we need to re-render the camera
         self.is_selected = False
 
         self._id = id
