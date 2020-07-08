@@ -94,7 +94,12 @@ class Canvas(CanvasBase):
 
     def double_click(self, event):
         """React to the double click event."""    
-        pass
+        point = self.mouse_to_3d(self.mousepos[0], self.mousepos[1])
+
+        glColor3ub(255,0,0)
+        quad = gluNewQuadric()
+        # glTranslatef(0.5, 0, 0)
+        gluSphere(self.quadratic, 0.25, 5, 5)
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
@@ -128,7 +133,7 @@ class Canvas(CanvasBase):
 
         # draw sphere
         glColor3ub(0, 0, 128)
-        gluSphere(self.quadratic, 0.25, 32, 32)
+        # gluSphere(self.quadratic, 0.25, 32, 32)
 
     def draw_grid(self):
         """Draw coordinate grid."""
@@ -179,7 +184,6 @@ class Camera3D():
         self.isSelected = False
 
     def onDraw(self):
-
         ## Set color based on selection
         if self.isSelected:
             color = [75, 230, 150]
