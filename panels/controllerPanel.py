@@ -12,7 +12,6 @@ class ControllerPanel(wx.Panel):
         self.auiManager = aui_manager
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.init_panel()
-        # self.canvas = None
 
         self.selectedCam = None
 
