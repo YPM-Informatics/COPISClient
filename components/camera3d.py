@@ -9,7 +9,6 @@ import threading
 import wx
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
 
 
 class Camera3D():
