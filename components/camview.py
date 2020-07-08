@@ -25,6 +25,7 @@ class Canvas(CanvasBase):
         self.camera_objects = []
         self.mousepos = (0, 0)
         self.initpos = None
+        self.spheres = []
 
         self.Bind(wx.EVT_MOUSE_EVENTS, self.move)
         self.Bind(wx.EVT_MOUSEWHEEL, self.wheel)
@@ -95,11 +96,7 @@ class Canvas(CanvasBase):
     def double_click(self, event):
         """React to the double click event."""    
         point = self.mouse_to_3d(self.mousepos[0], self.mousepos[1])
-
-        glColor3ub(255,0,0)
-        quad = gluNewQuadric()
-        # glTranslatef(0.5, 0, 0)
-        gluSphere(self.quadratic, 0.25, 5, 5)
+        self.spheres.append(point)
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
@@ -113,6 +110,16 @@ class Canvas(CanvasBase):
 
         for cam in self.camera_objects:
             cam.onDraw()
+        
+        for sphere in self.spheres:
+            glPushMatrix()
+            glColor3ub(255,0,0)
+            # quad = gluNewQuadric()
+            glTranslate(*sphere)
+            gluSphere(self.quadratic, 0.25, 5, 5)
+            # gluDeleteQuadric(quad)
+            glPopMatrix()
+
 
     def create_objects(self):
         """Create OpenGL objects when OpenGL is initialized."""
