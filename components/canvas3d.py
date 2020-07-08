@@ -32,7 +32,7 @@ class Canvas3D(glcanvas.GLCanvas):
         super().__init__(parent, display_attrs, -1)
 
         self._gl_initialized = False
-        self._dirty = False
+        self._dirty = False # dirty flag to track when we need to re-render the canvas
         self._zoom = 1
         self._width = None
         self._height = None
