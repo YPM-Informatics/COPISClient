@@ -8,7 +8,7 @@ import math
 import wx
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
+# from OpenGL.GLUT import *
 
 from .canvas import CanvasBase
 from .glhelper import vector_to_quat, quat_to_matrix4, draw_circle, draw_helix
