@@ -3,7 +3,7 @@
 
 import math
 import numpy as np
-from enums import Axis
+from enums import CamAxis, CamMode
 import threading
 
 import wx
@@ -25,7 +25,7 @@ class Camera3D():
         self._c = float(c)
 
         self.start = (self._x, self._y, self._z, self._b, self._c)
-        self.mode = "normal"
+        self.mode = CamMode.NORMAL
 
         self.angle = 0
         self.rotationVector = []
@@ -46,12 +46,12 @@ class Camera3D():
 
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
-        if self.mode == 'normal':
+        if self.mode == CamMode.NORMAL:
             if self._b != 0.0:
                 glRotatef(self._b, 0, 0, 1)
             if self._c != 0.0:
                 glRotatef(self._c, 0, 1, 0)
-        elif self.mode == 'rotate':
+        elif self.mode == CamMode.ROTATE:
             glRotatef(self.angle, *self.rotationVector)
 
         if self.trans:
@@ -135,7 +135,7 @@ class Camera3D():
         return vector / np.linalg.norm(vector)
 
     def onFocusCenter(self):
-        self.mode = 'rotate'
+        self.mode = CamMode.ROTATE
         cameraCenterPoint = (self._x, self._y, self._z)
         currentFacingPoint = (self._x - 0.5, self._y, self._z)
         desirableFacingPoint = (0.0, 0.0, 0.0)
@@ -151,16 +151,16 @@ class Camera3D():
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
     def on_move(self, axis, amount):
-        if axis in Axis and amount != 0:
-            if axis == Axis.X:
+        if axis in CamAxis and amount != 0:
+            if axis == CamAxis.X:
                 self._x += amount
-            elif axis == Axis.Y:
+            elif axis == CamAxis.Y:
                 self._y += amount
-            elif axis == Axis.Z:
+            elif axis == CamAxis.Z:
                 self._z += amount
-            elif axis == Axis.B:
+            elif axis == CamAxis.B:
                 self._b += amount
-            elif axis == Axis.C:
+            elif axis == CamAxis.C:
                 self._c += amount
 
     def translate(self, newx=0, newy=0, newz=0):

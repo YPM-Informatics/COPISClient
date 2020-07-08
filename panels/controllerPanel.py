@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import wx
-from enums import Axis
+from enums import CamAxis
 from Canon.EDSDKLib import *
 import util
 
@@ -117,39 +117,39 @@ class ControllerPanel(wx.Panel):
 
         hboxYzInc = wx.BoxSizer()
         self.yiBtn = wx.Button(self, wx.ID_ANY, label='Y+')
-        self.yiBtn.axis = Axis.Y
-        self.yiBtn.direction = Axis.Plus
+        self.yiBtn.axis = CamAxis.Y
+        self.yiBtn.direction = CamAxis.PLUS
         hboxYzInc.Add(self.yiBtn, 1, flag=wx.LEFT|wx.RIGHT, border=55)
         self.yiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         self.ziBtn = wx.Button(self, wx.ID_ANY, label='Z+')
-        self.ziBtn.axis = Axis.Z
-        self.ziBtn.direction = Axis.Plus
+        self.ziBtn.axis = CamAxis.Z
+        self.ziBtn.direction = CamAxis.PLUS
         hboxYzInc.Add(self.ziBtn)
         self.ziBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxYzInc)
 
         hboxX = wx.BoxSizer()
         self.xrBtn = wx.Button(self, wx.ID_ANY, label='X-')
-        self.xrBtn.axis = Axis.X
-        self.xrBtn.direction = Axis.Minus
+        self.xrBtn.axis = CamAxis.X
+        self.xrBtn.direction = CamAxis.MINUS
         hboxX.Add(self.xrBtn)
         self.xrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         self.xiBtn = wx.Button(self, wx.ID_ANY, label='X+')
-        self.xiBtn.axis = Axis.X
-        self.xiBtn.direction = Axis.Plus
+        self.xiBtn.axis = CamAxis.X
+        self.xiBtn.direction = CamAxis.PLUS
         hboxX.Add(self.xiBtn, 1, flag=wx.LEFT, border=20)
         self.xiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxX)
 
         hboxYzDec = wx.BoxSizer()
         self.yrBtn = wx.Button(self, wx.ID_ANY, label='Y-')
-        self.yrBtn.axis = Axis.Y
-        self.yrBtn.direction = Axis.Minus
+        self.yrBtn.axis = CamAxis.Y
+        self.yrBtn.direction = CamAxis.MINUS
         hboxYzDec.Add(self.yrBtn, 1, flag=wx.LEFT|wx.RIGHT, border=55)
         self.yrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         self.zrBtn = wx.Button(self, wx.ID_ANY, label='Z-')
-        self.zrBtn.axis = Axis.Z
-        self.zrBtn.direction = Axis.Minus
+        self.zrBtn.axis = CamAxis.Z
+        self.zrBtn.direction = CamAxis.MINUS
         hboxYzDec.Add(self.zrBtn)
         self.zrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxYzDec)
@@ -167,29 +167,29 @@ class ControllerPanel(wx.Panel):
         hboxBcSize.Add(ddLabel)
         vboxBc.Add(hboxBcSize)
         self.ciBtn = wx.Button(self, wx.ID_ANY, label='T+')
-        self.ciBtn.axis = Axis.C
-        self.ciBtn.direction = Axis.Plus
+        self.ciBtn.axis = CamAxis.C
+        self.ciBtn.direction = CamAxis.PLUS
         vboxBc.Add(self.ciBtn, 1, flag=wx.LEFT, border=88)
         self.ciBtn.Bind(wx.EVT_BUTTON, self.OnMove)
 
         hboxB = wx.BoxSizer()
         self.brBtn = wx.Button(self, wx.ID_ANY, label='P-')
-        self.brBtn.axis = Axis.B
-        self.brBtn.direction = Axis.Minus
+        self.brBtn.axis = CamAxis.B
+        self.brBtn.direction = CamAxis.MINUS
         hboxB.Add(self.brBtn)
         self.brBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         self.cBtn = wx.Button(self, wx.ID_ANY, label='center')
         hboxB.Add(self.cBtn)
         self.cBtn.Bind(wx.EVT_BUTTON, self.OnFocusCenter)
         self.biBtn = wx.Button(self, wx.ID_ANY, label='P+')
-        self.biBtn.axis = Axis.B
-        self.biBtn.direction = Axis.Plus
+        self.biBtn.axis = CamAxis.B
+        self.biBtn.direction = CamAxis.PLUS
         hboxB.Add(self.biBtn)
         self.biBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxBc.Add(hboxB)
         self.crBtn = wx.Button(self, wx.ID_ANY, label='T-')
-        self.crBtn.axis = Axis.C
-        self.crBtn.direction = Axis.Minus
+        self.crBtn.axis = CamAxis.C
+        self.crBtn.direction = CamAxis.MINUS
         vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=88)
         self.crBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         hboxXyzbc.Add(vboxBc)
@@ -280,19 +280,19 @@ class ControllerPanel(wx.Panel):
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
 
-            if axis in [Axis.X, Axis.Y, Axis.Z]:
+            if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
                 cmdBox = self.auiManager.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
 
 
-                if direction == Axis.Minus:
+                if direction == CamAxis.MINUS:
                     size = -size
 
                 size = size / 100
             else:
                 size = self.bcSc.GetValue()
 
-                if direction == Axis.Minus:
+                if direction == CamAxis.MINUS:
                     size = -size
 
             cam = self.parent.visualizer_panel.get_camera_by_id(camId)
