@@ -56,7 +56,7 @@ class PathGeneratorFrame(wx.Frame):
         hboxStyle = wx.BoxSizer()
         styleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
         hboxStyle.Add(styleLabel, 1, flag=wx.RIGHT | wx.TOP, border = 6)
-        self.styleCombo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Line', 'Sphere','Cylinder', 'Helix'], style=wx.CB_READONLY)
+        self.styleCombo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Line', 'Sphere','Cylinder', 'Helix', 'Cube', 'Grid'], style=wx.CB_READONLY)
         hboxStyle.Add(self.styleCombo)
         self.vbox1.Add(hboxStyle, 1, flag=wx.LEFT, border=15)
         self.Bind(wx.EVT_COMBOBOX, self.onStyleRadioGroup)
