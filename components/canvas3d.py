@@ -10,7 +10,6 @@ import wx
 from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
 
 from components.glhelper import arcball, vector_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
 from components.path3d import Path3D
