@@ -16,6 +16,37 @@ from components.path3d import Path3D
 from components.camera3d import Camera3D
 
 class Canvas3D(glcanvas.GLCanvas):
+
+    class Size():
+        def __init__(self, width, height, scale_factor):
+            self.__width = width
+            self.__height = height
+            self.__scale_factor = scale_factor
+
+        @property
+        def width(self):
+            return self.__width
+
+        @property
+        def height(self):
+            return self.__height
+
+        @property
+        def scale_factor(self):
+            return self.__scale_factor
+
+        @width.setter
+        def width(self, width):
+            self.__width = width
+
+        @height.setter
+        def height(self, height):
+            self.__height = height
+
+        @scale_factor.setter
+        def scale_factor(self, scale_factor):
+            self.__scale_factor = scale_factor
+
     zoom_min = 0.5
     zoom_max = 5.0
     clip_near = 3.0
@@ -96,9 +127,10 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
         size = self.GetClientSize()
-        self._width = max(10, size.width)
-        self._height = max(10, size.height)
-        glViewport(0, 0, self._width, self._height)
+        canvas_size = self.get_canvas_size()
+        glViewport(0, 0, canvas_size.width, canvas_size.height)
+        self._width = max(10, canvas_size.width)
+        self._height = max(10, canvas_size.height)
 
         self.apply_view_matrix()
         self.apply_projection()
@@ -172,6 +204,9 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
+        mouse_pos = event.GetPosition()
+        point = self._mouse_to_ray(*mouse_pos)
+        print(point)
         pass
 
     def on_erase_background(self, event):
@@ -188,6 +223,15 @@ class Canvas3D(glcanvas.GLCanvas):
     def on_set_focus(self, event):
         """Handle EVT_SET_FOCUS."""
         self._refresh_if_shown_on_screen()
+
+    def get_canvas_size(self):
+        """Get canvas size based on scaling factor."""
+        w, h = self.GetSize()
+        factor = 1.0
+        # insert retina/high dpi scaling adjustment here
+        w = int(w * factor)
+        h = int(h * factor)
+        return self.Size(w, h, factor)
 
     # ---------------------
     # Canvas util functions
@@ -405,11 +449,8 @@ class Canvas3D(glcanvas.GLCanvas):
         pmat = self.get_projection_matrix()
         mvmat = self.get_modelview_matrix()
         viewport = self.get_viewport()
-        px = (GLdouble)()
-        py = (GLdouble)()
-        pz = (GLdouble)()
-        gluUnProject(x, y, z, mvmat, pmat, viewport, px, py, pz)
-        return (px.value, py.value, pz.value)
+        point = gluUnProject(x, y, z, mvmat, pmat, viewport)
+        return point
 
     def _mouse_to_ray(self, x, y, local_transform=False):
         x = float(x)
@@ -420,14 +461,11 @@ class Canvas3D(glcanvas.GLCanvas):
         px = (GLdouble)()
         py = (GLdouble)()
         pz = (GLdouble)()
-        gluUnProject(x, y, 1, mvmat, pmat, viewport, px, py, pz)
-        ray_far = (px.value, py.value, pz.value)
-        gluUnProject(x, y, 0., mvmat, pmat, viewport, px, py, pz)
-        ray_near = (px.value, py.value, pz.value)
+        ray_far = gluUnProject(x, y, 1, mvmat, pmat, viewport)
+        ray_near = gluUnProject(x, y, 0., mvmat, pmat, viewport)
         return ray_near, ray_far
 
     def _mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
-        # Ray/plane intersection
         ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
         ray_near = np.array(ray_near)
         ray_far = np.array(ray_far)

@@ -1,6 +1,6 @@
 # Computer-Operated Photogrammetric Imaging System (COPIS)
 
-This application is to capture large numbers of overlapping images from multiple viewpoints around an object for photogrammetric 3D reconstruction.
+This application is to capture large numbers of overlapping images from multiple viewpoints around an object for photogrammetric 3D reconstruction. More information at [copis3d.org](http://copis3d.org/).
 
 ## Installation
 
