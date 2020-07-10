@@ -4,6 +4,7 @@
 from threading import Lock
 import numpy as np
 import math
+import sys
 
 import wx
 from wx import glcanvas
@@ -113,8 +114,9 @@ class CanvasBase(glcanvas.GLCanvas):
         Called from processSizeEvent().
         """
         size = self.GetClientSize()
+        self.GetContentScaleFactor()
         width, height = size.width, size.height
-
+    
         self.width = max(float(width), 1.0)
         self.height = max(float(height), 1.0)
 
