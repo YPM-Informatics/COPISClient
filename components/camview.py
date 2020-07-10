@@ -116,10 +116,8 @@ class Canvas(CanvasBase):
         for sphere in self.spheres:
             glPushMatrix()
             glColor3ub(255,0,0)
-            # quad = gluNewQuadric()
             glTranslate(*sphere)
             gluSphere(self.quadratic, 0.25, 5, 5)
-            # gluDeleteQuadric(quad)
             glPopMatrix()
 
 
