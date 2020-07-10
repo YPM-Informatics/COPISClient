@@ -205,7 +205,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
         mouse_pos = event.GetPosition()
-        point = self._mouse_to_ray(*mouse_pos)
+        point = self._mouse_to_3d(*mouse_pos)
         print(point)
         pass
 
@@ -227,7 +227,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def get_canvas_size(self):
         """Get canvas size based on scaling factor."""
         w, h = self.GetSize()
-        factor = 1.0
+        factor = 2.0
         # insert retina/high dpi scaling adjustment here
         w = int(w * factor)
         h = int(h * factor)
