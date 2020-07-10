@@ -4,6 +4,7 @@
 import math
 import random
 import numpy as np
+import platform as pf
 from threading import Lock
 
 import wx
@@ -63,6 +64,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._gl_initialized = False
         self._dirty = False # dirty flag to track when we need to re-render the canvas
+        self._scale_factor = None
         self._zoom = 1
         self._width = None
         self._height = None
@@ -71,8 +73,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._mouse_pos = None
-        self.points = []
-
+        self._points = []
 
         self._camera3d_list = []
         self._path3d_list = []
@@ -179,6 +180,10 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._gl_initialized or event.MiddleIsDown():
             return
 
+        scale = self.get_scale_factor()
+        event.SetX(int(event.GetX() * scale))
+        event.SetY(int(event.GetY() * scale))
+
         self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
 
     def on_mouse(self, event):
@@ -189,6 +194,10 @@ class Canvas3D(glcanvas.GLCanvas):
         """
         if not self._gl_initialized or not self._set_current():
             return
+
+        scale = self.get_scale_factor()
+        event.SetX(int(event.GetX() * scale))
+        event.SetY(int(event.GetY() * scale))
 
         if event.Dragging():
             if event.LeftIsDown():
@@ -207,10 +216,8 @@ class Canvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
         mouse_pos = event.GetPosition()
-        point = self._mouse_to_3d(mouse_pos[0] * 2, mouse_pos[1] * 2)
-        print(point)
-        self.points.append(point)
-
+        point = self._mouse_to_3d(*mouse_pos)
+        self._points.append(point)
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -230,8 +237,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def get_canvas_size(self):
         """Get canvas size based on scaling factor."""
         w, h = self.GetSize()
-        factor = 2.0
-        # insert retina/high dpi scaling adjustment here
+        factor = self.get_scale_factor()
         w = int(w * factor)
         h = int(h * factor)
         return self.Size(w, h, factor)
@@ -307,7 +313,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
-        for point in self.points:
+        for point in self._points:
             glPushMatrix()
             glColor3ub(255,0,0)
             glTranslate(*point)
@@ -472,7 +478,7 @@ class Canvas3D(glcanvas.GLCanvas):
         py = (GLdouble)()
         pz = (GLdouble)()
         ray_far = gluUnProject(x, y, 1, mvmat, pmat, viewport)
-        ray_near = gluUnProject(x, y, 0., mvmat, pmat, viewport)
+        ray_near = gluUnProject(x, y, 0, mvmat, pmat, viewport)
         return ray_near, ray_far
 
     def _mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
@@ -489,3 +495,14 @@ class Canvas3D(glcanvas.GLCanvas):
         if t < 0:
             return None
         return ray_near + t * ray_dir
+
+    # -------------------
+    # Misc util functions
+    # -------------------
+
+    def get_scale_factor(self):
+        if self._scale_factor is None:
+            if pf.system() == 'Darwin': # MacOS
+                self._scale_factor = 2.0
+            self._scale_factor = 1.0
+        return self._scale_factor
