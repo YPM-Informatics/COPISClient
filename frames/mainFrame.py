@@ -48,7 +48,7 @@ class MainFrame(wx.Frame):
         self.console_panel = self.auiManager.GetPane("Console").window
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.controller_panel = self.auiManager.GetPane('Controller').window
-        
+
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
@@ -89,8 +89,8 @@ class MainFrame(wx.Frame):
         self.console_panel.print(message)
 
         for i in range(cam_count):
-            cam = self.visualizer_panel.onDrawCamera(i)
-            self.controller_panel.masterCombo.Append("camera " + str(cam.id))
+            cam_id = self.visualizer_panel.add_camera(i)
+            self.controller_panel.masterCombo.Append("camera " + cam_id)
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:
@@ -101,4 +101,3 @@ class MainFrame(wx.Frame):
         if self.cam_list:
             self.cam_list.terminate()
             self.cam_list = []
-
