@@ -160,11 +160,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._gl_initialized or self.IsFrozen():
             return
 
-        for camera in self._camera3d_list:
-            self._dirty = self._dirty or camera._dirty
-
-        if not self._dirty:
-            return
+        self._dirty = self._dirty or any((i._dirty for i in self._camera3d_list))
 
         self._refresh_if_shown_on_screen()
         self._dirty = False
@@ -504,5 +500,6 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._scale_factor is None:
             if pf.system() == 'Darwin': # MacOS
                 self._scale_factor = 2.0
-            self._scale_factor = 1.0
+            else:
+                self._scale_factor = 1.0
         return self._scale_factor
