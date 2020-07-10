@@ -71,6 +71,8 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._mouse_pos = None
+        self.points = []
+
 
         self._camera3d_list = []
         self._path3d_list = []
@@ -205,9 +207,10 @@ class Canvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
         mouse_pos = event.GetPosition()
-        point = self._mouse_to_3d(*mouse_pos)
+        point = self._mouse_to_3d(mouse_pos[0] * 2, mouse_pos[1] * 2)
         print(point)
-        pass
+        self.points.append(point)
+
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -303,6 +306,13 @@ class Canvas3D(glcanvas.GLCanvas):
         # draw sphere
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
+
+        for point in self.points:
+            glPushMatrix()
+            glColor3ub(255,0,0)
+            glTranslate(*point)
+            gluSphere(self.quadratic, 0.25, 5, 5)
+            glPopMatrix()
 
     def _render_cameras(self):
         if not self._camera3d_list:
