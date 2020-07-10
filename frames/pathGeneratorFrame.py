@@ -8,10 +8,10 @@ class PathGeneratorFrame(wx.Frame):
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
 
-        self.initPanel()
+        self.init_panel()
         self.Centre()
 
-    def initPanel(self):
+    def init_panel(self):
         ## LAYOUT
 
          ############################################
