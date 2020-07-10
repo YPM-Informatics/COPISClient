@@ -179,7 +179,6 @@ class Camera3D():
         self.isSelected = False
 
     def onDraw(self):
-
         ## Set color based on selection
         if self.isSelected:
             color = [75, 230, 150]
