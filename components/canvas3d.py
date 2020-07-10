@@ -211,8 +211,11 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
-        mouse_pos = event.GetPosition()
-        point = self._mouse_to_3d(*mouse_pos)
+        scale = self.get_scale_factor()
+        event.SetX(int(event.GetX() * scale))
+        event.SetY(int(event.GetY() * scale))
+
+        point = self._mouse_to_3d(event.GetX(), event.GetY())
         self._points.append(point)
 
     def on_erase_background(self, event):
