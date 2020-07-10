@@ -115,9 +115,12 @@ class ToolBarPanel(wx.Panel):
         self.controller.selected_serial.baudrate = int(self.toolbar.baudCombo.GetStringSelection())
 
     def onConnect(self, event):
-        if self.controller.selected_serial.is_open:
-            self.controller.selected_serial.close()
-            self.toolbar.connectBtn.SetLabel('Connect')
+        if self.controller.selected_serial:
+            if self.controller.selected_serial.is_open:
+                self.controller.selected_serial.close()
+                self.toolbar.connectBtn.SetLabel('Connect')
+            else:
+                self.controller.selected_serial.open()
+                self.toolbar.connectBtn.SetLabel('Disconnect')
         else:
-            self.controller.selected_serial.open()
-            self.toolbar.connectBtn.SetLabel('Disconnect')
+            util.set_dialog("Please select a port to connect to.")
