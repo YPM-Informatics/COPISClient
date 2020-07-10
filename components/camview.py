@@ -97,6 +97,8 @@ class Canvas(CanvasBase):
         """React to the double click event."""    
         point = self.mouse_to_3d(self.mousepos[0], self.mousepos[1])
         self.spheres.append(point)
+        test = self.GetContentScaleFactor()
+
 
     def draw_objects(self):
         """Called in OnDraw after the buffer has been cleared."""
