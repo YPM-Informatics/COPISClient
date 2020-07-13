@@ -41,7 +41,8 @@ class Camera3D():
         if self.is_selected:
             color = [75, 230, 150]
         else:
-            color = [125, 125, 125]
+            hue = 125 - self._id
+            color = [hue, hue, hue]
 
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
