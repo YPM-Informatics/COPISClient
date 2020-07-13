@@ -73,7 +73,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._mouse_pos = None
-        self._points = []
+        # self._points = []
 
         self._camera3d_list = []
         self._path3d_list = []
@@ -214,9 +214,11 @@ class Canvas3D(glcanvas.GLCanvas):
         scale = self.get_scale_factor()
         event.SetX(int(event.GetX() * scale))
         event.SetY(int(event.GetY() * scale))
-
-        point = self._mouse_to_3d(event.GetX(), event.GetY())
-        self._points.append(point)
+        glFlush()
+        pixel = glReadPixels(event.GetX(), event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+        print(pixel[0], pixel[1], pixel[2])
+        # point = self._mouse_to_3d(event.GetX(), event.GetY())
+        # self._points.append(point)
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -312,12 +314,12 @@ class Canvas3D(glcanvas.GLCanvas):
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
-        for point in self._points:
-            glPushMatrix()
-            glColor3ub(255,0,0)
-            glTranslate(*point)
-            gluSphere(self.quadratic, 0.25, 5, 5)
-            glPopMatrix()
+        # for point in self._points:
+        #     glPushMatrix()
+        #     glColor3ub(255,0,0)
+        #     glTranslate(*point)
+        #     gluSphere(self.quadratic, 0.25, 5, 5)
+        #     glPopMatrix()
 
     def _render_cameras(self):
         if not self._camera3d_list:
