@@ -14,6 +14,9 @@ class _Axes():
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
     def render(self):
+        if self._quadric is None:
+            return
+
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
         y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
@@ -131,7 +134,7 @@ class Grid3D():
         self._colors = np.concatenate([axes_colors, x_colors, y_colors])
 
     def render_axes(self):
-        if not self._axes:
+        if self._axes is None:
             return
 
         self._axes.render()
