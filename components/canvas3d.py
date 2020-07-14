@@ -290,7 +290,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glClearColor(*self.color_background)
 
     def _render_platform(self):
-        if not self._grid3d:
+        if self._grid3d is None:
             return
 
         self._grid3d.render()
