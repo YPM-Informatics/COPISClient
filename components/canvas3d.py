@@ -17,7 +17,7 @@ from OpenGL.GLU import *
 from components.glhelper import arcball, vector_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
 from components.path3d import Path3D
 from components.camera3d import Camera3D
-from components.grid3d import Grid3D
+from components.bed3d import Bed3D
 
 
 class _Size():
@@ -76,11 +76,8 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_x = 0
         self._points = []
 
-        if build_dimensions:
-            self._build_dimensions = build_dimensions
-        else:
-            self._build_dimensions = [800, 800, 800, 400, 400, 400]
-        self._grid3d = Grid3D(self._build_dimensions, axes=True, every=100, subdivisions=10)
+        self._build_dimensions = build_dimensions if build_dimensions else [400, 400, 400, 200, 200, 200]
+        self._bed3d = Bed3D(self._build_dimensions, every=100, subdivisions=10)
 
         self._camera3d_list = []
         self._path3d_list = []
@@ -128,7 +125,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_MULTISAMPLE)
 
-        if not self._grid3d.init():
+        if not self._bed3d.init():
             return
 
         self._gl_initialized = True
@@ -290,17 +287,17 @@ class Canvas3D(glcanvas.GLCanvas):
         glClearColor(*self.color_background)
 
     def _render_platform(self):
-        if self._grid3d is None:
+        if self._bed3d is None:
             return
 
-        self._grid3d.render()
+        self._bed3d.render()
 
     def _render_objects(self):
         # draw origin sphere
         glColor3ub(0, 0, 0)
         gluSphere(self._quadric, 5, 32, 32)
 
-        glColor3ub(255,0,0)
+        glColor3ub(255, 0, 0)
         for point in self._points:
             glPushMatrix()
             glTranslate(*point)

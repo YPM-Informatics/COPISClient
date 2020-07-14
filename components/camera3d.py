@@ -39,9 +39,9 @@ class Camera3D():
         """Render camera."""
         # Set color based on selection
         if self.is_selected:
-            color = [75, 230, 150]
+            color = (75, 230, 150)
         else:
-            color = [125, 125, 125]
+            color = (125, 125, 125)
 
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
