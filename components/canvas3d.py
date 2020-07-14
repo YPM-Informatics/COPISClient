@@ -52,14 +52,13 @@ class _Size():
 
 
 class Canvas3D(glcanvas.GLCanvas):
-    zoom_min = 0.1
-    zoom_max = 7.0
-
     # True: use arcball controls, False: use orbit controls
     arcball_control = False
     color_background = (0.941, 0.941, 0.941, 1)
+    zoom_min = 0.1
+    zoom_max = 7.0
 
-    def __init__(self, parent, build_dimensions = None):
+    def __init__(self, parent, build_dimensions=None):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
@@ -81,7 +80,7 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [800, 800, 800, 400, 400, 400]
-        self._grid3d = Grid3D(self._build_dimensions, every=100, subdivisions=10)
+        self._grid3d = Grid3D(self._build_dimensions, axes=True, every=100, subdivisions=10)
 
         self._camera3d_list = []
         self._path3d_list = []
@@ -109,7 +108,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._context is None:
             return False
 
-        self.quadratic = gluNewQuadric()
+        self._quadric = gluNewQuadric()
 
         glClearColor(*self.color_background)
         glClearDepth(1.0)
@@ -299,13 +298,13 @@ class Canvas3D(glcanvas.GLCanvas):
     def _render_objects(self):
         # draw origin sphere
         glColor3ub(0, 0, 0)
-        gluSphere(self.quadratic, 5, 32, 32)
+        gluSphere(self._quadric, 5, 32, 32)
 
         glColor3ub(255,0,0)
         for point in self._points:
             glPushMatrix()
             glTranslate(*point)
-            gluSphere(self.quadratic, 50, 5, 5)
+            gluSphere(self._quadric, 50, 5, 5)
             glPopMatrix()
 
     def _render_cameras(self):
