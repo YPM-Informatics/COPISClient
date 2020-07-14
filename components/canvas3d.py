@@ -118,8 +118,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         # set antialiasing
-        # glEnable(GL_LINE_SMOOTH)
-        # glEnable(GL_POLYGON_SMOOTH)
+        glEnable(GL_LINE_SMOOTH)
 
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glEnable(GL_COLOR_MATERIAL)

@@ -79,7 +79,7 @@ class _Axes():
 
 
 class Bed3D():
-    color_light  = 0.90
+    color_light  = 0.91
     color_dark   = 0.72
     color_border = 0.40
 
@@ -114,6 +114,8 @@ class Bed3D():
         if not self.init():
             return
 
+        glDisable(GL_LINE_SMOOTH)
+
         if self._show_axes:
             self._render_axes()
 
@@ -121,6 +123,8 @@ class Bed3D():
             self._render_bounding_box()
 
         self._render_gridlines()
+
+        glEnable(GL_LINE_SMOOTH)
 
     def create_gridlines(self):
         """Generate vertices and colors for bed gridlines."""
