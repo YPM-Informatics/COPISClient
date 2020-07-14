@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grid3D class and associated classes."""
+"""Bed3D class and associated classes."""
 
 import numpy as np
 
