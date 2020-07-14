@@ -504,6 +504,7 @@ class Grid3D():
         self._build_dimensions = build_dimensions
         self._every = every
         self._subdivisions = subdivisions
+
         self._initialized = False
         self._vertices = None
         self._colors = None
@@ -534,51 +535,48 @@ class Grid3D():
     def create(self):
         step = self._every / self._subdivisions
 
-        x_neg = self._build_dimensions[3]
-        x_pos = self._build_dimensions[0] - x_neg
-        y_neg = self._build_dimensions[4]
-        y_pos = self._build_dimensions[1] - y_neg
-        z_neg = self._build_dimensions[5]
-        z_pos = self._build_dimensions[2] - z_neg
+        x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
+        y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
+        z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
 
         # start with axes
         axes_verts = np.array([
-            -x_neg, 0, 0, x_pos, 0, 0,
-            0, -y_neg, 0, 0, y_pos, 0,
-            0, 0, -z_neg, 0, 0, z_pos])
+            x[0], 0, 0, -x[1], 0, 0,
+            0, y[0], 0, 0, -y[1], 0,
+            0, 0, z[0], 0, 0, -z[1]])
         axes_colors = np.array([
-            1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
+            1.0, 0.0, 0.0, 1.0, 0.0, 0.0,   # red
+            0.0, 1.0, 0.0, 0.0, 1.0, 0.0,   # green
+            0.0, 0.0, 1.0, 0.0, 0.0, 1.0])  # blue
 
-        dark   = 0.72
         light  = 0.90
+        dark   = 0.72
         border = 0.40
-        def darken(x):
-            x[self._subdivisions-1::self._subdivisions] = dark
-            x[-1] = border
-            return x
+        def darken(a):
+            a[self._subdivisions-1::self._subdivisions] = dark
+            a[-1] = border
+            return a
 
         # gridlines parallel to x axis
-        i = np.append(np.arange(-step, -y_neg, -step), -y_neg)
-        j = np.append(np.arange(step, y_pos, step), y_pos)
+        i = np.append(np.arange(-step, -y[1], -step), -y[1])
+        j = np.append(np.arange(step, y[0], step), y[0])
         k = np.concatenate([i, j])
         x_verts = np.zeros(k.size * 6)
         x_verts[1::3] = k.repeat(2)
-        x_verts[0::3] = -x_neg
-        x_verts[3::6] = x_pos
+        x_verts[0::3] = -x[1]
+        x_verts[3::6] = x[0]
         x_colors = np.concatenate([
             darken(np.full(i.size, light)),
             darken(np.full(j.size, light))]).repeat(6)
 
         # gridlines parallel to y axis
-        i = np.append(np.arange(-step, -x_neg, -step), -x_neg)
-        j = np.append(np.arange(step, x_pos, step), x_pos)
+        i = np.append(np.arange(-step, -x[1], -step), -x[1])
+        j = np.append(np.arange(step, x[0], step), x[0])
         k = np.concatenate([i, j])
         y_verts = np.zeros(k.size * 6)
         y_verts[0::3] = k.repeat(2)
-        y_verts[1::6] = -y_neg
-        y_verts[4::6] = y_pos
+        y_verts[1::6] = -y[1]
+        y_verts[4::6] = y[0]
         y_colors = np.concatenate([
             darken(np.full(i.size, light)),
             darken(np.full(j.size, light))]).repeat(6)
