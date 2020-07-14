@@ -424,7 +424,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         with self._rot_lock:
             if use_arcball:
-                quat = arcball(p1x, p1y, p2x, p2y, math.sqrt(2)/2)
+                quat = arcball(p1x, p1y, p2x, p2y, 1)
                 self._rot_quat = mul_quat(self._rot_quat, quat)
             else:
                 delta_z = p2x - p1x
