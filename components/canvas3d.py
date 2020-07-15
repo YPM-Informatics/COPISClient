@@ -73,9 +73,9 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._mouse_pos = None
-        # self._points = []
 
         self._camera3d_list = []
+        self._selected_cam = None
         self._path3d_list = []
 
         # initialize opengl context
@@ -215,11 +215,9 @@ class Canvas3D(glcanvas.GLCanvas):
         event.SetX(int(event.GetX() * scale))
         event.SetY(int(event.GetY() * scale))
         glFlush()
-        pixel = glReadPixels(event.GetX(), event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        print(pixel[0], pixel[1], pixel[2])
-        # point = self._mouse_to_3d(event.GetX(), event.GetY())
-        # self._points.append(point)
-
+        pixel = glReadPixels(event.GetX(), self._height - event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+        self.set_selected_camera(125 - pixel[0])
+        
     def on_erase_background(self, event):
         """Handle the erase background event."""
         pass  # Do nothing, to avoid flashing on MSW.
@@ -314,13 +312,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glColor3ub(0, 0, 128)
         gluSphere(self.quadratic, 0.25, 32, 32)
 
-        # for point in self._points:
-        #     glPushMatrix()
-        #     glColor3ub(255,0,0)
-        #     glTranslate(*point)
-        #     gluSphere(self.quadratic, 0.25, 5, 5)
-        #     glPopMatrix()
-
     def _render_cameras(self):
         if not self._camera3d_list:
             return
@@ -374,6 +365,25 @@ class Canvas3D(glcanvas.GLCanvas):
             self._camera3d_list.sort(key=lambda x: x._id)
             return self._camera3d_list[-1]._id + 1
         return 0
+
+    def get_selected_camera(self):
+        if self._selected_cam:
+            return self._selected_cam
+        return None
+
+
+    def set_selected_camera(self, id):
+        # reset previously selected camera
+        last_selected = self.get_selected_camera()
+        if last_selected:
+            last_selected.is_selected = False
+
+        # update new selected camera
+        self._selected_cam = self.get_camera_by_id(id)
+        self._selected_cam.is_selected = True
+
+        # refresh canvas
+        self.set_dirty
 
     # ----------------
     # Path3D functions
