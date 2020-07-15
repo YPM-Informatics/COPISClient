@@ -317,17 +317,7 @@ class ControllerPanel(wx.Panel):
 
         ## Selection for virtual cameras
         elif self.parent.visualizer_panel.get_camera_objects():
-
-            ## Disable previously selected camera
-            if self.selectedCam:
-                self.selectedCam.is_selected = False
-
-            ## Update selected camera
-            self.selectedCam = self.parent.visualizer_panel.get_camera_by_id(id)
-            self.selectedCam.is_selected = True
-
-        ## Refresh canvas
-        self.parent.visualizer_panel.set_dirty()
+            self.parent.visualizer_panel.canvas.set_selected_camera(id)
 
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
