@@ -73,12 +73,13 @@ class _Axes():
         gluQuadricOrientation(self._quadric, GLU_INSIDE)
         gluDisk(self._quadric, 0.0, self.arrow_base_radius, 32, 1)
 
-    def __delete__(self):
+    def __delete__(self, _):
         if not self._quadric:
             gluDeleteQuadric(self._quadric)
 
 
 class Bed3D():
+    """Bed3D class."""
     color_light  = 0.91
     color_dark   = 0.72
     color_border = 0.40
@@ -129,7 +130,6 @@ class Bed3D():
     def create_gridlines(self):
         """Generate vertices and colors for bed gridlines."""
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
-        y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
         step = self._every / self._subdivisions
 
@@ -138,37 +138,41 @@ class Bed3D():
             a[-1] = self.color_border
             return a
 
-        axes_verts = np.array([]) if self._show_axes else np.array([
-            x[0], 0, 0, -x[1], 0, 0,
-            0, y[0], 0, 0, -y[1], 0])
-        axes_colors = np.array([]) if self._show_axes else np.array([self.color_dark]).repeat(12)
+        if self._show_axes:
+            axes_verts = np.array([])
+            axes_colors = np.array([])
+        else:
+            axes_verts = np.array([
+                x[0], 0, 0, -x[1], 0, 0,
+                0, 0, z[0], 0, 0, -z[1]])
+            axes_colors = np.array([self.color_dark]).repeat(12)
 
         # gridlines parallel to x axis
-        i = np.append(np.arange(-step, -y[1], -step), -y[1])
-        j = np.append(np.arange(step, y[0], step), y[0])
+        i = np.append(np.arange(-step, -z[1], -step), -z[1])
+        j = np.append(np.arange(step, z[0], step), z[0])
         k = np.concatenate([i, j])
         x_verts = np.zeros(k.size * 6)
-        x_verts[1::3] = k.repeat(2)
-        x_verts[0::3] = -x[1]
+        x_verts[2::3] = k.repeat(2)
+        x_verts[0::6] = -x[1]
         x_verts[3::6] = x[0]
         x_colors = np.concatenate([
             darken(np.full(i.size, self.color_light)),
             darken(np.full(j.size, self.color_light))]).repeat(6)
 
-        # gridlines parallel to y axis
+        # gridlines parallel to z axis
         i = np.append(np.arange(-step, -x[1], -step), -x[1])
         j = np.append(np.arange(step, x[0], step), x[0])
         k = np.concatenate([i, j])
-        y_verts = np.zeros(k.size * 6)
-        y_verts[0::3] = k.repeat(2)
-        y_verts[1::6] = -y[1]
-        y_verts[4::6] = y[0]
-        y_colors = np.concatenate([
+        z_verts = np.zeros(k.size * 6)
+        z_verts[0::3] = k.repeat(2)
+        z_verts[2::6] = -z[1]
+        z_verts[5::6] = z[0]
+        z_colors = np.concatenate([
             darken(np.full(i.size, self.color_light)),
             darken(np.full(j.size, self.color_light))]).repeat(6)
 
-        vertices = np.concatenate([axes_verts, x_verts, y_verts])
-        colors = np.concatenate([axes_colors, x_colors, y_colors])
+        vertices = np.concatenate([axes_verts, x_verts, z_verts])
+        colors = np.concatenate([axes_colors, x_colors, z_colors])
         self._gridlines = (vertices, colors)
 
     def create_bounding_box(self):
@@ -216,7 +220,7 @@ class Bed3D():
         vertices, indices = self._bounding_box
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(3, GL_FLOAT, 0, vertices)
-        glDrawElements(GL_LINES, indices.size, GL_UNSIGNED_INT, indices);
+        glDrawElements(GL_LINES, indices.size, GL_UNSIGNED_INT, indices)
         glDisableClientState(GL_VERTEX_ARRAY)
 
     def _render_axes(self):

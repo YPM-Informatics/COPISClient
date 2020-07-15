@@ -26,7 +26,7 @@ def arcball(p1x, p1y, p2x, p2y, r):
         t = -1.0
     phi = 2.0 * math.asin(t)
 
-    return vector_to_quat(rot_axis, phi)
+    return axis_to_quat(rot_axis, phi)
 
 
 def sphere_coords(x, y, r):
@@ -40,16 +40,18 @@ def sphere_coords(x, y, r):
     return [x, y, r2 * 0.5 / math.sqrt(d2)]
 
 
-def vector_to_quat(axis, angle):
+def axis_to_quat(axis, angle):
     """Convert rotation vector into a quaternion given."""
-    x, y, z = axis
-    val = math.sin(angle * 0.5) / math.sqrt(x*x + y*y + z*z)
-    return [math.cos(angle * 0.5), x * val, y * val, z * val]
+    mag = math.sqrt(sum(x * x for x in axis))
+    q = [x * (1 / mag) for x in axis]
+    q = [x * math.sin(angle / 2.0) for x in q]
+    q.append(math.cos(angle / 2.0))
+    return q
 
 
 def quat_to_matrix4(quat):
     """Convert quaternion into a 4x4 rotation matrix."""
-    w, x, y, z = quat
+    x, y, z, w = quat
     xx2 = 2.0 * x * x
     yy2 = 2.0 * y * y
     zz2 = 2.0 * z * z
@@ -68,7 +70,7 @@ def quat_to_matrix4(quat):
 
 def quat_to_matrix3(quat):
     """Convert quaternion into a 3x3 rotation matrix."""
-    w, x, y, z = quat
+    x, y, z, w = quat
     xx2 = 2.0 * x * x
     yy2 = 2.0 * y * y
     zz2 = 2.0 * z * z
@@ -86,12 +88,13 @@ def quat_to_matrix3(quat):
 
 def mul_quat(quat1, quat2):
     """Compute the product of two quaternions."""
-    w1, x1, y1, z1 = quat1
-    w2, x2, y2, z2 = quat2
-    return [w1*w2 - x1*x2 - y1*y2 - z1*z2,
-            w1*x2 + x1*w2 + y1*z2 - z1*y2,
-            w1*y2 - x1*z2 + y1*w2 + z1*x2,
-            w1*z2 + x1*y2 - y1*x2 + z1*w2]
+    x1, y1, z1, w1 = quat1
+    x2, y2, z2, w2 = quat2
+    return [
+        w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
+        w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+        w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2,
+        w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2]
 
 
 def rotate_basis(v0, v1, v2):
@@ -102,16 +105,16 @@ def rotate_basis(v0, v1, v2):
         raise ValueError('zero magnitude vector')
     v = v / math.sqrt(v0*v0 + v1*v1 + v2*v2)
     x = np.array([1, 0, 0]) # x axis normal basis vector
-    y = np.array([0, 1, 0]) # y axis normal basis vector
+    z = np.array([0, 0, 1]) # z axis normal basis vector
 
-    # rotate such that that the basis vector for the z axis aligns with v
+    # rotate such that that the basis vector for the y axis (up) aligns with v
     if (v != np.array([0, 0, 1])).any():
-        phi = math.acos(v[2])                   # np.dot(v, [0, 0, 1])
-        axis = (-v[1], v[0], 0.0)               # np.cross([0, 0, 1], v)
-        rot = quat_to_matrix3(vector_to_quat(axis, phi))
+        phi = math.acos(v[1])                   # np.dot(v, [0, 1, 0])
+        axis = (v[2], 0.0, -v[0])               # np.cross([0, 1, 0], v)
+        rot = quat_to_matrix3(axis_to_quat(axis, phi))
         x = [rot[0][0], rot[1][0], rot[2][0]]   # rot.dot(x)
-        y = [rot[0][1], rot[1][1], rot[2][1]]   # rot.dot(y)
-    return x, y, v
+        z = [rot[0][2], rot[1][2], rot[2][2]]   # rot.dot(z)
+    return x, v, z
 
 
 def draw_circle(*args):
@@ -126,7 +129,7 @@ def draw_helix(*args):
 
 def draw_circle_memoized(p, n, r, sides=64):
     """Draw circle given point, normal vector, radius, and # sides.
-    Uses the memoized function compute_circle to lookup points.
+    Uses the function compute_circle to generate points.
     """
     vertices, count = compute_circle(*p, *n, r, sides)
 
@@ -139,7 +142,7 @@ def draw_circle_memoized(p, n, r, sides=64):
 
 def draw_helix_memoized(p, n, r, pitch=1, turns=1.0, sides=64):
     """Draw helix given point, normal vector, radius, pitch, # turns, and # sides.
-    Uses the memoized function compute_helix to lookup points.
+    Uses the function compute_helix to generate points.
     """
     vertices, count = compute_helix(*p, *n, r, pitch, turns, sides)
 
@@ -150,11 +153,9 @@ def draw_helix_memoized(p, n, r, pitch=1, turns=1.0, sides=64):
     glDisableClientState(GL_VERTEX_ARRAY)
 
 
-@functools.lru_cache(maxsize=None)
 def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     """Compute vertices of circle given point, normal vector, radius, and # sides.
     Uses an approximation method to compute vertices versus many trig calls.
-    Memoized for quick lookup.
     """
     a, _, n = rotate_basis(n0, n1, n2)
     theta = 6.28318530717958647692 / sides
@@ -177,11 +178,9 @@ def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     return vertices, count
 
 
-@functools.lru_cache(maxsize=None)
 def compute_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
     """Compute vertices of helix given point, normal vector, radius, pitch, # turns, and # sides.
     Uses an approximation method to compute vertices versus many trig calls.
-    Memoized for quick lookup.
     """
     a, _, n = rotate_basis(n0, n1, n2)
     theta = 6.28318530717958647692 / sides
