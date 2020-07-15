@@ -85,6 +85,9 @@ class Bed3D():
     color_border = 0.40
 
     def __init__(self, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
+        if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
+            raise ValueError('build dimension origin out of range')
+
         self._build_dimensions = build_dimensions
         self._show_axes = axes
         self._show_bounding_box = bounding_box
