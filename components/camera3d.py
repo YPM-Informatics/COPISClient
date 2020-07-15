@@ -16,7 +16,7 @@ class Camera3D():
         self._dirty = False  # dirty flag to track when we need to re-render the camera
         self.is_selected = False
 
-        self._id = id
+        self._camid = id
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
@@ -118,8 +118,20 @@ class Camera3D():
         glPopMatrix()
 
     @property
-    def get_id(self):
-        return self._id
+    def camid(self):
+        return self._camid
+
+    @camid.setter
+    def camid(self, value):
+        self._camid = value
+
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = value
 
     def get_rotation_angle(self, v1, v2):
         v1_u = self.get_unit_vector(v1)
