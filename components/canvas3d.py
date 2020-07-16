@@ -73,7 +73,7 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
-        self._bed3d = Bed3D(self._build_dimensions, axes=False, every=100, subdivisions=10)
+        self._bed3d = Bed3D(self._build_dimensions, axes=True, every=100, subdivisions=10)
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
 
         self._quadric = None
@@ -320,6 +320,9 @@ class Canvas3D(glcanvas.GLCanvas):
     # Camera3D functions
     # ------------------
 
+    # TODO: move camera logic (and all methods that aren't graphics based)
+    # out of Canvas3D
+
     def on_clear_cameras(self):
         """Clear Camera3D list."""
         self._camera3d_list = []
@@ -426,7 +429,7 @@ class Canvas3D(glcanvas.GLCanvas):
         p2y = 1 - cur.y * 2.0 / self._height
 
         if p1x == p2x and p1y == p2y:
-            return [0.0, 0.0, 0.0, 1.0]
+            self._rot_quat = [0.0, 0.0, 0.0, 1.0]
 
         with self._rot_lock:
             if orbit:
