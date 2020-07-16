@@ -78,6 +78,8 @@ class Canvas3D(glcanvas.GLCanvas):
         self._selected_cam = None
         self._path3d_list = []
 
+        self._main_frame = parent.parent
+
         # initialize opengl context
         self._context = glcanvas.GLContext(self)
 
@@ -211,12 +213,21 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
+        # Detect click location
         scale = self.get_scale_factor()
         event.SetX(int(event.GetX() * scale))
         event.SetY(int(event.GetY() * scale))
         glFlush()
+
+        # Read pixel color
         pixel = glReadPixels(event.GetX(), self._height - event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        self.set_selected_camera(125 - pixel[0])
+        id = 125 - pixel[0]
+
+        # If user double clicks something other than camera
+        if id > len(self._camera3d_list) or id < 0:
+            return 0
+
+        self._main_frame.set_selected_camera(id)
         
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -469,43 +480,6 @@ class Canvas3D(glcanvas.GLCanvas):
         cur = event.GetPosition()
         # Do stuff
         self._mouse_pos = cur
-
-    def _mouse_to_3d(self, x, y, z=1.0, local_transform=False):
-        x = float(x)
-        y = self._height - float(y)
-        pmat = self.get_projection_matrix()
-        mvmat = self.get_modelview_matrix()
-        viewport = self.get_viewport()
-        point = gluUnProject(x, y, z, mvmat, pmat, viewport)
-        return point
-
-    def _mouse_to_ray(self, x, y, local_transform=False):
-        x = float(x)
-        y = self._height - float(y)
-        pmat = self.get_projection_matrix()
-        mvmat = self.get_modelview_matrix()
-        viewport = self.get_viewport()
-        px = (GLdouble)()
-        py = (GLdouble)()
-        pz = (GLdouble)()
-        ray_far = gluUnProject(x, y, 1, mvmat, pmat, viewport)
-        ray_near = gluUnProject(x, y, 0, mvmat, pmat, viewport)
-        return ray_near, ray_far
-
-    def _mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
-        ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
-        ray_near = np.array(ray_near)
-        ray_far = np.array(ray_far)
-        ray_dir = ray_far - ray_near
-        ray_dir = ray_dir / np.linalg.norm(ray_dir)
-        plane_normal = np.array(plane_normal)
-        q = ray_dir.dot(plane_normal)
-        if q == 0:
-            return None
-        t = - (ray_near.dot(plane_normal) + plane_offset) / q
-        if t < 0:
-            return None
-        return ray_near + t * ray_dir
 
     # -------------------
     # Misc util functions

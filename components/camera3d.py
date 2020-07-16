@@ -30,10 +30,10 @@ class Camera3D():
         self.rotationVector = []
 
         self.trans = False
-        self.nIncre = 0
-        self.increx = 0
-        self.increy = 0
-        self.increz = 0
+        self.n_increment = 0
+        self.increment_x = 0
+        self.increment_y = 0
+        self.increment_z = 0
 
     def render(self):
         """Render camera."""
@@ -163,30 +163,30 @@ class Camera3D():
             elif axis == CamAxis.C:
                 self._c += amount
 
-    def translate(self, newx=0, newy=0, newz=0):
-        #Initialize nIncre and increxyz, skip if already initialized
+    def translate(self, new_x=0, new_y=0, new_z=0):
+        #Initialize n_increment and increment_xyz, skip if already initialized
         if not self.trans:
-            dx = round(newx - self._x, 2)
-            dy = round(newy - self._y, 2)
-            dz = round(newz - self._z, 2)
+            dx = round(new_x - self._x, 2)
+            dy = round(new_y - self._y, 2)
+            dz = round(new_z - self._z, 2)
 
             maxd = max(dx, dy, dz)
             scale = maxd/0.01
 
-            self.nIncre = scale
-            self.increx = dx/scale
-            self.increy = dy/scale
-            self.increz = dz/scale
+            self.n_increment = scale
+            self.increment_x = dx/scale
+            self.increment_y = dy/scale
+            self.increment_z = dz/scale
 
             #Setting trans to true allows this function to be called on cam.render
             self.trans = True
 
-        if self.nIncre > 0:
-            self._x += self.increx
-            self._y += self.increy
-            self._z += self.increz
+        if self.n_increment > 0:
+            self._x += self.increment_x
+            self._y += self.increment_y
+            self._z += self.increment_z
 
-            self.nIncre -= 1
+            self.n_increment -= 1
         else:
             self._x = round(self._x, 2)
             self._y = round(self._y, 2)
