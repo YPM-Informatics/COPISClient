@@ -312,9 +312,6 @@ class ControllerPanel(wx.Panel):
 
         self.parent.set_selected_camera(id)
 
-        if self.parent.cam_list:
-            self.parent.cam_list.set_selected_cam_by_id(id)
-
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
         if self.parent.cam_list.selected_camera is not None:

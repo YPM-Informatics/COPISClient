@@ -75,7 +75,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         self._camera3d_list = []
-        self._selected_cam = None
         self._path3d_list = []
 
         self._main_frame = parent.parent
