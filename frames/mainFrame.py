@@ -114,6 +114,11 @@ class MainFrame(wx.Frame):
         self.selected_cam = new_selected
         self.selected_cam.is_selected = True
 
+        # connect to physical camera
+        if self.cam_list:
+            if self.cam_list[id]:
+                self.parent.cam_list.set_selected_cam_by_id(id)
+
         # refresh canvas
         self.visualizer_panel.set_dirty()
 
