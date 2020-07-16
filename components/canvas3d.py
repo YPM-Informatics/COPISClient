@@ -73,7 +73,7 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
-        self._bed3d = Bed3D(self._build_dimensions, every=100, subdivisions=10)
+        self._bed3d = Bed3D(self._build_dimensions, axes=False, every=100, subdivisions=10)
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
 
         self._quadric = None
