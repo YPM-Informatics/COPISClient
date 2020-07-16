@@ -13,8 +13,6 @@ class ControllerPanel(wx.Panel):
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.init_panel()
 
-        self.selectedCam = None
-
     def init_panel(self):
         vboxLeft = wx.BoxSizer(wx.VERTICAL)
 
@@ -312,12 +310,10 @@ class ControllerPanel(wx.Panel):
         choice = self.masterCombo.GetStringSelection()
         id = int(choice[-1])
 
+        self.parent.set_selected_camera(id)
+
         if self.parent.cam_list:
             self.parent.cam_list.set_selected_cam_by_id(id)
-
-        ## Selection for virtual cameras
-        elif self.parent.visualizer_panel.get_camera_objects():
-            self.parent.visualizer_panel.canvas.set_selected_camera(id)
 
     def OnTakePicture(self, event):
         camId = self.masterCombo.GetSelection()
