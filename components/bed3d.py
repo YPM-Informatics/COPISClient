@@ -80,8 +80,8 @@ class _Axes():
 
 class Bed3D():
     """Bed3D class."""
-    color_light  = 0.91
-    color_dark   = 0.72
+    color_light = 0.91
+    color_dark = 0.72
     color_border = 0.40
 
     def __init__(self, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
@@ -93,8 +93,7 @@ class Bed3D():
         self._show_bounding_box = bounding_box
         self._every = every
         self._subdivisions = subdivisions
-
-        self._axes = _Axes(build_dimensions) if axes else None
+        self._axes = _Axes(build_dimensions)
 
         self._initialized = False
         self._gridlines = None
@@ -174,9 +173,9 @@ class Bed3D():
             darken(np.full(i.size, self.color_light)),
             darken(np.full(j.size, self.color_light))]).repeat(6)
 
-        vertices = np.concatenate([axes_verts, x_verts, z_verts])
-        colors = np.concatenate([axes_colors, x_colors, z_colors])
-        self._gridlines = (vertices, colors)
+        self._gridlines = (
+            np.concatenate([axes_verts, x_verts, z_verts]),
+            np.concatenate([axes_colors, x_colors, z_colors]))
 
     def create_bounding_box(self):
         """Generate vertices and indices for bed bounding box."""
@@ -194,12 +193,12 @@ class Bed3D():
             -x[1], y[0], z[0],
             -x[1], -y[1], z[0],
             -x[1], -y[1], -z[1]])
-
         # 12 edges
         indices = np.array([
             0, 1, 1, 2, 2, 3, 3, 0,
             0, 5, 1, 6, 2, 7, 3, 4,
             4, 5, 5, 6, 6, 7, 7, 4])
+
         self._bounding_box = (vertices, indices)
 
     def _render_gridlines(self):
@@ -219,8 +218,8 @@ class Bed3D():
         if self._bounding_box is None:
             return
 
-        glColor3f(self.color_dark, self.color_dark, self.color_dark)
         vertices, indices = self._bounding_box
+        glColor3f(self.color_dark, self.color_dark, self.color_dark)
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(3, GL_FLOAT, 0, vertices)
         glDrawElements(GL_LINES, indices.size, GL_UNSIGNED_INT, indices)
