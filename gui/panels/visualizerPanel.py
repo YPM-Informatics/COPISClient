@@ -2,7 +2,6 @@
 """Visualizer panel. Creates a Canvas3D OpenGL canvas."""
 
 import util
-
 import wx
 from gl.canvas3d import Canvas3D
 
