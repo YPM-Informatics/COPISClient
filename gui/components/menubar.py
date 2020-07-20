@@ -58,5 +58,5 @@ class MenuBar(wx.MenuBar):
         self.Append(configMenu, '&Configuration')
 
     def open_pref_box(self, e):
-        self.pref_frame = PreferenceFrame()
+        self.pref_frame = PreferenceFrame(self.parent)
         self.pref_frame.Show()
