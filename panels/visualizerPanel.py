@@ -14,7 +14,12 @@ class VisualizerPanel(wx.Panel):
         super().__init__(parent, id, pos, size, style)
 
         self.parent = parent
-        self.canvas = Canvas3D(self)
+        self.canvas = Canvas3D(
+            self,
+            build_dimensions=[400, 400, 400, 200, 200, 200],
+            axes=True,
+            every=100,
+            subdivisions=10)
         self.init_panel()
 
     def init_panel(self):

@@ -49,6 +49,14 @@ class Path3D():
         self._path_outline = None
         self._cameras = None
 
+        self._initialized = False
+
+    def init(self):
+        return
+
+    def render(self):
+        return
+
     def attach_camera(self):
         return
 
@@ -62,4 +70,7 @@ class Path3D():
         return not self._path is None
 
     def add_point(self, *args):
+        return
+
+    def __delete__(self, _):
         return
