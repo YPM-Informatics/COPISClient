@@ -304,7 +304,7 @@ class ControllerPanel(wx.Panel):
 
     def OnFocusCenter(self, event):
         if self.parent.selected_cam is not None:
-            self.parent.visualizer_panel.get_camera_by_id(self.parent.selected_cam._id).onFocusCenter()
+            self.parent.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camid).on_focus_center()
         else:
             util.set_dialog('Please select the camera to control.')
 
