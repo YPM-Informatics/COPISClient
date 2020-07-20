@@ -3,11 +3,11 @@
 import wx
 import wx.lib.agw.aui as aui
 
-from gui.panels.controllerPanel import ControllerPanel
-from gui.panels.visualizerPanel import VisualizerPanel
-from gui.panels.cmdPanel import CommandPanel
-from gui.panels.evfPanel import EvfPanel
-from gui.panels.consolePanel import ConsolePanel
+from gui.panels.controller import ControllerPanel
+from gui.panels.visualizer import VisualizerPanel
+from gui.panels.cmd import CommandPanel
+from gui.panels.evf import EvfPanel
+from gui.panels.console import ConsolePanel
 from gui.panels.toolbar import ToolBarPanel
 
 

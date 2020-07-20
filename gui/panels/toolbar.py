@@ -4,8 +4,8 @@ import wx
 import util
 from enums import ToolIds
 
-from gui.settingsFrame import SettingsFrame
-from utils.serialController import SerialController
+from gui.settings_frame import SettingsFrame
+from utils.serial_controller import SerialController
 
 
 class ToolBarPanel(wx.Panel):
@@ -86,8 +86,8 @@ class ToolBarPanel(wx.Panel):
 
     def handleTool(self, event):
         if event.GetId() == ToolIds.SETTINGS.value:
-            settingsFrame = SettingsFrame()
-            settingsFrame.Show()
+            settings_frame = SettingsFrame()
+            settings_frame.Show()
         elif event.GetId() == ToolIds.PLAY.value:
             camId = self.parent.controller_panel.masterCombo.GetSelection()
             if camId != -1:

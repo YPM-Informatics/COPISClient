@@ -3,7 +3,7 @@
 """TODO: Fill in docstring"""
 
 import wx
-from gui.mainFrame import MainFrame
+from gui.main_frame import MainFrame
 
 APP_EXIT = 1
 
