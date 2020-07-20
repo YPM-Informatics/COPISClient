@@ -12,11 +12,11 @@ from OpenGL.GLU import *
 
 
 class Camera3D():
-    def __init__(self, id, x, y, z, b, c):
+    def __init__(self, camid, x, y, z, b, c):
         self._dirty = False  # dirty flag to track when we need to re-render the camera
         self.is_selected = False
 
-        self._camid = id
+        self._camid = camid
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
