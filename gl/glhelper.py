@@ -6,6 +6,7 @@ TODO: Give attribution to Printrun
 import math
 import functools
 import numpy as np
+
 from OpenGL.GL import (GL_VERTEX_ARRAY, GL_FLOAT, GL_LINE_STRIP,
                        glEnableClientState, glVertexPointer,
                        glDrawArrays, glDisableClientState)

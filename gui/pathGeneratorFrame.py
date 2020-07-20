@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 import wx
 
 
 class PathGeneratorFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, None, wx.ID_ANY, "Path Generator", size=(300, 400))
+        wx.Frame.__init__(self, None, wx.ID_ANY, 'Path Generator', size=(300, 400))
         self.SetMinSize(wx.Size(300, 400))
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
@@ -12,7 +14,7 @@ class PathGeneratorFrame(wx.Frame):
         self.Centre()
 
     def init_panel(self):
-        ## LAYOUT
+        # LAYOUT
 
          ############################################
         ## vbox1  ------------------------------  ##
@@ -47,12 +49,12 @@ class PathGeneratorFrame(wx.Frame):
         self.vbox1 = wx.BoxSizer(wx.VERTICAL)
         self.vbox1.Add((0,0))
 
-        ## Label
+        # Label
         cGeneratorLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Generate a new path', style=wx.ALIGN_LEFT)
         cGeneratorLabel.SetFont(self.font)
         self.vbox1.Add(cGeneratorLabel, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
-        ## Style
+        # Style
         hboxStyle = wx.BoxSizer()
         styleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
         hboxStyle.Add(styleLabel, 1, flag=wx.RIGHT | wx.TOP, border = 6)
@@ -61,7 +63,7 @@ class PathGeneratorFrame(wx.Frame):
         self.vbox1.Add(hboxStyle, 1, flag=wx.LEFT, border=15)
         self.Bind(wx.EVT_COMBOBOX, self.onStyleRadioGroup)
 
-        ## StartXYZ
+        # StartXYZ
         hboxStartXYZ = wx.BoxSizer()
         startXYZLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Start XYZ: ')
         hboxStartXYZ.Add(startXYZLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -73,7 +75,7 @@ class PathGeneratorFrame(wx.Frame):
         hboxStartXYZ.Add(self.startZSc)
         self.vbox1.Add(hboxStartXYZ, 1, flag=wx.LEFT, border=15)
 
-        ## EndXYZ
+        # EndXYZ
         hboxEndXYZ = wx.BoxSizer()
         endXYZLabel = wx.StaticText(self.panel, wx.ID_ANY, label='End XYZ: ')
         hboxEndXYZ.Add(endXYZLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -85,7 +87,7 @@ class PathGeneratorFrame(wx.Frame):
         hboxEndXYZ.Add(self.endZSc)
         self.vbox1.Add(hboxEndXYZ, 1, flag=wx.LEFT, border=15)
 
-       ## Radius
+        # Radius
         self.hboxRadius = wx.BoxSizer()
         radiusLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Radius (mm): ')
         self.hboxRadius.Add(radiusLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -94,7 +96,7 @@ class PathGeneratorFrame(wx.Frame):
         self.vbox1.Add(self.hboxRadius, 1, flag=wx.LEFT, border=15)
         self.vbox1.Hide(self.hboxRadius)
 
-        ## No. Circles
+        # No. Circles
         self.hboxNCircle = wx.BoxSizer()
         nCircleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Circles:  ')
         self.hboxNCircle.Add(nCircleLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -103,7 +105,7 @@ class PathGeneratorFrame(wx.Frame):
         self.vbox1.Add(self.hboxNCircle, 1, flag=wx.LEFT, border=15)
         self.vbox1.Hide(self.hboxNCircle)
 
-        ## Points per circle
+        # Points per circle
         self.hboxPointsCircle = wx.BoxSizer()
         pointsCircleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Points per circle: ')
         self.hboxPointsCircle.Add(pointsCircleLabel, 1, flag=wx.RIGHT, border=5)
@@ -112,7 +114,7 @@ class PathGeneratorFrame(wx.Frame):
         self.vbox1.Add(self.hboxPointsCircle, flag=wx.LEFT | wx.BOTTOM, border=25)
         self.vbox1.Hide(self.hboxPointsCircle)
 
-        ## No. Points
+        # No. Points
         hboxPoints = wx.BoxSizer()
         noPointsLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Points: ')
         hboxPoints.Add(noPointsLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -121,7 +123,7 @@ class PathGeneratorFrame(wx.Frame):
         hboxPoints.Add(self.noPointsSc)
         self.vbox1.Add(hboxPoints, 1, flag=wx.LEFT, border=15)
 
-        ## No. Cams
+        # No. Cams
         hboxCameras = wx.BoxSizer()
         noCamsLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Cams: ')
         hboxCameras.Add(noCamsLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
@@ -130,7 +132,7 @@ class PathGeneratorFrame(wx.Frame):
         hboxCameras.Add(self.noCamsSc)
         self.vbox1.Add(hboxCameras, 1, flag=wx.LEFT, border=15)
 
-        ## buttons
+        # buttons
         self.vertextPhotoCb = wx.CheckBox(self.panel, label='Take Photo at Each Vertex')
         self.vbox1.Add(self.vertextPhotoCb, 1, flag=wx.LEFT, border=15)
 
@@ -141,7 +143,7 @@ class PathGeneratorFrame(wx.Frame):
 
     def onStyleRadioGroup(self, event):
         choice = self.styleCombo.GetStringSelection()
-        
+
         if choice == 'Cylinder' or choice == 'Sphere':
             self.vbox1.Show(self.hboxRadius)
             self.vbox1.Show(self.hboxNCircle)

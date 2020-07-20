@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+
+import io
 import wx
 from PIL import Image
-import io
+
 
 class EvfPanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):

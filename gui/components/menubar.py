@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""TODO: Fill in docstring"""
 
 import wx
-from frames.pathGeneratorFrame import *
-from frames.configPreferenceFrame import *
+from gui.pathGeneratorFrame import *
+from gui.configPreferenceFrame import *
 
 
 class MenuBar(wx.MenuBar):

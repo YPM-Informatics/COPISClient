@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+
 import wx
-from enums import CamAxis
-from Canon.EDSDKLib import *
 import util
+
+from enums import CamAxis
+from lib.Canon.EDSDKLib import *
 
 
 class ControllerPanel(wx.Panel):
@@ -193,9 +195,7 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxBc)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
-
         return vboxPositioning
-
 
     def InitCamControl(self):
         # LAYOUT
