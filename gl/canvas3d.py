@@ -13,10 +13,10 @@ from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from components.glhelper import arcball, axis_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
-from components.path3d import Path3D
-from components.camera3d import Camera3D
-from components.bed3d import Bed3D
+from gl.glhelper import arcball, axis_to_quat, quat_to_matrix4, mul_quat, draw_circle, draw_helix
+from gl.path3d import Path3D
+from gl.camera3d import Camera3D
+from gl.bed3d import Bed3D
 
 
 class _Size():

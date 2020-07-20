@@ -1,6 +1,6 @@
 import wx
 from ctypes import *
-from controller.auiManager import AuiManager
+from panels.auiManager import AuiManager
 from components.toolBar import ToolBarPanel
 from components.menuBar import MenuBar
 from components.statusBar import StatusBar
