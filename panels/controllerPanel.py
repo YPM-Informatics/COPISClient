@@ -358,5 +358,5 @@ class ControllerPanel(wx.Panel):
             self.parent.getCameraList()
 
     def onCreateVirtualCam(self, event):
-        cam_id = self.parent.visualizer_panel.add_camera()
-        self.parent.controller_panel.masterCombo.Append('camera ' + cam_id)
+        camid = self.parent.visualizer_panel.add_camera()
+        self.parent.controller_panel.masterCombo.Append('camera ' + camid)

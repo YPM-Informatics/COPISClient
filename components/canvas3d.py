@@ -58,7 +58,7 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_min = 0.1
     zoom_max = 7.0
 
-    def __init__(self, parent, build_dimensions=None):
+    def __init__(self, parent, build_dimensions=None, axes=True, every=100, subdivisions=10):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
@@ -73,17 +73,18 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
-        self._bed3d = Bed3D(self._build_dimensions, axes=True, every=100, subdivisions=10)
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
+        self._bed3d = Bed3D(self._build_dimensions, axes=axes, every=every, subdivisions=subdivisions)
+        self._path3d = Path3D()
 
+        self._camera3d_list = []
+        self._path3d_list = []
         self._quadric = None
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
-        self._camera3d_list = []
-        self._path3d_list = []
 
         self._main_frame = parent.parent
 
@@ -235,14 +236,14 @@ class Canvas3D(glcanvas.GLCanvas):
 
         # Read pixel color
         pixel = glReadPixels(event.GetX(), self._height - event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        id = 125 - pixel[0]
+        camid = 125 - pixel[0]
 
         # If user double clicks something other than camera
-        if id > len(self._camera3d_list) or id < 0:
+        if camid > len(self._camera3d_list) or camid < 0:
             return 0
 
-        self._main_frame.set_selected_camera(id)
-        
+        self._main_frame.set_selected_camera(camid)
+
     def on_erase_background(self, event):
         """Handle the erase background event."""
         pass  # Do nothing, to avoid flashing on MSW.
