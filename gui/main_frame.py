@@ -3,7 +3,7 @@
 import wx
 from ctypes import *
 
-from gui.auiManager import AuiManager
+from gui.auimanager import AuiManager
 from gui.components.menubar import MenuBar
 from gui.components.statusbar import StatusBar
 
@@ -35,7 +35,7 @@ class MainFrame(wx.Frame):
         self.cam_list = []
         self.selected_cam = None
         self.is_edsdk_on = False
-        self.edsdkObject = None
+        self.edsdk_object = None
 
         ## set minimum size to show whole interface properly
         self.SetMinSize(wx.Size(1000, 900))
@@ -47,11 +47,11 @@ class MainFrame(wx.Frame):
         self.SetStatusBar(StatusBar(self))
 
         ## initialize advanced user interface manager and panes
-        self.auiManager = AuiManager(self)
-        self.toolbar_panel = self.auiManager.GetPane('ToolBar').window
-        self.console_panel = self.auiManager.GetPane('Console').window
-        self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
-        self.controller_panel = self.auiManager.GetPane('Controller').window
+        self.aui = AuiManager(self)
+        self.toolbar_panel = self.aui.GetPane('ToolBar').window
+        self.console_panel = self.aui.GetPane('Console').window
+        self.visualizer_panel = self.aui.GetPane('Visualizer').window
+        self.controller_panel = self.aui.GetPane('Controller').window
 
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
@@ -67,15 +67,15 @@ class MainFrame(wx.Frame):
         if self.is_edsdk_on:
             return
 
-        import utils.edsdkObject
+        import utils.edsdk_object
 
-        self.edsdkObject = controller.edsdkObject
-        self.edsdkObject.initialize(self.console_panel)
+        self.edsdk_object = controller.edsdk_object
+        self.edsdk_object.initialize(self.console_panel)
         self.is_edsdk_on = True
         self.getCameraList()
 
     def getCameraList(self):
-        self.cam_list = self.edsdkObject.CameraList()
+        self.cam_list = self.edsdk_object.CameraList()
         cam_count = self.cam_list.get_count()
 
         message = str(cam_count)
