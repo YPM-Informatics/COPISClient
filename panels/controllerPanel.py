@@ -84,7 +84,7 @@ class ControllerPanel(wx.Panel):
         hboxTop = wx.BoxSizer()
         camLabel = wx.StaticText(self, wx.ID_ANY, label='Camera: ', style=wx.ALIGN_LEFT)
         hboxTop.Add(camLabel)
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY)
+        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=wx.Size(100, 26))
         self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
@@ -102,24 +102,23 @@ class ControllerPanel(wx.Panel):
 
         hboxXyzbc = wx.BoxSizer()
         vboxXyz = wx.BoxSizer(wx.VERTICAL)
-        xyzLabel = wx.StaticText(self, wx.ID_ANY, label='XYZ Increment Size', style=wx.ALIGN_LEFT)
+        xyzLabel = wx.StaticText(self, wx.ID_ANY, label='XYZ Step Size', style=wx.ALIGN_LEFT)
         vboxXyz.Add(xyzLabel, 1, flag=wx.BOTTOM, border=10)
 
         hboxXyzSize = wx.BoxSizer()
-        self.xyzSc = wx.SpinCtrl(self, value='0')
-        self.xyzSc.SetRange(0, 100)
+        self.xyzSc = wx.SpinCtrl(self, value='0', size=wx.Size(60, 22), min=0, max=100)
         hboxXyzSize.Add(self.xyzSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=5)
         mmLabel = wx.StaticText(self, wx.ID_ANY, label='mm', style=wx.ALIGN_LEFT)
         hboxXyzSize.Add(mmLabel)
         vboxXyz.Add(hboxXyzSize)
 
         hboxYzInc = wx.BoxSizer()
-        self.yiBtn = wx.Button(self, wx.ID_ANY, label='Y+')
+        self.yiBtn = wx.Button(self, wx.ID_ANY, label='Y+', style=wx.BU_EXACTFIT)
         self.yiBtn.axis = CamAxis.Y
         self.yiBtn.direction = CamAxis.PLUS
-        hboxYzInc.Add(self.yiBtn, 1, flag=wx.LEFT|wx.RIGHT, border=55)
+        hboxYzInc.Add(self.yiBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
         self.yiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.ziBtn = wx.Button(self, wx.ID_ANY, label='Z+')
+        self.ziBtn = wx.Button(self, wx.ID_ANY, label='Z+', style=wx.BU_EXACTFIT)
         self.ziBtn.axis = CamAxis.Z
         self.ziBtn.direction = CamAxis.PLUS
         hboxYzInc.Add(self.ziBtn)
@@ -127,25 +126,25 @@ class ControllerPanel(wx.Panel):
         vboxXyz.Add(hboxYzInc)
 
         hboxX = wx.BoxSizer()
-        self.xrBtn = wx.Button(self, wx.ID_ANY, label='X-')
+        self.xrBtn = wx.Button(self, wx.ID_ANY, label='X-', style=wx.BU_EXACTFIT)
         self.xrBtn.axis = CamAxis.X
         self.xrBtn.direction = CamAxis.MINUS
         hboxX.Add(self.xrBtn)
         self.xrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.xiBtn = wx.Button(self, wx.ID_ANY, label='X+')
+        self.xiBtn = wx.Button(self, wx.ID_ANY, label='X+', style=wx.BU_EXACTFIT)
         self.xiBtn.axis = CamAxis.X
         self.xiBtn.direction = CamAxis.PLUS
-        hboxX.Add(self.xiBtn, 1, flag=wx.LEFT, border=20)
+        hboxX.Add(self.xiBtn, 1, flag=wx.LEFT, border=25)
         self.xiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxXyz.Add(hboxX)
 
         hboxYzDec = wx.BoxSizer()
-        self.yrBtn = wx.Button(self, wx.ID_ANY, label='Y-')
+        self.yrBtn = wx.Button(self, wx.ID_ANY, label='Y-', style=wx.BU_EXACTFIT)
         self.yrBtn.axis = CamAxis.Y
         self.yrBtn.direction = CamAxis.MINUS
-        hboxYzDec.Add(self.yrBtn, 1, flag=wx.LEFT|wx.RIGHT, border=55)
+        hboxYzDec.Add(self.yrBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
         self.yrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.zrBtn = wx.Button(self, wx.ID_ANY, label='Z-')
+        self.zrBtn = wx.Button(self, wx.ID_ANY, label='Z-', style=wx.BU_EXACTFIT)
         self.zrBtn.axis = CamAxis.Z
         self.zrBtn.direction = CamAxis.MINUS
         hboxYzDec.Add(self.zrBtn)
@@ -154,43 +153,42 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxXyz)
 
         vboxBc = wx.BoxSizer(wx.VERTICAL)
-        bcLabel = wx.StaticText(self, wx.ID_ANY, label='BC Increment Size', style=wx.ALIGN_LEFT)
+        bcLabel = wx.StaticText(self, wx.ID_ANY, label='BC Step  Size', style=wx.ALIGN_LEFT)
         vboxBc.Add(bcLabel, 1, flag=wx.BOTTOM, border=10)
 
         hboxBcSize = wx.BoxSizer()
-        self.bcSc = wx.SpinCtrl(self, value='0')
-        self.bcSc.SetRange(0, 100)
-        hboxBcSize.Add(self.bcSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=5)
+        self.bcSc = wx.SpinCtrl(self, value='0', size=wx.Size(60, 22), min=0, max=100)
+        hboxBcSize.Add(self.bcSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=0)
         ddLabel = wx.StaticText(self, wx.ID_ANY, label='dd', style=wx.ALIGN_LEFT)
         hboxBcSize.Add(ddLabel)
         vboxBc.Add(hboxBcSize)
-        self.ciBtn = wx.Button(self, wx.ID_ANY, label='T+')
+        self.ciBtn = wx.Button(self, wx.ID_ANY, label='Tilt+', style=wx.BU_EXACTFIT)
         self.ciBtn.axis = CamAxis.C
         self.ciBtn.direction = CamAxis.PLUS
-        vboxBc.Add(self.ciBtn, 1, flag=wx.LEFT, border=88)
+        vboxBc.Add(self.ciBtn, 1, flag=wx.LEFT, border=65)
         self.ciBtn.Bind(wx.EVT_BUTTON, self.OnMove)
 
         hboxB = wx.BoxSizer()
-        self.brBtn = wx.Button(self, wx.ID_ANY, label='P-')
+        self.brBtn = wx.Button(self, wx.ID_ANY, label='Pan-', style=wx.BU_EXACTFIT)
         self.brBtn.axis = CamAxis.B
         self.brBtn.direction = CamAxis.MINUS
         hboxB.Add(self.brBtn)
         self.brBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        self.cBtn = wx.Button(self, wx.ID_ANY, label='center')
+        self.cBtn = wx.Button(self, wx.ID_ANY, label='Center')
         hboxB.Add(self.cBtn)
         self.cBtn.Bind(wx.EVT_BUTTON, self.OnFocusCenter)
-        self.biBtn = wx.Button(self, wx.ID_ANY, label='P+')
+        self.biBtn = wx.Button(self, wx.ID_ANY, label='Pan+', style=wx.BU_EXACTFIT)
         self.biBtn.axis = CamAxis.B
         self.biBtn.direction = CamAxis.PLUS
         hboxB.Add(self.biBtn)
         self.biBtn.Bind(wx.EVT_BUTTON, self.OnMove)
         vboxBc.Add(hboxB)
-        self.crBtn = wx.Button(self, wx.ID_ANY, label='T-')
+        self.crBtn = wx.Button(self, wx.ID_ANY, label='Tilt-', style=wx.BU_EXACTFIT)
         self.crBtn.axis = CamAxis.C
         self.crBtn.direction = CamAxis.MINUS
-        vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=88)
+        vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=65)
         self.crBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        hboxXyzbc.Add(vboxBc)
+        hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border = 25)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
 
@@ -252,9 +250,9 @@ class ControllerPanel(wx.Panel):
         self.ptpRb.Disable()
 
         hboxF = wx.BoxSizer()
-        self.frBtn = wx.Button(self, wx.ID_ANY, label='F-')
+        self.frBtn = wx.Button(self, wx.ID_ANY, label='Focus-')
         hboxF.Add(self.frBtn)
-        self.fiBtn = wx.Button(self, wx.ID_ANY, label='F+')
+        self.fiBtn = wx.Button(self, wx.ID_ANY, label='Focus+')
         hboxF.Add(self.fiBtn)
         vbox1.Add(hboxF, 1, flag=wx.TOP, border=15)
         hbox.Add(vbox1, 1, flag=wx.LEFT, border=30)
