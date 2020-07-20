@@ -4,7 +4,7 @@
 import util
 
 import wx
-from components.canvas3d import Canvas3D
+from gl.canvas3d import Canvas3D
 
 
 class VisualizerPanel(wx.Panel):
