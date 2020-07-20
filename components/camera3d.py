@@ -16,7 +16,7 @@ class Camera3D():
         self._dirty = False  # dirty flag to track when we need to re-render the camera
         self.is_selected = False
 
-        self._id = id
+        self._camid = id
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
@@ -26,8 +26,8 @@ class Camera3D():
         self.start = (self._x, self._y, self._z, self._b, self._c)
         self.mode = CamMode.NORMAL
 
-        self.angle = 0
-        self.rotationVector = []
+        self._angle = 0
+        self._rotation_vector = []
 
         self.trans = False
         self.n_increment = 0
@@ -37,9 +37,9 @@ class Camera3D():
 
     def render(self):
         """Render camera."""
-        ## Set color based on selection
+        # Set color based on selection
         if self.is_selected:
-            color = [75, 230, 150]
+            color = (75, 230, 150)
         else:
             hue = 125 - self._id
             color = [hue, hue, hue]
@@ -52,7 +52,7 @@ class Camera3D():
             if self._c != 0.0:
                 glRotatef(self._c, 0, 1, 0)
         elif self.mode == CamMode.ROTATE:
-            glRotatef(self.angle, *self.rotationVector)
+            glRotatef(self._angle, *self._rotation_vector)
 
         if self.trans:
             self.translate()
@@ -60,38 +60,38 @@ class Camera3D():
 
         glBegin(GL_QUADS)
 
-        ## bottom
+        # bottom
         glColor3ub(*color)
         glVertex3f(-0.025, -0.05, -0.05)
         glVertex3f( 0.025, -0.05, -0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f(-0.025, -0.05,  0.05)
 
-        ## right
+        # right
         glVertex3f(-0.025,  0.05, -0.05)
         glVertex3f( 0.025,  0.05, -0.05)
         glVertex3f( 0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05, -0.05)
 
-        ## top
+        # top
         glVertex3f(-0.025,  0.05,  0.05)
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025,  0.05, -0.05)
         glVertex3f(-0.025,  0.05, -0.05)
 
-        ## left
+        # left
         glVertex3f(-0.025, -0.05,  0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f(-0.025,  0.05,  0.05)
 
-        ## back
+        # back
         glVertex3f( 0.025,  0.05, -0.05)
         glVertex3f( 0.025,  0.05,  0.05)
         glVertex3f( 0.025, -0.05,  0.05)
         glVertex3f( 0.025, -0.05, -0.05)
 
-        ## front
+        # front
         glVertex3f(-0.025, -0.05, -0.05)
         glVertex3f(-0.025, -0.05,  0.05)
         glVertex3f(-0.025,  0.05,  0.05)
@@ -100,7 +100,7 @@ class Camera3D():
 
         glPushMatrix()
 
-        ## lens
+        # lens
         glColor3ub(*[x - 15 for x in color])
         glTranslated(-0.05, 0.0, 0.0)
         quadric = gluNewQuadric()
@@ -108,7 +108,7 @@ class Camera3D():
         gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)
         gluDeleteQuadric(quadric)
 
-        ## cap
+        # cap
         glColor3ub(*[x - 25 for x in color])
         circleQuad = gluNewQuadric()
         gluQuadricOrientation(circleQuad, GLU_INSIDE)
@@ -119,35 +119,43 @@ class Camera3D():
         glPopMatrix()
 
     @property
-    def get_id(self):
-        return self._id
+    def camid(self):
+        return self._camid
+
+    @camid.setter
+    def camid(self, value):
+        self._camid = value
 
     @property
-    def get_dirty(self):
+    def dirty(self):
         return self._dirty
 
-    def getRotationAngle(self, v1, v2):
-        v1_u = self.getUnitVector(v1)
-        v2_u = self.getUnitVector(v2)
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = value
+
+    def get_rotation_angle(self, v1, v2):
+        v1_u = self.get_unit_vector(v1)
+        v2_u = self.get_unit_vector(v2)
         return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1, 1)))
 
-    def getUnitVector(self, vector):
+    def get_unit_vector(self, vector):
         return vector / np.linalg.norm(vector)
 
-    def onFocusCenter(self):
+    def on_focus_center(self):
         self.mode = CamMode.ROTATE
-        cameraCenterPoint = (self._x, self._y, self._z)
-        currentFacingPoint = (self._x - 0.5, self._y, self._z)
-        desirableFacingPoint = (0.0, 0.0, 0.0)
+        camera_center = (self._x, self._y, self._z)
+        current_facing = (self._x - 0.5, self._y, self._z)
+        target_facing = (0.0, 0.0, 0.0)
 
-        v1 = np.subtract(currentFacingPoint, cameraCenterPoint)
-        v2 = np.subtract(desirableFacingPoint, cameraCenterPoint)
+        v1 = np.subtract(current_facing, camera_center)
+        v2 = np.subtract(target_facing, camera_center)
 
-        self.angle = self.getRotationAngle(v1, v2)
-        self.rotationVector = np.cross(self.getUnitVector(v1), self.getUnitVector(v2))
+        self._angle = self.get_rotation_angle(v1, v2)
+        self._rotation_vector = np.cross(self.get_unit_vector(v1), self.get_unit_vector(v2))
         self.render()
 
-    def getZbyAngle(self, angle):
+    def get_z_by_angle(self, angle):
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
     def on_move(self, axis, amount):
@@ -163,23 +171,25 @@ class Camera3D():
             elif axis == CamAxis.C:
                 self._c += amount
 
-    def translate(self, new_x=0, new_y=0, new_z=0):
-        #Initialize n_increment and increment_xyz, skip if already initialized
-        if not self.trans:
-            dx = round(new_x - self._x, 2)
-            dy = round(new_y - self._y, 2)
-            dz = round(new_z - self._z, 2)
+    def translate(self, newx=0, newy=0, newz=0):
+        # initialize nIncre and increxyz, skip if already initialized
+        if self.trans:
+            return
 
-            maxd = max(dx, dy, dz)
-            scale = maxd/0.01
+        dx = round(newx - self._x, 2)
+        dy = round(newy - self._y, 2)
+        dz = round(newz - self._z, 2)
 
-            self.n_increment = scale
-            self.increment_x = dx/scale
-            self.increment_y = dy/scale
-            self.increment_z = dz/scale
+        maxd = max(dx, dy, dz)
+        scale = maxd / 0.01
 
-            #Setting trans to true allows this function to be called on cam.render
-            self.trans = True
+        self.nIncre = scale
+        self.increx = dx / scale
+        self.increy = dy / scale
+        self.increz = dz / scale
+
+        # setting trans to true allows this function to be called on cam.render
+        self.trans = True
 
         if self.n_increment > 0:
             self._x += self.increment_x
