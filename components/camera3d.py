@@ -30,10 +30,10 @@ class Camera3D():
         self._rotation_vector = []
 
         self.trans = False
-        self.nIncre = 0
-        self.increx = 0
-        self.increy = 0
-        self.increz = 0
+        self.n_increment = 0
+        self.increment_x = 0
+        self.increment_y = 0
+        self.increment_z = 0
 
     def render(self):
         """Render camera."""
@@ -41,7 +41,8 @@ class Camera3D():
         if self.is_selected:
             color = (75, 230, 150)
         else:
-            color = (125, 125, 125)
+            hue = 125 - self._id
+            color = [hue, hue, hue]
 
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
@@ -190,12 +191,12 @@ class Camera3D():
         # setting trans to true allows this function to be called on cam.render
         self.trans = True
 
-        if self.nIncre > 0:
-            self._x += self.increx
-            self._y += self.increy
-            self._z += self.increz
+        if self.n_increment > 0:
+            self._x += self.increment_x
+            self._y += self.increment_y
+            self._z += self.increment_z
 
-            self.nIncre -= 1
+            self.n_increment -= 1
         else:
             self._x = round(self._x, 2)
             self._y = round(self._y, 2)

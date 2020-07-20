@@ -279,14 +279,11 @@ class CameraList:
         return None
 
     def set_selected_cam_by_id(self, id):
-        ## Uncomment commented lines to enable selection for physical cameras
-        # self.selected_camera.is_selected = False
         self.selected_camera = self.get_camera_by_id(id)
         self.selected_camera.connect()
 
         global _camera
         _camera = self.selected_camera
-        # _camera.is_selected = True
 
     def terminate(self):
         for cam in self.cam_model_list:
