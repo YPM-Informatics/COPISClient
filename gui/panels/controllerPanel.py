@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import wx
 import util
 
+import wx
 from enums import CamAxis
-from lib.Canon.EDSDKLib import *
+from utils.Canon.EDSDKLib import *
 
 
 class ControllerPanel(wx.Panel):

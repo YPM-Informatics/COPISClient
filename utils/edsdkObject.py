@@ -2,10 +2,10 @@
 
 import time
 import util
-import wx
 
+import wx
 from ctypes import *
-from lib.Canon.EDSDKLib import *
+from utils.Canon.EDSDKLib import *
 
 _edsdk = None
 _console = None
