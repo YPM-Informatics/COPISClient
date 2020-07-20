@@ -82,9 +82,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
-        self._points = []
         self._camera3d_list = []
         self._path3d_list = []
+
+        self._main_frame = parent.parent
 
         # initialize opengl context
         self._context = glcanvas.GLContext(self)
@@ -226,13 +227,22 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
+        # Detect click location
         scale = self.get_scale_factor()
         event.SetX(int(event.GetX() * scale))
         event.SetY(int(event.GetY() * scale))
+        glFlush()
 
-        point = self._mouse_to_3d(event.GetX(), event.GetY())
-        self._points.append(point)
+        # Read pixel color
+        pixel = glReadPixels(event.GetX(), self._height - event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+        id = 125 - pixel[0]
 
+        # If user double clicks something other than camera
+        if id > len(self._camera3d_list) or id < 0:
+            return 0
+
+        self._main_frame.set_selected_camera(id)
+        
     def on_erase_background(self, event):
         """Handle the erase background event."""
         pass  # Do nothing, to avoid flashing on MSW.
@@ -295,16 +305,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._bed3d.render()
 
     def _render_objects(self):
-        # draw origin sphere
-        glColor3ub(0, 0, 0)
-        gluSphere(self._quadric, 5, 32, 32)
-
-        glColor3ub(255, 0, 0)
-        for point in self._points:
-            glPushMatrix()
-            glTranslate(*point)
-            gluSphere(self._quadric, 50, 5, 5)
-            glPopMatrix()
+        return
 
     def _render_cameras(self):
         if not self._camera3d_list:
@@ -362,6 +363,24 @@ class Canvas3D(glcanvas.GLCanvas):
             self._camera3d_list.sort(key=lambda x: x.camid)
             return self._camera3d_list[-1].camid + 1
         return 0
+
+    def get_selected_camera(self):
+        if self._selected_cam:
+            return self._selected_cam
+        return None
+
+    def set_selected_camera(self, id):
+        # reset previously selected camera
+        last_selected = self.get_selected_camera()
+        if last_selected:
+            last_selected.is_selected = False
+
+        # update new selected camera
+        self._selected_cam = self.get_camera_by_id(id)
+        self._selected_cam.is_selected = True
+
+        # refresh canvas
+        self.set_dirty
 
     # ----------------
     # Path3D functions
@@ -455,40 +474,6 @@ class Canvas3D(glcanvas.GLCanvas):
         cur = event.GetPosition()
         # Do stuff
         self._mouse_pos = cur
-
-    def _mouse_to_3d(self, x, y, z=1.0, local_transform=False):
-        x = float(x)
-        y = self._height - float(y)
-        pmat = self.get_projection_matrix()
-        mvmat = self.get_modelview_matrix()
-        viewport = self.get_viewport()
-        point = gluUnProject(x, y, z, mvmat, pmat, viewport)
-        return point
-
-    def _mouse_to_ray(self, x, y, local_transform=False):
-        x = float(x)
-        y = self._height - float(y)
-        pmat = self.get_projection_matrix()
-        mvmat = self.get_modelview_matrix()
-        viewport = self.get_viewport()
-        ray_far = gluUnProject(x, y, 1, mvmat, pmat, viewport)
-        ray_near = gluUnProject(x, y, 0, mvmat, pmat, viewport)
-        return ray_near, ray_far
-
-    def _mouse_to_plane(self, x, y, plane_normal, plane_offset, local_transform=False):
-        ray_near, ray_far = self.mouse_to_ray(x, y, local_transform)
-        ray_near = np.array(ray_near)
-        ray_far = np.array(ray_far)
-        ray_dir = ray_far - ray_near
-        ray_dir = ray_dir / np.linalg.norm(ray_dir)
-        plane_normal = np.array(plane_normal)
-        q = ray_dir.dot(plane_normal)
-        if q == 0:
-            return None
-        t = - (ray_near.dot(plane_normal) + plane_offset) / q
-        if t < 0:
-            return None
-        return ray_near + t * ray_dir
 
     # -------------------
     # Misc util functions
