@@ -18,10 +18,10 @@ class MyPopupMenu(wx.Menu):
         self.Append(cmi)
         self.Bind(wx.EVT_MENU, self.close, cmi)
 
-    def minimize(self, e):
+    def minimize(self, event):
         self.parent.Iconize()
 
-    def close(self, e):
+    def close(self, event):
         self.parent.Close()
 
 
@@ -55,12 +55,12 @@ class MainFrame(wx.Frame):
         #self.Bind(wx.EVT_CLOSE, self.quit)
 
 
-    def quit(self, e):
+    def quit(self, event):
         self._mgr.UnInit()
         self.Close()
 
-    def rightClick(self, e):
-        self.PopupMenu(MyPopupMenu(self), e.GetPosition())
+    def rightClick(self, event):
+        self.PopupMenu(MyPopupMenu(self), event.GetPosition())
 
     def initEDSDK(self):
         if self.is_edsdk_on:
@@ -90,19 +90,19 @@ class MainFrame(wx.Frame):
         self.console_panel.print(message)
 
         for i in range(cam_count):
-            cam_id = self.visualizer_panel.add_camera(i)
-            self.controller_panel.masterCombo.Append("camera " + cam_id)
+            camid = self.visualizer_panel.add_camera(camid=i)
+            self.controller_panel.masterCombo.Append("camera " + camid)
 
     def get_selected_camera(self):
         if self.selected_cam:
             return self.selected_cam
         return None
-    
+
     def set_selected_camera(self, id):
         # Check if selection is the same as previous selection
         new_selected = self.visualizer_panel.get_camera_by_id(id)
         last_selected = self.get_selected_camera()
-        
+
         if new_selected == last_selected:
             return 0
 

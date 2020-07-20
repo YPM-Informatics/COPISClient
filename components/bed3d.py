@@ -8,12 +8,14 @@ from OpenGL.GLU import *
 
 
 class _Axes():
-    arrow_base_radius = 5.0
-    arrow_length = 2.5 * arrow_base_radius
+
     origin = (0.0, 0.0, 0.0)
 
     def __init__(self, build_dimensions):
         self._build_dimensions = build_dimensions
+        dist = 0.5 * (build_dimensions[1] + max(build_dimensions[0], build_dimensions[2]))
+        self._arrow_base_radius = dist / 75.0
+        self._arrow_length = 2.5 * self._arrow_base_radius
         self._quadric = gluNewQuadric()
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
@@ -66,12 +68,16 @@ class _Axes():
         self._render_arrow(z[0])
         glPopMatrix()
 
+        # origin sphere
+        glColor3f(0.0, 0.0, 0.0)
+        gluSphere(self._quadric, self._arrow_base_radius, 32, 32)
+
     def _render_arrow(self, length):
         glTranslated(0.0, 0.0, length)
         gluQuadricOrientation(self._quadric, GLU_OUTSIDE)
-        gluCylinder(self._quadric, self.arrow_base_radius, 0.0, self.arrow_length, 32, 1)
+        gluCylinder(self._quadric, self._arrow_base_radius, 0.0, self._arrow_length, 32, 1)
         gluQuadricOrientation(self._quadric, GLU_INSIDE)
-        gluDisk(self._quadric, 0.0, self.arrow_base_radius, 32, 1)
+        gluDisk(self._quadric, 0.0, self._arrow_base_radius, 32, 1)
 
     def __delete__(self, _):
         if not self._quadric:
