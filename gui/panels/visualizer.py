@@ -54,8 +54,8 @@ class VisualizerPanel(wx.Panel):
     def get_camera_objects(self):
         return self.canvas.get_camera_objects()
 
-    def add_camera(self, id=-1):
-        return self.canvas.add_camera(id)
+    def add_camera(self, camid=-1):
+        return self.canvas.add_camera(camid)
 
-    def get_camera_by_id(self, id):
-        return self.canvas.get_camera_by_id(id)
+    def get_camera_by_id(self, camid):
+        return self.canvas.get_camera_by_id(camid)
