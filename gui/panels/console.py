@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
+
 import wx
+
 
 class ConsolePanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
@@ -16,8 +19,8 @@ class ConsolePanel(wx.Panel):
         self.SetSizerAndFit(vbox)
 
     def onPublishCmd(self, event):
-        self.console.AppendText(">>" + event.String + "\n")
-        self.writer.SetValue("")
+        self.console.AppendText('>>' + event.String + '\n')
+        self.writer.SetValue('')
 
     def print(self, msg):
-        self.console.AppendText(msg + "\n")
+        self.console.AppendText(msg + '\n')

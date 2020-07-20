@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
+
+import util
 import wx
 from enums import CamAxis
-from Canon.EDSDKLib import *
-import util
+from utils.Canon.EDSDKLib import *
 
 
 class ControllerPanel(wx.Panel):
-    def __init__(self, parent, aui_manager, *args, **kwargs):
+    def __init__(self, parent, aui, *args, **kwargs):
         super(ControllerPanel, self).__init__(parent, style=wx.BORDER_SUNKEN)
         self.parent = parent
-        self.auiManager = aui_manager
-        self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
+        self.aui = aui
+        self.visualizer_panel = self.aui.GetPane('Visualizer').window
         self.init_panel()
 
     def init_panel(self):
@@ -191,9 +192,7 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border = 25)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
-
         return vboxPositioning
-
 
     def InitCamControl(self):
         # LAYOUT
@@ -277,7 +276,7 @@ class ControllerPanel(wx.Panel):
             direction = event.GetEventObject().direction
 
             if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdBox = self.auiManager.GetPane('Command').window.cmd
+                cmdBox = self.aui.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
 
 
@@ -343,7 +342,7 @@ class ControllerPanel(wx.Panel):
     def onStartEvf(self, event):
         if self.parent.cam_list.selected_camera is not None:
             self.parent.cam_list.selected_camera.startEvf()
-            self.auiManager.addEvfPane()
+            self.aui.addEvfPane()
         else:
             util.set_dialog('Please select the camera to start live view.')
 

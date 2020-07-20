@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import wx
 
 
@@ -54,19 +56,19 @@ class CommandPanel(wx.Panel):
 
     def OnAddCommand(self, event):
         cmd = self.cmdWriter.GetValue()
-        if cmd != "":
+        if cmd != '':
             self.cmd.Append(cmd)
-            self.cmdWriter.SetValue("")
+            self.cmdWriter.SetValue('')
 
     def OnMoveCommand(self, event):
         selected = self.cmd.GetStringSelection()
 
-        if selected != "":
+        if selected != '':
             direction = event.GetEventObject().direction
             index = self.cmd.GetSelection()
             self.cmd.Delete(index)
 
-            if direction == "up":
+            if direction == 'up':
                 index -= 1
             else:
                 index += 1
@@ -79,23 +81,21 @@ class CommandPanel(wx.Panel):
         if selected != -1:
             replacement = self.cmdWriter.GetValue()
 
-            if replacement != "":
+            if replacement != '':
                 self.cmd.SetString(selected, replacement)
-                self.cmdWriter.SetValue("")
+                self.cmdWriter.SetValue('')
             else:
-                util.set_dialog("Please type command to replace.")
+                util.set_dialog('Please type command to replace.')
         else:
-            util.set_dialog("Please select the command to replace.")
+            util.set_dialog('Please select the command to replace.')
 
     def OnDeleteCommand(self, event):
         size = event.GetEventObject().size
-        if size == "single":
+        if size == 'single':
             index = self.cmd.GetSelection()
             if index != -1:
                 self.cmd.Delete(index)
             else:
-                util.set_dialog("Please select the command to delete.")
+                util.set_dialog('Please select the command to delete.')
         else:
             self.cmd.Clear()
-
-

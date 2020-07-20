@@ -4,7 +4,6 @@
 import math
 import numpy as np
 from enums import CamAxis, CamMode
-import threading
 
 import wx
 from OpenGL.GL import *
