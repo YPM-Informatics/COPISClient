@@ -2,6 +2,7 @@
 """Visualizer panel. Creates a Canvas3D OpenGL canvas."""
 
 import util
+
 import wx
 from gl.canvas3d import Canvas3D
 
@@ -15,7 +16,8 @@ class VisualizerPanel(wx.Panel):
         self.parent = parent
         self.canvas = Canvas3D(
             self,
-            build_dimensions=[400, 400, 400, 200, 200, 200],
+            # build_dimensions=[400, 400, 400, 200, 200, 200],
+            build_dimensions=[4, 4, 4, 2, 2, 2],
             axes=True,
             every=100,
             subdivisions=10)

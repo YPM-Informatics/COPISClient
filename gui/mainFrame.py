@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import wx
 from ctypes import *
-from panels.auiManager import AuiManager
-from components.toolBar import ToolBarPanel
-from components.menuBar import MenuBar
-from components.statusBar import StatusBar
+
+from gui.auiManager import AuiManager
+from gui.components.menubar import MenuBar
+from gui.components.statusbar import StatusBar
+
 
 class MyPopupMenu(wx.Menu):
     def __init__(self, parent, *args, **kwargs):
@@ -45,15 +48,13 @@ class MainFrame(wx.Frame):
 
         ## initialize advanced user interface manager and panes
         self.auiManager = AuiManager(self)
-        self.toolbar_panel = self.auiManager.GetPane("ToolBar").window
-        self.console_panel = self.auiManager.GetPane("Console").window
+        self.toolbar_panel = self.auiManager.GetPane('ToolBar').window
+        self.console_panel = self.auiManager.GetPane('Console').window
         self.visualizer_panel = self.auiManager.GetPane('Visualizer').window
         self.controller_panel = self.auiManager.GetPane('Controller').window
 
-
         self.Centre()
         #self.Bind(wx.EVT_CLOSE, self.quit)
-
 
     def quit(self, event):
         self._mgr.UnInit()
@@ -66,7 +67,7 @@ class MainFrame(wx.Frame):
         if self.is_edsdk_on:
             return
 
-        import controller.edsdkObject
+        import utils.edsdkObject
 
         self.edsdkObject = controller.edsdkObject
         self.edsdkObject.initialize(self.console_panel)
@@ -79,28 +80,28 @@ class MainFrame(wx.Frame):
 
         message = str(cam_count)
         if cam_count == 0:
-            message = "There is no camera "
+            message = 'There is no camera '
 
         elif cam_count == 1:
-            message += " camera is "
+            message += ' camera is '
         else:
-            message += " cameras are "
-        message += "connected."
+            message += ' cameras are '
+        message += 'connected.'
 
         self.console_panel.print(message)
 
         for i in range(cam_count):
             camid = self.visualizer_panel.add_camera(camid=i)
-            self.controller_panel.masterCombo.Append("camera " + camid)
+            self.controller_panel.masterCombo.Append('camera ' + camid)
 
     def get_selected_camera(self):
         if self.selected_cam:
             return self.selected_cam
         return None
 
-    def set_selected_camera(self, id):
+    def set_selected_camera(self, camid):
         # Check if selection is the same as previous selection
-        new_selected = self.visualizer_panel.get_camera_by_id(id)
+        new_selected = self.visualizer_panel.get_camera_by_id(camid)
         last_selected = self.get_selected_camera()
 
         if new_selected == last_selected:
@@ -116,14 +117,14 @@ class MainFrame(wx.Frame):
 
         # connect to physical camera
         if self.cam_list:
-            if self.cam_list[id]:
-                self.parent.cam_list.set_selected_cam_by_id(id)
+            if self.cam_list[camid]:
+                self.parent.cam_list.set_selected_cam_by_id(camid)
 
         # refresh canvas
         self.visualizer_panel.set_dirty()
 
         # refresh combobox
-        self.controller_panel.masterCombo.SetSelection(id)
+        self.controller_panel.masterCombo.SetSelection(camid)
 
     def terminateEDSDK(self):
         if not self.is_edsdk_on:
