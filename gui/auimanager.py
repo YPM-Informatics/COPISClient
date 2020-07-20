@@ -32,12 +32,12 @@ class AuiManager(aui.AuiManager):
 
     def addControllerPane(self):
         control_panel = ControllerPanel(self.GetManagedWindow(), self)
-        pane_info = aui.AuiPaneInfo().Name('Controller').Caption('Controller').MinSize(wx.Size(600, 500)).Left().Resizable(True).Layer(1).Position(0)
+        pane_info = aui.AuiPaneInfo().Name('Controller').Caption('Controller').MinSize(wx.Size(500, 500)).Left().Resizable(True).Layer(1).Position(0)
         self.AddPane(control_panel, pane_info)
 
     def addVisualizerPane(self):
         visual_panel = VisualizerPanel(self.GetManagedWindow())
-        pane_info =  aui.AuiPaneInfo().Name('Visualizer').Caption('Visualizer').MinSize(wx.Size(400, 500)).Center().Resizable(True).MaximizeButton(True).Layer(1).Position(0)
+        pane_info =  aui.AuiPaneInfo().Name('Visualizer').Caption('Visualizer').MinSize(wx.Size(500, 500)).Center().Resizable(True).MaximizeButton(True).Layer(1).Position(0)
         self.AddPane(visual_panel, pane_info)
 
     def addCommandPane(self):
