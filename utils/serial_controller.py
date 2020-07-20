@@ -1,5 +1,8 @@
+#!/usr/bin/env python3
+
 import serial
 from serial.tools import list_ports
+
 
 class SerialController(object):
     def __init__(self):
@@ -24,4 +27,3 @@ class SerialController(object):
         self.selected_serial = serial.Serial(port)
         self.selected_serial.close()
         self.bauds = self.getBaudRates()
-
