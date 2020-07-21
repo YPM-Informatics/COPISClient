@@ -49,12 +49,12 @@ class PreferenceFrame(wx.Frame):
         height_label =  wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         height_box.Add(height_label)
         self.height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
-        height_box.Add(self.height_sc)
+        height_box.Add(self.height_sc, 1, flag = wx.LEFT, border=1)
 
         dims_box.Add(width_box)
         dims_box.Add(length_box)
         dims_box.Add(height_box)
-        bs_sub_box.Add(dims_box)
+        bs_sub_box.Add(dims_box, 1, flag = wx.LEFT, border=15)
 
         # Origin Box
         origin_box = wx.BoxSizer(wx.VERTICAL)
@@ -71,7 +71,7 @@ class PreferenceFrame(wx.Frame):
         y_label = wx.StaticText(self.panel, wx.ID_ANY, label='Y: ')
         y_box.Add(y_label)
         self.y_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
-        y_box.Add(self.y_sc)
+        y_box.Add(self.y_sc, 1, flag = wx.LEFT, border=1)
 
         z_box = wx.BoxSizer()
         z_label = wx.StaticText(self.panel, wx.ID_ANY, label='X: ')
@@ -82,7 +82,7 @@ class PreferenceFrame(wx.Frame):
         origin_box.Add(x_box)
         origin_box.Add(y_box)
         origin_box.Add(z_box)
-        bs_sub_box.Add(origin_box)
+        bs_sub_box.Add(origin_box, 1, flag = wx.LEFT, border=50)
 
 
 
