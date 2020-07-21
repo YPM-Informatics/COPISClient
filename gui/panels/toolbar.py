@@ -10,7 +10,7 @@ from utils.serial_controller import SerialController
 
 class ToolBarPanel(wx.Panel):
     def __init__(self, parent):
-        super(ToolBarPanel, self).__init__(parent, style=wx.BORDER_SUNKEN)
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
         hbox = wx.BoxSizer()
         self.toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
         hbox.Add(self.toolbar, 1, flag=wx.EXPAND)
@@ -59,15 +59,15 @@ class ToolBarPanel(wx.Panel):
     def initAnimationButtons(self):
         # TODO: 3D simulation functionalities -- play, pause and stop
         playImg = wx.Image('img/play.png')
-        playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
+        playImg = playImg.Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
         self.toolbar.AddTool(ToolIds.PLAY.value, 'Play', wx.Bitmap(playImg), shortHelp='Play the simulation of commands.')
 
         pauseImg = wx.Image('img/pause.png')
-        pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
+        pauseImg = pauseImg.Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
         self.toolbar.AddTool(ToolIds.PAUSE.value, 'Pause', wx.Bitmap(pauseImg), shortHelp='Pause the simulation.')
 
         stopImg = wx.Image('img/stop.png')
-        stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
+        stopImg = stopImg.Scale(32, 32, wx.IMAGE_QUALITY_HIGH)
         self.toolbar.AddTool(ToolIds.STOP.value, 'Stop', wx.Bitmap(stopImg), shortHelp='Stop the simulation.')
 
     def initImport(self):
@@ -81,7 +81,7 @@ class ToolBarPanel(wx.Panel):
 
     def initSetting(self):
         settingImg = wx.Image('img/setting.png')
-        settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
+        settingImg = settingImg.Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
         self.toolbar.AddTool(ToolIds.SETTINGS.value, 'Setting', wx.Bitmap(settingImg), shortHelp='Set general settings of the application.')
 
     def handleTool(self, event):

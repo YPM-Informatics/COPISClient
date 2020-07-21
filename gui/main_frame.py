@@ -38,7 +38,7 @@ class MainFrame(wx.Frame):
         self.edsdk_object = None
 
         # set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(850, 575))
+        self.SetMinSize(wx.Size(800, 575))
 
         # initialize menu bar
         self.SetMenuBar(MenuBar(self))
@@ -47,18 +47,18 @@ class MainFrame(wx.Frame):
         self.SetStatusBar(StatusBar(self))
 
         # initialize advanced user interface manager and panes
-        self.aui = AuiManager(self)
-        self.toolbar_panel = self.aui.GetPane('ToolBar').window
-        self.console_panel = self.aui.GetPane('Console').window
-        self.visualizer_panel = self.aui.GetPane('Visualizer').window
-        self.controller_panel = self.aui.GetPane('Controller').window
+        self._mgr = AuiManager(self)
+        self.toolbar_panel = self._mgr.GetPane('ToolBar').window
+        self.console_panel = self._mgr.GetPane('Console').window
+        self.visualizer_panel = self._mgr.GetPane('Visualizer').window
+        self.controller_panel = self._mgr.GetPane('Controller').window
 
         self.Centre()
-        #self.Bind(wx.EVT_CLOSE, self.quit)
+        self.Bind(wx.EVT_CLOSE, self.quit)
 
     def quit(self, event):
         self._mgr.UnInit()
-        self.Close()
+        self.Destroy()
 
     def rightClick(self, event):
         self.PopupMenu(MyPopupMenu(self), event.GetPosition())
