@@ -84,14 +84,54 @@ class PreferenceFrame(wx.Frame):
         origin_box.Add(z_box)
         bs_sub_box.Add(origin_box, 1, flag = wx.LEFT, border=50)
 
-
-
-
-
-
-        
         build_settings_box.Add(bs_sub_box)
-
         self.vbox1.Add(build_settings_box, 1)
+
+        # Build Prim Box
+        proxy_obj_box = wx.BoxSizer(wx.VERTICAL)
+        proxy_obj_label = wx.StaticText(self.panel, wx.ID_ANY, label='Customize your proxy object', style=wx.ALIGN_LEFT)
+        proxy_obj_label.SetFont(self.font)
+        proxy_obj_box.Add(proxy_obj_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
+
+        # Style
+        proxy_style_box = wx.BoxSizer()
+        proxy_style_label = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
+        proxy_style_box.Add(proxy_style_label)
+        self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
+        proxy_style_box.Add(self.proxy_style_combo)
+        proxy_obj_box.Add(proxy_style_box, 1, flag=wx.LEFT, border=15)
+        # TO DO: Bind Update Event
+
+        # Sphere style options
+        sphere_style_box = wx.BoxSizer()
+        sphere_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
+        sphere_style_box.Add(sphere_radius_label)
+        self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        sphere_style_box.Add(self.sphere_radius_sc)
+        # TO DO: Bind Update Event
+        proxy_obj_box.Add(sphere_style_box, 1, flag=wx.LEFT, border=15)
+
+        # Cylinder style options
+        cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
+
+        cylinder_radius_box = wx.BoxSizer()
+        cylinder_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
+        cylinder_radius_box.Add(cylinder_radius_label)
+        self.cylinder_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        cylinder_radius_box.Add(self.cylinder_radius_sc)
+        # TO DO: Bind Update Event
+
+        cylinder_height_box = wx.BoxSizer()
+        cylinder_height_label = wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
+        cylinder_height_box.Add(cylinder_height_label)
+        self.cylinder_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        cylinder_height_box.Add(self.cylinder_height_sc)
+        # TO DO: Bind Update Event
+
+        cylinder_style_box.Add(cylinder_radius_box)
+        cylinder_style_box.Add(cylinder_height_box)
+        proxy_obj_box.Add(cylinder_style_box, 1, flag=wx.LEFT, border=15)
+
+        self.vbox1.Add(proxy_obj_box, 1)
 
         self.panel.SetSizer(self.vbox1)
