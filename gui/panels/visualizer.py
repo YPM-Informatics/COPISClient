@@ -7,10 +7,9 @@ from gl.canvas3d import Canvas3D
 
 
 class VisualizerPanel(wx.Panel):
-    def __init__(self, parent, id=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=0):
-        style = style | wx.NO_FULL_REPAINT_ON_RESIZE
-        super().__init__(parent, id, pos, size, style)
+    def __init__(self, parent, *args, **kwargs):
+        style = wx.BORDER_DEFAULT | wx.NO_FULL_REPAINT_ON_RESIZE
+        super().__init__(parent, style=style)
 
         self.parent = parent
         self.canvas = Canvas3D(

@@ -5,7 +5,7 @@ import wx
 
 class ConsolePanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
-        super(ConsolePanel, self).__init__(parent)
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.init_ui()
 
     def init_ui(self):

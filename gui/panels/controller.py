@@ -8,7 +8,8 @@ from utils.Canon.EDSDKLib import *
 
 class ControllerPanel(wx.Panel):
     def __init__(self, parent, aui, *args, **kwargs):
-        super(ControllerPanel, self).__init__(parent, style=wx.BORDER_SUNKEN)
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
+
         self.parent = parent
         self.aui = aui
         self.visualizer_panel = self.aui.GetPane('Visualizer').window
