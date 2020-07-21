@@ -69,7 +69,7 @@ class MainFrame(wx.Frame):
 
         import utils.edsdk_object
 
-        self.edsdk_object = controller.edsdk_object
+        self.edsdk_object = utils.edsdk_object
         self.edsdk_object.initialize(self.console_panel)
         self.is_edsdk_on = True
         self.getCameraList()
