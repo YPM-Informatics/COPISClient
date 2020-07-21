@@ -342,7 +342,7 @@ class ControllerPanel(wx.Panel):
     def onStartEvf(self, event):
         if self.parent.cam_list.selected_camera is not None:
             self.parent.cam_list.selected_camera.startEvf()
-            self.aui.addEvfPane()
+            self.aui.add_evf_pane()
         else:
             util.set_dialog('Please select the camera to start live view.')
 
