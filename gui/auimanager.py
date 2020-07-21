@@ -21,47 +21,50 @@ class AuiManager(aui.AuiManager):
         # AuiManager follows the rules specified in AuiPaneInfo for each pane
         super(AuiManager, self).__init__(managed_window=managed_window)
 
-        self.addToolBarPane()
-        self.addConsolePane()
-        self.addCommandPane()
-        self.addVisualizerPane()
-        self.addControllerPane()
+        self.add_visualizer_panel()
+        self.add_console_panel()
+        self.add_command_panel()
+        self.add_toolbar_pane()
+        self.add_controller_panel()
 
-        self.Bind(aui.EVT_AUI_PANE_CLOSE, self.onPaneClose)
+        self.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Update()
 
-    def addControllerPane(self):
-        control_panel = ControllerPanel(self.GetManagedWindow(), self)
-        pane_info = aui.AuiPaneInfo().Name('Controller').Caption('Controller').MinSize(wx.Size(500, 500)).Left().Resizable(True).Layer(1).Position(0)
-        self.AddPane(control_panel, pane_info)
-
-    def addVisualizerPane(self):
+    def add_visualizer_panel(self):
         visual_panel = VisualizerPanel(self.GetManagedWindow())
-        pane_info =  aui.AuiPaneInfo().Name('Visualizer').Caption('Visualizer').MinSize(wx.Size(500, 500)).Center().Resizable(True).MaximizeButton(True).Layer(1).Position(0)
+        pane_info = aui.AuiPaneInfo().Name('Visualizer').Caption('Visualizer').MinSize(300, 400).MaximizeButton(True).Resizable(True).Center().Layer(0).Position(0)
         self.AddPane(visual_panel, pane_info)
 
-    def addCommandPane(self):
+    def add_console_panel(self):
+        console_panel = ConsolePanel(self.GetManagedWindow())
+        pane_info = aui.AuiPaneInfo().Name('Console').Caption('Console').MinSize(200, 185).Resizable(True).Bottom().Layer(0).Position(0)
+        # pane_info = aui.AuiPaneInfo().Name('Console').Caption('Console').Resizable(True).Bottom().Layer(0).Position(0)
+        self.AddPane(console_panel, pane_info)
+
+    def add_command_panel(self):
         command_panel = CommandPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('Command').Caption('Command').MinSize(wx.Size(300, 210)).Bottom().Resizable(True).Layer(1).Position(1)
+        pane_info = aui.AuiPaneInfo().Name('Command').Caption('Command').MinSize(200, 185).Resizable(True).Bottom().Layer(0).Position(0)
+        # pane_info = aui.AuiPaneInfo().Name('Command').Caption('Command').Resizable(True).Bottom().Layer(0).Position(0)
         self.AddPane(command_panel, pane_info)
 
-    def addEvfPane(self):
+    def add_toolbar_pane(self):
+        toolbar_panel = ToolBarPanel(self.GetManagedWindow())
+        # pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').CaptionVisible(False).Movable(False).Floatable(False).DestroyOnClose(False).Top().Layer(1).Position(0)
+        pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DestroyOnClose(False).Top().Layer(1).Position(0)
+        self.AddPane(toolbar_panel, pane_info)
+
+    def add_controller_panel(self):
+        control_panel = ControllerPanel(self.GetManagedWindow(), self)
+        pane_info = aui.AuiPaneInfo().Name('Controller').Caption('Controller').MinSize(360, 420).Resizable(True).Left().Layer(1).Position(0)
+        self.AddPane(control_panel, pane_info)
+
+    def add_evf_pane(self):
         evf_panel = EvfPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('Evf').Caption('Live View').Right().MinSize(wx.Size(600, 420)).DestroyOnClose(True).MaximizeButton(True).Layer(1).Position(1)
+        pane_info = aui.AuiPaneInfo().Name('Evf').Caption('Live View').MinSize(600, 420).DestroyOnClose(True).MaximizeButton(True).Right().Layer(0).Position(1)
         self.AddPane(evf_panel, pane_info)
         self.Update()
 
-    def addConsolePane(self):
-        console_panel = ConsolePanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('Console').Caption('Console').Bottom().MinSize(wx.Size(600, 210)).Resizable(True).Layer(1).Position(0)
-        self.AddPane(console_panel, pane_info)
-
-    def addToolBarPane(self):
-        toolbar_panel = ToolBarPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').Top().Resizable(True).Layer(1).Position(0).Movable(False).DestroyOnClose(False)
-        self.AddPane(toolbar_panel, pane_info)
-
-    def onPaneClose(self, event):
+    def on_pane_close(self, event):
         pane = event.GetPane()
         if pane.name == 'Evf':
             pane.window.timer.Stop()

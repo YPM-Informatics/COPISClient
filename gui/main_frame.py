@@ -37,16 +37,16 @@ class MainFrame(wx.Frame):
         self.is_edsdk_on = False
         self.edsdk_object = None
 
-        ## set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(1000, 900))
+        # set minimum size to show whole interface properly
+        self.SetMinSize(wx.Size(850, 575))
 
-        ## initialize menu bar
+        # initialize menu bar
         self.SetMenuBar(MenuBar(self))
 
-        ## initialize status bar
+        # initialize status bar
         self.SetStatusBar(StatusBar(self))
 
-        ## initialize advanced user interface manager and panes
+        # initialize advanced user interface manager and panes
         self.aui = AuiManager(self)
         self.toolbar_panel = self.aui.GetPane('ToolBar').window
         self.console_panel = self.aui.GetPane('Console').window
