@@ -94,25 +94,25 @@ class PreferenceFrame(wx.Frame):
         proxy_obj_box.Add(proxy_obj_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
         # Style
-        proxy_style_box = wx.BoxSizer()
+        self.proxy_style_box = wx.BoxSizer()
         proxy_style_label = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
-        proxy_style_box.Add(proxy_style_label)
+        self.proxy_style_box.Add(proxy_style_label)
         self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
-        proxy_style_box.Add(self.proxy_style_combo)
-        proxy_obj_box.Add(proxy_style_box, 1, flag=wx.LEFT, border=15)
-        # TO DO: Bind Update Event
+        self.proxy_style_box.Add(self.proxy_style_combo)
+        proxy_obj_box.Add(self.proxy_style_box, 1, flag=wx.LEFT, border=15)
+        self.Bind(wx.EVT_COMBOBOX, self.onStyleCombo)
 
         # Sphere style options
-        sphere_style_box = wx.BoxSizer()
+        self.sphere_style_box = wx.BoxSizer()
         sphere_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
-        sphere_style_box.Add(sphere_radius_label)
+        self.sphere_style_box.Add(sphere_radius_label)
         self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
-        sphere_style_box.Add(self.sphere_radius_sc)
+        self.sphere_style_box.Add(self.sphere_radius_sc)
         # TO DO: Bind Update Event
-        proxy_obj_box.Add(sphere_style_box, 1, flag=wx.LEFT, border=15)
+        self.proxy_style_box.Add(self.sphere_style_box)
 
         # Cylinder style options
-        cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
+        self.cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
 
         cylinder_radius_box = wx.BoxSizer()
         cylinder_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
@@ -128,10 +128,59 @@ class PreferenceFrame(wx.Frame):
         cylinder_height_box.Add(self.cylinder_height_sc)
         # TO DO: Bind Update Event
 
-        cylinder_style_box.Add(cylinder_radius_box)
-        cylinder_style_box.Add(cylinder_height_box)
-        proxy_obj_box.Add(cylinder_style_box, 1, flag=wx.LEFT, border=15)
+        self.cylinder_style_box.Add(cylinder_radius_box)
+        self.cylinder_style_box.Add(cylinder_height_box)
+
+        self.proxy_style_box.Add(self.cylinder_style_box)
+        self.proxy_style_box.Hide(self.cylinder_style_box)
+
+        # Cube style options
+        self.cube_style_box = wx.BoxSizer(wx.VERTICAL)
+
+        cube_width_box = wx.BoxSizer()
+        cube_width_label = wx.StaticText(self.panel, wx.ID_ANY, label='Width: ')
+        cube_width_box.Add(cube_width_label)
+        self.cube_width_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        cube_width_box.Add(self.cube_width_sc, 1, flag = wx.LEFT, border=6)
+
+        cube_length_box = wx.BoxSizer()
+        cube_length_label = wx.StaticText(self.panel, wx.ID_ANY, label='Length: ')
+        cube_length_box.Add(cube_length_label)
+        self.cube_length_sc= wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        cube_length_box.Add(self.cube_length_sc)
+
+        cube_height_box = wx.BoxSizer()
+        cube_height_label =  wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
+        cube_height_box.Add(cube_height_label)
+        self.cube_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        cube_height_box.Add(self.cube_height_sc, 1, flag = wx.LEFT, border=1)
+
+        self.cube_style_box.Add(cube_width_box)
+        self.cube_style_box.Add(cube_length_box)
+        self.cube_style_box.Add(cube_height_box)
+
+        self.proxy_style_box.Add(self.cube_style_box)
+        self.proxy_style_box.Hide(self.cube_style_box)
 
         self.vbox1.Add(proxy_obj_box, 1)
 
         self.panel.SetSizer(self.vbox1)
+
+    def onStyleCombo(self, event):
+        choice = self.proxy_style_combo.GetStringSelection()
+
+        if choice == 'Sphere':
+            self.proxy_style_box.Hide(self.cylinder_style_box)
+            self.proxy_style_box.Hide(self.cube_style_box)
+            self.proxy_style_box.Show(self.sphere_style_box)
+            self.vbox1.Layout()
+        elif choice == 'Cylinder':
+            self.proxy_style_box.Hide(self.cube_style_box)
+            self.proxy_style_box.Hide(self.sphere_style_box)
+            self.proxy_style_box.Show(self.cylinder_style_box)
+            self.vbox1.Layout()
+        elif choice == 'Cube':
+            self.proxy_style_box.Hide(self.sphere_style_box)
+            self.proxy_style_box.Hide(self.cylinder_style_box)      
+            self.proxy_style_box.Show(self.cube_style_box)  
+            self.vbox1.Layout()  
