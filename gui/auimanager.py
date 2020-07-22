@@ -27,21 +27,20 @@ class AuiManager(aui.AuiManager):
             aui.AUI_MGR_HINT_FADE |
             aui.AUI_MGR_LIVE_RESIZE)
 
-        # self.SetFlags()
+        self.init_dockart()
 
         self.add_visualizer_panel()
         self.add_console_panel()
         self.add_command_panel()
         self.add_toolbar_panel()
         self.add_controller_panel()
-        self.add_dockart()
 
         # self.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Update()
 
-    def add_dockart(self):
+    def init_dockart(self):
         dockart = aui.AuiDefaultDockArt()
-        dockart.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 4)
+        dockart.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 2)
         dockart.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, 18)
         dockart.SetMetric(aui.AUI_DOCKART_PANE_BORDER_SIZE, 1)
         dockart.SetMetric(aui.AUI_DOCKART_PANE_BUTTON_SIZE, 16)
@@ -49,9 +48,7 @@ class AuiManager(aui.AuiManager):
         dockart.SetColour(aui.AUI_DOCKART_INACTIVE_CAPTION_COLOUR, wx.Colour(210, 210, 210))
         dockart.SetColour(aui.AUI_DOCKART_BORDER_COLOUR, wx.Colour(140, 140, 140))
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
-        dockart.SetMetric(aui.AUI_DOCKART_DRAW_SASH_GRIP, 0)
         self.SetArtProvider(dockart)
-
 
     def add_visualizer_panel(self):
         visual_panel = VisualizerPanel(self.GetManagedWindow())
@@ -70,7 +67,8 @@ class AuiManager(aui.AuiManager):
 
     def add_toolbar_panel(self):
         toolbar_panel = ToolBarPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DockFixed(True).Gripper(False).PaneBorder(False).DestroyOnClose(False).Top().Layer(1).Position(0)
+        pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DockFixed(True).Gripper(False).PaneBorder(False).DestroyOnClose(False).Top()
+        # pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DestroyOnClose(False).Bottom()
         self.AddPane(toolbar_panel, pane_info)
 
     def add_controller_panel(self):
