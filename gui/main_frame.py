@@ -5,27 +5,29 @@ from ctypes import *
 
 from gui.auimanager import AuiManager
 from gui.pathgen_frame import *
-from gui.config_frame import *
+from gui.preferences import *
+from gui.about import *
 
 
-class MyPopupMenu(wx.Menu):
-    def __init__(self, parent, *args, **kwargs):
-        super(MyPopupMenu, self).__init__()
-        self.parent = parent
+# TODO: figure out what this is supposed to do
+# class MyPopupMenu(wx.Menu):
+#     def __init__(self, parent, *args, **kwargs):
+#         super(MyPopupMenu, self).__init__()
+#         self.parent = parent
 
-        mmi = wx.MenuItem(self, wx.NewId(), 'Minimize')
-        self.Append(mmi)
-        self.Bind(wx.EVT_MENU, self.minimize, mmi)
+#         mmi = wx.MenuItem(self, wx.NewId(), 'Minimize')
+#         self.Append(mmi)
+#         self.Bind(wx.EVT_MENU, self.minimize, mmi)
 
-        cmi = wx.MenuItem(self, wx.NewId(), 'Close')
-        self.Append(cmi)
-        self.Bind(wx.EVT_MENU, self.close, cmi)
+#         cmi = wx.MenuItem(self, wx.NewId(), 'Close')
+#         self.Append(cmi)
+#         self.Bind(wx.EVT_MENU, self.close, cmi)
 
-    def minimize(self, event):
-        self.parent.Iconize()
+#     def minimize(self, event):
+#         self.parent.Iconize()
 
-    def close(self, event):
-        self.parent.Close()
+#     def close(self, event):
+#         self.parent.Close()
 
 
 class MainFrame(wx.Frame):
@@ -34,7 +36,7 @@ class MainFrame(wx.Frame):
 
         self.menubar = None
 
-        self.preferences_frame = None
+        self.preference_frame = None
         self.pathgen_frame = None
 
         self.cam_list = []
@@ -49,7 +51,7 @@ class MainFrame(wx.Frame):
         self.init_statusbar()
         self.init_menubar()
 
-        # initialize advanced user interface manager and panes
+        # initialize aui manager and panes
         self._mgr = AuiManager(self)
         self.toolbar_panel = self._mgr.GetPane('ToolBar').window
         self.console_panel = self._mgr.GetPane('Console').window
@@ -83,13 +85,13 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Import GCODE...', ''))
         self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Generate GCODE\tF8', ''))
         file_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, 'E&xit\tAlt+F4', ''))
+        self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(wx.ID_EXIT, 'E&xit\tAlt+F4', 'Close the program'))
 
         # Edit menu
         edit_menu = wx.Menu()
         self.Bind(wx.EVT_MENU, None, edit_menu.Append(wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts'))
         edit_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, self.open_preferences_frame, edit_menu.Append(wx.ID_ANY, '&Preferences', 'Open preferences'))
+        self.Bind(wx.EVT_MENU, self.open_preferences_dialog, edit_menu.Append(wx.ID_ANY, '&Preferences', 'Open preferences'))
 
         # View menu
         view_menu = wx.Menu()
@@ -104,19 +106,19 @@ class MainFrame(wx.Frame):
         # Window menu
         window_menu = wx.Menu()
         self.cameraevf_item = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Toggle visibility of camera EVF window', wx.ITEM_CHECK)
-        self.command_item = window_menu.Append(wx.ID_ANY, 'Command', 'Toggle visibility of command window', wx.ITEM_CHECK)
-        self.console_item = window_menu.Append(wx.ID_ANY, 'Console', 'Toggle visibility of console window', wx.ITEM_CHECK)
-        self.controller_item = window_menu.Append(wx.ID_ANY, 'Controller', 'Toggle visibility of controller window', wx.ITEM_CHECK)
-        self.visualizer_item = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Toggle visibility of visualizer window', wx.ITEM_CHECK)
         window_menu.Check(self.cameraevf_item.GetId(), False)
-        window_menu.Check(self.command_item.GetId(), True)
-        window_menu.Check(self.console_item.GetId(), True)
-        window_menu.Check(self.controller_item.GetId(), True)
-        window_menu.Check(self.visualizer_item.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_cameraevf_panel, self.cameraevf_item)
+        self.command_item = window_menu.Append(wx.ID_ANY, 'Command', 'Toggle visibility of command window', wx.ITEM_CHECK)
+        window_menu.Check(self.command_item.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_command_panel, self.command_item)
+        self.console_item = window_menu.Append(wx.ID_ANY, 'Console', 'Toggle visibility of console window', wx.ITEM_CHECK)
+        window_menu.Check(self.console_item.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.console_item)
+        self.controller_item = window_menu.Append(wx.ID_ANY, 'Controller', 'Toggle visibility of controller window', wx.ITEM_CHECK)
+        window_menu.Check(self.controller_item.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_controller_panel, self.controller_item)
+        self.visualizer_item = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Toggle visibility of visualizer window', wx.ITEM_CHECK)
+        window_menu.Check(self.visualizer_item.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.visualizer_item)
         window_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, None, window_menu.Append(wx.ID_ANY, 'Window Preferences...', 'Open window preferences', wx.ITEM_NORMAL))
@@ -126,7 +128,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, None, help_menu.Append(wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu', wx.ITEM_NORMAL))
         help_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', 'Open www.copis3d.org', wx.ITEM_NORMAL))
-        self.Bind(wx.EVT_MENU, None, help_menu.Append(wx.ID_ANY, '&About COPIS...', 'Show about dialog', wx.ITEM_NORMAL))
+        self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(wx.ID_ANY, '&About COPIS...', 'Show about dialog', wx.ITEM_NORMAL))
 
         self.menubar.Append(file_menu, '&File')
         self.menubar.Append(edit_menu, '&Edit')
@@ -140,9 +142,9 @@ class MainFrame(wx.Frame):
     def update_menubar(self):
         pass
 
-    def open_preferences_frame(self, event):
-        self.preferences_frame = ConfigPreferenceFrame()
-        self.preferences_frame.Show()
+    def open_preferences_dialog(self, event):
+        preferences_dialog = PreferenceDialog(self)
+        preferences_dialog.Show()
 
     def update_statusbar(self, event):
         if self.statusbar_item.IsChecked():
@@ -152,8 +154,8 @@ class MainFrame(wx.Frame):
                 self.GetStatusBar().Destroy()
 
     def open_pathgen_frame(self, event):
-        self.pathgen_frame = PathGeneratorFrame()
-        self.pathgen_frame.Show()
+        pathgen_frame = PathGeneratorFrame(self)
+        pathgen_frame.Show()
 
     def update_cameraevf_panel(self, event):
         pass
@@ -173,10 +175,15 @@ class MainFrame(wx.Frame):
     def open_copis_website(self, event):
         wx.LaunchDefaultBrowser('http://www.copis3d.org/')
 
+    def open_about_dialog(self, event):
+        about = AboutDialog(self)
+        about.Show()
+
     def quit(self, event):
         self._mgr.UnInit()
         self.Destroy()
 
+    # TODO: figure out what this method does
     def rightClick(self, event):
         self.PopupMenu(MyPopupMenu(self), event.GetPosition())
 
@@ -252,6 +259,9 @@ class MainFrame(wx.Frame):
         if self.cam_list:
             self.cam_list.terminate()
             self.cam_list = []
+
+    def on_exit(self, event):
+        self.Close()
 
     def __del__(self):
         pass
