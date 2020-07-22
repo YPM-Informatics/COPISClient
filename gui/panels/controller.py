@@ -155,7 +155,7 @@ class ControllerPanel(wx.Panel):
         hboxXyzbc.Add(vboxXyz)
 
         vboxBc = wx.BoxSizer(wx.VERTICAL)
-        bcLabel = wx.StaticText(self, wx.ID_ANY, label='BC Step  Size', style=wx.ALIGN_LEFT)
+        bcLabel = wx.StaticText(self, wx.ID_ANY, label='BC Step Size', style=wx.ALIGN_LEFT)
         vboxBc.Add(bcLabel, 1, flag=wx.BOTTOM, border=10)
 
         hboxBcSize = wx.BoxSizer()
