@@ -3,10 +3,9 @@
 import wx
 # from wx.lib.pubsub import Publisher
 
-
 class PreferenceFrame(wx.Frame):
     def __init__(self, main_frame=None):
-        wx.Frame.__init__(self, None, wx.ID_ANY, 'Preferences')
+        wx.Frame.__init__(self, None, wx.ID_ANY, 'Preferences', size=(300, 450))
         self.main_frame = main_frame
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
@@ -22,13 +21,13 @@ class PreferenceFrame(wx.Frame):
 
         # Build settings box
         build_settings_box = wx.BoxSizer(wx.VERTICAL)
-        build_settings_label = wx.StaticText(self.panel, wx.ID_ANY, label='Customize your build settings', style=wx.ALIGN_LEFT)
+        build_settings_label = wx.StaticText(self.panel, wx.ID_ANY, label='Build Settings', style=wx.ALIGN_LEFT)
         build_settings_label.SetFont(self.font)
         build_settings_box.Add(build_settings_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
         bs_sub_box = wx.BoxSizer()
 
-        # Dimensions Box
+        # Build Settings/Dimensions Box
         dims_box = wx.BoxSizer(wx.VERTICAL)
         dims_label = wx.StaticText(self.panel, wx.ID_ANY, label='Dimensions', style=wx.ALIGN_LEFT)
         dims_box.Add(dims_label, 1, flag = wx.BOTTOM, border=5)
@@ -56,7 +55,7 @@ class PreferenceFrame(wx.Frame):
         dims_box.Add(height_box)
         bs_sub_box.Add(dims_box, 1, flag = wx.LEFT, border=15)
 
-        # Origin Box
+        # Build Settings/Origin Box
         origin_box = wx.BoxSizer(wx.VERTICAL)
         origin_label = wx.StaticText(self.panel, wx.ID_ANY, label='Origin', style=wx.ALIGN_LEFT)
         origin_box.Add(origin_label, 1, flag = wx.BOTTOM, border=5)
@@ -85,24 +84,23 @@ class PreferenceFrame(wx.Frame):
         bs_sub_box.Add(origin_box, 1, flag = wx.LEFT, border=50)
 
         build_settings_box.Add(bs_sub_box)
-        self.vbox1.Add(build_settings_box, 1)
+        self.vbox1.Add(build_settings_box, 1, flag=wx.ALIGN_TOP)
 
-        # Build Prim Box
+        # Proxy Object Box
         proxy_obj_box = wx.BoxSizer(wx.VERTICAL)
-        proxy_obj_label = wx.StaticText(self.panel, wx.ID_ANY, label='Customize your proxy object', style=wx.ALIGN_LEFT)
+        proxy_obj_label = wx.StaticText(self.panel, wx.ID_ANY, label='Proxy Object', style=wx.ALIGN_LEFT)
         proxy_obj_label.SetFont(self.font)
         proxy_obj_box.Add(proxy_obj_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
-        # Style
+        # Proxy Object/Style Box
         self.proxy_style_box = wx.BoxSizer()
         proxy_style_label = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
         self.proxy_style_box.Add(proxy_style_label)
         self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
-        self.proxy_style_box.Add(self.proxy_style_combo)
-        proxy_obj_box.Add(self.proxy_style_box, 1, flag=wx.LEFT, border=15)
+        self.proxy_style_box.Add(self.proxy_style_combo, 1, flag=wx.BOTTOM, border=50)
         self.Bind(wx.EVT_COMBOBOX, self.onStyleCombo)
 
-        # Sphere style options
+        # Style/Sphere style options
         self.sphere_style_box = wx.BoxSizer()
         sphere_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
         self.sphere_style_box.Add(sphere_radius_label)
@@ -111,7 +109,7 @@ class PreferenceFrame(wx.Frame):
         # TO DO: Bind Update Event
         self.proxy_style_box.Add(self.sphere_style_box)
 
-        # Cylinder style options
+        # Style/Cylinder style options
         self.cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
 
         cylinder_radius_box = wx.BoxSizer()
@@ -134,7 +132,7 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(self.cylinder_style_box)
         self.proxy_style_box.Hide(self.cylinder_style_box)
 
-        # Cube style options
+        # Style/Cube style options
         self.cube_style_box = wx.BoxSizer(wx.VERTICAL)
 
         cube_width_box = wx.BoxSizer()
@@ -162,7 +160,35 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(self.cube_style_box)
         self.proxy_style_box.Hide(self.cube_style_box)
 
-        self.vbox1.Add(proxy_obj_box, 1)
+        # Proxy Object/Color box
+        color_box = wx.BoxSizer()
+        color_label = wx.StaticText(self.panel, wx.ID_ANY, label='RGB Color: ')
+        color_box.Add(color_label)
+        self.color_r_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
+        self.color_g_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
+        self.color_b_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
+        color_box.Add(self.color_r_sc)
+        color_box.Add(self.color_g_sc)
+        color_box.Add(self.color_b_sc)
+
+        proxy_obj_box.Add(self.proxy_style_box, 1, flag=wx.LEFT, border=15)
+        proxy_obj_box.Add(color_box, 1, flag=wx.LEFT, border=15)
+        self.vbox1.Add(proxy_obj_box, 1, flag=wx.ALIGN_TOP)
+        
+        # Camera box
+        camera_box = wx.BoxSizer(wx.VERTICAL)
+        camera_label = wx.StaticText(self.panel, wx.ID_ANY, label='Virtual Cameras', style=wx.ALIGN_LEFT)
+        camera_label.SetFont(self.font)
+        camera_box.Add(camera_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
+
+        scale_box = wx.BoxSizer()
+        scale_label = wx.StaticText(self.panel, wx.ID_ANY, label='Scale: ')
+        scale_box.Add(scale_label)
+        self.scale_slider = wx.Slider(self.panel, value=0, minValue=0, maxValue=100)
+        scale_box.Add(self.scale_slider)
+        camera_box.Add(scale_box, 1, flag=wx.LEFT, border=15)
+
+        self.vbox1.Add(camera_box, 1)
 
         self.panel.SetSizer(self.vbox1)
 
