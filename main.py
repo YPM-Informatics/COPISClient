@@ -42,7 +42,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
 
-    if app.frame.is_edsdk_on:
-        app.frame.terminateEDSDK()
+    # if app.frame.is_edsdk_on:
+    #     app.frame.terminateEDSDK()
 
     del app

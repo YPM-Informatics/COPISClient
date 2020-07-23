@@ -39,6 +39,7 @@ class MainFrame(wx.Frame):
         self.selected_cam = None
         self.is_edsdk_on = False
         self.edsdk_object = None
+        self.project_dirty = False
 
         # initialize statusbar and menubar
         self.init_statusbar()
@@ -49,7 +50,7 @@ class MainFrame(wx.Frame):
 
         self.Centre()
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
-        self.Bind(wx.EVT_CLOSE, self.quit)
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
     def init_statusbar(self):
         """Initialize statusbar."""
@@ -62,43 +63,42 @@ class MainFrame(wx.Frame):
     def init_menubar(self):
         """Initialize menubar. Menu tree:
 
-        wxMenuBar
-        ├── &Files
-        │   ├── &New Project            Ctrl+N
-        │   ├── &Open...                Ctrl+O
-        │   ├── ---
-        │   ├── &Save                   Ctrl+S
-        │   ├── &Save As...             Ctrl+Shift+S
-        │   ├── ---
-        │   ├── &Import GCODE...
-        │   ├── &Generate GCODE...      F8
-        │   ├── ---
-        │   └── E&xit                   Alt+F4
-        ├── &Edit
-        │   ├── &Keyboard Shortcuts...
-        │   ├── ---
-        │   └── &Preferences
-        ├── &View
-        │   └── &Status Bar
-        ├── &Tools
-        │   ├── &Generate Path...
-        │   ├── ---
-        │   └── &Preferences
-        ├── &Window
-        │   ├── Camera EVF
-        │   ├── Command
-        │   ├── Console
-        │   ├── Controller
-        │   ├── Paths
-        │   ├── Properties
-        │   ├── Visualizer
-        │   ├── ---
-        │   └── Window &Preferences...
-        └── Help
-            ├── COPIS &Help...          F1
-            ├── ---
-            ├── &Visit COPIS website    Ctrl+F1
-            └── &About COPIS...
+        - &Files
+            - &New Project              Ctrl+N
+            - &Open...                  Ctrl+O
+              ---
+            - &Save                     Ctrl+S
+            - &Save As...               Ctrl+Shift+S
+              ---
+            - &Import GCODE...
+            - &Generate GCODE...        F8
+              ---
+            - E&xit                     Alt+F4
+        - &Edit
+            - &Keyboard Shortcuts...
+              ---
+            - &Preferences
+        - &View
+            - [x] &Status Bar
+        - &Tools
+            - &Generate Path...
+              ---
+            - &Preferences
+        - &Window
+            - [ ] Camera EVF
+            - [x] Command
+            - [x] Console
+            - [x] Controller
+            - [x] Paths
+            - [x] Properties
+            - [x] Visualizer
+              ---
+            - Window &Preferences...
+        - Help
+            - COPIS &Help...            F1
+              ---
+            - &Visit COPIS website      Ctrl+F1
+            - &About COPIS...
         """
         if self.menubar is not None:
             return
@@ -107,11 +107,11 @@ class MainFrame(wx.Frame):
 
         # File menu
         file_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&New Project\tCtrl+N', ''))
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Open...\tCtrl+O', ''))
+        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(wx.ID_ANY, '&New Project\tCtrl+N', ''))
+        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(wx.ID_ANY, '&Open...\tCtrl+O', ''))
         file_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Save\tCtrl+S', ''))
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', ''))
+        self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(wx.ID_ANY, '&Save\tCtrl+S', ''))
+        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', ''))
         file_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Import GCODE...', ''))
         self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Generate GCODE\tF8', ''))
@@ -175,8 +175,78 @@ class MainFrame(wx.Frame):
         self.menubar.Append(help_menu, '&Help')
         self.SetMenuBar(self.menubar)
 
+    def on_new_project(self, event):
+        pass
+
+    def on_open(self, event):
+        if self.project_dirty:
+            if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
+                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+                return
+
+        with wx.FileDialog(self, 'Open Project File', wildcard='XYZ files (*.xyz)|*.xyz',
+                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return     # the user changed their mind
+
+            # Proceed loading the file chosen by the user
+            path = fileDialog.GetPath()
+            try:
+                with open(path, 'r') as file:
+                    self.do_load_project(file)
+            except IOError:
+                wx.LogError("Could not open file '%s'." % path)
+
+    def on_save(self, event):
+        pass
+
+    def on_save_as(self, event):
+        with wx.FileDialog(self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            # save the current contents in the file
+            path = file_dialog.GetPath()
+            try:
+                with open(path, 'w') as file:
+                    self.do_save_project(file)
+            except IOError:
+                wx.LogError("Could not save in file '%s'." % path)
+
+    def do_save_project(self, file):
+        self.project_dirty = False
+        print(file)
+
+    def do_load_project(self, file):
+        print(file)
+
     def update_menubar(self):
         pass
+
+    def open_preferences_dialog(self, _):
+        preferences_dialog = PreferenceDialog(self)
+        preferences_dialog.Show()
+
+    def update_statusbar(self, event):
+        if event.IsChecked():
+            self.GetStatusBar().Show()
+        else:
+            self.GetStatusBar().Hide() # or .Show(False)
+        self._mgr.Update()
+
+    def open_pathgen_frame(self, _):
+        pathgen_frame = PathGeneratorFrame(self)
+        pathgen_frame.Show()
+
+    def open_copis_website(self, _):
+        wx.LaunchDefaultBrowser('http://www.copis3d.org/')
+
+    def open_about_dialog(self, _):
+        about = AboutDialog(self)
+        about.Show()
 
     def init_mgr(self):
         """Initialize AuiManager and attach panes.
@@ -280,21 +350,6 @@ class MainFrame(wx.Frame):
             MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
         self.Update()
 
-    def open_preferences_dialog(self, _):
-        preferences_dialog = PreferenceDialog(self)
-        preferences_dialog.Show()
-
-    def update_statusbar(self, event):
-        if event.IsChecked():
-            self.GetStatusBar().Show()
-        else:
-            self.GetStatusBar().Hide() # or .Show(False)
-        self._mgr.Update()
-
-    def open_pathgen_frame(self, _):
-        pathgen_frame = PathGeneratorFrame(self)
-        pathgen_frame.Show()
-
     def update_evf_panel(self, event):
         self._mgr.ShowPane(self.evf_panel, event.IsChecked())
 
@@ -316,13 +371,6 @@ class MainFrame(wx.Frame):
     def update_visualizer_panel(self, event):
         self._mgr.ShowPane(self.visualizer_panel, event.IsChecked())
 
-    def open_copis_website(self, _):
-        wx.LaunchDefaultBrowser('http://www.copis3d.org/')
-
-    def open_about_dialog(self, _):
-        about = AboutDialog(self)
-        about.Show()
-
     def on_pane_close(self, event):
         """Update ITEM_CHECK menuitems in the Window menu when a pane has been closed."""
         pane = event.GetPane()
@@ -342,10 +390,6 @@ class MainFrame(wx.Frame):
         #     pane.window.on_destroy()
         #     self.DetachPane(pane.window)
         #     pane.window.Destroy()
-
-    def quit(self, event):
-        self._mgr.UnInit()
-        self.Destroy()
 
     @property
     def command_panel(self):
@@ -455,6 +499,16 @@ class MainFrame(wx.Frame):
         if self.cam_list:
             self.cam_list.terminate()
             self.cam_list = []
+
+    def on_close(self, event):
+        event.StopPropagation()
+        if self.project_dirty:
+            if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
+                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+                return
+
+        self._mgr.UnInit()
+        self.Destroy()
 
     def on_exit(self, event):
         self.Close()
