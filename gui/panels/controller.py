@@ -6,7 +6,7 @@ from enums import CamAxis
 from utils.Canon.EDSDKLib import *
 
 
-class ControllerPanel(wx.Panel):
+class ControllerPanel(wx.VScrolledWindow):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
 
@@ -190,7 +190,7 @@ class ControllerPanel(wx.Panel):
         self.crBtn.direction = CamAxis.MINUS
         vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=65)
         self.crBtn.Bind(wx.EVT_BUTTON, self.OnMove)
-        hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border = 25)
+        hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border=25)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
         return vboxPositioning
