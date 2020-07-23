@@ -23,21 +23,15 @@ class MainFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(MainFrame, self).__init__(*args, **kwargs)
 
-        self.menubar = None
+        # set minimum size to show whole interface properly
+        self.SetMinSize(wx.Size(800, 575))
 
+        self.menubar = None
         self._mgr = None
 
-        # TODO: turn this into a dictionary?
+        # dictionary of panels and menu items
         self.panels = {}
         self.menuitems = {}
-        self.command_panel = None
-        self.console_panel = None
-        self.controller_panel = None
-        self.evf_panel = None
-        self.path_panel = None
-        self.properties_panel = None
-        self.toolbar_panel = None
-        self.visualizer_panel = None
 
         self.preference_frame = None
         self.pathgen_frame = None
@@ -47,14 +41,9 @@ class MainFrame(wx.Frame):
         self.is_edsdk_on = False
         self.edsdk_object = None
 
-        # set minimum size to show whole interface properly
-        self.SetMinSize(wx.Size(800, 575))
-
-        # initialize status bar and menu bar
+        # initialize statusbar, menubar, aui manager
         self.init_statusbar()
         self.init_menubar()
-
-        # initialize aui manager and panes
         self.init_mgr()
 
         self.Centre()
@@ -105,27 +94,27 @@ class MainFrame(wx.Frame):
 
         # Window menu
         window_menu = wx.Menu()
-        self.evf_menuitem = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Toggle visibility of camera EVF window', wx.ITEM_CHECK)
-        window_menu.Check(self.evf_menuitem.GetId(), False)
-        self.Bind(wx.EVT_MENU, self.update_evf_panel, self.evf_menuitem)
-        self.command_menuitem = window_menu.Append(wx.ID_ANY, 'Command', 'Toggle visibility of command window', wx.ITEM_CHECK)
-        window_menu.Check(self.command_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_command_panel, self.command_menuitem)
-        self.console_menuitem = window_menu.Append(wx.ID_ANY, 'Console', 'Toggle visibility of console window', wx.ITEM_CHECK)
-        window_menu.Check(self.console_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_console_panel, self.console_menuitem)
-        self.controller_menuitem = window_menu.Append(wx.ID_ANY, 'Controller', 'Toggle visibility of controller window', wx.ITEM_CHECK)
-        window_menu.Check(self.controller_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_controller_panel, self.controller_menuitem)
-        self.path_menuitem = window_menu.Append(wx.ID_ANY, 'Paths', 'Toggle visibility of paths window', wx.ITEM_CHECK)
-        window_menu.Check(self.path_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_path_panel, self.path_menuitem)
-        self.properties_menuitem = window_menu.Append(wx.ID_ANY, 'Properties', 'Toggle visibility of camera properties window', wx.ITEM_CHECK)
-        window_menu.Check(self.properties_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_properties_panel, self.properties_menuitem)
-        self.visualizer_menuitem = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Toggle visibility of visualizer window', wx.ITEM_CHECK)
-        window_menu.Check(self.visualizer_menuitem.GetId(), True)
-        self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.visualizer_menuitem)
+        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Toggle visibility of camera EVF window', wx.ITEM_CHECK)
+        self.menuitems['evf'].Check(False)
+        self.Bind(wx.EVT_MENU, self.update_evf_panel, self.menuitems['evf'])
+        self.menuitems['command'] = window_menu.Append(wx.ID_ANY, 'Command', 'Toggle visibility of command window', wx.ITEM_CHECK)
+        self.menuitems['command'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_command_panel, self.menuitems['command'])
+        self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console', 'Toggle visibility of console window', wx.ITEM_CHECK)
+        self.menuitems['console'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
+        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller', 'Toggle visibility of controller window', wx.ITEM_CHECK)
+        self.menuitems['controller'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
+        self.menuitems['path'] = window_menu.Append(wx.ID_ANY, 'Paths', 'Toggle visibility of paths window', wx.ITEM_CHECK)
+        self.menuitems['path'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_path_panel, self.menuitems['path'])
+        self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Toggle visibility of camera properties window', wx.ITEM_CHECK)
+        self.menuitems['properties'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
+        self.menuitems['visualizer'] = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Toggle visibility of visualizer window', wx.ITEM_CHECK)
+        self.menuitems['visualizer'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.menuitems['visualizer'])
         window_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, None, window_menu.Append(wx.ID_ANY, 'Window Preferences...', 'Open window preferences', wx.ITEM_NORMAL))
 
@@ -164,6 +153,7 @@ class MainFrame(wx.Frame):
         # set auto notebook style
         self._mgr.SetAutoNotebookStyle(
             aui.AUI_NB_BOTTOM |
+            aui.AUI_NB_TAB_MOVE |
             aui.AUI_NB_SCROLL_BUTTONS |
             aui.AUI_NB_MIDDLE_CLICK_CLOSE |
             aui.AUI_NB_CLOSE_ON_ALL_TABS)
@@ -180,81 +170,82 @@ class MainFrame(wx.Frame):
         self._mgr.SetArtProvider(dockart)
 
         # add visualizer panel
-        self.visualizer_panel = VisualizerPanel(self)
-        self._mgr.AddPane(self.visualizer_panel, aui.AuiPaneInfo(). \
-            Name('visualizer_panel').Caption('Visualizer'). \
+        self.panels['visualizer'] = VisualizerPanel(self)
+        self._mgr.AddPane(self.panels['visualizer'], aui.AuiPaneInfo(). \
+            Name('visualizer').Caption('Visualizer'). \
             Dock().Center().MaximizeButton().MinimizeButton(). \
             DefaultPane().MinSize(150, 200))
 
         # add console and command panel
-        self.console_panel = ConsolePanel(self)
-        # self.panels['console_panel'] = ConsolePanel(self)
+        self.panels['console'] = ConsolePanel(self)
         console_paneinfo = aui.AuiPaneInfo(). \
-            Name('console_panel').Caption('Console'). \
-            Dock().Bottom().PinButton(). \
+            Name('console').Caption('Console'). \
+            Dock().Bottom(). \
             Position(0).Layer(0).MinSize(50, 150)
-        self.command_panel = CommandPanel(self)
+        self.panels['command'] = CommandPanel(self)
         command_paneinfo = aui.AuiPaneInfo(). \
-            Name('command_panel').Caption('Send Command'). \
-            Dock().Bottom().PinButton(). \
+            Name('command').Caption('Send Command'). \
+            Dock().Bottom(). \
             Position(1).Layer(0).MinSize(50, 150)
-        self._mgr.AddPane(self.console_panel, console_paneinfo)
-        self._mgr.AddPane(self.command_panel, command_paneinfo, target=console_paneinfo)
+        self._mgr.AddPane(self.panels['console'], console_paneinfo)
+        self._mgr.AddPane(self.panels['command'], command_paneinfo, target=console_paneinfo)
 
         # add controller and properties panel
-        self.controller_panel = ControllerPanel(self)
+        self.panels['controller'] = ControllerPanel(self)
         controller_paneinfo = aui.AuiPaneInfo(). \
-            Name('controller_panel').Caption('Controller'). \
-            Dock().Right().PinButton(). \
-            Position(0).Layer(1).MinSize(200, 420)
-        self.properties_panel = PropertiesPanel(self)
+            Name('controller').Caption('Controller'). \
+            Dock().Right(). \
+            Position(0).Layer(1).MinSize(250, 420)
+        self.panels['properties'] = PropertiesPanel(self)
         properties_paneinfo = aui.AuiPaneInfo(). \
-            Name('properties_panel').Caption('Properties'). \
-            Dock().Right().PinButton(). \
-            Position(1).Layer(1).MinSize(200, 50)
-        self._mgr.AddPane(self.controller_panel, controller_paneinfo)
-        self._mgr.AddPane(self.properties_panel, properties_paneinfo, target=controller_paneinfo)
+            Name('properties').Caption('Properties'). \
+            Dock().Right(). \
+            Position(1).Layer(1).MinSize(250, 420)
+        self._mgr.AddPane(self.panels['controller'], controller_paneinfo)
+        self._mgr.AddPane(self.panels['properties'], properties_paneinfo, target=controller_paneinfo)
 
-        # set first tab of all auto notebooks as selected
-        notebooks = self._mgr.GetNotebooks()
-        for i in notebooks:
-            i.SetSelection(0)
+        # set first tab of all auto notebooks as the one selected
+        for notebook in self._mgr.GetNotebooks():
+            notebook.SetSelection(0)
 
         # add path panel
-        self.path_panel = PathPanel(self)
-        self._mgr.AddPane(self.path_panel, aui.AuiPaneInfo(). \
-            Name('path_panel').Caption('Paths'). \
-            Dock().Right().PinButton(). \
-            Position(2).Layer(1).MinSize(200, 50))
+        self.panels['path'] = PathPanel(self)
+        self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
+            Name('path').Caption('Paths'). \
+            Dock().Right(). \
+            Position(2).Layer(1).MinSize(250, 50))
 
         # add toolbar panel
-        self.toolbar_panel = ToolbarPanel(self)
-        # self.toolbar_panel.Realize()
-        self._mgr.AddPane(self.toolbar_panel, aui.AuiPaneInfo().
-            Name('toolbar_panel').Caption('Toolbar'). \
+        self.panels['toolbar'] = ToolbarPanel(self)
+        # self.toolbar.Realize()
+        self._mgr.AddPane(self.panels['toolbar'], aui.AuiPaneInfo().
+            Name('toolbar').Caption('Toolbar'). \
             ToolbarPane().DockFixed(True). \
             Top().DestroyOnClose())
 
         # add camera evf panel
-        self.evf_panel = None
+        self.panels['evf'] = None # EvfPanel(self)
+        # self._mgr.AddPane(self.panels['evf'], aui.AuiPaneInfo().
+        #     Name('evf').Caption('Live View'). \
+        #     Float().MinSize(600, 420))
 
         self._mgr.Update()
 
     def update_mgr(self):
-        notebooks = self._mgr.GetNotebooks()
+        pass
 
-    def open_preferences_dialog(self, event):
+    def open_preferences_dialog(self, _):
         preferences_dialog = PreferenceDialog(self)
         preferences_dialog.Show()
 
     def update_statusbar(self, event):
-        if self.statusbar_menuitem.IsChecked():
-            self.init_statusbar()
+        if event.IsChecked():
+            self.GetStatusBar().Show()
         else:
-            if self.GetStatusBar() is not None:
-                self.GetStatusBar().Destroy()
+            self.GetStatusBar().Hide() # or .Show(False)
+        self._mgr.Update()
 
-    def open_pathgen_frame(self, event):
+    def open_pathgen_frame(self, _):
         pathgen_frame = PathGeneratorFrame(self)
         pathgen_frame.Show()
 
@@ -262,62 +253,87 @@ class MainFrame(wx.Frame):
         pass
 
     def update_command_panel(self, event):
-        self._mgr.ShowPane(self.command_panel, self.command_menuitem.IsChecked())
+        self._mgr.ShowPane(self.command_panel, event.IsChecked())
 
     def update_console_panel(self, event):
-        self._mgr.ShowPane(self.console_panel, self.console_menuitem.IsChecked())
+        self._mgr.ShowPane(self.console_panel, event.IsChecked())
 
     def update_controller_panel(self, event):
-        self._mgr.ShowPane(self.controller_panel, self.controller_menuitem.IsChecked())
+        self._mgr.ShowPane(self.controller_panel, event.IsChecked())
+
+    def update_evf_panel(self, event):
+        self._mgr.ShowPane(self.evf_panel, event.IsChecked())
 
     def update_path_panel(self, event):
-        self._mgr.ShowPane(self.path_panel, self.path_menuitem.IsChecked())
+        self._mgr.ShowPane(self.path_panel, event.IsChecked())
 
     def update_properties_panel(self, event):
-        self._mgr.ShowPane(self.properties_panel, self.properties_menuitem.IsChecked())
+        self._mgr.ShowPane(self.properties_panel, event.IsChecked())
 
     def update_visualizer_panel(self, event):
-        self._mgr.ShowPane(self.visualizer_panel, self.visualizer_menuitem.IsChecked())
+        self._mgr.ShowPane(self.visualizer_panel, event.IsChecked())
 
-    def open_copis_website(self, event):
+    def open_copis_website(self, _):
         wx.LaunchDefaultBrowser('http://www.copis3d.org/')
 
-    def open_about_dialog(self, event):
+    def open_about_dialog(self, _):
         about = AboutDialog(self)
         about.Show()
 
     def on_pane_close(self, event):
-        pane_list = ()
-        # pane = event.GetPane()
-        # # print(self._mgr.GetAttributes(event.GetPane()))
-        # # print(type(pane.window) == 'wx.lib.agw.aui.auibook.AuiNotebook')
-        # if isinstance(pane.window, aui.auibook.AuiNotebook):
-        #     notebook = self._mgr.GetPane(pane.window)
-        #     print(notebook.IsNotebookControl())
-        #     print(notebook.GetPage(0))
-        # else:
-        #     if pane.name == 'command_panel':
-        #         self.command_menuitem.Check(False)
-        #     elif pane.name == 'console_panel':
-        #         self.console_menuitem.Check(False)
-        #     elif pane.name == 'controller_panel':
-        #         self.controller_menuitem.Check(False)
-        #     elif pane.name == 'evf_panel':
-        #         self.evf_menuitem.Check(False)
-        #     elif pane.name == 'path_panel':
-        #         self.path_menuitem.Check(False)
-        #     elif pane.name == 'properties_panel':
-        #         self.properties_menuitem.Check(False)
-        #     elif pane.name == 'toolbar_panel':
-        #         self.toolbar_menuitem.Check(False)
-        #     elif pane.name == 'visualizer_panel':
-        #         self.visualizer_menuitem.Check(False)
-        #     else:
-        #         pass
+        pane = event.GetPane()
+
+        # if closed pane is a notebook, process and hide all pages in the notebook
+        if pane.IsNotebookControl():
+            notebook = pane.window
+            for i in range(notebook.GetPageCount()):
+                pane = self._mgr.GetPane(notebook.GetPage(i))
+                self._mgr.ShowPane(self.panels[pane.name], False)
+                self.menuitems[pane.name].Check(False)
+        else:
+            self.menuitems[pane.name].Check(False)
+
+        # if pane.name == 'Evf':
+        #     pane.window.timer.Stop()
+        #     pane.window.on_destroy()
+        #     self.DetachPane(pane.window)
+        #     pane.window.Destroy()
 
     def quit(self, event):
         self._mgr.UnInit()
         self.Destroy()
+
+    @property
+    def command_panel(self):
+        return self.panels['command']
+
+    @property
+    def console_panel(self):
+        return self.panels['console']
+
+    @property
+    def controller_panel(self):
+        return self.panels['controller']
+
+    @property
+    def evf_panel(self):
+        return self.panels['evf']
+
+    @property
+    def path_panel(self):
+        return self.panels['path']
+
+    @property
+    def properties_panel(self):
+        return self.panels['properties']
+
+    @property
+    def toolbar_panel(self):
+        return self.panels['toolbar']
+
+    @property
+    def visualizer_panel(self):
+        return self.panels['visualizer']
 
     # TODO: figure out what this method does
     def rightClick(self, event):
