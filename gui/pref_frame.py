@@ -69,7 +69,7 @@ class PreferenceFrame(wx.Frame):
         y_box.Add(self.y_sc, 1, flag = wx.LEFT, border=1)
 
         z_box = wx.BoxSizer()
-        z_label = wx.StaticText(self.panel, wx.ID_ANY, label='X: ')
+        z_label = wx.StaticText(self.panel, wx.ID_ANY, label='Z: ')
         z_box.Add(z_label)
         self.z_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
         z_box.Add(self.z_sc)
@@ -96,7 +96,7 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(proxy_style_label)
         self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
         self.proxy_style_box.Add(self.proxy_style_combo, 1, flag=wx.BOTTOM, border=50)
-        self.Bind(wx.EVT_COMBOBOX, self.onStyleCombo)
+        self.Bind(wx.EVT_COMBOBOX, self.on_combo)
 
         # Style/Sphere style options
         self.sphere_style_box = wx.BoxSizer()
@@ -104,7 +104,7 @@ class PreferenceFrame(wx.Frame):
         self.sphere_style_box.Add(sphere_radius_label)
         self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
         self.sphere_style_box.Add(self.sphere_radius_sc)
-        # TO DO: Bind Update Event
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin_control)
         self.proxy_style_box.Add(self.sphere_style_box)
 
         # Style/Cylinder style options
@@ -197,7 +197,7 @@ class PreferenceFrame(wx.Frame):
 
         self.panel.SetSizer(self.vbox1)
 
-    def onStyleCombo(self, event):
+    def on_combo(self, event):
         choice = self.proxy_style_combo.GetStringSelection()
 
         if choice == 'Sphere':
@@ -215,3 +215,6 @@ class PreferenceFrame(wx.Frame):
             self.proxy_style_box.Hide(self.cylinder_style_box)      
             self.proxy_style_box.Show(self.cube_style_box)  
             self.vbox1.Layout()  
+
+    def on_spin_control(self, event):
+        print("hi")
