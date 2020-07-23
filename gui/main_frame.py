@@ -13,7 +13,6 @@ from gui.panels.properties import PropertiesPanel
 from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
 
-# from gui.auimanager import AuiManager
 from gui.pathgen_frame import *
 from gui.preferences import *
 from gui.about import *
@@ -41,9 +40,11 @@ class MainFrame(wx.Frame):
         self.is_edsdk_on = False
         self.edsdk_object = None
 
-        # initialize statusbar, menubar, aui manager
+        # initialize statusbar and menubar
         self.init_statusbar()
         self.init_menubar()
+
+        # initialize aui manager
         self.init_mgr()
 
         self.Centre()
@@ -51,6 +52,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.quit)
 
     def init_statusbar(self):
+        """Initialize statusbar."""
         if self.GetStatusBar() is not None:
             return
 
@@ -58,43 +60,45 @@ class MainFrame(wx.Frame):
         self.SetStatusText('Ready')
 
     def init_menubar(self):
-        """ wxMenuBar
-            ├── &Files
-            │   ├── &New Project            Ctrl+N
-            │   ├── &Open...                Ctrl+O
-            │   ├── ---
-            │   ├── &Save                   Ctrl+S
-            │   ├── &Save As...             Ctrl+Shift+S
-            │   ├── ---
-            │   ├── &Import GCODE...
-            │   ├── &Generate GCODE...      F8
-            │   ├── ---
-            │   └── E&xit                   Alt+F4
-            ├── &Edit
-            │   ├── &Keyboard Shortcuts...
-            │   ├── ---
-            │   └── &Preferences
-            ├── &View
-            │   └── &Status Bar
-            ├── &Tools
-            │   ├── &Generate Path...
-            │   ├── ---
-            │   └── &Preferences
-            ├── &Window
-            │   ├── Camera EVF
-            │   ├── Command
-            │   ├── Console
-            │   ├── Controller
-            │   ├── Paths
-            │   ├── Properties
-            │   ├── Visualizer
-            │   ├── ---
-            │   └── Window &Preferences...
-            └── Help
-                ├── COPIS &Help...          F1
-                ├── ---
-                ├── &Visit COPIS website    Ctrl+F1
-                └── &About COPIS...
+        """Initialize menubar. Menu tree:
+
+        wxMenuBar
+        ├── &Files
+        │   ├── &New Project            Ctrl+N
+        │   ├── &Open...                Ctrl+O
+        │   ├── ---
+        │   ├── &Save                   Ctrl+S
+        │   ├── &Save As...             Ctrl+Shift+S
+        │   ├── ---
+        │   ├── &Import GCODE...
+        │   ├── &Generate GCODE...      F8
+        │   ├── ---
+        │   └── E&xit                   Alt+F4
+        ├── &Edit
+        │   ├── &Keyboard Shortcuts...
+        │   ├── ---
+        │   └── &Preferences
+        ├── &View
+        │   └── &Status Bar
+        ├── &Tools
+        │   ├── &Generate Path...
+        │   ├── ---
+        │   └── &Preferences
+        ├── &Window
+        │   ├── Camera EVF
+        │   ├── Command
+        │   ├── Console
+        │   ├── Controller
+        │   ├── Paths
+        │   ├── Properties
+        │   ├── Visualizer
+        │   ├── ---
+        │   └── Window &Preferences...
+        └── Help
+            ├── COPIS &Help...          F1
+            ├── ---
+            ├── &Visit COPIS website    Ctrl+F1
+            └── &About COPIS...
         """
         if self.menubar is not None:
             return
@@ -175,6 +179,13 @@ class MainFrame(wx.Frame):
         pass
 
     def init_mgr(self):
+        """Initialize AuiManager and attach panes.
+
+        NOTE: We are NOT USING wx.aui, but wx.lib.agw.aui, a pure Python implementation of aui.
+        As such, the correct documentation on wxpython.org should begin with
+        https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui, rather than
+        https://wxpython.org/Phoenix/docs/html/wx.aui.
+        """
         if self._mgr is not None:
             return
 
@@ -206,68 +217,68 @@ class MainFrame(wx.Frame):
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
         self._mgr.SetArtProvider(dockart)
 
-        # add visualizer panel
+        # initialize relevant panels
         self.panels['visualizer'] = VisualizerPanel(self)
+        self.panels['console'] = ConsolePanel(self)
+        self.panels['command'] = CommandPanel(self)
+        self.panels['controller'] = ControllerPanel(self)
+        self.panels['properties'] = PropertiesPanel(self)
+        self.panels['toolbar'] = ToolbarPanel(self)
+
+        # add visualizer panel
         self._mgr.AddPane(self.panels['visualizer'], aui.AuiPaneInfo(). \
             Name('visualizer').Caption('Visualizer'). \
             Dock().Center().MaximizeButton().MinimizeButton(). \
             DefaultPane().MinSize(150, 200))
 
-        # add console and command panel
-        self.panels['console'] = ConsolePanel(self)
+        # add console, command panel
         self._mgr.AddPane(self.panels['console'], aui.AuiPaneInfo(). \
             Name('console').Caption('Console'). \
             Dock().Bottom().Position(0).Layer(0). \
             MinSize(50, 150).Show(True))
-        self.panels['command'] = CommandPanel(self)
         self._mgr.AddPane(self.panels['command'], aui.AuiPaneInfo(). \
             Name('command').Caption('Send Command'). \
             Dock().Bottom().Position(1).Layer(0). \
             MinSize(50, 150).Show(True),
             target=self._mgr.GetPane('console'))
 
-        # add controller and properties panel
-        self.panels['controller'] = ControllerPanel(self)
+        # add controller, properties, path panel
         self._mgr.AddPane(self.panels['controller'], aui.AuiPaneInfo(). \
             Name('controller').Caption('Controller'). \
             Dock().Right().Position(0).Layer(1). \
             MinSize(250, 420).Show(True))
-        self.panels['properties'] = PropertiesPanel(self)
         self._mgr.AddPane(self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
             Dock().Right().Position(1).Layer(1). \
-            MinSize(250, 420).Show(True),
+            MinSize(200, 50).Show(True),
+            target=self._mgr.GetPane('controller'))
+        self.panels['path'] = PathPanel(self)
+        self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
+            Name('path').Caption('Paths'). \
+            Dock().Right().Position(2).Layer(1). \
+            MinSize(200, 50).Show(True),
             target=self._mgr.GetPane('controller'))
 
         # set first tab of all auto notebooks as the one selected
         for notebook in self._mgr.GetNotebooks():
             notebook.SetSelection(0)
 
-        # add path panel
-        self.panels['path'] = PathPanel(self)
-        self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
-            Name('path').Caption('Paths'). \
-            Dock().Right().Position(2).Layer(1). \
-            MinSize(250, 50).Show(True))
-
         # add toolbar panel
-        self.panels['toolbar'] = ToolbarPanel(self)
         # self.toolbar.Realize()
         self._mgr.AddPane(self.panels['toolbar'], aui.AuiPaneInfo().
             Name('toolbar').Caption('Toolbar'). \
             ToolbarPane().DockFixed(True). \
             Top().DestroyOnClose())
 
-        # add camera evf panel
-        self.panels['evf'] = None # EvfPanel(self)
-        # self._mgr.AddPane(self.panels['evf'], aui.AuiPaneInfo().
-        #     Name('evf').Caption('Live View'). \
-        #     Float().MinSize(600, 420))
-
         self._mgr.Update()
 
-    def update_mgr(self):
-        pass
+    def add_evf_pane(self):
+        self.panels['evf'] = EvfPanel(self)
+        self.AddPane(evf_panel, aui.AuiPaneInfo(). \
+            Name('Evf').Caption('Live View'). \
+            Float().Right().Position(1).Layer(0). \
+            MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
+        self.Update()
 
     def open_preferences_dialog(self, _):
         preferences_dialog = PreferenceDialog(self)

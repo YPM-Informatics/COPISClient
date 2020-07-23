@@ -11,8 +11,6 @@ class ControllerPanel(wx.VScrolledWindow):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
 
         self.parent = parent
-        self._mgr = parent._mgr
-        self.visualizer_panel = self._mgr.GetPane('Visualizer').window
         self.init_panel()
 
     def init_panel(self):
@@ -35,6 +33,14 @@ class ControllerPanel(wx.VScrolledWindow):
         vboxLeft.Add(cam_control_vbox, 0.5, flag=wx.LEFT|wx.TOP, border=5)
 
         self.SetSizerAndFit(vboxLeft)
+
+    @property
+    def visualizer_panel(self):
+        return self.parent.visualizer_panel
+
+    @property
+    def command_panel(self):
+        return self.parent.command_panel
 
     def InitPositioning(self):
         #  LAYOUT
@@ -271,15 +277,14 @@ class ControllerPanel(wx.VScrolledWindow):
         return vbox
 
     def OnMove(self, event):
-        camId = self.masterCombo.GetSelection()
-        if camId != -1:
+        camid = self.masterCombo.GetSelection()
+        if camid != -1:
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
 
             if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdBox = self._mgr.GetPane('Command').window.cmd
+                cmdBox = self.command_panel.window.cmd
                 size = self.xyzSc.GetValue()
-
 
                 if direction == CamAxis.MINUS:
                     size = -size
@@ -291,7 +296,7 @@ class ControllerPanel(wx.VScrolledWindow):
                 if direction == CamAxis.MINUS:
                     size = -size
 
-            cam = self.parent.visualizer_panel.get_camera_by_id(camId)
+            cam = self.visualizer_panel.get_camera_by_id(camid)
             if cam:
                 cam.on_move(axis, size)
             self.visualizer_panel.set_dirty()
@@ -300,7 +305,7 @@ class ControllerPanel(wx.VScrolledWindow):
 
     def OnFocusCenter(self, event):
         if self.parent.selected_cam is not None:
-            self.parent.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camid).on_focus_center()
+            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camid).on_focus_center()
         else:
             util.set_dialog('Please select the camera to control.')
 
@@ -311,9 +316,9 @@ class ControllerPanel(wx.VScrolledWindow):
         self.parent.set_selected_camera(id)
 
     def OnTakePicture(self, event):
-        camId = self.masterCombo.GetSelection()
-        if self.parent.cam_list.selected_camera is not None:
-            self.parent.cam_list.selected_camera.shoot()
+        camid = self.masterCombo.GetSelection()
+        if self.parent.get_selected_camera() is not None:
+            self.parent.get_selected_camera().shoot()
         else:
             util.set_dialog('Please select the camera to take a picture.')
 
@@ -341,9 +346,9 @@ class ControllerPanel(wx.VScrolledWindow):
                 self.parent.terminateEDSDK()
 
     def onStartEvf(self, event):
-        if self.parent.cam_list.selected_camera is not None:
-            self.parent.cam_list.selected_camera.startEvf()
-            self._mgr.add_evf_pane()
+        if self.parent.get_selected_camera() is not None:
+            self.parent.get_selected_camera().startEvf()
+            self.parent.add_evf_pane()
         else:
             util.set_dialog('Please select the camera to start live view.')
 
@@ -356,5 +361,5 @@ class ControllerPanel(wx.VScrolledWindow):
             self.parent.getCameraList()
 
     def onCreateVirtualCam(self, event):
-        camid = self.parent.visualizer_panel.add_camera()
+        camid = self.visualizer_panel.add_camera()
         self.parent.controller_panel.masterCombo.Append('camera ' + camid)
