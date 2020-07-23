@@ -4,6 +4,8 @@ import wx
 # from wx.lib.pubsub import Publisher
 
 
+# TODO: CLEAN THIS UP!!!!!!!!!
+# TODO: Research preference saving methods
 class PreferenceDialog(wx.Dialog):
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id = wx.ID_ANY, title = 'Preferences', pos = wx.DefaultPosition, size = wx.Size(500,500), style = wx.DEFAULT_DIALOG_STYLE)

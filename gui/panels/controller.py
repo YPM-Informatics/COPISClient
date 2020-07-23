@@ -7,12 +7,12 @@ from utils.Canon.EDSDKLib import *
 
 
 class ControllerPanel(wx.Panel):
-    def __init__(self, parent, aui, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
 
         self.parent = parent
-        self.aui = aui
-        self.visualizer_panel = self.aui.GetPane('Visualizer').window
+        self._mgr = parent._mgr
+        self.visualizer_panel = self._mgr.GetPane('Visualizer').window
         self.init_panel()
 
     def init_panel(self):
@@ -277,7 +277,7 @@ class ControllerPanel(wx.Panel):
             direction = event.GetEventObject().direction
 
             if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdBox = self.aui.GetPane('Command').window.cmd
+                cmdBox = self._mgr.GetPane('Command').window.cmd
                 size = self.xyzSc.GetValue()
 
 
@@ -343,7 +343,7 @@ class ControllerPanel(wx.Panel):
     def onStartEvf(self, event):
         if self.parent.cam_list.selected_camera is not None:
             self.parent.cam_list.selected_camera.startEvf()
-            self.aui.add_evf_pane()
+            self._mgr.add_evf_pane()
         else:
             util.set_dialog('Please select the camera to start live view.')
 
