@@ -85,13 +85,10 @@ class PreferenceFrame(wx.Frame):
         build_static_sizer = wx.StaticBoxSizer(build_static_box, wx.HORIZONTAL)
         build_static_sizer.Add(build_settings_box)
 
-        self.vbox1.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM, border=5)
+        self.vbox1.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM | wx.EXPAND, border=5)
 
         # Proxy Object Box
         proxy_obj_box = wx.BoxSizer(wx.VERTICAL)
-        # proxy_obj_label = wx.StaticText(self.panel, wx.ID_ANY, label='Proxy Object', style=wx.ALIGN_LEFT)
-        # proxy_obj_label.SetFont(self.font)
-        # proxy_obj_box.Add(proxy_obj_label, 1, flag=wx.TOP|wx.BOTTOM|wx.LEFT, border=10)
 
         # Proxy Object/Style Box
         self.proxy_style_box = wx.BoxSizer()
@@ -179,7 +176,7 @@ class PreferenceFrame(wx.Frame):
         proxy_static_sizer = wx.StaticBoxSizer(proxy_static_box, wx.HORIZONTAL)
         proxy_static_sizer.Add(proxy_obj_box)
 
-        self.vbox1.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM, border=5)
+        self.vbox1.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM | wx.EXPAND, border=5)
         
         # Camera box
         camera_box = wx.BoxSizer(wx.VERTICAL)
@@ -196,7 +193,7 @@ class PreferenceFrame(wx.Frame):
         camera_static_sizer = wx.StaticBoxSizer(camera_static_box, wx.HORIZONTAL)
         camera_static_sizer.Add(camera_box)
 
-        self.vbox1.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM, border=5)
+        self.vbox1.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM | wx.EXPAND, border=5)
 
         self.panel.SetSizer(self.vbox1)
 
