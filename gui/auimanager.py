@@ -8,7 +8,7 @@ from gui.panels.visualizer import VisualizerPanel
 from gui.panels.cmd import CommandPanel
 from gui.panels.evf import EvfPanel
 from gui.panels.console import ConsolePanel
-from gui.panels.toolbar import ToolBarPanel
+from gui.panels.toolbar import ToolbarPanel
 
 
 # Reference
@@ -66,8 +66,8 @@ class AuiManager(aui.AuiManager):
         self.AddPane(command_panel, pane_info)
 
     def add_toolbar_panel(self):
-        toolbar_panel = ToolBarPanel(self.GetManagedWindow())
-        pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DockFixed(True).Gripper(False).PaneBorder(False).DestroyOnClose(False).Top()
+        toolbar_panel = ToolbarPanel(self.GetManagedWindow())
+        pane_info = aui.AuiPaneInfo().Name('Toolbar').Caption('Toolbar').ToolbarPane().DockFixed(True).Gripper(False).PaneBorder(False).DestroyOnClose(False).Top()
         # pane_info = aui.AuiPaneInfo().Name('ToolBar').Caption('ToolBar').ToolbarPane().DestroyOnClose(False).Bottom()
         self.AddPane(toolbar_panel, pane_info)
 

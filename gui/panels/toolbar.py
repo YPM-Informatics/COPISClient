@@ -8,7 +8,7 @@ from gui.settings_frame import SettingsFrame
 from utils.serial_controller import SerialController
 
 
-class ToolBarPanel(wx.Panel):
+class ToolbarPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         hbox = wx.BoxSizer()
