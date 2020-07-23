@@ -58,6 +58,44 @@ class MainFrame(wx.Frame):
         self.SetStatusText('Ready')
 
     def init_menubar(self):
+        """ wxMenuBar
+            ├── &Files
+            │   ├── &New Project            Ctrl+N
+            │   ├── &Open...                Ctrl+O
+            │   ├── ---
+            │   ├── &Save                   Ctrl+S
+            │   ├── &Save As...             Ctrl+Shift+S
+            │   ├── ---
+            │   ├── &Import GCODE...
+            │   ├── &Generate GCODE...      F8
+            │   ├── ---
+            │   └── E&xit                   Alt+F4
+            ├── &Edit
+            │   ├── &Keyboard Shortcuts...
+            │   ├── ---
+            │   └── &Preferences
+            ├── &View
+            │   └── &Status Bar
+            ├── &Tools
+            │   ├── &Generate Path...
+            │   ├── ---
+            │   └── &Preferences
+            ├── &Window
+            │   ├── Camera EVF
+            │   ├── Command
+            │   ├── Console
+            │   ├── Controller
+            │   ├── Paths
+            │   ├── Properties
+            │   ├── Visualizer
+            │   ├── ---
+            │   └── Window &Preferences...
+            └── Help
+                ├── COPIS &Help...          F1
+                ├── ---
+                ├── &Visit COPIS website    Ctrl+F1
+                └── &About COPIS...
+        """
         if self.menubar is not None:
             return
 
@@ -84,13 +122,13 @@ class MainFrame(wx.Frame):
 
         # View menu
         view_menu = wx.Menu()
-        self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, 'Status Bar', 'Toggle status bar visibility', wx.ITEM_CHECK)
+        self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, '&Status &Bar', 'Toggle status bar visibility', wx.ITEM_CHECK)
         view_menu.Check(self.statusbar_menuitem.GetId(), True)
         self.Bind(wx.EVT_MENU, self.update_statusbar, self.statusbar_menuitem)
 
         # Tools menu
         tools_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.open_pathgen_frame, tools_menu.Append(wx.ID_ANY, 'Generate Path', 'Open path generator window'))
+        self.Bind(wx.EVT_MENU, self.open_pathgen_frame, tools_menu.Append(wx.ID_ANY, '&Generate Path...', 'Open path generator window'))
 
         # Window menu
         window_menu = wx.Menu()
@@ -116,7 +154,7 @@ class MainFrame(wx.Frame):
         self.menuitems['visualizer'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.menuitems['visualizer'])
         window_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, None, window_menu.Append(wx.ID_ANY, 'Window Preferences...', 'Open window preferences', wx.ITEM_NORMAL))
+        self.Bind(wx.EVT_MENU, None, window_menu.Append(wx.ID_ANY, 'Window &Preferences...', 'Open window preferences', wx.ITEM_NORMAL))
 
         # Help menu
         help_menu = wx.Menu()
@@ -131,7 +169,6 @@ class MainFrame(wx.Frame):
         self.menubar.Append(tools_menu, '&Tools')
         self.menubar.Append(window_menu, '&Window')
         self.menubar.Append(help_menu, '&Help')
-
         self.SetMenuBar(self.menubar)
 
     def update_menubar(self):
@@ -163,7 +200,7 @@ class MainFrame(wx.Frame):
         dockart.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 2)
         dockart.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, 18)
         dockart.SetMetric(aui.AUI_DOCKART_PANE_BUTTON_SIZE, 16)
-        dockart.SetColour(aui.AUI_DOCKART_ACTIVE_CAPTION_COLOUR, wx.Colour(100, 100, 100))
+        dockart.SetColour(aui.AUI_DOCKART_ACTIVE_CAPTION_COLOUR, wx.Colour(110, 110, 110))
         dockart.SetColour(aui.AUI_DOCKART_INACTIVE_CAPTION_COLOUR, wx.Colour(210, 210, 210))
         dockart.SetColour(aui.AUI_DOCKART_BORDER_COLOUR, wx.Colour(140, 140, 140))
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
@@ -178,31 +215,29 @@ class MainFrame(wx.Frame):
 
         # add console and command panel
         self.panels['console'] = ConsolePanel(self)
-        console_paneinfo = aui.AuiPaneInfo(). \
+        self._mgr.AddPane(self.panels['console'], aui.AuiPaneInfo(). \
             Name('console').Caption('Console'). \
-            Dock().Bottom(). \
-            Position(0).Layer(0).MinSize(50, 150)
+            Dock().Bottom().Position(0).Layer(0). \
+            MinSize(50, 150).Show(True))
         self.panels['command'] = CommandPanel(self)
-        command_paneinfo = aui.AuiPaneInfo(). \
+        self._mgr.AddPane(self.panels['command'], aui.AuiPaneInfo(). \
             Name('command').Caption('Send Command'). \
-            Dock().Bottom(). \
-            Position(1).Layer(0).MinSize(50, 150)
-        self._mgr.AddPane(self.panels['console'], console_paneinfo)
-        self._mgr.AddPane(self.panels['command'], command_paneinfo, target=console_paneinfo)
+            Dock().Bottom().Position(1).Layer(0). \
+            MinSize(50, 150).Show(True),
+            target=self._mgr.GetPane('console'))
 
         # add controller and properties panel
         self.panels['controller'] = ControllerPanel(self)
-        controller_paneinfo = aui.AuiPaneInfo(). \
+        self._mgr.AddPane(self.panels['controller'], aui.AuiPaneInfo(). \
             Name('controller').Caption('Controller'). \
-            Dock().Right(). \
-            Position(0).Layer(1).MinSize(250, 420)
+            Dock().Right().Position(0).Layer(1). \
+            MinSize(250, 420).Show(True))
         self.panels['properties'] = PropertiesPanel(self)
-        properties_paneinfo = aui.AuiPaneInfo(). \
+        self._mgr.AddPane(self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
-            Dock().Right(). \
-            Position(1).Layer(1).MinSize(250, 420)
-        self._mgr.AddPane(self.panels['controller'], controller_paneinfo)
-        self._mgr.AddPane(self.panels['properties'], properties_paneinfo, target=controller_paneinfo)
+            Dock().Right().Position(1).Layer(1). \
+            MinSize(250, 420).Show(True),
+            target=self._mgr.GetPane('controller'))
 
         # set first tab of all auto notebooks as the one selected
         for notebook in self._mgr.GetNotebooks():
@@ -212,8 +247,8 @@ class MainFrame(wx.Frame):
         self.panels['path'] = PathPanel(self)
         self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
             Name('path').Caption('Paths'). \
-            Dock().Right(). \
-            Position(2).Layer(1).MinSize(250, 50))
+            Dock().Right().Position(2).Layer(1). \
+            MinSize(250, 50).Show(True))
 
         # add toolbar panel
         self.panels['toolbar'] = ToolbarPanel(self)
@@ -250,7 +285,7 @@ class MainFrame(wx.Frame):
         pathgen_frame.Show()
 
     def update_evf_panel(self, event):
-        pass
+        self._mgr.ShowPane(self.evf_panel, event.IsChecked())
 
     def update_command_panel(self, event):
         self._mgr.ShowPane(self.command_panel, event.IsChecked())
@@ -260,9 +295,6 @@ class MainFrame(wx.Frame):
 
     def update_controller_panel(self, event):
         self._mgr.ShowPane(self.controller_panel, event.IsChecked())
-
-    def update_evf_panel(self, event):
-        self._mgr.ShowPane(self.evf_panel, event.IsChecked())
 
     def update_path_panel(self, event):
         self._mgr.ShowPane(self.path_panel, event.IsChecked())
@@ -281,6 +313,7 @@ class MainFrame(wx.Frame):
         about.Show()
 
     def on_pane_close(self, event):
+        """Update ITEM_CHECK menuitems in the Window menu when a pane has been closed."""
         pane = event.GetPane()
 
         # if closed pane is a notebook, process and hide all pages in the notebook
@@ -376,7 +409,7 @@ class MainFrame(wx.Frame):
         return None
 
     def set_selected_camera(self, camid):
-        # Check if selection is the same as previous selection
+        # check if selection is the same as previous selection
         new_selected = self.visualizer_panel.get_camera_by_id(camid)
         last_selected = self.get_selected_camera()
 
