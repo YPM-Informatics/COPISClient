@@ -98,12 +98,12 @@ class ControllerPanel(wx.VScrolledWindow):
         # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
         # hboxTop.Add(self.setCenterBtn, 1, flag=wx.LEFT, border=5)
 
-        self.refreshBtn = wx.Button(self, wx.ID_ANY, label='Refresh')
+        self.refreshBtn = wx.Button(self, wx.ID_ANY, label='&Refresh', size=(65, -1))
         self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
         hboxTop.Add(self.refreshBtn)
         hboxTop.AddStretchSpacer()
 
-        self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='Create 3D camera')
+        self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='&Create 3D camera')
         self.createVCamBtn.Bind(wx.EVT_BUTTON, self.onCreateVirtualCam)
         hboxTop.Add(self.createVCamBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag=wx.LEFT|wx.BOTTOM|wx.EXPAND, border=15)
