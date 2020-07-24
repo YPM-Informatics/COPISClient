@@ -7,6 +7,7 @@ class PreferenceFrame(wx.Frame):
     def __init__(self, main_frame=None):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Preferences', size=(300, 360))
         self.main_frame = main_frame
+        self.canvas = self.main_frame.visualizer_panel.canvas
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
 
@@ -14,6 +15,8 @@ class PreferenceFrame(wx.Frame):
         self.Centre()
 
     def init_panel(self):
+        curr_dims = self.canvas.build_dimensions
+        curr_scale = self.canvas.camera_scale
         self.panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
 
         self.vbox1 = wx.BoxSizer(wx.VERTICAL)
@@ -31,19 +34,19 @@ class PreferenceFrame(wx.Frame):
         width_box = wx.BoxSizer()
         width_label = wx.StaticText(self.panel, wx.ID_ANY, label='Width: ')
         width_box.Add(width_label)
-        self.width_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.width_sc = wx.SpinCtrl(self.panel, value=str(curr_dims[0]), size=wx.Size(60, 22), min=0, max=1000, name="dw")
         width_box.Add(self.width_sc, 1, flag = wx.LEFT, border=6)
 
         length_box = wx.BoxSizer()
         length_label = wx.StaticText(self.panel, wx.ID_ANY, label='Length: ')
         length_box.Add(length_label)
-        self.length_sc= wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.length_sc= wx.SpinCtrl(self.panel, value=str(curr_dims[1]), size=wx.Size(60, 22), min=0, max=1000, name="dl")
         length_box.Add(self.length_sc)
 
         height_box = wx.BoxSizer()
         height_label =  wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         height_box.Add(height_label)
-        self.height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.height_sc = wx.SpinCtrl(self.panel, value=str(curr_dims[2]), size=wx.Size(60, 22), min=0, max=1000, name="dh")
         height_box.Add(self.height_sc, 1, flag = wx.LEFT, border=1)
 
         dims_box.Add(width_box)
@@ -59,19 +62,19 @@ class PreferenceFrame(wx.Frame):
         x_box = wx.BoxSizer()
         x_label = wx.StaticText(self.panel, wx.ID_ANY, label='X: ')
         x_box.Add(x_label)
-        self.x_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.x_sc = wx.SpinCtrl(self.panel, value=str(curr_dims[3]), size=wx.Size(60, 22), min=0, max=1000, name='ox')
         x_box.Add(self.x_sc)
 
         y_box = wx.BoxSizer()
         y_label = wx.StaticText(self.panel, wx.ID_ANY, label='Y: ')
         y_box.Add(y_label)
-        self.y_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.y_sc = wx.SpinCtrl(self.panel, value=str(curr_dims[4]), size=wx.Size(60, 22), min=0, max=1000, name='oy')
         y_box.Add(self.y_sc, 1, flag = wx.LEFT, border=1)
 
         z_box = wx.BoxSizer()
         z_label = wx.StaticText(self.panel, wx.ID_ANY, label='Z: ')
         z_box.Add(z_label)
-        self.z_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.z_sc = wx.SpinCtrl(self.panel, value=str(curr_dims[5]), size=wx.Size(60, 22), min=0, max=1000, name='oz')
         z_box.Add(self.z_sc)
 
         origin_box.Add(x_box)
@@ -96,7 +99,6 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(proxy_style_label)
         self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
         self.proxy_style_box.Add(self.proxy_style_combo, 1, flag=wx.BOTTOM, border=50)
-        self.Bind(wx.EVT_COMBOBOX, self.on_combo)
 
         # Style/Sphere style options
         self.sphere_style_box = wx.BoxSizer()
@@ -104,7 +106,6 @@ class PreferenceFrame(wx.Frame):
         self.sphere_style_box.Add(sphere_radius_label)
         self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
         self.sphere_style_box.Add(self.sphere_radius_sc)
-        self.Bind(wx.EVT_SPINCTRL, self.on_spin_control)
         self.proxy_style_box.Add(self.sphere_style_box)
 
         # Style/Cylinder style options
@@ -115,14 +116,13 @@ class PreferenceFrame(wx.Frame):
         cylinder_radius_box.Add(cylinder_radius_label)
         self.cylinder_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
         cylinder_radius_box.Add(self.cylinder_radius_sc)
-        # TO DO: Bind Update Event
 
         cylinder_height_box = wx.BoxSizer()
         cylinder_height_label = wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         cylinder_height_box.Add(cylinder_height_label)
         self.cylinder_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
         cylinder_height_box.Add(self.cylinder_height_sc)
-        # TO DO: Bind Update Event
+   
 
         self.cylinder_style_box.Add(cylinder_radius_box)
         self.cylinder_style_box.Add(cylinder_height_box)
@@ -184,18 +184,22 @@ class PreferenceFrame(wx.Frame):
         scale_box = wx.BoxSizer()
         scale_label = wx.StaticText(self.panel, wx.ID_ANY, label='Scale: ')
         scale_box.Add(scale_label)
-        self.scale_slider = wx.Slider(self.panel, value=0, minValue=0, maxValue=100)
+        self.scale_slider = wx.Slider(self.panel, value=curr_scale, minValue=50, maxValue=1000)
         scale_box.Add(self.scale_slider)
 
         camera_box.Add(scale_box, 1, flag=wx.LEFT, border=15)
 
         camera_static_box = wx.StaticBox(self.panel, 0, 'Virtual Cameras')
         camera_static_sizer = wx.StaticBoxSizer(camera_static_box, wx.HORIZONTAL)
-        camera_static_sizer.Add(camera_box)
+        camera_static_sizer.Add(camera_box)  
 
         self.vbox1.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.TOP | wx.BOTTOM | wx.EXPAND, border=5)
 
         self.panel.SetSizer(self.vbox1)
+
+        self.Bind(wx.EVT_SPINCTRL, self.on_spin_control)
+        self.Bind(wx.EVT_COMBOBOX, self.on_combo)
+        self.Bind(wx.EVT_SLIDER, self.on_slider)
 
     def on_combo(self, event):
         choice = self.proxy_style_combo.GetStringSelection()
@@ -217,4 +221,17 @@ class PreferenceFrame(wx.Frame):
             self.vbox1.Layout()  
 
     def on_spin_control(self, event):
-        print("hi")
+        sc = event.GetEventObject()
+        name = sc.Name
+        
+        # Handles dimension spin controls
+        if name[0] == 'd' or name[0] == 'o':
+                self.canvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
+
+    def on_slider(self, event):
+        slider = event.GetEventObject()
+
+        self.canvas.camera_scale = slider.Value
+
+
+

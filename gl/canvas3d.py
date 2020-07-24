@@ -73,11 +73,15 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
+        self.axes = axes
+        self.every = 100
+        self.subdivisions = 10
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
-        self._bed3d = Bed3D(self._build_dimensions, axes=axes, every=every, subdivisions=subdivisions)
+        self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
         self._path3d = Path3D()
 
         self._camera3d_list = []
+        self._camera_scale = 100
         self._path3d_list = []
         self._quadric = None
         self._zoom = 1
@@ -312,11 +316,25 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._camera3d_list:
             return
         for cam in self._camera3d_list:
-            cam.render()
+            cam.render(self._camera_scale)
 
     def _render_paths(self):
         if not self._path3d_list:
             return
+
+    # ----------------
+    # Bed3D functions
+    # ----------------
+    @property
+    def build_dimensions(self):
+        return self._build_dimensions
+
+    @build_dimensions.setter
+    def build_dimensions(self, value):
+        self._build_dimensions = value
+        self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
+        
+        self.set_dirty()
 
     # ------------------
     # Camera3D functions
@@ -381,6 +399,16 @@ class Canvas3D(glcanvas.GLCanvas):
         self._selected_cam.is_selected = True
 
         # refresh canvas
+        self.set_dirty
+
+    @property
+    def camera_scale(self):
+        return self._camera_scale
+
+    @camera_scale.setter
+    def camera_scale(self, value):
+        self._camera_scale = value
+        
         self.set_dirty
 
     # ----------------
