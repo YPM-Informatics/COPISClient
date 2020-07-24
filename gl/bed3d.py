@@ -6,6 +6,8 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from gl.proxy3d import Proxy3D
+
 
 class _Axes():
 
@@ -67,10 +69,6 @@ class _Axes():
         glTranslated(*self.origin)
         self._render_arrow(z[0])
         glPopMatrix()
-
-        # origin sphere
-        glColor3f(0.0, 0.0, 0.0)
-        gluSphere(self._quadric, self._arrow_base_radius, 32, 32)
 
     def _render_arrow(self, length):
         glTranslated(0.0, 0.0, length)

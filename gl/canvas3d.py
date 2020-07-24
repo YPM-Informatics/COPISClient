@@ -17,6 +17,7 @@ from gl.glhelper import arcball, axis_to_quat, quat_to_matrix4, mul_quat, draw_c
 from gl.path3d import Path3D
 from gl.camera3d import Camera3D
 from gl.bed3d import Bed3D
+from gl.proxy3d import Proxy3D
 
 
 class _Size():
@@ -78,6 +79,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self.subdivisions = 10
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
         self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
+        self._proxy3d = Proxy3D('Sphere', 100, (140, 100, 163))
         self._path3d = Path3D()
 
         self._camera3d_list = []
@@ -162,6 +164,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._render_background()
 
         self._render_platform()
+        self._render_proxy()
         self._render_objects()
         self._render_cameras()
         self._render_paths()
@@ -308,6 +311,12 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
         self._bed3d.render()
+    
+    def _render_proxy(self):
+        if self._proxy3d is None:
+            return
+
+        self._proxy3d.render()
 
     def _render_objects(self):
         return
@@ -335,6 +344,24 @@ class Canvas3D(glcanvas.GLCanvas):
         self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
         
         self.set_dirty()
+
+    # ----------------
+    # Proxy3D functions
+    # ----------------
+    @property
+    def proxy3d(self):
+        return self._proxy3d
+
+    @proxy3d.setter
+    def proxy3d(self, *args):
+        style = args[0]
+
+        if style == 'Sphere':
+            self._proxy3d = Proxy3D('Sphere', args[1], args[2])
+        elif style == 'Cylinder':
+            self._proxy3d = Proxy3D('Cylinder', args[1], args[2], args[3])
+        elif style == 'Cube':
+            self._proxy3d = Proxy3D('Cube', args[1], args[2], args[3], args[4])
 
     # ------------------
     # Camera3D functions
