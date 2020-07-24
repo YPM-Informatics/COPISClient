@@ -7,7 +7,7 @@ from ctypes import *
 
 from utils import svgbmp
 
-from gui.panels.cmd import CommandPanel
+from gui.panels.command import CommandPanel
 from gui.panels.console import ConsolePanel
 from gui.panels.controller import ControllerPanel
 from gui.panels.evf import EvfPanel
@@ -523,7 +523,7 @@ class MainFrame(wx.Frame):
         # refresh combobox
         self.controller_panel.masterCombo.SetSelection(camid)
 
-    def terminateEDSDK(self):
+    def terminate_edsdk(self):
         if not self.is_edsdk_on:
             return
 

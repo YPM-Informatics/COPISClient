@@ -20,13 +20,9 @@ class ControllerPanel(wx.VScrolledWindow):
         self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
         self.font.SetPointSize(15)
 
-        # Positioning section starts
+        # positioning section starts
         positioning_vbox = self.InitPositioning()
         vboxLeft.Add(positioning_vbox, 0.5, flag=wx.LEFT|wx.TOP, border=5)
-
-        # Circular path generator section
-        # circular_path_hbox = self.InitCircularPathGenerator()
-        # vboxLeft.Add(circular_path_hbox, 0.5, flag=wx.LEFT|wx.TOP, border=5)
 
         # camera control section
         cam_control_vbox = self.InitCamControl()
@@ -283,13 +279,11 @@ class ControllerPanel(wx.VScrolledWindow):
             direction = event.GetEventObject().direction
 
             if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdBox = self.command_panel.window.cmd
+                cmdbox = self.command_panel.cmd
                 size = self.xyzSc.GetValue()
 
                 if direction == CamAxis.MINUS:
                     size = -size
-
-                size = size / 100
             else:
                 size = self.bcSc.GetValue()
 
@@ -338,12 +332,12 @@ class ControllerPanel(wx.VScrolledWindow):
             self.ptpRb.Disable()
 
             if self.parent.is_edsdk_on:
-                self.parent.terminateEDSDK()
+                self.parent.terminate_edsdk()
         elif rb.Label == 'EDSDK':
             self.parent.initEDSDK()
         else:
             if self.parent.is_edsdk_on:
-                self.parent.terminateEDSDK()
+                self.parent.terminate_edsdk()
 
     def onStartEvf(self, event):
         if self.parent.get_selected_camera() is not None:

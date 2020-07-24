@@ -59,6 +59,7 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_max = 7.0
 
     def __init__(self, parent, build_dimensions=None, axes=True, every=100, subdivisions=10):
+        # TODO: add more init attributes such as pos and size
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
@@ -85,8 +86,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
-
-        self._main_frame = parent.parent
 
         # initialize opengl context
         self._context = glcanvas.GLContext(self)
@@ -242,7 +241,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if camid > len(self._camera3d_list) or camid < 0:
             return 0
 
-        self._main_frame.set_selected_camera(camid)
+        wx.GetApp().mainframe.set_selected_camera(camid)
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -318,75 +317,9 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._path3d_list:
             return
 
-    # ------------------
-    # Camera3D functions
-    # ------------------
-
-    # TODO: move camera logic (and all methods that aren't graphics based)
-    # out of Canvas3D
-
-    def on_clear_cameras(self):
-        """Clear Camera3D list."""
-        self._camera3d_list = []
-        self._dirty = True
-
-    def get_camera_objects(self):
-        """Return Camera3D list."""
-        return self._camera3d_list
-
-    def add_camera(self, camid=-1):
-        """Add new Camera3D."""
-        x = random.random() * self._build_dimensions[0] - self._build_dimensions[3]
-        y = random.random() * self._build_dimensions[1] - self._build_dimensions[4]
-        z = random.random() * self._build_dimensions[2] - self._build_dimensions[5]
-        b = random.randrange(0, 360, 5)
-        c = random.randrange(0, 360, 5)
-
-        if camid == -1:
-            camid = self._generate_camera_id()
-
-        cam_3d = Camera3D(camid, x, y, z, b, c)
-        self._camera3d_list.append(cam_3d)
-        self._dirty = True
-
-        return str(cam_3d.camid)
-
-    def get_camera_by_id(self, camid):
-        """Return Camera3D by id."""
-        if self._camera3d_list:
-            for cam in self._camera3d_list:
-                if cam.camid == camid:
-                    return cam
-        return None
-
-    def _generate_camera_id(self):
-        if self._camera3d_list:
-            self._camera3d_list.sort(key=lambda x: x.camid)
-            return self._camera3d_list[-1].camid + 1
-        return 0
-
-    def get_selected_camera(self):
-        if self._selected_cam:
-            return self._selected_cam
-        return None
-
-    def set_selected_camera(self, id):
-        # reset previously selected camera
-        last_selected = self.get_selected_camera()
-        if last_selected:
-            last_selected.is_selected = False
-
-        # update new selected camera
-        self._selected_cam = self.get_camera_by_id(id)
-        self._selected_cam.is_selected = True
-
-        # refresh canvas
-        self.set_dirty
-
-    # ----------------
-    # Path3D functions
-    # ----------------
-
+    @property
+    def bed3d(self):
+        return self._bed3d
 
     # -----------------------
     # Canvas camera functions
