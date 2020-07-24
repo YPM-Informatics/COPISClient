@@ -14,7 +14,7 @@ class VisualizerPanel(wx.Panel):
 
         self.parent = parent
         self._selected_cam = None
-        self._build_dimensions = [4, 4, 4, 2, 2, 2]
+        self._build_dimensions = [400, 400, 400, 200, 200, 200]
 
         self.glcanvas = Canvas3D(
             self,
@@ -22,10 +22,13 @@ class VisualizerPanel(wx.Panel):
             axes=True,
             every=100,
             subdivisions=10)
+
+        self.zoom_slider = None
+
         self.init_panel()
 
     def init_panel(self):
-        sizer = wx.BoxSizer(orient=wx.VERTICAL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
 
         # add Canvas3D
         sizer.Add(self.glcanvas, 1, wx.EXPAND)
@@ -34,21 +37,23 @@ class VisualizerPanel(wx.Panel):
         navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 32), style=wx.BORDER_RAISED)
         navbar_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        zoom = wx.StaticText(navbar, wx.ID_ANY, 'Zoom level', wx.DefaultPosition, wx.DefaultSize, 0)
-        navbar_sizer.Add(zoom, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
-
-        zoom_slider = wx.Slider(navbar, wx.ID_ANY, 50, 0, 100, style=wx.SL_HORIZONTAL)
-        navbar_sizer.Add(zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        # add zoom slider and text
+        navbar_sizer.Add(wx.StaticText(navbar, wx.ID_ANY, 'Zoom', wx.DefaultPosition, wx.DefaultSize, 0), 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
+        self.zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self.glcanvas.zoom_min*10, self.glcanvas.zoom_max*10, size=(150, -1), style=wx.SL_HORIZONTAL)
+        self.zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
+        navbar_sizer.Add(self.zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
 
         wx.StaticLine(navbar, wx.ID_ANY, style=wx.LI_VERTICAL)
         navbar_sizer.Add(wx.StaticLine(navbar, wx.ID_ANY, style=wx.LI_VERTICAL), 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 5)
 
-        axes_check = wx.CheckBox(navbar, wx.ID_ANY, 'Show &axes')
+        # add axes checkbox
+        axes_check = wx.CheckBox(navbar, wx.ID_ANY, '&Axes')
         axes_check.SetValue(True)
         axes_check.Bind(wx.EVT_CHECKBOX, self.on_axes_check)
         navbar_sizer.Add(axes_check, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 5)
 
-        bbox_check = wx.CheckBox(navbar, wx.ID_ANY, 'Show &bounding boxes')
+        # add bounding box checkbox
+        bbox_check = wx.CheckBox(navbar, wx.ID_ANY, '&Bounding boxes')
         bbox_check.SetValue(True)
         bbox_check.Bind(wx.EVT_CHECKBOX, self.on_bbox_check)
         navbar_sizer.Add(bbox_check, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, 5)
@@ -56,6 +61,12 @@ class VisualizerPanel(wx.Panel):
         navbar.SetSizerAndFit(navbar_sizer)
         sizer.Add(navbar, 0, wx.EXPAND)
         self.SetSizerAndFit(sizer)
+
+    def on_zoom_slider(self, event):
+        self.glcanvas.zoom = event.GetInt() / 10
+
+    def set_zoom_slider(self, value):
+        self.zoom_slider.SetValue(value * 10)
 
     def on_axes_check(self, event):
         if self.glcanvas is None:

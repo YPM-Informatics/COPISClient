@@ -333,7 +333,7 @@ class MainFrame(wx.Frame):
         self._mgr.AddPane(self.panels['visualizer'], aui.AuiPaneInfo(). \
             Name('visualizer').Caption('Visualizer'). \
             Dock().Center().MaximizeButton().MinimizeButton(). \
-            DefaultPane().MinSize(150, 200))
+            DefaultPane().MinSize(380, 250))
 
         # add console, command panel
         self._mgr.AddPane(self.panels['console'], aui.AuiPaneInfo(). \
