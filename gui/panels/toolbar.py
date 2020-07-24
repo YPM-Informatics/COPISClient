@@ -35,7 +35,7 @@ class ToolbarPanel(aui.AuiToolBar):
 
     def init_toolbar(self):
         """Initialize and populate toolbar.
-        Icons from https://material.io/resources/icons/?style=baseline.
+        Icons taken from https://material.io/resources/icons/?style=baseline.
         """
         # add port, baud comboboxes
         self.AddControl(wx.StaticText(self, wx.ID_ANY, 'Port', style=wx.ALIGN_LEFT))

@@ -350,18 +350,17 @@ class MainFrame(wx.Frame):
         self._mgr.AddPane(self.panels['controller'], aui.AuiPaneInfo(). \
             Name('controller').Caption('Controller'). \
             Dock().Right().Position(0).Layer(1). \
-            MinSize(250, 420).Show(True))
+            MinSize(325, 420).Show(True))
         self._mgr.AddPane(self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
             Dock().Right().Position(1).Layer(1). \
-            MinSize(200, 50).Show(True),
-            target=self._mgr.GetPane('controller'))
+            MinSize(200, 50).Show(True))
         self.panels['path'] = PathPanel(self)
         self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
             Name('path').Caption('Paths'). \
             Dock().Right().Position(2).Layer(1). \
             MinSize(200, 50).Show(True),
-            target=self._mgr.GetPane('controller'))
+            target=self._mgr.GetPane('properties'))
 
         # set first tab of all auto notebooks as the one selected
         for notebook in self._mgr.GetNotebooks():
