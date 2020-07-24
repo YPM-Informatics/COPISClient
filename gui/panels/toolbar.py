@@ -107,6 +107,10 @@ class ToolbarPanel(aui.AuiToolBar):
                     cam.translate(1, 1, 1)
             else:
                 set_dialog('Please select the camera to control.')
+        elif event.GetID() == ToolIds.PAUSE.value:
+            pass
+        else:
+            pass
 
     def __del__(self, event):
         return

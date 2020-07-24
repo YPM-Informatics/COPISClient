@@ -8,7 +8,7 @@ from gui.main_frame import MainFrame
 
 
 class COPISApp(wx.App):
-    main_window = None
+    mainframe = None
 
     def __init__(self, *args, **kwargs):
         super(COPISApp, self).__init__(*args, **kwargs)
@@ -19,12 +19,12 @@ class COPISApp(wx.App):
 
         self.SetAppName('COPIS')
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
-        self.main_window = MainFrame(
+        self.mainframe = MainFrame(
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
             size=(1200, 900))
-        self.main_window.Show()
+        self.mainframe.Show()
 
     def init_app_config(self):
         if self.app_config is None:
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
 
-    # if app.frame.is_edsdk_on:
-    #     app.frame.terminateEDSDK()
+    if app.mainframe.is_edsdk_on:
+        app.mainframe.terminate_edsdk()
 
     del app
