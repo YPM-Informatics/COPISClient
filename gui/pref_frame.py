@@ -17,6 +17,10 @@ class PreferenceFrame(wx.Frame):
     def init_panel(self):
         curr_dims = self.canvas.build_dimensions
         curr_scale = self.canvas.camera_scale
+        curr_proxy_style = self.canvas.proxy3d.style
+        curr_proxy_dims = self.canvas.proxy3d.dimensions
+        curr_proxy_color = self.canvas.proxy3d.color
+
         self.panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
 
         self.vbox1 = wx.BoxSizer(wx.VERTICAL)
@@ -108,6 +112,11 @@ class PreferenceFrame(wx.Frame):
         self.sphere_style_box.Add(self.sphere_radius_sc)
         self.proxy_style_box.Add(self.sphere_style_box)
 
+        if curr_proxy_style != 'Sphere':
+            self.proxy_style_box.Hide(self.sphere_style_box)
+        else:
+            self.sphere_radius_sc.Value = curr_proxy_dims
+
         # Style/Cylinder style options
         self.cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
 
@@ -128,7 +137,12 @@ class PreferenceFrame(wx.Frame):
         self.cylinder_style_box.Add(cylinder_height_box)
 
         self.proxy_style_box.Add(self.cylinder_style_box)
-        self.proxy_style_box.Hide(self.cylinder_style_box)
+
+        if curr_proxy_style != 'Cylinder':
+            self.proxy_style_box.Hide(self.cylinder_style_box)
+        else:
+            self.cylinder_radius_sc.Value = curr_proxy_dims[0]
+            self.cylinder_height_sc.Value = curr_proxy_dims[1]
 
         # Style/Cube style options
         self.cube_style_box = wx.BoxSizer(wx.VERTICAL)
@@ -158,13 +172,20 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(self.cube_style_box)
         self.proxy_style_box.Hide(self.cube_style_box)
 
+        if curr_proxy_style != 'Cube':
+            self.proxy_style_box.Hide(self.cube_style_box)
+        else:
+            self.cube_width_sc.Value = curr_proxy_dims[0]
+            self.cube_length_sc.Value = curr_proxy_dims[1]
+            self.cube_height_sc.Value = curr_proxy_dims[2]
+
         # Proxy Object/Color box
         color_box = wx.BoxSizer()
         color_label = wx.StaticText(self.panel, wx.ID_ANY, label='RGB Color: ')
         color_box.Add(color_label)
-        self.color_r_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
-        self.color_g_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
-        self.color_b_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=255)
+        self.color_r_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[0]), size=wx.Size(60, 22), min=0, max=255)
+        self.color_g_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[1]), size=wx.Size(60, 22), min=0, max=255)
+        self.color_b_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[2]), size=wx.Size(60, 22), min=0, max=255)
         color_box.Add(self.color_r_sc)
         color_box.Add(self.color_g_sc)
         color_box.Add(self.color_b_sc)
