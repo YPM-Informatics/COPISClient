@@ -63,6 +63,7 @@ class Canvas3D(glcanvas.GLCanvas):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
+        self.parent = parent
 
         self._gl_initialized = False
         self._dirty = False # dirty flag to track when we need to re-render the canvas
@@ -289,6 +290,7 @@ class Canvas3D(glcanvas.GLCanvas):
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
         self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
+        self._update_parent_zoom_slider()
 
     def _refresh_if_shown_on_screen(self):
         if self._is_shown_on_screen():
@@ -316,6 +318,18 @@ class Canvas3D(glcanvas.GLCanvas):
     def _render_paths(self):
         if not self._path3d_list:
             return
+
+    def _update_parent_zoom_slider(self):
+        self.parent.set_zoom_slider(self._zoom)
+
+    @property
+    def zoom(self):
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, value):
+        self._zoom = value
+        self._dirty = True
 
     @property
     def bed3d(self):
