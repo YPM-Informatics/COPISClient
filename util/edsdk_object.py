@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import time
-import util
+import utils
 
 import wx
 from ctypes import *
-from utils.Canon.EDSDKLib import *
+from util.Canon.EDSDKLib import *
 
 _edsdk = None
 _console = None

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import wx
+from utils import set_dialog
 
 
 class CommandPanel(wx.Panel):
@@ -85,9 +86,9 @@ class CommandPanel(wx.Panel):
                 self.cmd.SetString(selected, replacement)
                 self.cmdWriter.SetValue('')
             else:
-                util.set_dialog('Please type command to replace.')
+                set_dialog('Please type command to replace.')
         else:
-            util.set_dialog('Please select the command to replace.')
+            set_dialog('Please select the command to replace.')
 
     def OnDeleteCommand(self, event):
         size = event.GetEventObject().size
@@ -96,6 +97,6 @@ class CommandPanel(wx.Panel):
             if index != -1:
                 self.cmd.Delete(index)
             else:
-                util.set_dialog('Please select the command to delete.')
+                set_dialog('Please select the command to delete.')
         else:
             self.cmd.Clear()

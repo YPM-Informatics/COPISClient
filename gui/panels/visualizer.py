@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Visualizer panel. Creates a Canvas3D OpenGL canvas."""
 
-import util
 import wx
+import utils
 from gl.canvas3d import Canvas3D
 
 

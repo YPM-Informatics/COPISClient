@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import wx
+import wx.svg as svg
 import wx.lib.agw.aui as aui
 from ctypes import *
+
+from utils import svgbmp
 
 from gui.panels.cmd import CommandPanel
 from gui.panels.console import ConsolePanel
@@ -107,22 +110,43 @@ class MainFrame(wx.Frame):
 
         # File menu
         file_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(wx.ID_ANY, '&New Project\tCtrl+N', ''))
-        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(wx.ID_ANY, '&Open...\tCtrl+O', ''))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, '&New Project\tCtrl+N', 'Create new project')
+        _item.SetBitmap(svgbmp('img/add-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Open...\tCtrl+O', 'Open project')
+        _item.SetBitmap(svgbmp('img/open_in_new-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(_item))
         file_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(wx.ID_ANY, '&Save\tCtrl+S', ''))
-        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', ''))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Save\tCtrl+S', 'Save project')
+        _item.SetBitmap(svgbmp('img/save-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', 'Save project as')
+        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
         file_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Import GCODE...', ''))
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(wx.ID_ANY, '&Generate GCODE\tF8', ''))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Import GCODE...', '')
+        _item.SetBitmap(svgbmp('img/get_app-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
+        _item.SetBitmap(svgbmp('img/publish-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
         file_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(wx.ID_EXIT, 'E&xit\tAlt+F4', 'Close the program'))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
+        _item.SetBitmap(svgbmp('img/exit_to_app-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(_item))
 
         # Edit menu
         edit_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, None, edit_menu.Append(wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts'))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts')
+        self.Bind(wx.EVT_MENU, None, edit_menu.Append(_item))
         edit_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, self.open_preferences_dialog, edit_menu.Append(wx.ID_ANY, '&Preferences', 'Open preferences'))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Preferences', 'Open preferences')
+        _item.SetBitmap(svgbmp('img/tune-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.open_preferences_dialog, edit_menu.Append(_item))
 
         # View menu
         view_menu = wx.Menu()
@@ -136,36 +160,46 @@ class MainFrame(wx.Frame):
 
         # Window menu
         window_menu = wx.Menu()
-        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Toggle visibility of camera EVF window', wx.ITEM_CHECK)
+        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Show/hide camera EVF window', wx.ITEM_CHECK)
         self.menuitems['evf'].Check(False)
         self.Bind(wx.EVT_MENU, self.update_evf_panel, self.menuitems['evf'])
-        self.menuitems['command'] = window_menu.Append(wx.ID_ANY, 'Command', 'Toggle visibility of command window', wx.ITEM_CHECK)
+        self.menuitems['command'] = window_menu.Append(wx.ID_ANY, 'Command', 'Show/hide command window', wx.ITEM_CHECK)
         self.menuitems['command'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_command_panel, self.menuitems['command'])
-        self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console', 'Toggle visibility of console window', wx.ITEM_CHECK)
+        self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console', 'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
-        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller', 'Toggle visibility of controller window', wx.ITEM_CHECK)
+        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller', 'Show/hide controller window', wx.ITEM_CHECK)
         self.menuitems['controller'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
-        self.menuitems['path'] = window_menu.Append(wx.ID_ANY, 'Paths', 'Toggle visibility of paths window', wx.ITEM_CHECK)
+        self.menuitems['path'] = window_menu.Append(wx.ID_ANY, 'Paths', 'Show/hide paths window', wx.ITEM_CHECK)
         self.menuitems['path'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_path_panel, self.menuitems['path'])
-        self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Toggle visibility of camera properties window', wx.ITEM_CHECK)
+        self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Show/hide camera properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
-        self.menuitems['visualizer'] = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Toggle visibility of visualizer window', wx.ITEM_CHECK)
+        self.menuitems['visualizer'] = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Show/hide visualizer window', wx.ITEM_CHECK)
         self.menuitems['visualizer'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.menuitems['visualizer'])
         window_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, None, window_menu.Append(wx.ID_ANY, 'Window &Preferences...', 'Open window preferences', wx.ITEM_NORMAL))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
+        _item.SetBitmap(svgbmp('img/tune-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, None, window_menu.Append(_item))
 
         # Help menu
         help_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, None, help_menu.Append(wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu', wx.ITEM_NORMAL))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu')
+        _item.SetBitmap(svgbmp('img/help_outline-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, None, help_menu.Append(_item))
         help_menu.AppendSeparator()
-        self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', 'Open www.copis3d.org', wx.ITEM_NORMAL))
-        self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(wx.ID_ANY, '&About COPIS...', 'Show about dialog', wx.ITEM_NORMAL))
+
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', 'Open www.copis3d.org')
+        _item.SetBitmap(svgbmp('img/open_in_new-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&About COPIS...', 'Show about dialog')
+        _item.SetBitmap(svgbmp('img/info-24px.svg', 16))
+        self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(_item))
 
         self.menubar.Append(file_menu, '&File')
         self.menubar.Append(edit_menu, '&Edit')
@@ -334,17 +368,17 @@ class MainFrame(wx.Frame):
             notebook.SetSelection(0)
 
         # add toolbar panel
-        # self.toolbar.Realize()
+        self.panels['toolbar'].Realize()
         self._mgr.AddPane(self.panels['toolbar'], aui.AuiPaneInfo().
             Name('toolbar').Caption('Toolbar'). \
-            ToolbarPane().DockFixed(True). \
-            Top().DestroyOnClose())
+            ToolbarPane().BottomDockable(False). \
+            Top().Layer(10))
 
         self._mgr.Update()
 
     def add_evf_pane(self):
         self.panels['evf'] = EvfPanel(self)
-        self.AddPane(evf_panel, aui.AuiPaneInfo(). \
+        self.AddPane(self.panels['evf'], aui.AuiPaneInfo(). \
             Name('Evf').Caption('Live View'). \
             Float().Right().Position(1).Layer(0). \
             MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
@@ -392,6 +426,10 @@ class MainFrame(wx.Frame):
         #     pane.window.Destroy()
 
     @property
+    def evf_panel(self):
+        return self.panels['evf']
+
+    @property
     def command_panel(self):
         return self.panels['command']
 
@@ -402,10 +440,6 @@ class MainFrame(wx.Frame):
     @property
     def controller_panel(self):
         return self.panels['controller']
-
-    @property
-    def evf_panel(self):
-        return self.panels['evf']
 
     @property
     def path_panel(self):
@@ -431,9 +465,9 @@ class MainFrame(wx.Frame):
         if self.is_edsdk_on:
             return
 
-        import utils.edsdk_object
+        import util.edsdk_object
 
-        self.edsdk_object = utils.edsdk_object
+        self.edsdk_object = util.edsdk_object
         self.edsdk_object.initialize(self.console_panel)
         self.is_edsdk_on = True
         self.getCameraList()
