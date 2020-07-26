@@ -152,7 +152,7 @@ class ControllerPanel(wx.Panel):
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
         return vboxPositioning
 
-    def InitCamControl(self):s
+    def InitCamControl(self):
         vbox = wx.BoxSizer(wx.VERTICAL)
         cameraControlLabel = wx.StaticText(self, wx.ID_ANY, label='Camera Control', style=wx.ALIGN_LEFT)
         cameraControlLabel.SetFont(self.font)
