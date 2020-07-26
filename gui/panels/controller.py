@@ -352,7 +352,7 @@ class ControllerPanel(wx.VScrolledWindow):
 
         if self.edsdkRb.GetValue():
             self.parent.is_edsdk_on = False
-            self.parent.getCameraList()
+            self.parent.get_camera_list()
 
     def onCreateVirtualCam(self, event):
         camid = self.visualizer_panel.add_camera()

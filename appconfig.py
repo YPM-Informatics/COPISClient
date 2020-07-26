@@ -30,36 +30,29 @@ class AppConfig():
             raise IOError(
                 'Error reading COPIS config file.\n'
                 'Try to manually delete the file to recover from the error.\n')
+            return False
         finally:
             pass
-        print('configparser testing: please ignore output')
-        print([[option for option in self._config[section]] for section in self._config.sections()])
+        return True
 
     def save(self):
-        """Writes self._storage into specified config file.
-        TODO
-        """
-        path = self.config_path()
-        self._dirty = False
+        """Save config."""
+        if not self._dirty:
+            return True
 
-    def get(self, value):
-        """Get value of specified key.
-        TODO
-        """
-        if self._config is None:
-            return False
-        pass
+        with open(self.config_path(), 'w') as configfile:
+            self._config.write(configfile)
+            self._dirty = False
+        return True
 
     @property
     def config(self):
-        return self._config
-
-    def dirty(self):
         self._dirty = True
+        return self._config
 
     def update_config_dir(self, dir):
         """TODO"""
-        pass
+        self._dirty = True
 
     def exists(self):
         return self.config_path().exists()

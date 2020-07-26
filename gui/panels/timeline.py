@@ -5,9 +5,9 @@ from utils import set_dialog
 
 
 """
-TODO: Improve command panel
+TODO: Improve timeline panel
 """
-class CommandPanel(wx.Panel):
+class TimelinePanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.init_ui()

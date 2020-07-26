@@ -13,9 +13,9 @@ class COPISApp(wx.App):
     def __init__(self, *args, **kwargs):
         super(COPISApp, self).__init__(*args, **kwargs)
 
-        self.app_config = None
-        self.app_config_exists = False
-        self.init_app_config()
+        self.appconfig = None
+        self.appconfig_exists = False
+        self.init_appconfig()
 
         self.SetAppName('COPIS')
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
@@ -23,16 +23,17 @@ class COPISApp(wx.App):
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
-            size=(1200, 900))
+            size=(int(self.appconfig.config['General']['windowwidth']),
+                  int(self.appconfig.config['General']['windowheight'])))
         self.mainframe.Show()
 
-    def init_app_config(self):
-        if self.app_config is None:
-            self.app_config = AppConfig()
+    def init_appconfig(self):
+        if self.appconfig is None:
+            self.appconfig = AppConfig()
 
-        self.app_config_exists = self.app_config.exists()
-        if self.app_config_exists:
-            self.app_config.load()
+        self.appconfig_exists = self.appconfig.exists()
+        if self.appconfig_exists:
+            self.appconfig.load()
 
 
 if __name__ == '__main__':

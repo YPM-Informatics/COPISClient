@@ -51,18 +51,18 @@ class ToolbarPanel(aui.AuiToolBar):
         self.AddSeparator()
 
         # add play, pause, stop tools
-        play_bmp = svgbmp('img/play_arrow-24px.svg', 24)
-        self.AddTool(ToolIds.PLAY.value, 'Play', play_bmp, play_bmp, aui.ITEM_NORMAL, short_help_string='Play simulation')
-        pause_bmp = svgbmp('img/pause-24px.svg', 24)
-        self.AddTool(ToolIds.PAUSE.value, 'Pause', pause_bmp, pause_bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
-        stop_bmp = svgbmp('img/stop-24px.svg', 24)
-        self.AddTool(ToolIds.STOP.value, 'Stop', stop_bmp, stop_bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
+        _bmp = svgbmp('img/play_arrow-24px.svg', 24)
+        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Play simulation')
+        _bmp = svgbmp('img/pause-24px.svg', 24)
+        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
+        _bmp = svgbmp('img/stop-24px.svg', 24)
+        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
 
         self.AddSeparator()
 
         # add settings tool
-        settings_bmp = svgbmp('img/settings-24px.svg', 24)
-        self.AddTool(ToolIds.SETTINGS.value, 'Settings', settings_bmp, settings_bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
+        _bmp = svgbmp('img/settings-24px.svg', 24)
+        self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
     def on_select_port(self, event):
         port_cb = self.FindControl(event.GetId())

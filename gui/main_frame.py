@@ -7,12 +7,12 @@ from ctypes import *
 
 from utils import svgbmp
 
-from gui.panels.command import CommandPanel
 from gui.panels.console import ConsolePanel
 from gui.panels.controller import ControllerPanel
 from gui.panels.evf import EvfPanel
 from gui.panels.paths import PathPanel
 from gui.panels.properties import PropertiesPanel
+from gui.panels.timeline import TimelinePanel
 from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
 
@@ -89,11 +89,11 @@ class MainFrame(wx.Frame):
             - &Preferences
         - &Window
             - [ ] Camera EVF
-            - [x] Command
             - [x] Console
             - [x] Controller
             - [x] Paths
             - [x] Properties
+            - [x] Timeline
             - [x] Visualizer
               ---
             - Window &Preferences...
@@ -161,11 +161,8 @@ class MainFrame(wx.Frame):
         # Window menu
         window_menu = wx.Menu()
         self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Show/hide camera EVF window', wx.ITEM_CHECK)
-        self.menuitems['evf'].Check(False)
+        self.menuitems['evf'].Enable(False)
         self.Bind(wx.EVT_MENU, self.update_evf_panel, self.menuitems['evf'])
-        self.menuitems['command'] = window_menu.Append(wx.ID_ANY, 'Command', 'Show/hide command window', wx.ITEM_CHECK)
-        self.menuitems['command'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_command_panel, self.menuitems['command'])
         self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console', 'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
@@ -178,6 +175,9 @@ class MainFrame(wx.Frame):
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Show/hide camera properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
+        self.menuitems['timeline'] = window_menu.Append(wx.ID_ANY, 'Timeline', 'Show/hide timeline window', wx.ITEM_CHECK)
+        self.menuitems['timeline'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_timeline_panel, self.menuitems['timeline'])
         self.menuitems['visualizer'] = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Show/hide visualizer window', wx.ITEM_CHECK)
         self.menuitems['visualizer'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.menuitems['visualizer'])
@@ -321,10 +321,14 @@ class MainFrame(wx.Frame):
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
         self._mgr.SetArtProvider(dockart)
 
+        # tabart = aui.AuiSimpleTabArt()
+        tabart = aui.VC71TabArt()
+        self._mgr.SetAutoNotebookTabArt(tabart)
+
         # initialize relevant panels
         self.panels['visualizer'] = VisualizerPanel(self)
         self.panels['console'] = ConsolePanel(self)
-        self.panels['command'] = CommandPanel(self)
+        self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
         self.panels['toolbar'] = ToolbarPanel(self)
@@ -335,13 +339,13 @@ class MainFrame(wx.Frame):
             Dock().Center().MaximizeButton().MinimizeButton(). \
             DefaultPane().MinSize(380, 250))
 
-        # add console, command panel
+        # add console, timeline panel
         self._mgr.AddPane(self.panels['console'], aui.AuiPaneInfo(). \
             Name('console').Caption('Console'). \
             Dock().Bottom().Position(0).Layer(0). \
             MinSize(50, 150).Show(True))
-        self._mgr.AddPane(self.panels['command'], aui.AuiPaneInfo(). \
-            Name('command').Caption('Send Command'). \
+        self._mgr.AddPane(self.panels['timeline'], aui.AuiPaneInfo(). \
+            Name('timeline').Caption('Timeline'). \
             Dock().Bottom().Position(1).Layer(0). \
             MinSize(50, 150).Show(True),
             target=self._mgr.GetPane('console'))
@@ -383,23 +387,23 @@ class MainFrame(wx.Frame):
             MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
         self.Update()
 
-    def update_evf_panel(self, event):
-        self._mgr.ShowPane(self.evf_panel, event.IsChecked())
-
-    def update_command_panel(self, event):
-        self._mgr.ShowPane(self.command_panel, event.IsChecked())
-
     def update_console_panel(self, event):
         self._mgr.ShowPane(self.console_panel, event.IsChecked())
 
     def update_controller_panel(self, event):
         self._mgr.ShowPane(self.controller_panel, event.IsChecked())
 
+    def update_evf_panel(self, event):
+        self._mgr.ShowPane(self.evf_panel, event.IsChecked())
+
     def update_path_panel(self, event):
         self._mgr.ShowPane(self.path_panel, event.IsChecked())
 
     def update_properties_panel(self, event):
         self._mgr.ShowPane(self.properties_panel, event.IsChecked())
+
+    def update_timeline_panel(self, event):
+        self._mgr.ShowPane(self.timeline_panel, event.IsChecked())
 
     def update_visualizer_panel(self, event):
         self._mgr.ShowPane(self.visualizer_panel, event.IsChecked())
@@ -425,20 +429,16 @@ class MainFrame(wx.Frame):
         #     pane.window.Destroy()
 
     @property
-    def evf_panel(self):
-        return self.panels['evf']
-
-    @property
-    def command_panel(self):
-        return self.panels['command']
-
-    @property
     def console_panel(self):
         return self.panels['console']
 
     @property
     def controller_panel(self):
         return self.panels['controller']
+
+    @property
+    def evf_panel(self):
+        return self.panels['evf']
 
     @property
     def path_panel(self):
@@ -449,16 +449,16 @@ class MainFrame(wx.Frame):
         return self.panels['properties']
 
     @property
+    def timeline_panel(self):
+        return self.panels['timeline']
+
+    @property
     def toolbar_panel(self):
         return self.panels['toolbar']
 
     @property
     def visualizer_panel(self):
         return self.panels['visualizer']
-
-    # TODO: figure out what this method does
-    def rightClick(self, event):
-        self.PopupMenu(MyPopupMenu(self), event.GetPosition())
 
     def initEDSDK(self):
         if self.is_edsdk_on:
@@ -469,9 +469,9 @@ class MainFrame(wx.Frame):
         self.edsdk_object = util.edsdk_object
         self.edsdk_object.initialize(self.console_panel)
         self.is_edsdk_on = True
-        self.getCameraList()
+        self.get_camera_list()
 
-    def getCameraList(self):
+    def get_camera_list(self):
         self.cam_list = self.edsdk_object.CameraList()
         cam_count = self.cam_list.get_count()
 
@@ -517,10 +517,8 @@ class MainFrame(wx.Frame):
             if self.cam_list[camid]:
                 self.parent.cam_list.set_selected_cam_by_id(camid)
 
-        # refresh canvas
+        # refresh canvas and combobox
         self.visualizer_panel.set_dirty()
-
-        # refresh combobox
         self.controller_panel.masterCombo.SetSelection(camid)
 
     def terminate_edsdk(self):
