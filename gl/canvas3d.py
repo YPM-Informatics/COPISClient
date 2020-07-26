@@ -79,7 +79,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self.subdivisions = 10
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
         self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
-        self._proxy3d = Proxy3D('Sphere', 100, (140, 100, 163))
+        self._proxy_style = 'Sphere'
+        self._proxy_dims = [100]
+        self._proxy_color = [140, 100, 163]
+        self._proxy3d = Proxy3D(self._proxy_style, self._proxy_dims, self._proxy_color)
         self._path3d = Path3D()
 
         self._camera3d_list = []
@@ -349,19 +352,31 @@ class Canvas3D(glcanvas.GLCanvas):
     # Proxy3D functions
     # ----------------
     @property
-    def proxy3d(self):
-        return self._proxy3d
+    def proxy_style(self):
+        return self._proxy_style
 
-    @proxy3d.setter
-    def proxy3d(self, *args):
-        style = args[0]
+    @proxy_style.setter
+    def proxy_style(self, value):
+        self._proxy_style = value
+        self._proxy3d.style = value
+    
+    @property
+    def proxy_dims(self):
+        return self._proxy_dims
+    
+    @proxy_dims.setter
+    def proxy_dims(self, value):
+        self._proxy_dims = value
+        self._proxy3d.dimensions = value
 
-        if style == 'Sphere':
-            self._proxy3d = Proxy3D('Sphere', args[1], args[2])
-        elif style == 'Cylinder':
-            self._proxy3d = Proxy3D('Cylinder', args[1], args[2], args[3])
-        elif style == 'Cube':
-            self._proxy3d = Proxy3D('Cube', args[1], args[2], args[3], args[4])
+    @property
+    def proxy_color(self):
+        return self._proxy_color
+
+    @proxy_color.setter
+    def proxy_color(self, value):
+        self._proxy_color = value
+        self._proxy3d.color = value
 
     # ------------------
     # Camera3D functions

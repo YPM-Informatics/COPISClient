@@ -5,28 +5,29 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 
 class Proxy3D():
-    def __init__(self, *args):
-        self._style = args[0]
+    def __init__(self, style, dimensions, color):
+        self._style = style
 
         if self._style == 'Sphere':
             self._quadric = gluNewQuadric()
 
-            self._radius = args[1]
-            self._color = args[2]
+            self._radius = dimensions[0]
+            self._color = color
     
         elif self._style == 'Cylinder':
             self._quadric = gluNewQuadric()
-            self._radius = args[1]
-            self._height = args[2]
-            self._color = args[3]
+            self._radius = dimensions[0]
+            self._height = dimensions[1]
+            self._color = color
             
         elif self._style == 'Cube':
-            self._width = args[1]
-            self._length = args[2]
-            self._height = args[3]
-            self._color = args[4]
+            self._width = dimensions[0]
+            self._length = dimensions[1]
+            self._height = dimensions[2]
+            self._color = color
 
     def render(self):
+        
         if self._style == 'Sphere':
             glColor3ub(*self._color)
             gluSphere(self._quadric, self._radius, 32, 32)
@@ -102,15 +103,31 @@ class Proxy3D():
     def style(self):
         return self._style
 
+    @style.setter
+    def style(self, value):
+        self._style = value
+
     @property
     def dimensions(self):
         if self._style == 'Sphere':
-            return self._radius
+            return [self._radius]
         elif self._style == 'Cylinder':
-            return (self._radius, self._height)
+            return [self._radius, self._height]
         elif self._style == 'Cube':
-            return (self._width, self._length, self._height)
+            return [self._width, self._length, self._height]
     
+    @dimensions.setter
+    def dimensions(self, value):
+        if self._style == 'Sphere':
+            self._radius = value[0]
+        elif self._style == 'Cylinder':
+            self._radius = value[0]
+            self._height = value[1]
+        elif self._style == 'Cube':
+            self._width = value[0]
+            self._length = value[1]
+            self._height = value[2]
+
     @property
     def color(self):
         return self._color
