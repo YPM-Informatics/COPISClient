@@ -17,9 +17,9 @@ class PreferenceFrame(wx.Frame):
     def init_panel(self):
         curr_dims = self.canvas.build_dimensions
         curr_scale = self.canvas.camera_scale
-        curr_proxy_style = self.canvas.proxy3d.style
-        curr_proxy_dims = self.canvas.proxy3d.dimensions
-        curr_proxy_color = self.canvas.proxy3d.color
+        curr_proxy_style = self.canvas.proxy_style
+        curr_proxy_dims = self.canvas.proxy_dims
+        curr_proxy_color = self.canvas.proxy_color
 
         self.panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
 
@@ -101,21 +101,22 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box = wx.BoxSizer()
         proxy_style_label = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
         self.proxy_style_box.Add(proxy_style_label)
-        self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY)
+        self.proxy_style_combo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Sphere','Cylinder', 'Cube'], style=wx.CB_READONLY, value=curr_proxy_style)
         self.proxy_style_box.Add(self.proxy_style_combo, 1, flag=wx.BOTTOM, border=50)
 
         # Style/Sphere style options
         self.sphere_style_box = wx.BoxSizer()
         sphere_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
         self.sphere_style_box.Add(sphere_radius_label)
-        self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.sphere_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='ps')
         self.sphere_style_box.Add(self.sphere_radius_sc)
         self.proxy_style_box.Add(self.sphere_style_box)
 
+        # Hide sphere box or populate values
         if curr_proxy_style != 'Sphere':
             self.proxy_style_box.Hide(self.sphere_style_box)
         else:
-            self.sphere_radius_sc.Value = curr_proxy_dims
+            self.sphere_radius_sc.Value = curr_proxy_dims[0]
 
         # Style/Cylinder style options
         self.cylinder_style_box = wx.BoxSizer(wx.VERTICAL)
@@ -123,13 +124,13 @@ class PreferenceFrame(wx.Frame):
         cylinder_radius_box = wx.BoxSizer()
         cylinder_radius_label = wx.StaticText(self.panel, wx.ID_ANY, label='Radius: ')
         cylinder_radius_box.Add(cylinder_radius_label)
-        self.cylinder_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.cylinder_radius_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='pcylr')
         cylinder_radius_box.Add(self.cylinder_radius_sc)
 
         cylinder_height_box = wx.BoxSizer()
         cylinder_height_label = wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         cylinder_height_box.Add(cylinder_height_label)
-        self.cylinder_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.cylinder_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='pcylh')
         cylinder_height_box.Add(self.cylinder_height_sc)
    
 
@@ -138,6 +139,7 @@ class PreferenceFrame(wx.Frame):
 
         self.proxy_style_box.Add(self.cylinder_style_box)
 
+        # Hide cylinder box or populate values
         if curr_proxy_style != 'Cylinder':
             self.proxy_style_box.Hide(self.cylinder_style_box)
         else:
@@ -150,19 +152,19 @@ class PreferenceFrame(wx.Frame):
         cube_width_box = wx.BoxSizer()
         cube_width_label = wx.StaticText(self.panel, wx.ID_ANY, label='Width: ')
         cube_width_box.Add(cube_width_label)
-        self.cube_width_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.cube_width_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='pcubw')
         cube_width_box.Add(self.cube_width_sc, 1, flag = wx.LEFT, border=6)
 
         cube_length_box = wx.BoxSizer()
         cube_length_label = wx.StaticText(self.panel, wx.ID_ANY, label='Length: ')
         cube_length_box.Add(cube_length_label)
-        self.cube_length_sc= wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.cube_length_sc= wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='pcubl')
         cube_length_box.Add(self.cube_length_sc)
 
         cube_height_box = wx.BoxSizer()
         cube_height_label =  wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         cube_height_box.Add(cube_height_label)
-        self.cube_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000)
+        self.cube_height_sc = wx.SpinCtrl(self.panel, value='0', size=wx.Size(60, 22), min=0, max=1000, name='pcubh')
         cube_height_box.Add(self.cube_height_sc, 1, flag = wx.LEFT, border=1)
 
         self.cube_style_box.Add(cube_width_box)
@@ -172,6 +174,7 @@ class PreferenceFrame(wx.Frame):
         self.proxy_style_box.Add(self.cube_style_box)
         self.proxy_style_box.Hide(self.cube_style_box)
 
+        # Hide cube box or populate values
         if curr_proxy_style != 'Cube':
             self.proxy_style_box.Hide(self.cube_style_box)
         else:
@@ -183,9 +186,9 @@ class PreferenceFrame(wx.Frame):
         color_box = wx.BoxSizer()
         color_label = wx.StaticText(self.panel, wx.ID_ANY, label='RGB Color: ')
         color_box.Add(color_label)
-        self.color_r_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[0]), size=wx.Size(60, 22), min=0, max=255)
-        self.color_g_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[1]), size=wx.Size(60, 22), min=0, max=255)
-        self.color_b_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[2]), size=wx.Size(60, 22), min=0, max=255)
+        self.color_r_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[0]), size=wx.Size(60, 22), min=0, max=255, name='pcolr')
+        self.color_g_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[1]), size=wx.Size(60, 22), min=0, max=255, name='pcolg')
+        self.color_b_sc = wx.SpinCtrl(self.panel, value=str(curr_proxy_color[2]), size=wx.Size(60, 22), min=0, max=255, name='pcolb')
         color_box.Add(self.color_r_sc)
         color_box.Add(self.color_g_sc)
         color_box.Add(self.color_b_sc)
@@ -223,6 +226,7 @@ class PreferenceFrame(wx.Frame):
         self.Bind(wx.EVT_SLIDER, self.on_slider)
 
     def on_combo(self, event):
+        # Populate the proxy style options for the selected style
         choice = self.proxy_style_combo.GetStringSelection()
 
         if choice == 'Sphere':
@@ -247,12 +251,22 @@ class PreferenceFrame(wx.Frame):
         
         # Handles dimension spin controls
         if name[0] == 'd' or name[0] == 'o':
-                self.canvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
+            self.canvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
+        # Handles proxy spin controls
+        elif name[0] == 'p':
+            self.canvas.proxy_style = self.proxy_style_combo.Value
+            self.canvas.proxy_color = self.canvas.proxy_color = [self.color_r_sc.Value, self.color_g_sc.Value, self.color_b_sc.Value]
+            if self.proxy_style_combo.Value == 'Sphere':
+                self.canvas.proxy_dims = [self.sphere_radius_sc.Value]
+            elif self.proxy_style_combo.Value == 'Cylinder':
+                self.canvas.proxy_dims = [self.cylinder_radius_sc.Value, self.cylinder_height_sc.Value]
+            elif self.proxy_style_combo.Value == 'Cube':
+                self.canvas.proxy_dims = [self.cube_width_sc.Value, self.cube_length_sc.Value, self.cube_height_sc.Value]
+
+
 
     def on_slider(self, event):
         slider = event.GetEventObject()
-
         self.canvas.camera_scale = slider.Value
-
 
 

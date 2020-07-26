@@ -6,8 +6,6 @@ import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from gl.proxy3d import Proxy3D
-
 
 class _Axes():
 
