@@ -14,36 +14,6 @@ class PathGeneratorFrame(wx.Frame):
         self.Centre()
 
     def init_panel(self):
-        # LAYOUT
-
-         ############################################
-        ## vbox1  ------------------------------  ##
-        ##        | Circular Path Generator    |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | Points | No.Points: ____ | |  ##
-        ##        |        ------------------- |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | Radius | Radius (mm): ___| |  ##
-        ##        |        ------------------- |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | StartX | Start X: ____   | |  ##
-        ##        |        ------------------- |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | StartY | Start Y: ____   | |  ##
-        ##        |        ------------------- |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | StartZ | Start Z: ____   | |  ##
-        ##        |        ------------------- |  ##
-        ##        | hbox   ------------------- |  ##
-        ##        | Cameras| No. Cams: ____  | |  ##
-        ##        |        ------------------- |  ##
-        ##        |                            |  ##
-        ##        | Take photo at each vertex  |  ##
-        ##        |                            |  ##
-        ##        | Generate Circle            |  ##
-        ##        | Generate Sphere            |  ##
-        ##        ------------------------------  ##
-        ############################################
         self.panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
 
         self.vbox1 = wx.BoxSizer(wx.VERTICAL)

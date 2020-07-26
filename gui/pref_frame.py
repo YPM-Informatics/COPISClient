@@ -263,8 +263,6 @@ class PreferenceFrame(wx.Frame):
             elif self.proxy_style_combo.Value == 'Cube':
                 self.canvas.proxy_dims = [self.cube_width_sc.Value, self.cube_length_sc.Value, self.cube_height_sc.Value]
 
-
-
     def on_slider(self, event):
         slider = event.GetEventObject()
         self.canvas.camera_scale = slider.Value
