@@ -34,7 +34,7 @@ class Camera3D():
         self.increment_y = 0
         self.increment_z = 0
 
-    def render(self):
+    def render(self, scale):
         """Render camera."""
         # Set color based on selection
         if self.is_selected:
@@ -61,57 +61,57 @@ class Camera3D():
 
         # bottom
         glColor3ub(*color)
-        glVertex3f(-0.025, -0.05, -0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f(-0.025, -0.05,  0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
 
         # right
-        glVertex3f(-0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
-        glVertex3f(-0.025, -0.05, -0.05)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
 
         # top
-        glVertex3f(-0.025,  0.05,  0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
 
         # left
-        glVertex3f(-0.025, -0.05,  0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f(-0.025,  0.05,  0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
 
         # back
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
 
         # front
-        glVertex3f(-0.025, -0.05, -0.05)
-        glVertex3f(-0.025, -0.05,  0.05)
-        glVertex3f(-0.025,  0.05,  0.05)
-        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
         glEnd()
 
         glPushMatrix()
 
         # lens
         glColor3ub(*[x - 15 for x in color])
-        glTranslated(-0.05, 0.0, 0.0)
+        glTranslated(-0.05 * scale, 0.0, 0.0)
         quadric = gluNewQuadric()
         glRotatef(90.0, 0.0, 1.0, 0.0)
-        gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)
+        gluCylinder(quadric, 0.025 * scale, 0.025 * scale, 0.03 * scale, 16, 16)
         gluDeleteQuadric(quadric)
 
         # cap
         glColor3ub(*[x - 25 for x in color])
         circleQuad = gluNewQuadric()
         gluQuadricOrientation(circleQuad, GLU_INSIDE)
-        gluDisk(circleQuad, 0.0, 0.025, 16, 1)
+        gluDisk(circleQuad, 0.0, 0.025 * scale, 16, 1)
         gluDeleteQuadric(circleQuad)
 
         glPopMatrix()
