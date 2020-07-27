@@ -59,7 +59,7 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_min = 0.1
     zoom_max = 7.0
 
-    def __init__(self, parent, build_dimensions=None, axes=True, every=100, subdivisions=10):
+    def __init__(self, parent, build_dimensions=None, axes=True, bounding_box=True, every=100, subdivisions=10):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(parent, display_attrs, -1)
@@ -74,15 +74,9 @@ class Canvas3D(glcanvas.GLCanvas):
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
-        self.axes = axes
-        self.every = 100
-        self.subdivisions = 10
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
-        self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
-        self._proxy_style = 'Sphere'
-        self._proxy_dims = [100]
-        self._proxy_color = [140, 100, 163]
-        self._proxy3d = Proxy3D(self._proxy_style, self._proxy_dims, self._proxy_color)
+        self._bed3d = Bed3D(self._build_dimensions, axes, bounding_box, every, subdivisions)
+        self._proxy3d = Proxy3D('Sphere', [100], [140, 100, 163])
         self._path3d = Path3D()
 
         self._camera3d_list = []
@@ -339,43 +333,38 @@ class Canvas3D(glcanvas.GLCanvas):
     # ----------------
     @property
     def build_dimensions(self):
-        return self._build_dimensions
+        return self._bed3d.build_dimensions
 
     @build_dimensions.setter
     def build_dimensions(self, value):
+        self._bed3d.build_dimensions = value
         self._build_dimensions = value
-        self._bed3d = Bed3D(self._build_dimensions, self.axes, self.every, self.subdivisions)
-        
-        self.set_dirty()
 
     # ----------------
     # Proxy3D functions
     # ----------------
     @property
     def proxy_style(self):
-        return self._proxy_style
+        return self._proxy3d.style
 
     @proxy_style.setter
     def proxy_style(self, value):
-        self._proxy_style = value
         self._proxy3d.style = value
     
     @property
     def proxy_dims(self):
-        return self._proxy_dims
+        return self._proxy3d.dimensions
     
     @proxy_dims.setter
     def proxy_dims(self, value):
-        self._proxy_dims = value
         self._proxy3d.dimensions = value
 
     @property
     def proxy_color(self):
-        return self._proxy_color
+        return self._proxy3d.color
 
     @proxy_color.setter
     def proxy_color(self, value):
-        self._proxy_color = value
         self._proxy3d.color = value
 
     # ------------------

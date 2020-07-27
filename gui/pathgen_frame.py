@@ -2,7 +2,6 @@
 
 import wx
 
-
 class PathGeneratorFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Path Generator', size=(300, 400))

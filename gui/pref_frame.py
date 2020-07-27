@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import wx
-# from wx.lib.pubsub import Publisher
 
 class PreferenceFrame(wx.Frame):
     def __init__(self, main_frame=None):
