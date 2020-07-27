@@ -2,7 +2,7 @@
 
 import wx
 from gui.pathgen_frame import *
-from gui.config_frame import *
+from gui.pref_frame import *
 
 
 class MenuBar(wx.MenuBar):
@@ -54,9 +54,9 @@ class MenuBar(wx.MenuBar):
         name = 'Preferences'
         helpMsg = 'Choose configuration options by your preference'
         self.preference = configMenu.Append(wx.ID_ANY, name, helpMsg, kind=wx.ITEM_NORMAL)
-        self.Bind(wx.EVT_MENU, self.open_config_box, self.preference)
+        self.Bind(wx.EVT_MENU, self.open_pref_box, self.preference)
         self.Append(configMenu, '&Configuration')
 
-    def open_config_box(self, e):
-        self.config_frame = ConfigPreferenceFrame()
-        self.config_frame.Show()
+    def open_pref_box(self, e):
+        self.pref_frame = PreferenceFrame(self.parent)
+        self.pref_frame.Show()
