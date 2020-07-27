@@ -110,9 +110,7 @@ class Bed3D():
         if self._initialized:
             return True
 
-        if self._show_bounding_box:
-            self.create_bounding_box()
-
+        self.create_bounding_box()
         self.create_gridlines()
 
         self._initialized = True
@@ -244,7 +242,6 @@ class Bed3D():
     @show_axes.setter
     def show_axes(self, value):
         self._show_axes = value
-        self._initialized = False
 
     @property
     def show_bounding_box(self):
@@ -253,4 +250,12 @@ class Bed3D():
     @show_bounding_box.setter
     def show_bounding_box(self, value):
         self._show_bounding_box = value
+
+    @property
+    def build_dimensions(self):
+        return self._build_dimensions
+
+    @build_dimensions.setter
+    def build_dimensions(self, value):
+        self._build_dimensions = value
         self._initialized = False

@@ -17,6 +17,7 @@ from gl.glhelper import arcball, axis_to_quat, quat_to_matrix4, mul_quat, draw_c
 from gl.path3d import Path3D
 from gl.camera3d import Camera3D
 from gl.bed3d import Bed3D
+from gl.proxy3d import Proxy3D
 
 
 class _Size():
@@ -58,7 +59,7 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_min = 0.1
     zoom_max = 7.0
 
-    def __init__(self, parent, build_dimensions=None, axes=True, every=100, subdivisions=10):
+    def __init__(self, parent, build_dimensions=None, axes=True, bounding_box=True, every=100, subdivisions=10):
         # TODO: add more init attributes such as pos and size
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
@@ -76,11 +77,14 @@ class Canvas3D(glcanvas.GLCanvas):
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
-        self._bed3d = Bed3D(self._build_dimensions, axes=axes, every=every, subdivisions=subdivisions)
-        self._path3d = Path3D()
 
+        self._bed3d = Bed3D(self._build_dimensions, axes, bounding_box, every, subdivisions)
+        self._proxy3d = Proxy3D('Sphere', [0.1], (0, 53, 107))
+        self._path3d = Path3D()
         self._camera3d_list = []
         self._path3d_list = []
+        self._camera3d_scale = 100
+
         self._quadric = None
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
@@ -156,8 +160,6 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
-
-        self._render_platform()
         self._render_objects()
         self._render_cameras()
         self._render_paths()
@@ -180,9 +182,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self._dirty = self._dirty or any((i.dirty for i in self._camera3d_list))
 
         self._refresh_if_shown_on_screen()
-        self._dirty = False
+
         for camera in self._camera3d_list:
             camera.dirty = False
+        self._dirty = False
 
     def on_key(self, event):
         """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
@@ -276,9 +279,13 @@ class Canvas3D(glcanvas.GLCanvas):
         self._context.destroy()
         glcanvas.GLCanvas.Destroy()
 
-    def set_dirty(self):
-        """Set dirty flag true."""
-        self._dirty = True
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = value
 
     def _is_shown_on_screen(self):
         return self.IsShownOnScreen()
@@ -300,14 +307,12 @@ class Canvas3D(glcanvas.GLCanvas):
     def _render_background(self):
         glClearColor(*self.color_background)
 
-    def _render_platform(self):
-        if self._bed3d is None:
-            return
-
-        self._bed3d.render()
-
     def _render_objects(self):
-        return
+        if self._bed3d is not None:
+            self._bed3d.render()
+
+        if self._proxy3d is not None:
+            self._proxy3d.render()
 
     def _render_cameras(self):
         if not self._camera3d_list:
@@ -319,8 +324,20 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._path3d_list:
             return
 
+    # ------------------
+    # Accessor functions
+    # ------------------
+
     def _update_parent_zoom_slider(self):
         self.parent.set_zoom_slider(self._zoom)
+
+    @property
+    def bed3d(self):
+        return self._bed3d
+
+    @property
+    def proxy3d(self):
+        return self._proxy3d
 
     @property
     def zoom(self):
@@ -332,8 +349,33 @@ class Canvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     @property
-    def bed3d(self):
-        return self._bed3d
+    def build_dimensions(self):
+        return self._build_dimensions
+
+    @build_dimensions.setter
+    def build_dimensions(self, value):
+        self._build_dimensions = value
+        self._bed3d.build_dimensions = value
+        self._dirty = True
+
+    @property
+    def camera3d_scale(self):
+        return self._camera3d_scale
+
+    @camera3d_scale.setter
+    def camera3d_scale(self, value):
+        for camera in self._camera3d_list:
+            camera.scale = value
+            camera.dirty = True
+
+    @property
+    def camera3d_list(self):
+        return self._camera3d_list
+
+    @camera3d_list.setter
+    def camera3d_list(self, value):
+        self._camera3d_list = value
+        self._dirty = True
 
     # -----------------------
     # Canvas camera functions

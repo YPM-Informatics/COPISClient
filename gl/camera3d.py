@@ -21,6 +21,7 @@ class Camera3D():
         self._z = float(z)
         self._b = float(b)
         self._c = float(c)
+        self._scale = 1
 
         self.start = (self._x, self._y, self._z, self._b, self._c)
         self.mode = CamMode.NORMAL
@@ -43,6 +44,8 @@ class Camera3D():
             hue = 125 - self._camid
             color = [hue, hue, hue]
 
+        scale = self._scale
+
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
         if self.mode == CamMode.NORMAL:
@@ -61,61 +64,69 @@ class Camera3D():
 
         # bottom
         glColor3ub(*color)
-        glVertex3f(-0.025, -0.05, -0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f(-0.025, -0.05,  0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
 
         # right
-        glVertex3f(-0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
-        glVertex3f(-0.025, -0.05, -0.05)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
 
         # top
-        glVertex3f(-0.025,  0.05,  0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
 
         # left
-        glVertex3f(-0.025, -0.05,  0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f(-0.025,  0.05,  0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
 
         # back
-        glVertex3f( 0.025,  0.05, -0.05)
-        glVertex3f( 0.025,  0.05,  0.05)
-        glVertex3f( 0.025, -0.05,  0.05)
-        glVertex3f( 0.025, -0.05, -0.05)
+        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
+        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
 
         # front
-        glVertex3f(-0.025, -0.05, -0.05)
-        glVertex3f(-0.025, -0.05,  0.05)
-        glVertex3f(-0.025,  0.05,  0.05)
-        glVertex3f(-0.025,  0.05, -0.05)
+        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
+        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
         glEnd()
 
         glPushMatrix()
 
         # lens
         glColor3ub(*[x - 15 for x in color])
-        glTranslated(-0.05, 0.0, 0.0)
+        glTranslated(-0.05 * scale, 0.0, 0.0)
         quadric = gluNewQuadric()
         glRotatef(90.0, 0.0, 1.0, 0.0)
-        gluCylinder(quadric, 0.025, 0.025, 0.03, 16, 16)
+        gluCylinder(quadric, 0.025 * scale, 0.025 * scale, 0.03 * scale, 16, 16)
         gluDeleteQuadric(quadric)
 
         # cap
         glColor3ub(*[x - 25 for x in color])
         circleQuad = gluNewQuadric()
         gluQuadricOrientation(circleQuad, GLU_INSIDE)
-        gluDisk(circleQuad, 0.0, 0.025, 16, 1)
+        gluDisk(circleQuad, 0.0, 0.025 * scale, 16, 1)
         gluDeleteQuadric(circleQuad)
 
         glPopMatrix()
         glPopMatrix()
+
+    @property
+    def scale(self):
+        return self._scale
+
+    @scale.setter
+    def scale(self, value):
+        self._scale = value
 
     @property
     def camid(self):
