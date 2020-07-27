@@ -18,7 +18,6 @@ from gui.panels.visualizer import VisualizerPanel
 
 from gui.pathgen_frame import *
 from gui.pref_frame import *
-# from gui.preferences import *
 from gui.about import *
 
 
@@ -144,7 +143,7 @@ class MainFrame(wx.Frame):
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&Preferences', 'Open preferences')
         _item.SetBitmap(svgbmp('img/tune-24px.svg', 16))
-        self.Bind(wx.EVT_MENU, self.open_preferences_dialog, edit_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.open_preferences_frame, edit_menu.Append(_item))
 
         # View menu
         view_menu = wx.Menu()
@@ -255,20 +254,19 @@ class MainFrame(wx.Frame):
     def do_load_project(self, file):
         print(file)
 
-    def update_menubar(self):
-        pass
-
-    def open_preferences_dialog(self, _):
-        # preferences_dialog = PreferenceDialog(self)
-        preferences_dialog = PreferenceFrame(self)
-        preferences_dialog.Show()
-
     def update_statusbar(self, event):
         if event.IsChecked():
             self.GetStatusBar().Show()
         else:
             self.GetStatusBar().Hide() # or .Show(False)
         self._mgr.Update()
+
+    def update_menubar(self):
+        pass
+
+    def open_preferences_frame(self, _):
+        preferences_dialog = PreferenceFrame(self)
+        preferences_dialog.Show()
 
     def open_pathgen_frame(self, _):
         pathgen_frame = PathgenFrame(self)
@@ -320,8 +318,7 @@ class MainFrame(wx.Frame):
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
         self._mgr.SetArtProvider(dockart)
 
-        # tabart = aui.AuiSimpleTabArt()
-        tabart = aui.VC71TabArt()
+        tabart = aui.AuiDefaultTabArt()
         self._mgr.SetAutoNotebookTabArt(tabart)
 
         # initialize relevant panels

@@ -79,7 +79,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
 
         self._bed3d = Bed3D(self._build_dimensions, axes, bounding_box, every, subdivisions)
-        self._proxy3d = Proxy3D('Sphere', [0.1], (0, 53, 107))
+        self._proxy3d = Proxy3D('Sphere', [50], (0, 53, 107))
         self._path3d = Path3D()
         self._camera3d_list = []
         self._path3d_list = []
