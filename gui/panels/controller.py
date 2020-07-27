@@ -39,44 +39,6 @@ class ControllerPanel(wx.VScrolledWindow):
         return self.parent.command_panel
 
     def InitPositioning(self):
-        #  LAYOUT
-
-        ####################################################################################################
-        ##                                                                                                ##
-        ## vbox        ---------------------------------------------------------------------------------- ##
-        ## Positioning | self.hbox  ------------------------------------------------------------------- | ##
-        ##             | CameraInfo |                                                                 | | ##
-        ##             |            ------------------------------------------------------------------- | ##
-        ##             | Positioning                                                                    | ##
-        ##             | hboxTop ---------------------------------------------------------------------- | ##
-        ##             |         | -----------  ------------------  --------------------  ----------- | | ##
-        ##             |         | | camList |  |   Set Center   |  |Refresh From COPIS|  |  slider | | | ##
-        ##             |         | -----------  ------------------  --------------------  ----------- | | ##
-        ##             |         ---------------------------------------------------------------------- | ##
-        ##             | hbox  ------------------------------------------------------------------------ | ##
-        ##             | Xyzpt | vbox ----------------------------- vbox ---------------------------- | | ##
-        ##             |       | Xyz  | XYZ Increment Size        | Pt   | PT Increment Size        | | | ##
-        ##             |       |      | hboxXyz ----------------- |      | hboxPt ----------------- | | | ##
-        ##             |       |      | Size    |  ________ mm  | |      | Size   |  ________ dd  | | | | ##
-        ##             |       |      |         ----------------- |      |        ----------------- | | | ##
-        ##             |       |      -----------------------------      ---------------------------- | | ##
-        ##             |       | hbox  ----------------------------                                   | | ##
-        ##             |       | YzInc |         Y+          Z+   |                   T+              | | ##
-        ##             |       |       ----------------------------                                   | | ##
-        ##             |       | hboxX ---------------------------- hboxP --------------------------- | | ##
-        ##             |       |       |    X-          X+        |       |     P-     c      P+    | | | ##
-        ##             |       |       ----------------------------       --------------------------- | | ##
-        ##             |       | hbox  ----------------------------                                   | | ##
-        ##             |       | YzDec |         Y-          Z-   |                   T-              | | ##
-        ##             |       |       ----------------------------                                   | | ##
-        ##             |       ------------------------------------------------------------------------ | ##
-        ##             | hbox  ------------------------------------------------------------------------ | ##
-        ##             | Extra |  Enable Motors   Disable Motors   Record Position   Home   Set Home  | | ##
-        ##             |       ------------------------------------------------------------------------ | ##
-        ##             ---------------------------------------------------------------------------------- ##
-        ##                                                                                                ##
-        ####################################################################################################
-
         vboxPositioning = wx.BoxSizer(wx.VERTICAL)
         self.hboxCameraInfo = wx.BoxSizer()
         vboxPositioning.Add(self.hboxCameraInfo, 0.5, wx.EXPAND)
@@ -88,7 +50,7 @@ class ControllerPanel(wx.VScrolledWindow):
         hboxTop = wx.BoxSizer()
         camLabel = wx.StaticText(self, wx.ID_ANY, label='Camera: ', style=wx.ALIGN_LEFT)
         hboxTop.Add(camLabel)
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=wx.Size(75, -1))
+        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(75, -1))
         self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
@@ -110,7 +72,7 @@ class ControllerPanel(wx.VScrolledWindow):
         vboxXyz.Add(xyzLabel, 1, flag=wx.BOTTOM, border=10)
 
         hboxXyzSize = wx.BoxSizer()
-        self.xyzSc = wx.SpinCtrl(self, value='0', size=wx.Size(60, 22), min=0, max=100)
+        self.xyzSc = wx.SpinCtrl(self, value='0', size=(60, -1), min=0, max=100)
         hboxXyzSize.Add(self.xyzSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=5)
         mmLabel = wx.StaticText(self, wx.ID_ANY, label='mm', style=wx.ALIGN_LEFT)
         hboxXyzSize.Add(mmLabel)
@@ -161,7 +123,7 @@ class ControllerPanel(wx.VScrolledWindow):
         vboxBc.Add(bcLabel, 1, flag=wx.BOTTOM, border=10)
 
         hboxBcSize = wx.BoxSizer()
-        self.bcSc = wx.SpinCtrl(self, value='0', size=wx.Size(60, 22), min=0, max=100)
+        self.bcSc = wx.SpinCtrl(self, value='0', size=(60, -1), min=0, max=100)
         hboxBcSize.Add(self.bcSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=0)
         ddLabel = wx.StaticText(self, wx.ID_ANY, label='dd', style=wx.ALIGN_LEFT)
         hboxBcSize.Add(ddLabel)
@@ -198,29 +160,6 @@ class ControllerPanel(wx.VScrolledWindow):
         return vboxPositioning
 
     def InitCamControl(self):
-        # LAYOUT
-
-        ##########################################################################################################
-        ##                                                                                                      ##
-        ## hbox ----------------------------------------------------------------------------------------------- ##
-        ##      | vbox1  ----------------------------------  vbox2 ------------------------------------------ | ##
-        ##      |        | Z Stack Generator              |        |  Camera Control                        | | ##
-        ##      |        | hbox  ------------------------ |        |  hbox   ------------------------------ | | ##
-        ##      |        | Focal | No.Focal Steps: ____ | |        |  Remote | Remote   vboxAF  --------- | | | ##
-        ##      |        | Steps ------------------------ |        |         | Shutter  Shutter |  A/F  | | | | ##
-        ##      |        | hbox   -------------------     |        |         |                  |Shutter| | | | ##
-        ##      |        | StartZ | Start Z: ___    |     |        |         |                  --------- | | | ##
-        ##      |        |        -------------------     |        |         ------------------------------ | | ##
-        ##      |        | hbox ------------------------- |        | hboxUSB ---------------------------    | | ##
-        ##      |        | ZInc | Z Increment (mm): ____| |        |         | USB/PTP  vboxF -------- |    | | ##
-        ##      |        |      ------------------------- |        |         |                |  F-  | |    | | ##
-        ##      |        | ------------                   |        |         |                |  F+  | |    | | ##
-        ##      |        | | Generate |                   |        |         |                -------- |    | | ##
-        ##      |        | ------------                   |        |         ---------------------------    | | ##
-        ##      |        ----------------------------------        ------------------------------------------ | ##
-        ##      ----------------------------------------------------------------------------------------------- ##
-        ##                                                                                                      ##
-        ##########################################################################################################
         vbox = wx.BoxSizer(wx.VERTICAL)
         cameraControlLabel = wx.StaticText(self, wx.ID_ANY, label='Camera Control', style=wx.ALIGN_LEFT)
         cameraControlLabel.SetFont(self.font)
@@ -293,7 +232,7 @@ class ControllerPanel(wx.VScrolledWindow):
             cam = self.visualizer_panel.get_camera_by_id(camid)
             if cam:
                 cam.on_move(axis, size)
-            self.visualizer_panel.set_dirty()
+            self.visualizer_panel.dirty = True
         else:
             set_dialog('Please select the camera to control.')
 

@@ -16,10 +16,11 @@ class VisualizerPanel(wx.Panel):
         self._selected_cam = None
         self._build_dimensions = [400, 400, 400, 200, 200, 200]
 
-        self.glcanvas = Canvas3D(
+        self._canvas3d = Canvas3D(
             self,
             build_dimensions=self._build_dimensions,
             axes=True,
+            bounding_box=True,
             every=100,
             subdivisions=10)
 
@@ -30,16 +31,13 @@ class VisualizerPanel(wx.Panel):
     def init_panel(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # add Canvas3D
-        sizer.Add(self.glcanvas, 1, wx.EXPAND)
-
         # add bottom navigation bar
-        navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 32), style=wx.BORDER_RAISED)
+        navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 35), style=wx.BORDER_RAISED)
         navbar_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # add zoom slider and text
         navbar_sizer.Add(wx.StaticText(navbar, wx.ID_ANY, 'Zoom', wx.DefaultPosition, wx.DefaultSize, 0), 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 5)
-        self.zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self.glcanvas.zoom_min*10, self.glcanvas.zoom_max*10, size=(150, -1), style=wx.SL_HORIZONTAL)
+        self.zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self._canvas3d.zoom_min*10, self._canvas3d.zoom_max*10, size=(150, -1), style=wx.SL_HORIZONTAL)
         self.zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
         navbar_sizer.Add(self.zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
 
@@ -60,28 +58,40 @@ class VisualizerPanel(wx.Panel):
 
         navbar.SetSizerAndFit(navbar_sizer)
         sizer.Add(navbar, 0, wx.EXPAND)
+
+        # add Canvas3D
+        sizer.Add(self._canvas3d, 1, wx.EXPAND)
         self.SetSizerAndFit(sizer)
 
     def on_zoom_slider(self, event):
-        self.glcanvas.zoom = event.GetInt() / 10
+        self._canvas3d.zoom = event.GetInt() / 10
 
     def set_zoom_slider(self, value):
         self.zoom_slider.SetValue(value * 10)
 
     def on_axes_check(self, event):
-        if self.glcanvas is None:
+        if self._canvas3d is None:
             return
 
-        self.glcanvas.bed3d.show_axes = event.IsChecked()
+        self._canvas3d.bed3d.show_axes = event.IsChecked()
 
     def on_bbox_check(self, event):
-        if self.glcanvas is None:
+        if self._canvas3d is None:
             return
 
-        self.glcanvas.bed3d.show_bounding_box = event.IsChecked()
+        self._canvas3d.bed3d.show_bounding_box = event.IsChecked()
 
-    def set_dirty(self):
-        self.glcanvas.set_dirty()
+    @property
+    def dirty(self):
+        return self._canvas3d.dirty
+
+    @dirty.setter
+    def dirty(self, value):
+        self._canvas3d.dirty = value
+
+    @property
+    def glcanvas(self):
+        return self._canvas3d
 
     # ------------------
     # Camera3D functions
@@ -89,12 +99,12 @@ class VisualizerPanel(wx.Panel):
 
     def on_clear_cameras(self):
         """Clear Camera3D list."""
-        self.glcanvas._camera3d_list = []
-        self.glcanvas.set_dirty()
+        self._canvas3d.camera3d_list = []
+        self._canvas3d.dirty = True
 
     def get_camera_objects(self):
         """Return Camera3D list."""
-        return self._camera3d_list
+        return self.camera3d_list
 
     def add_camera(self, camid=-1):
         """Add new Camera3D."""
@@ -108,23 +118,23 @@ class VisualizerPanel(wx.Panel):
             camid = self._generate_camera_id()
 
         cam_3d = Camera3D(camid, x, y, z, b, c)
-        self.glcanvas._camera3d_list.append(cam_3d)
-        self.glcanvas.set_dirty()
+        self._canvas3d.camera3d_list.append(cam_3d)
+        self._canvas3d.dirty = True
 
         return str(cam_3d.camid)
 
     def get_camera_by_id(self, camid):
         """Return Camera3D by id."""
-        if self.glcanvas._camera3d_list:
-            for cam in self.glcanvas._camera3d_list:
+        if self._canvas3d.camera3d_list:
+            for cam in self._canvas3d.camera3d_list:
                 if cam.camid == camid:
                     return cam
         return None
 
     def _generate_camera_id(self):
-        if self.glcanvas._camera3d_list:
-            self.glcanvas._camera3d_list.sort(key=lambda x: x.camid)
-            return self.glcanvas._camera3d_list[-1].camid + 1
+        if self._canvas3d.camera3d_list:
+            self._canvas3d.camera3d_list.sort(key=lambda x: x.camid)
+            return self._canvas3d.camera3d_list[-1].camid + 1
         return 0
 
     def get_selected_camera(self):
@@ -143,4 +153,4 @@ class VisualizerPanel(wx.Panel):
         self._selected_cam.is_selected = True
 
         # refresh glcanvas
-        self.glcanvas.set_dirty()
+        self._canvas3d.dirty = True

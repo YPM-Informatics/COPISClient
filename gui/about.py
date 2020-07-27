@@ -7,7 +7,7 @@ class AboutDialog(wx.Dialog):
     def __init__(self, parent):
         wx.Dialog.__init__ (self, parent, id=wx.ID_ANY, title=u"About", pos=wx.DefaultPosition, size=wx.DefaultSize, style=wx.DEFAULT_DIALOG_STYLE)
 
-        self.SetSizeHints(wx.Size(200, 100), wx.DefaultSize)
+        self.SetSizeHints((200, 100), wx.DefaultSize)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 

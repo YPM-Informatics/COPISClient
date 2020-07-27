@@ -17,7 +17,8 @@ from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
 
 from gui.pathgen_frame import *
-from gui.preferences import *
+from gui.pref_frame import *
+# from gui.preferences import *
 from gui.about import *
 
 
@@ -34,9 +35,6 @@ class MainFrame(wx.Frame):
         # dictionary of panels and menu items
         self.panels = {}
         self.menuitems = {}
-
-        self.preference_frame = None
-        self.pathgen_frame = None
 
         self.cam_list = []
         self.selected_cam = None
@@ -215,11 +213,11 @@ class MainFrame(wx.Frame):
     def on_open(self, event):
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
-                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+                             wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
                 return
 
         with wx.FileDialog(self, 'Open Project File', wildcard='XYZ files (*.xyz)|*.xyz',
-                        style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
                 return     # the user changed their mind
@@ -237,7 +235,7 @@ class MainFrame(wx.Frame):
 
     def on_save_as(self, event):
         with wx.FileDialog(self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
-            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
@@ -261,7 +259,8 @@ class MainFrame(wx.Frame):
         pass
 
     def open_preferences_dialog(self, _):
-        preferences_dialog = PreferenceDialog(self)
+        # preferences_dialog = PreferenceDialog(self)
+        preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
 
     def update_statusbar(self, event):
@@ -272,7 +271,7 @@ class MainFrame(wx.Frame):
         self._mgr.Update()
 
     def open_pathgen_frame(self, _):
-        pathgen_frame = PathGeneratorFrame(self)
+        pathgen_frame = PathgenFrame(self)
         pathgen_frame.Show()
 
     def open_copis_website(self, _):
@@ -518,7 +517,7 @@ class MainFrame(wx.Frame):
                 self.parent.cam_list.set_selected_cam_by_id(camid)
 
         # refresh canvas and combobox
-        self.visualizer_panel.set_dirty()
+        self.visualizer_panel.dirty = True
         self.controller_panel.masterCombo.SetSelection(camid)
 
     def terminate_edsdk(self):
