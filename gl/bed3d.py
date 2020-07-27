@@ -204,7 +204,8 @@ class Bed3D():
         self._bounding_box = (vertices, indices)
 
     def _render_gridlines(self):
-        self.create_gridlines()
+        if self._gridlines is None:
+            return
 
         vertices, colors = self._gridlines
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -216,7 +217,8 @@ class Bed3D():
         glDisableClientState(GL_COLOR_ARRAY)
 
     def _render_bounding_box(self):
-        self.create_bounding_box()
+        if self._bounding_box is None:
+            return
 
         vertices, indices = self._bounding_box
         glColor3f(self.color_dark, self.color_dark, self.color_dark)
@@ -257,3 +259,5 @@ class Bed3D():
     @build_dimensions.setter
     def build_dimensions(self, value):
         self._build_dimensions = value
+        self.create_gridlines()
+        self.create_bounding_box()
