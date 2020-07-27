@@ -535,7 +535,7 @@ class MainFrame(wx.Frame):
         event.StopPropagation()
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
-                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+                             wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
                 return
 
         self._mgr.UnInit()

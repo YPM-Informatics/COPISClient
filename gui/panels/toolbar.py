@@ -70,7 +70,7 @@ class ToolbarPanel(aui.AuiToolBar):
         if self.serial_controller.set_current_serial(port):
             self.update_bauds()
         else:
-            set_dialog('Could not open port \'{0}\'.'.format(port))
+            set_dialog(f'Could not open port "{port}".')
             self.port_cb.SetSelection(-1)
 
     def on_select_baud(self, event):
@@ -112,5 +112,5 @@ class ToolbarPanel(aui.AuiToolBar):
         else:
             pass
 
-    def __del__(self, event):
+    def __del__(self):
         return
