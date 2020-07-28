@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Proxy3D class"""
+"""Proxy3D class."""
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
+
 
 class Proxy3D():
     def __init__(self, style, dimensions, color):
@@ -13,13 +14,13 @@ class Proxy3D():
 
             self._radius = dimensions[0]
             self._color = color
-    
+
         elif self._style == 'Cylinder':
             self._quadric = gluNewQuadric()
             self._radius = dimensions[0]
             self._height = dimensions[1]
             self._color = color
-            
+
         elif self._style == 'Cube':
             self._width = dimensions[0]
             self._length = dimensions[1]
@@ -27,13 +28,11 @@ class Proxy3D():
             self._color = color
 
     def render(self):
-        
         if self._style == 'Sphere':
             glColor3ub(*self._color)
             gluSphere(self._quadric, self._radius, 32, 32)
-        
-        elif self._style == 'Cylinder':
 
+        elif self._style == 'Cylinder':
             glColor3ub(*self._color)
             glTranslate(0.0, 0.0, self._height / -2)
             gluCylinder(self._quadric, self._radius, self._radius, self._height, 32, 4)
@@ -45,7 +44,7 @@ class Proxy3D():
 
             glPushMatrix()
 
-            glTranslate(0.0, 0.0,self._height, )
+            glTranslate(0.0, 0.0, self._height, )
             disk_quad2 = gluNewQuadric()
             gluQuadricOrientation(disk_quad2, GLU_OUTSIDE)
             gluDisk(disk_quad2, 0.0, self._radius, 32, 1)
@@ -68,9 +67,9 @@ class Proxy3D():
             glVertex3f(-hw, -hh,  hl)
 
             # Top
-            glVertex3f(-hw, hh,  hl)
-            glVertex3f( hw, hh,  hl)
-            glVertex3f( hw, hh, -hl)
+            glVertex3f(-hw, hh, hl)
+            glVertex3f(hw, hh, hl)
+            glVertex3f(hw, hh, -hl)
             glVertex3f(-hw, hh, -hl)
 
             # Back
@@ -108,6 +107,14 @@ class Proxy3D():
         self._style = value
 
     @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, value):
+        self._color = value
+
+    @property
     def dimensions(self):
         if self._style == 'Sphere':
             return [self._radius]
@@ -115,7 +122,7 @@ class Proxy3D():
             return [self._radius, self._height]
         elif self._style == 'Cube':
             return [self._width, self._length, self._height]
-    
+
     @dimensions.setter
     def dimensions(self, value):
         if self._style == 'Sphere':
@@ -127,13 +134,3 @@ class Proxy3D():
             self._width = value[0]
             self._length = value[1]
             self._height = value[2]
-
-    @property
-    def color(self):
-        return self._color
-    
-    @color.setter
-    def color(self, value):
-        self._color = value 
-
-
