@@ -97,7 +97,7 @@ class ToolbarPanel(aui.AuiToolBar):
 
     def on_tool_selected(self, event):
         if event.GetId() == ToolIds.SETTINGS.value:
-            settings_frame = SettingsFrame()
+            settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.GetId() == ToolIds.PLAY.value:
             camid = self.parent.controller_panel.masterCombo.GetSelection()
