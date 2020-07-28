@@ -3,12 +3,9 @@
 import wx
 
 class PreferenceFrame(wx.Frame):
-    def __init__(self, main_frame=None):
-        wx.Frame.__init__(self, None, wx.ID_ANY, 'Preferences', size=(300, 360))
-        self.main_frame = main_frame
-        self.canvas = self.main_frame.visualizer_panel.glcanvas
-        self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
-        self.font.SetPointSize(15)
+    def __init__(self, parent, *args, **kwargs):
+        wx.Frame.__init__(self, parent, wx.ID_ANY, 'Preferences', size=(300, 360))
+        self.canvas = parent.visualizer_panel.glcanvas
 
         self.init_panel()
         self.Centre()
@@ -22,7 +19,7 @@ class PreferenceFrame(wx.Frame):
 
         self.panel = wx.Panel(self, style=wx.BORDER_DEFAULT)
 
-        boxsizer = wx.BoxSizer(wx.VERTICAL)
+        self.boxsizer = wx.BoxSizer(wx.VERTICAL)
 
         # Build settings box
         build_settings_box = wx.BoxSizer(wx.VERTICAL)
@@ -89,7 +86,7 @@ class PreferenceFrame(wx.Frame):
         build_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, -1, 'Build Settings'), wx.HORIZONTAL)
         build_static_sizer.Add(build_settings_box)
 
-        boxsizer.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
 
         # Proxy Object Box
         proxy_obj_box = wx.BoxSizer(wx.VERTICAL)
@@ -196,7 +193,7 @@ class PreferenceFrame(wx.Frame):
         proxy_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, -1, 'Proxy Object'), wx.HORIZONTAL)
         proxy_static_sizer.Add(proxy_obj_box)
 
-        boxsizer.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
 
         # Camera box
         camera_box = wx.BoxSizer(wx.VERTICAL)
@@ -212,9 +209,9 @@ class PreferenceFrame(wx.Frame):
         camera_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, 0, 'Virtual Cameras'), wx.HORIZONTAL)
         camera_static_sizer.Add(camera_box)
 
-        boxsizer.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
 
-        self.panel.SetSizer(boxsizer)
+        self.panel.SetSizer(self.boxsizer)
 
         self.Bind(wx.EVT_SPINCTRL, self.on_spin_control)
         self.Bind(wx.EVT_COMBOBOX, self.on_combo)
@@ -223,25 +220,22 @@ class PreferenceFrame(wx.Frame):
     def on_combo(self, event):
         # Populate the proxy style options for the selected style
         choice = event.GetString()
-        print(choice)
-        choice = self.proxy_style_combo.GetStringSelection()
-        print(choice)
 
         if choice == 'Sphere':
             self.proxy_style_box.Hide(self.cylinder_style_box)
             self.proxy_style_box.Hide(self.cube_style_box)
             self.proxy_style_box.Show(self.sphere_style_box)
-            self.vbox1.Layout()
+            self.boxsizer.Layout()
         elif choice == 'Cylinder':
             self.proxy_style_box.Hide(self.cube_style_box)
             self.proxy_style_box.Hide(self.sphere_style_box)
             self.proxy_style_box.Show(self.cylinder_style_box)
-            self.vbox1.Layout()
+            self.boxsizer.Layout()
         elif choice == 'Cube':
             self.proxy_style_box.Hide(self.sphere_style_box)
             self.proxy_style_box.Hide(self.cylinder_style_box)
             self.proxy_style_box.Show(self.cube_style_box)
-            self.vbox1.Layout()
+            self.boxsizer.Layout()
 
     def on_spin_control(self, event):
         sc = event.GetEventObject()
@@ -249,7 +243,6 @@ class PreferenceFrame(wx.Frame):
 
         # Handles dimension spin controls
         if name[0] == 'd' or name[0] == 'o':
-            print(self.width_sc.Value)
             self.canvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
         # Handles proxy spin controls
         elif name[0] == 'p':
