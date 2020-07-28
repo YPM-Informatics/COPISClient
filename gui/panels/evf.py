@@ -7,10 +7,10 @@ from PIL import Image
 
 class EvfPanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs):
-        super(EvfPanel, self).__init__(parent, wx.ID_ANY, size=wx.Size(600, 420))
+        super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
         self.timer = wx.CallLater(15, self.update)
-        self.cam =  self.parent.cam_list.selected_camera
+        self.cam = self.parent.get_selected_camera()
         self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.update()

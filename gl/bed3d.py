@@ -68,6 +68,10 @@ class _Axes():
         self._render_arrow(z[0])
         glPopMatrix()
 
+        # origin sphere
+        glColor3f(0.0, 0.0, 0.0)
+        gluSphere(self._quadric, self._arrow_base_radius, 32, 32)
+
     def _render_arrow(self, length):
         glTranslated(0.0, 0.0, length)
         gluQuadricOrientation(self._quadric, GLU_OUTSIDE)
@@ -106,9 +110,7 @@ class Bed3D():
         if self._initialized:
             return True
 
-        if self._show_bounding_box:
-            self.create_bounding_box()
-
+        self.create_bounding_box()
         self.create_gridlines()
 
         self._initialized = True
@@ -240,7 +242,6 @@ class Bed3D():
     @show_axes.setter
     def show_axes(self, value):
         self._show_axes = value
-        self._initialized = False
 
     @property
     def show_bounding_box(self):
@@ -250,8 +251,6 @@ class Bed3D():
     def show_bounding_box(self, value):
         self._show_bounding_box = value
 
-        self._initialized = False
-
     @property
     def build_dimensions(self):
         return self._build_dimensions
@@ -259,5 +258,4 @@ class Bed3D():
     @build_dimensions.setter
     def build_dimensions(self, value):
         self._build_dimensions = value
-        self.create_gridlines()
-        self.create_bounding_box()
+        self._initialized = False

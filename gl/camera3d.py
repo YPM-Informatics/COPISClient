@@ -21,6 +21,7 @@ class Camera3D():
         self._z = float(z)
         self._b = float(b)
         self._c = float(c)
+        self._scale = 1
 
         self.start = (self._x, self._y, self._z, self._b, self._c)
         self.mode = CamMode.NORMAL
@@ -34,7 +35,7 @@ class Camera3D():
         self.increment_y = 0
         self.increment_z = 0
 
-    def render(self, scale):
+    def render(self):
         """Render camera."""
         # Set color based on selection
         if self.is_selected:
@@ -42,6 +43,8 @@ class Camera3D():
         else:
             hue = 125 - self._camid
             color = [hue, hue, hue]
+
+        scale = self._scale
 
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
@@ -116,6 +119,14 @@ class Camera3D():
 
         glPopMatrix()
         glPopMatrix()
+
+    @property
+    def scale(self):
+        return self._scale
+
+    @scale.setter
+    def scale(self, value):
+        self._scale = value
 
     @property
     def camid(self):

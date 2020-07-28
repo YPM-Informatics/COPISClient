@@ -3,21 +3,47 @@
 """TODO: Fill in docstring"""
 
 import wx
+from appconfig import AppConfig
 from gui.main_frame import MainFrame
-
-APP_EXIT = 1
 
 
 class COPISApp(wx.App):
-    def OnInit(self):
-        self.frame = MainFrame(None, style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE, title='COPIS', size=wx.Size(1000, 900))
-        self.frame.Show()
-        return True
+    mainframe = None
+
+    def __init__(self, *args, **kwargs):
+        super(COPISApp, self).__init__(*args, **kwargs)
+
+        self.appconfig = None
+        self.appconfig_exists = False
+        self.init_appconfig()
+
+        self.SetAppName('COPIS')
+        self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
+        self.mainframe = MainFrame(
+            None,
+            style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
+            title='COPIS',
+            size=(int(self.appconfig.config['General']['windowwidth']),
+                  int(self.appconfig.config['General']['windowheight'])))
+        self.mainframe.Show()
+
+    def init_appconfig(self):
+        if self.appconfig is None:
+            self.appconfig = AppConfig()
+
+        self.appconfig_exists = self.appconfig.exists()
+        if self.appconfig_exists:
+            self.appconfig.load()
 
 
 if __name__ == '__main__':
     app = COPISApp()
-    app.MainLoop()
+    try:
+        app.MainLoop()
+    except KeyboardInterrupt:
+        pass
 
-    if app.frame.is_edsdk_on:
-        app.frame.terminateEDSDK()
+    if app.mainframe.is_edsdk_on:
+        app.mainframe.terminate_edsdk()
+
+    del app

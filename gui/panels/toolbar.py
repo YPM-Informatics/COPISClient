@@ -1,127 +1,116 @@
 #!/usr/bin/env python3
 
 import wx
-import util
+import wx.svg as svg
+import wx.lib.agw.aui as aui
+from utils import set_dialog, svgbmp
 from enums import ToolIds
 
 from gui.settings_frame import SettingsFrame
-from utils.serial_controller import SerialController
+from util.serial_controller import SerialController
 
 
-class ToolBarPanel(wx.Panel):
-    def __init__(self, parent):
-        super(ToolBarPanel, self).__init__(parent, style=wx.BORDER_SUNKEN)
-        hbox = wx.BoxSizer()
-        self.toolbar = wx.ToolBar(self, -1, style=wx.TB_HORIZONTAL | wx.NO_BORDER)
-        hbox.Add(self.toolbar, 1, flag=wx.EXPAND)
+class ToolbarPanel(aui.AuiToolBar):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, agwStyle=
+            aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW)
         self.parent = parent
 
-        # port and baud
-        self.initPortBaudOptions()
-        self.controller = SerialController()
-        self.setPorts()
-        self.setBaudRates()
-        self.toolbar.AddStretchableSpace()
+        self.serial_controller = None
 
-        # play, pause and stop buttons to animate the commands
-        self.initAnimationButtons()
-        self.toolbar.AddStretchableSpace()
+        self.port_cb = None
+        self.baud_cb = None
 
-        # import file
-        self.initImport()
-        self.toolbar.AddStretchableSpace()
+        self.init_controller()
+        self.init_toolbar()
+        self.update_ports()
 
-        # general settings
-        self.initSetting()
-        self.toolbar.AddStretchableSpace()
+        self.Bind(wx.EVT_TOOL, self.on_tool_selected)
 
-        self.toolbar.Bind(wx.EVT_TOOL, self.handleTool)
-        self.SetSizerAndFit(hbox)
-        self.toolbar.Realize()
+    def init_controller(self):
+        if self.serial_controller is not None:
+            return
 
-    def initPortBaudOptions(self):
-        self.toolbar.AddStretchableSpace()
-        portLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label='Port: ', style=wx.ALIGN_LEFT)
-        self.toolbar.AddControl(portLabel)
-        self.toolbar.portCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value='', style=wx.CB_DROPDOWN)
-        self.toolbar.portCombo.Bind(wx.EVT_COMBOBOX, self.onSelectPort)
-        self.toolbar.AddControl(self.toolbar.portCombo)
-        baudLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label=' Baud: ', style=wx.ALIGN_RIGHT)
-        self.toolbar.AddControl(baudLabel)
-        self.toolbar.baudCombo = wx.ComboBox(self.toolbar, wx.ID_ANY, value='')
-        self.toolbar.baudCombo.Bind(wx.EVT_COMBOBOX, self.onSelectBaud)
-        self.toolbar.AddControl(self.toolbar.baudCombo)
+        self.serial_controller = SerialController()
 
-        self.toolbar.connectBtn = wx.Button(self.toolbar, wx.ID_ANY, label='Connect')
-        self.toolbar.connectBtn.Bind(wx.EVT_BUTTON, self.onConnect)
-        self.toolbar.AddControl(self.toolbar.connectBtn)
+    def init_toolbar(self):
+        """Initialize and populate toolbar.
+        Icons taken from https://material.io/resources/icons/?style=baseline.
+        """
+        # add port, baud comboboxes
+        self.AddControl(wx.StaticText(self, wx.ID_ANY, 'Port', style=wx.ALIGN_LEFT))
+        self.port_cb = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY, size=(75, -1))
+        self.Bind(wx.EVT_COMBOBOX, self.on_select_port, self.AddControl(self.port_cb, label='Port combobox'))
+        self.AddSpacer(10)
+        self.AddControl(wx.StaticText(self, wx.ID_ANY, 'Baud', style=wx.ALIGN_LEFT))
+        self.baud_cb = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY, size=(75, -1))
+        self.Bind(wx.EVT_COMBOBOX, self.on_select_baud, self.AddControl(self.baud_cb, label='Baud combobox'))
+        self.AddSpacer(10)
+        self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))))
 
-    def initAnimationButtons(self):
-        # TODO: 3D simulation functionalities -- play, pause and stop
-        playImg = wx.Image('img/play.png')
-        playImg = playImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(ToolIds.PLAY.value, 'Play', wx.Bitmap(playImg), shortHelp='Play the simulation of commands.')
+        self.AddSeparator()
 
-        pauseImg = wx.Image('img/pause.png')
-        pauseImg = pauseImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(ToolIds.PAUSE.value, 'Pause', wx.Bitmap(pauseImg), shortHelp='Pause the simulation.')
+        # add play, pause, stop tools
+        _bmp = svgbmp('img/play_arrow-24px.svg', 24)
+        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Play simulation')
+        _bmp = svgbmp('img/pause-24px.svg', 24)
+        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
+        _bmp = svgbmp('img/stop-24px.svg', 24)
+        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
 
-        stopImg = wx.Image('img/stop.png')
-        stopImg = stopImg.Scale(50, 50, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(ToolIds.STOP.value, 'Stop', wx.Bitmap(stopImg), shortHelp='Stop the simulation.')
+        self.AddSeparator()
 
-    def initImport(self):
-        # TODO: browsing the file system and importing file functionalities
-        fileLabel = wx.StaticText(self.toolbar, id=wx.ID_ANY, label='File: ', style=wx.ALIGN_LEFT)
-        self.toolbar.AddControl(fileLabel)
-        fileBox = wx.TextCtrl(self.toolbar)
-        self.toolbar.AddControl(fileBox)
-        loadBtn = wx.Button(self.toolbar, wx.ID_ANY, label='Browse')
-        self.toolbar.AddControl(loadBtn)
+        # add settings tool
+        _bmp = svgbmp('img/settings-24px.svg', 24)
+        self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
-    def initSetting(self):
-        settingImg = wx.Image('img/setting.png')
-        settingImg = settingImg.Scale(20, 20, wx.IMAGE_QUALITY_HIGH)
-        self.toolbar.AddTool(ToolIds.SETTINGS.value, 'Setting', wx.Bitmap(settingImg), shortHelp='Set general settings of the application.')
+    def on_select_port(self, event):
+        port_cb = self.FindControl(event.GetId())
+        port = event.GetString()
+        if self.serial_controller.set_current_serial(port):
+            self.update_bauds()
+        else:
+            set_dialog(f'Could not open port "{port}".')
+            self.port_cb.SetSelection(-1)
 
-    def handleTool(self, event):
+    def on_select_baud(self, event):
+        self.serial_controller.selected_serial.baudrate = int(event.GetString())
+
+    def on_connect(self, event):
+        connect_btn = self.FindControl(event.GetId())
+        if self.serial_controller.selected_serial:
+            if self.serial_controller.selected_serial.is_open:
+                self.serial_controller.selected_serial.close()
+                connect_btn.SetLabel('Connect')
+            else:
+                self.serial_controller.selected_serial.open()
+                connect_btn.SetLabel('Disconnect')
+        else:
+            set_dialog('Please select a port to connect to.')
+
+    def update_ports(self):
+        self.port_cb.Set(self.serial_controller.ports)
+
+    def update_bauds(self):
+        if self.serial_controller.bauds is not None:
+            self.baud_cb.Set([str(i) for i in self.serial_controller.bauds])
+
+    def on_tool_selected(self, event):
         if event.GetId() == ToolIds.SETTINGS.value:
-            settings_frame = SettingsFrame()
+            settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.GetId() == ToolIds.PLAY.value:
-            camId = self.parent.controller_panel.masterCombo.GetSelection()
-            if camId != -1:
-                cam = self.parent.visualizer_panel.get_camera_by_id(camId)
+            camid = self.parent.controller_panel.masterCombo.GetSelection()
+            if camid != -1:
+                cam = self.parent.visualizer_panel.get_camera_by_id(camid)
                 if cam:
-                   cam.translate(0.62, 0.62, 0.62)
+                    cam.translate(1, 1, 1)
             else:
-                util.set_dialog('Please select the camera to control.')
-
-    def setPorts(self):
-        self.toolbar.portCombo.Clear()
-        for port in self.controller.ports:
-            self.toolbar.portCombo.Append(port)
-
-    def setBaudRates(self):
-        if self.controller.bauds:
-            self.toolbar.baudCombo.Clear()
-            for baud in self.controller.bauds:
-                self.toolbar.baudCombo.Append(str(baud))
-
-    def onSelectPort(self, event):
-        self.controller.setCurrentSerial(self.toolbar.portCombo.GetStringSelection())
-        self.setBaudRates()
-
-    def onSelectBaud(self, event):
-        self.controller.selected_serial.baudrate = int(self.toolbar.baudCombo.GetStringSelection())
-
-    def onConnect(self, event):
-        if self.controller.selected_serial:
-            if self.controller.selected_serial.is_open:
-                self.controller.selected_serial.close()
-                self.toolbar.connectBtn.SetLabel('Connect')
-            else:
-                self.controller.selected_serial.open()
-                self.toolbar.connectBtn.SetLabel('Disconnect')
+                set_dialog('Please select the camera to control.')
+        elif event.GetID() == ToolIds.PAUSE.value:
+            pass
         else:
-            util.set_dialog('Please select a port to connect to.')
+            pass
+
+    def __del__(self):
+        return
