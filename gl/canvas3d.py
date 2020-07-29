@@ -88,7 +88,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._path3d = Path3D()
         self._camera3d_list = []
         self._path3d_list = []
-        self._camera3d_scale = 100
+        self._camera3d_scale = 10
 
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
