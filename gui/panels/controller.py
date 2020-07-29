@@ -35,8 +35,8 @@ class ControllerPanel(wx.VScrolledWindow):
         return self.parent.visualizer_panel
 
     @property
-    def command_panel(self):
-        return self.parent.command_panel
+    def timeline_panel(self):
+        return self.parent.timeline_panel
 
     def InitPositioning(self):
         vboxPositioning = wx.BoxSizer(wx.VERTICAL)
@@ -218,7 +218,7 @@ class ControllerPanel(wx.VScrolledWindow):
             direction = event.GetEventObject().direction
 
             if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdbox = self.command_panel.cmd
+                cmdbox = self.timeline_panel.cmd
                 size = self.xyzSc.GetValue()
 
                 if direction == CamAxis.MINUS:
