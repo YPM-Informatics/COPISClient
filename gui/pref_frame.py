@@ -201,7 +201,7 @@ class PreferenceFrame(wx.Frame):
         scale_box = wx.BoxSizer()
         scale_label = wx.StaticText(self.panel, wx.ID_ANY, label='Scale: ')
         scale_box.Add(scale_label)
-        self.scale_slider = wx.Slider(self.panel, value=curr_scale, minValue=50, maxValue=1000)
+        self.scale_slider = wx.Slider(self.panel, wx.ID_ANY, curr_scale, 5, 50, size=(225, -1))
         scale_box.Add(self.scale_slider)
 
         camera_box.Add(scale_box, 1, flag=wx.LEFT, border=15)
