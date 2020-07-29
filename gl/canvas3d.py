@@ -19,36 +19,38 @@ from gl.camera3d import Camera3D
 from gl.bed3d import Bed3D
 from gl.proxy3d import Proxy3D
 
+from enums import ViewCubePos, ViewCubeSize
+
 
 class _Size():
     def __init__(self, width, height, scale_factor):
-        self.__width = width
-        self.__height = height
-        self.__scale_factor = scale_factor
+        self._width = width
+        self._height = height
+        self._scale_factor = scale_factor
 
     @property
     def width(self):
-        return self.__width
+        return self._width
 
     @width.setter
     def width(self, width):
-        self.__width = width
+        self._width = width
 
     @property
     def height(self):
-        return self.__height
+        return self._height
 
     @height.setter
     def height(self, height):
-        self.__height = height
+        self._height = height
 
     @property
     def scale_factor(self):
-        return self.__scale_factor
+        return self._scale_factor
 
     @scale_factor.setter
     def scale_factor(self, scale_factor):
-        self.__scale_factor = scale_factor
+        self._scale_factor = scale_factor
 
 
 class Canvas3D(glcanvas.GLCanvas):
@@ -66,6 +68,9 @@ class Canvas3D(glcanvas.GLCanvas):
         super().__init__(parent, display_attrs, -1)
         self.parent = parent
 
+        # initialize opengl context
+        self._context = glcanvas.GLContext(self)
+
         self._gl_initialized = False
         self._dirty = False # dirty flag to track when we need to re-render the canvas
         self._scale_factor = None
@@ -79,21 +84,20 @@ class Canvas3D(glcanvas.GLCanvas):
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
 
         self._bed3d = Bed3D(self._build_dimensions, axes, bounding_box, every, subdivisions)
-        self._proxy3d = Proxy3D('Sphere', [50], (0, 53, 107))
+        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
         self._path3d = Path3D()
         self._camera3d_list = []
         self._path3d_list = []
         self._camera3d_scale = 100
 
-        self._quadric = None
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
 
-        # initialize opengl context
-        self._context = glcanvas.GLContext(self)
+        self._viewcube_pos = ViewCubePos.TOP_RIGHT
+        self._viewcube_size = ViewCubeSize.MEDIUM
 
         # bind events
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -114,8 +118,6 @@ class Canvas3D(glcanvas.GLCanvas):
 
         if self._context is None:
             return False
-
-        self._quadric = gluNewQuadric()
 
         glClearColor(*self.color_background)
         glClearDepth(1.0)
@@ -161,8 +163,8 @@ class Canvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_objects()
-        self._render_cameras()
-        self._render_paths()
+        # self.SwapBuffers()
+        self._render_viewcube()
 
         self.SwapBuffers()
 
@@ -314,15 +316,78 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._proxy3d is not None:
             self._proxy3d.render()
 
-    def _render_cameras(self):
         if not self._camera3d_list:
             return
         for cam in self._camera3d_list:
             cam.render()
 
-    def _render_paths(self):
         if not self._path3d_list:
             return
+
+    def _render_viewcube(self):
+        # restrict viewport to left/right corner
+        glViewport(*self._get_viewcube_viewport())
+
+        vertices = np.array([
+            1.0, 1.0, 1.0,
+            1.0, -1.0, 1.0,
+            1.0, -1.0, -1.0,
+            1.0, 1.0, -1.0,
+            -1.0, 1.0, -1.0,
+            -1.0, 1.0, 1.0,
+            -1.0, -1.0, 1.0,
+            -1.0, -1.0, -1.0])
+        indices = np.array([
+            0, 1, 2, 2, 3, 0,
+            0, 3, 4, 4, 5, 0,
+            0, 5, 6, 6, 1, 0,
+            1, 6, 7, 7, 2, 1,
+            7, 4, 3, 3, 2, 7,
+            4, 7, 6, 6, 5, 4])
+
+        # store current projection matrix, load orthographic projection
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0)
+
+        # store current modelview and load identity transform
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+        glMultMatrixd(quat_to_matrix4(self._rot_quat))
+
+        # disable depth testing so the quad is always on top
+        glDisable(GL_DEPTH_TEST)
+
+        # draw cube
+        glColor4f(0.7, 0.7, 0.7, 0.9)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 0, vertices)
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, indices)
+        glDisableClientState(GL_VERTEX_ARRAY)
+
+        # re-enable depth testing
+        glEnable(GL_DEPTH_TEST)
+
+        # restore modelview and projection to previous state
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+
+    def _get_viewcube_viewport(self):
+        width, height = self._width, self._height
+        size = self._viewcube_size
+        if self._viewcube_pos == ViewCubePos.TOP_LEFT:
+            corner = (0, height - size)
+        elif self._viewcube_pos == ViewCubePos.TOP_RIGHT:
+            corner = (width - size, height - size)
+        elif self._viewcube_pos == ViewCubePos.BOTTOM_LEFT:
+            corner = (0, 0)
+        elif self._viewcube_pos == ViewCubePos.BOTTOM_LEFT:
+            corner = (width - size, 0)
+        return (*corner, size, size)
 
     # ------------------
     # Accessor functions
@@ -330,6 +395,26 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def _update_parent_zoom_slider(self):
         self.parent.set_zoom_slider(self._zoom)
+
+    @property
+    def viewcube_pos(self):
+        return self._viewcube_pos
+
+    @viewcube_pos.setter
+    def viewcube_pos(self, value):
+        if value not in ViewCubePos:
+            return
+        self._viewcube_pos = value
+
+    @property
+    def viewcube_size(self):
+        return self._viewcube_size
+
+    @viewcube_pos.setter
+    def viewcube_size(self, value):
+        if value not in ViewCubeSize:
+            return
+        self._viewcube_size = value
 
     @property
     def bed3d(self):

@@ -8,7 +8,6 @@ from OpenGL.GLU import *
 
 
 class _Axes():
-
     origin = (0.0, 0.0, 0.0)
 
     def __init__(self, build_dimensions):
@@ -37,6 +36,7 @@ class _Axes():
             0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
 
+        glDisable(GL_DEPTH_TEST)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_COLOR_ARRAY)
         glVertexPointer(3, GL_FLOAT, 0, verts)
@@ -44,6 +44,7 @@ class _Axes():
         glDrawArrays(GL_LINES, 0, 6)
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_COLOR_ARRAY)
+        glEnable(GL_DEPTH_TEST)
 
         # x axis
         glColor3f(1.0, 0.0, 0.0)
@@ -123,13 +124,13 @@ class Bed3D():
 
         glDisable(GL_LINE_SMOOTH)
 
+        self._render_gridlines()
+
         if self._show_axes:
             self._render_axes()
 
         if self._show_bounding_box:
             self._render_bounding_box()
-
-        self._render_gridlines()
 
         glEnable(GL_LINE_SMOOTH)
 
@@ -242,6 +243,7 @@ class Bed3D():
     @show_axes.setter
     def show_axes(self, value):
         self._show_axes = value
+        self.create_gridlines()
 
     @property
     def show_bounding_box(self):
