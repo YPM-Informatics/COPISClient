@@ -3,7 +3,7 @@
 import wx
 import wx.svg as svg
 import wx.lib.agw.aui as aui
-from utils import set_dialog, svgbmp
+from utils import set_dialog, create_scaled_bitmap
 from enums import ToolIds
 
 from gui.settings_frame import SettingsFrame
@@ -51,17 +51,17 @@ class ToolbarPanel(aui.AuiToolBar):
         self.AddSeparator()
 
         # add play, pause, stop tools
-        _bmp = svgbmp('img/play_arrow-24px.svg', 24)
+        _bmp = create_scaled_bitmap('play_arrow', 24)
         self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Play simulation')
-        _bmp = svgbmp('img/pause-24px.svg', 24)
+        _bmp = create_scaled_bitmap('pause', 24)
         self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
-        _bmp = svgbmp('img/stop-24px.svg', 24)
+        _bmp = create_scaled_bitmap('stop', 24)
         self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
 
         self.AddSeparator()
 
         # add settings tool
-        _bmp = svgbmp('img/settings-24px.svg', 24)
+        _bmp = create_scaled_bitmap('settings', 24)
         self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
     def on_select_port(self, event):

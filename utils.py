@@ -10,6 +10,6 @@ def set_dialog(msg):
     dialog.Destroy()
 
 
-def svgbmp(svgimg, size):
-    image = svg.SVGimage.CreateFromFile(svgimg).ConvertToScaledBitmap((size, size))
+def create_scaled_bitmap(bmp_name, px_cnt=16):
+    image = svg.SVGimage.CreateFromFile('img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
     return image

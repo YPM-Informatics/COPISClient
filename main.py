@@ -23,8 +23,8 @@ class COPISApp(wx.App):
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
-            size=(int(self.appconfig.config['General']['windowwidth']),
-                  int(self.appconfig.config['General']['windowheight'])))
+            size=(self.appconfig.config.getint('General', 'windowwidth'),
+                  self.appconfig.config.getint('General', 'windowheight')))
         self.mainframe.Show()
 
     def init_appconfig(self):
@@ -34,6 +34,9 @@ class COPISApp(wx.App):
         self.appconfig_exists = self.appconfig.exists()
         if self.appconfig_exists:
             self.appconfig.load()
+
+    def dark_mode(self):
+        wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOWFRAME)
 
 
 if __name__ == '__main__':

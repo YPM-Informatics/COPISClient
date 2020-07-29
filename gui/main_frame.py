@@ -5,7 +5,7 @@ import wx.svg as svg
 import wx.lib.agw.aui as aui
 from ctypes import *
 
-from utils import svgbmp
+from utils import create_scaled_bitmap
 
 from gui.panels.console import ConsolePanel
 from gui.panels.controller import ControllerPanel
@@ -109,30 +109,30 @@ class MainFrame(wx.Frame):
         file_menu = wx.Menu()
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&New Project\tCtrl+N', 'Create new project')
-        _item.SetBitmap(svgbmp('img/add-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('add', 16))
         self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, '&Open...\tCtrl+O', 'Open project')
-        _item.SetBitmap(svgbmp('img/open_in_new-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('open_in_new', 16))
         self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(_item))
         file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&Save\tCtrl+S', 'Save project')
-        _item.SetBitmap(svgbmp('img/save-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('save', 16))
         self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', 'Save project as')
         self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
         file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&Import GCODE...', '')
-        _item.SetBitmap(svgbmp('img/get_app-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('get_app', 16))
         self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
-        _item.SetBitmap(svgbmp('img/publish-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('publish', 16))
         self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
         file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
-        _item.SetBitmap(svgbmp('img/exit_to_app-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('exit_to_app', 16))
         self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(_item))
 
         # Edit menu
@@ -142,7 +142,7 @@ class MainFrame(wx.Frame):
         edit_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&Preferences', 'Open preferences')
-        _item.SetBitmap(svgbmp('img/tune-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('tune', 16))
         self.Bind(wx.EVT_MENU, self.open_preferences_frame, edit_menu.Append(_item))
 
         # View menu
@@ -181,21 +181,21 @@ class MainFrame(wx.Frame):
         window_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
-        _item.SetBitmap(svgbmp('img/tune-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('tune', 16))
         self.Bind(wx.EVT_MENU, None, window_menu.Append(_item))
 
         # Help menu
         help_menu = wx.Menu()
         _item = wx.MenuItem(None, wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu')
-        _item.SetBitmap(svgbmp('img/help_outline-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('help_outline', 16))
         self.Bind(wx.EVT_MENU, None, help_menu.Append(_item))
         help_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', 'Open www.copis3d.org')
-        _item.SetBitmap(svgbmp('img/open_in_new-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('open_in_new', 16))
         self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, '&About COPIS...', 'Show about dialog')
-        _item.SetBitmap(svgbmp('img/info-24px.svg', 16))
+        _item.SetBitmap(create_scaled_bitmap('info', 16))
         self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(_item))
 
         self.menubar.Append(file_menu, '&File')

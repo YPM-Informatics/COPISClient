@@ -6,14 +6,13 @@ from pathlib import Path
 
 class AppConfig():
     def __init__(self):
+        self._config = None
         # whether or not the config file needs to be saved
         self._dirty = False
 
-        self._config = None
-
     def set_defaults(self):
-        """Override missing or keys with their defaults."""
-        # TODO
+        """Override missing or keys with their defaults.
+        TODO"""
         pass
 
     def load(self):
@@ -30,7 +29,6 @@ class AppConfig():
             raise IOError(
                 'Error reading COPIS config file.\n'
                 'Try to manually delete the file to recover from the error.\n')
-            return False
         finally:
             pass
         return True
@@ -47,8 +45,20 @@ class AppConfig():
 
     @property
     def config(self):
-        self._dirty = True
         return self._config
+
+    @config.setter
+    def config(self, value):
+        self._config = value
+        self._dirty = True
+
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, value):
+        self._dirty = value
 
     def update_config_dir(self, dir):
         """TODO"""
