@@ -10,8 +10,9 @@ from OpenGL.GLU import *
 class _Axes():
     origin = (0.0, 0.0, 0.0)
 
-    def __init__(self, build_dimensions):
-        self._build_dimensions = build_dimensions
+    def __init__(self, parent):
+        self.parent = parent
+        build_dimensions = self.parent.build_dimensions
         dist = 0.5 * (build_dimensions[1] + max(build_dimensions[0], build_dimensions[2]))
         self._arrow_base_radius = dist / 75.0
         self._arrow_length = 2.5 * self._arrow_base_radius
@@ -23,9 +24,11 @@ class _Axes():
         if self._quadric is None:
             return
 
-        x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
-        y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
-        z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
+        build_dimensions = self.parent.build_dimensions
+
+        x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
+        y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
+        z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
 
         verts = np.array([
             x[0], 0, 0, -x[1], 0, 0,
@@ -100,7 +103,7 @@ class Bed3D():
         self._show_bounding_box = bounding_box
         self._every = every
         self._subdivisions = subdivisions
-        self._axes = _Axes(build_dimensions)
+        self._axes = _Axes(self)
 
         self._initialized = False
         self._gridlines = None

@@ -20,7 +20,6 @@ from gl.bed3d import Bed3D
 from gl.proxy3d import Proxy3D
 
 from enums import ViewCubePos, ViewCubeSize
-from utils import timing
 
 
 class _Size():
@@ -63,13 +62,14 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_max = 7.0
 
     def __init__(self, parent, build_dimensions=None, axes=True, bounding_box=True, every=100, subdivisions=10):
-        self.parent = parent
+        # TODO: add more init attributes such as pos and size
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
-        super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                         size=wx.DefaultSize, style=0, name='GLCanvas', palette=wx.NullPalette)
-        self._canvas = self
-        self._context = glcanvas.GLContext(self._canvas)
+        super().__init__(parent, display_attrs, -1)
+        self.parent = parent
+
+        # initialize opengl context
+        self._context = glcanvas.GLContext(self)
 
         self._gl_initialized = False
         self._dirty = False # dirty flag to track when we need to re-render the canvas
@@ -88,31 +88,28 @@ class Canvas3D(glcanvas.GLCanvas):
         self._path3d = Path3D()
         self._camera3d_list = []
         self._path3d_list = []
-        self._camera3d_scale = 10
+        self._camera3d_scale = 100
 
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
-        self._inside = False
 
         self._viewcube_pos = ViewCubePos.TOP_RIGHT
         self._viewcube_size = ViewCubeSize.MEDIUM
 
         # bind events
-        self._canvas.Bind(wx.EVT_SIZE, self.on_size)
-        self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
-        self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key)
-        self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
-        self._canvas.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
-        self._canvas.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
-        self._canvas.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
-        self._canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter_window)
-        self._canvas.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window)
-        self._canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
-        self._canvas.Bind(wx.EVT_PAINT, self.on_paint)
-        self._canvas.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
+        self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_IDLE, self.on_idle)
+        self.Bind(wx.EVT_KEY_DOWN, self.on_key)
+        self.Bind(wx.EVT_KEY_UP, self.on_key)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
 
     def init_opengl(self):
         """Initialize OpenGL."""
@@ -145,7 +142,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._gl_initialized = True
         return True
 
-    # @timing
     def render(self):
         """Render frame."""
         # ensure that canvas is current and initialized
@@ -164,14 +160,13 @@ class Canvas3D(glcanvas.GLCanvas):
         self.apply_view_matrix()
         self.apply_projection()
 
-        self._picking_pass()
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_objects()
+        # self.SwapBuffers()
         self._render_viewcube()
 
-        self._canvas.SwapBuffers()
+        self.SwapBuffers()
 
     # ---------------------
     # Canvas event handlers
@@ -183,7 +178,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def on_idle(self, event):
         """Handle EVT_IDLE."""
-        if not self._gl_initialized or self._canvas.IsFrozen():
+        if not self._gl_initialized or self.IsFrozen():
             return
 
         self._dirty = self._dirty or any((i.dirty for i in self._camera3d_list))
@@ -254,12 +249,6 @@ class Canvas3D(glcanvas.GLCanvas):
 
         wx.GetApp().mainframe.set_selected_camera(camid)
 
-    def on_enter_window(self, event):
-        self._inside = True
-
-    def on_leave_window(self, event):
-        self._inside = False
-
     def on_erase_background(self, event):
         """Handle the erase background event."""
         pass  # Do nothing, to avoid flashing on MSW.
@@ -277,7 +266,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def get_canvas_size(self):
         """Get canvas size based on scaling factor."""
-        w, h = self._canvas.GetSize()
+        w, h = self.GetSize()
         factor = self.get_scale_factor()
         w = int(w * factor)
         h = int(h * factor)
@@ -301,10 +290,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self._dirty = value
 
     def _is_shown_on_screen(self):
-        return self._canvas.IsShownOnScreen()
+        return self.IsShownOnScreen()
 
     def _set_current(self):
-        return False if self._context is None else self._canvas.SetCurrent(self._context)
+        return False if self._context is None else self.SetCurrent(self._context)
 
     def _update_camera_zoom(self, delta_zoom):
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
@@ -316,25 +305,6 @@ class Canvas3D(glcanvas.GLCanvas):
         if self._is_shown_on_screen():
             self._set_current()
             self.render()
-
-    def _picking_pass(self):
-        glDisable(GL_MULTISAMPLE)
-
-        glDisable(GL_BLEND)
-        glEnable(GL_DEPTH_TEST)
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        self._render_volumes_for_picking()
-        # self._render_xxxx_for_picking()
-
-        glEnable(GL_MULTISAMPLE)
-
-        cnv_size = self.get_canvas_size()
-        print(self._mouse_pos)
-        # if self._inside:
-        #     color = glReadPixels(self._mouse_pos, cnv_size.height - event.GetY() - 1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        return
 
     def _render_background(self):
         glClearColor(*self.color_background)
@@ -355,9 +325,6 @@ class Canvas3D(glcanvas.GLCanvas):
             return
 
     def _render_viewcube(self):
-        if self._viewcube_pos is None or self._viewcube_size is None:
-            return
-
         # restrict viewport to left/right corner
         glViewport(*self._get_viewcube_viewport())
 
@@ -408,20 +375,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
-
-    def _render_volumes_for_picking(self):
-        glDisable(GL_CULL_FACE)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-
-        view_matrix = self.get_modelview_matrix()
-
-        # render everything where color is related to id
-
-        glDisableClientState(GL_NORMAL_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
-
-        glEnable(GL_CULL_FACE)
 
     def _get_viewcube_viewport(self):
         width, height = self._width, self._height
