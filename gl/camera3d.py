@@ -65,39 +65,39 @@ class Camera3D():
         # bottom
         glColor3ub(*color)
         glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale,  0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale,  0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
 
         # right
-        glVertex3f(-0.25 * scale,  0.5 * scale, -0.5 * scale)
-        glVertex3f( 0.25 * scale,  0.5 * scale, -0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
         glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
 
         # top
-        glVertex3f(-0.25 * scale,  0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale,  0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale,  0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale,  0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
 
         # left
-        glVertex3f(-0.25 * scale, -0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale,  0.5 * scale,  0.5 * scale)
-        glVertex3f(-0.25 * scale,  0.5 * scale,  0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
 
         # back
-        glVertex3f( 0.25 * scale,  0.5 * scale, -0.5 * scale)
-        glVertex3f( 0.25 * scale,  0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale,  0.5 * scale)
-        glVertex3f( 0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
 
         # front
         glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale,  0.5 * scale)
-        glVertex3f(-0.25 * scale,  0.5 * scale,  0.5 * scale)
-        glVertex3f(-0.25 * scale,  0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
         glEnd()
 
         glPushMatrix()
