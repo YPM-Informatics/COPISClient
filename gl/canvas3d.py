@@ -18,6 +18,8 @@ from gl.path3d import Path3D
 from gl.camera3d import Camera3D
 from gl.bed3d import Bed3D
 from gl.proxy3d import Proxy3D
+from gl.thing3d import Thing3D
+from gl.thing3d_manager import Thing3DManager
 
 from enums import ViewCubePos, ViewCubeSize
 from utils import timing
@@ -89,6 +91,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._camera3d_list = []
         self._path3d_list = []
         self._camera3d_scale = 10
+        self._thing3d_manager = Thing3DManager(self)
 
         self._zoom = 1
         self._rot_quat = [0.0, 0.0, 0.0, 1.0]
@@ -96,6 +99,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._angle_z = 0
         self._angle_x = 0
         self._inside = False
+        self._hover_id = -1
 
         self._viewcube_pos = ViewCubePos.TOP_RIGHT
         self._viewcube_size = ViewCubeSize.MEDIUM
@@ -164,7 +168,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self.apply_view_matrix()
         self.apply_projection()
 
-        self._picking_pass()
+        self._hover_id = self._picking_pass()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
@@ -228,31 +232,26 @@ class Canvas3D(glcanvas.GLCanvas):
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
         elif event.LeftUp() or event.MiddleUp() or event.RightUp() or event.Leaving():
-            if self._mouse_pos is not None:
-                self._mouse_pos = None
-        elif event.Moving():
             pass
+            # if self._mouse_pos is not None:
+            #     self._mouse_pos = None
+        elif event.Moving():
+            self._mouse_pos = event.GetPosition()
         else:
             event.Skip()
         self._dirty = True
 
     def on_left_dclick(self, event):
         """Handle EVT_LEFT_DCLICK."""
-        # Detect click location
-        scale = self.get_scale_factor()
-        event.SetX(int(event.GetX() * scale))
-        event.SetY(int(event.GetY() * scale))
-        glFlush()
 
-        # Read pixel color
-        pixel = glReadPixels(event.GetX(), self._height - event.GetY(), 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        camid = 125 - pixel[0]
+        # get current hovered id
+        cam_id = self._hover_id
 
-        # If user double clicks something other than camera
-        if camid > len(self._camera3d_list) or camid < 0:
-            return 0
+        # check if id is out of bounds
+        if cam_id >= len(self._camera3d_list):
+            return
 
-        wx.GetApp().mainframe.set_selected_camera(camid)
+        wx.GetApp().mainframe.set_selected_camera(cam_id)
 
     def on_enter_window(self, event):
         self._inside = True
@@ -325,16 +324,23 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        self._render_volumes_for_picking()
-        # self._render_xxxx_for_picking()
+        self._render_objects_for_picking()
 
         glEnable(GL_MULTISAMPLE)
 
-        cnv_size = self.get_canvas_size()
-        print(self._mouse_pos)
-        # if self._inside:
-        #     color = glReadPixels(self._mouse_pos, cnv_size.height - event.GetY() - 1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-        return
+        id_ = -1
+
+        canvas_size = self.get_canvas_size()
+        mouse = self._mouse_pos
+        # calculate id based on color value encoded in _render_volumes_for_picking()
+        if self._inside:
+            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+            id_ = color[0] + (color[1] << 8) + (color[2] << 16)
+
+        # check if id is valid
+        if id_ >= 0 and id_ != 15790320: # 15790320 is from the background color
+            return id_
+        return -1
 
     def _render_background(self):
         glClearColor(*self.color_background)
@@ -353,6 +359,8 @@ class Canvas3D(glcanvas.GLCanvas):
 
         if not self._path3d_list:
             return
+
+        self._thing3d_manager.render_all()
 
     def _render_viewcube(self):
         if self._viewcube_pos is None or self._viewcube_size is None:
@@ -409,18 +417,28 @@ class Canvas3D(glcanvas.GLCanvas):
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
 
-    def _render_volumes_for_picking(self):
+    def _render_objects_for_picking(self):
         glDisable(GL_CULL_FACE)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
 
         view_matrix = self.get_modelview_matrix()
 
+        # encode id in color value
+        for cam in self._camera3d_list:
+            id_ = cam.cam_id
+            r = (id_ & (0x0000000FF << 0)) >> 0
+            g = (id_ & (0x0000000FF << 6)) >> 8
+            b = (id_ & (0x0000000FF << 16)) >> 16
+            a = 1.0
+            glColor4f(r / 255.0, g / 255.0, b / 255.0, a)
+            cam.render_for_picking()
+
+        # self._thing3d_manager.render_all_for_picking()
         # render everything where color is related to id
 
         glDisableClientState(GL_NORMAL_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)
-
         glEnable(GL_CULL_FACE)
 
     def _get_viewcube_viewport(self):
@@ -457,7 +475,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def viewcube_size(self):
         return self._viewcube_size
 
-    @viewcube_pos.setter
+    @viewcube_size.setter
     def viewcube_size(self, value):
         if value not in ViewCubeSize:
             return

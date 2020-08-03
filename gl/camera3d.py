@@ -11,11 +11,11 @@ from OpenGL.GLU import *
 
 
 class Camera3D():
-    def __init__(self, camid, x, y, z, b, c):
+    def __init__(self, cam_id, x, y, z, b, c):
         self._dirty = False  # dirty flag to track when we need to re-render the camera
         self.is_selected = False
 
-        self._camid = camid
+        self._cam_id = cam_id
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
@@ -41,8 +41,7 @@ class Camera3D():
         if self.is_selected:
             color = (75, 230, 150)
         else:
-            hue = 125 - self._camid
-            color = [hue, hue, hue]
+            color = (125, 125, 125)
 
         scale = self._scale
 
@@ -112,10 +111,80 @@ class Camera3D():
 
         # cap
         glColor3ub(*[x - 25 for x in color])
-        circleQuad = gluNewQuadric()
-        gluQuadricOrientation(circleQuad, GLU_INSIDE)
-        gluDisk(circleQuad, 0.0, 0.25 * scale, 16, 1)
-        gluDeleteQuadric(circleQuad)
+        circle_quad = gluNewQuadric()
+        gluQuadricOrientation(circle_quad, GLU_INSIDE)
+        gluDisk(circle_quad, 0.0, 0.25 * scale, 16, 1)
+        gluDeleteQuadric(circle_quad)
+
+        glPopMatrix()
+        glPopMatrix()
+
+    def render_for_picking(self):
+        """Render camera for picking pass."""
+        scale = self._scale
+
+        glPushMatrix()
+        glTranslatef(self._x, self._y, self._z)
+        if self.mode == CamMode.NORMAL:
+            if self._b != 0.0:
+                glRotatef(self._b, 0, 0, 1)
+            if self._c != 0.0:
+                glRotatef(self._c, 0, 1, 0)
+        elif self.mode == CamMode.ROTATE:
+            glRotatef(self._angle, *self._rotation_vector)
+
+        glBegin(GL_QUADS)
+
+        # bottom
+        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
+
+        # right
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
+
+        # top
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
+
+        # left
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
+
+        # back
+        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
+
+        # front
+        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
+        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
+        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
+        glEnd()
+        glPushMatrix()
+
+        # lens
+        glTranslated(-0.5 * scale, 0.0, 0.0)
+        quadric = gluNewQuadric()
+        glRotatef(90.0, 0.0, 1.0, 0.0)
+        gluCylinder(quadric, 0.25 * scale, 0.25 * scale, 0.3 * scale, 16, 16)
+        gluDeleteQuadric(quadric)
+
+        # cap
+        circle_quad = gluNewQuadric()
+        gluQuadricOrientation(circle_quad, GLU_INSIDE)
+        gluDisk(circle_quad, 0.0, 0.25 * scale, 16, 1)
+        gluDeleteQuadric(circle_quad)
 
         glPopMatrix()
         glPopMatrix()
@@ -129,12 +198,12 @@ class Camera3D():
         self._scale = value
 
     @property
-    def camid(self):
-        return self._camid
+    def cam_id(self):
+        return self._cam_id
 
-    @camid.setter
-    def camid(self, value):
-        self._camid = value
+    @cam_id.setter
+    def cam_id(self, value):
+        self._cam_id = value
 
     @property
     def dirty(self):
