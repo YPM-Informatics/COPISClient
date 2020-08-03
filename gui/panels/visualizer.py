@@ -106,7 +106,7 @@ class VisualizerPanel(wx.Panel):
         """Return Camera3D list."""
         return self.camera3d_list
 
-    def add_camera(self, camid=-1):
+    def add_camera(self, cam_id=-1):
         """Add new Camera3D."""
         x = random.random() * self._build_dimensions[0] - self._build_dimensions[3]
         y = random.random() * self._build_dimensions[1] - self._build_dimensions[4]
@@ -114,27 +114,27 @@ class VisualizerPanel(wx.Panel):
         b = random.randrange(0, 360, 5)
         c = random.randrange(0, 360, 5)
 
-        if camid == -1:
-            camid = self._generate_camera_id()
+        if cam_id == -1:
+            cam_id = self._generate_camera_id()
 
-        cam_3d = Camera3D(camid, x, y, z, b, c)
+        cam_3d = Camera3D(cam_id, x, y, z, b, c)
         self._canvas3d.camera3d_list.append(cam_3d)
         self._canvas3d.dirty = True
 
-        return str(cam_3d.camid)
+        return str(cam_3d.cam_id)
 
-    def get_camera_by_id(self, camid):
+    def get_camera_by_id(self, cam_id):
         """Return Camera3D by id."""
         if self._canvas3d.camera3d_list:
             for cam in self._canvas3d.camera3d_list:
-                if cam.camid == camid:
+                if cam.cam_id == cam_id:
                     return cam
         return None
 
     def _generate_camera_id(self):
         if self._canvas3d.camera3d_list:
-            self._canvas3d.camera3d_list.sort(key=lambda x: x.camid)
-            return self._canvas3d.camera3d_list[-1].camid + 1
+            self._canvas3d.camera3d_list.sort(key=lambda x: x.cam_id)
+            return self._canvas3d.camera3d_list[-1].cam_id + 1
         return 0
 
     def get_selected_camera(self):
