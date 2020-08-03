@@ -248,7 +248,7 @@ class Canvas3D(glcanvas.GLCanvas):
         cam_id = self._hover_id
 
         # check if id is out of bounds
-        if cam_id >= len(self._camera3d_list):
+        if cam_id == -1 or cam_id >= len(self._camera3d_list):
             return
 
         wx.GetApp().mainframe.set_selected_camera(cam_id)
@@ -332,15 +332,15 @@ class Canvas3D(glcanvas.GLCanvas):
 
         canvas_size = self.get_canvas_size()
         mouse = self._mouse_pos
-        # calculate id based on color value encoded in _render_volumes_for_picking()
         if self._inside:
-            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+            # rgb to id
+            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1,
+                                 GL_RGB, GL_UNSIGNED_BYTE)
             id_ = color[0] + (color[1] << 8) + (color[2] << 16)
 
-        # check if id is valid
-        if id_ >= 0 and id_ != 15790320: # 15790320 is from the background color
-            return id_
-        return -1
+        if id_ == 15790320: # 15790320 is from the background color
+            return -1
+        return id_
 
     def _render_background(self):
         glClearColor(*self.color_background)
