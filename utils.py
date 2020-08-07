@@ -24,7 +24,6 @@ def timing(f):
         ts = time()
         result = f(*args, **kw)
         te = time()
-        print('func:%r args:[%r, %r] took: %2.6f ms' % \
-              (f.__name__, args, kw, (te-ts)*1000))
+        print(f'func:{f.__name__} args:[{args}, {kw}] took: {(te-ts)*1000:.4f}ms')
         return result
     return wrap

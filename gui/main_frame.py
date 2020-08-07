@@ -227,7 +227,7 @@ class MainFrame(wx.Frame):
                 with open(path, 'r') as file:
                     self.do_load_project(file)
             except IOError:
-                wx.LogError("Could not open file '%s'." % path)
+                wx.LogError(f'Could not open file "{path}".')
 
     def on_save(self, event):
         pass
@@ -245,7 +245,7 @@ class MainFrame(wx.Frame):
                 with open(path, 'w') as file:
                     self.do_save_project(file)
             except IOError:
-                wx.LogError("Could not save in file '%s'." % path)
+                wx.LogError(f'Could not save in file "{path}".')
 
     def do_save_project(self, file):
         self.project_dirty = False

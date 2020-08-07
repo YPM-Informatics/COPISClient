@@ -1,8 +1,7 @@
 numpy==1.18.5
-scipy==1.4.1
 Pillow==7.0.0
 PyOpenGL==3.1.5
+PyGLM==1.99.3
 pyserial==3.4
-serial==0.0.97
 six==1.14.0
 wxPython>=4.1.0

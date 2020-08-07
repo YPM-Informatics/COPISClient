@@ -5,75 +5,36 @@ TODO: Give attribution to Printrun
 
 from math import sqrt, sin, cos, tan, asin, acos
 import numpy as np
-
+import glm
 
 
 def arcball(p1x, p1y, p2x, p2y, r):
     """Update arcball rotation."""
-    last = sphere_coords(p1x, p1y, r)
-    cur = sphere_coords(p2x, p2y, r)
-    rot_axis = np.cross(cur, last)
+    p1 = glm.vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
+    p2 = glm.vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
+    axis = glm.normalize(glm.cross(p1, p2))
 
-    # calculate angle between last and cur
-    d = map(lambda x, y: x - y, last, cur)
-    t = sqrt(sum(x*x for x in d)) / (2.0 * r)
+    # calculate angle between p1 and p2
+    d = map(lambda x, y: x - y, p1, p2)
+    t = sqrt(sum(x * x for x in d)) / (2.0 * r)
     if t > 1.0:
         t = 1.0
     if t < -1.0:
         t = -1.0
     phi = 2.0 * asin(t)
 
-    return axis_angle_to_quat(rot_axis, phi)
+    return glm.angleAxis(phi, axis)
 
 
-def sphere_coords(x, y, r):
+def project_to_sphere(r, x, y):
     """Compute the intersection from screen coords to the arcball sphere."""
-    d2 = x*x + y*y
-    r2 = r * r
+    d = sqrt(x * x + y * y)
     # https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball#Of_mice_and_manipulation
     # combines a sphere and a hyperbolic sheet for smooth transitions
-    if sqrt(d2) <= r * 0.70710678118654752440:
-        return [x, y, sqrt(r2 - d2)]
-    return [x, y, r2 * 0.5 / sqrt(d2)]
-
-
-def axis_angle_to_quat(axis, angle):
-    """Convert rotation vector into a quaternion given."""
-    mag = sqrt(sum(x * x for x in axis))
-    q = [x * (1 / mag) for x in axis]
-    q = [x * sin(angle / 2.0) for x in q]
-    q.append(cos(angle / 2.0))
-    return q
-
-
-def quat_to_rotation_matrix(quat):
-    """Convert quaternion into the equivalent 3x3 rotation matrix."""
-    x, y, z, w = quat
-    return np.array([
-        [1.0 - 2.0 * y * y - 2.0 * z * z, 2.0 * x * y - 2.0 * w * z, 2.0 * x * z + 2.0 * w * y],
-        [2.0 * x * y + 2.0 * w * z, 1.0 - 2.0 * x * x - 2.0 * z * z, 2.0 * y * z - 2.0 * w * x],
-        [2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x, 1.0 - 2.0 * x * x - 2.0 * y * y]])
-
-
-def quat_to_transformation_matrix(quat):
-    """Convert quaternion into the equivalent 4x4 homogeneous transformation matrix."""
-    x, y, z, w = quat
-    return np.array([
-        [1.0 - 2.0 * y * y - 2.0 * z * z, 2.0 * x * y - 2.0 * w * z, 2.0 * x * z + 2.0 * w * y, 0.0],
-        [2.0 * x * y + 2.0 * w * z, 1.0 - 2.0 * x * x - 2.0 * z * z, 2.0 * y * z - 2.0 * w * x, 0.0],
-        [2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x, 1.0 - 2.0 * x * x - 2.0 * y * y, 0.0],
-        [0.0, 0.0, 0.0, 1.0]])
-
-
-def quat_product(quat1, quat2):
-    """Compute the product of two quaternions."""
-    x1, y1, z1, w1 = quat1
-    x2, y2, z2, w2 = quat2
-    return np.array([
-        [w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2],
-        [w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2],
-        [w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2],
-        [w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2]])
+    if d < r * 0.70710678118654752440:
+        return sqrt(r * r - d * d)
+    t = r / 1.41421356237309504880
+    return t * t / d
 
 
 def rotate_basis_to(v0, v1, v2):
@@ -89,8 +50,8 @@ def rotate_basis_to(v0, v1, v2):
     # rotate such that that the basis vector for the y axis (up) aligns with v
     if (v != np.array([0, 0, 1])).any():
         phi = acos(v[1])                   # np.dot(v, [0, 1, 0])
-        axis = (v[2], 0.0, -v[0])               # np.cross([0, 1, 0], v)
-        rot = quat_to_rotation_matrix(axis_angle_to_quat(axis, phi))
+        axis = glm.vec3(v[2], 0.0, -v[0])               # np.cross([0, 1, 0], v)
+        rot = glm.mat3_cast(glm.angleAxis(phi, axis))
         x = [rot[0][0], rot[1][0], rot[2][0]]   # rot.dot(x)
         z = [rot[0][2], rot[1][2], rot[2][2]]   # rot.dot(z)
     return x, v, z
@@ -112,7 +73,7 @@ def draw_circle(p, n, r, sides=64):
     glDisableClientState(GL_VERTEX_ARRAY)
 
 
-def draw_helix(p, n, r, sides=64):
+def draw_helix(p, n, r, pitch, turns, sides=64):
     """Wrapper function to draw helix."""
     vertices, count = compute_helix(*p, *n, r, pitch, turns, sides)
 
