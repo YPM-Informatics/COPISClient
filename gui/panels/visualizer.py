@@ -14,6 +14,7 @@ class VisualizerPanel(wx.Panel):
 
         self.parent = parent
         self._selected_cam = None
+        # self._build_dimensions = [400, 400, 400, 200, 200, 200]
         self._build_dimensions = [400, 400, 400, 200, 200, 200]
 
         self._glcanvas = Canvas3D(
