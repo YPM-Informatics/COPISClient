@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bed3D class and associated classes."""
+"""GLBed and associated classes."""
 
 import numpy as np
 
@@ -88,15 +88,16 @@ class _Axes():
             gluDeleteQuadric(self._quadric)
 
 
-class Bed3D():
-    """Bed3D class."""
+class GLBed():
+    """GLBed class."""
     color_light = 0.91
     color_dark = 0.72
     color_border = 0.40
 
-    def __init__(self, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
+    def __init__(self, parent, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
+        self.parent = parent
 
         self._build_dimensions = build_dimensions
         self._show_axes = axes

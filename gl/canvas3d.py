@@ -1,59 +1,40 @@
 #!/usr/bin/env python3
-"""Canvas3D class and associated classes."""
+"""Canvas3D and associated classes."""
 
 import math
 import random
 import numpy as np
 import platform as pf
+import ctypes
 
+from typing import NamedTuple
 from threading import Lock
 
+import glm
 import wx
 from wx import glcanvas
 from OpenGL.GL import *
+from OpenGL.GL import shaders
 from OpenGL.GLU import *
 
-from gl.glhelper import arcball, axis_angle_to_quat, quat_to_transformation_matrix, quat_product, draw_circle, draw_helix
+from gl.glhelper import arcball
 from gl.path3d import Path3D
 from gl.camera3d import Camera3D
-from gl.bed3d import Bed3D
 from gl.proxy3d import Proxy3D
-from gl.thing3d import Thing3D
-from gl.thing3d_manager import Thing3DManager
+from gl.viewcube import GLViewCube
+from gl.bed import GLBed
 
 from enums import ViewCubePos, ViewCubeSize
 from utils import timing
 
 
-class _Size():
-    def __init__(self, width, height, scale_factor):
-        self._width = width
-        self._height = height
-        self._scale_factor = scale_factor
+class _Size(NamedTuple):
+    width: int
+    height: int
+    scale_factor: float
 
-    @property
-    def width(self):
-        return self._width
-
-    @width.setter
-    def width(self, width):
-        self._width = width
-
-    @property
-    def height(self):
-        return self._height
-
-    @height.setter
-    def height(self, height):
-        self._height = height
-
-    @property
-    def scale_factor(self):
-        return self._scale_factor
-
-    @scale_factor.setter
-    def scale_factor(self, scale_factor):
-        self._scale_factor = scale_factor
+    def aspect_ratio(self):
+        return self.width / self.height
 
 
 class Canvas3D(glcanvas.GLCanvas):
@@ -73,36 +54,33 @@ class Canvas3D(glcanvas.GLCanvas):
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
 
-        self._gl_initialized = False
-        self._dirty = False # dirty flag to track when we need to re-render the canvas
-        self._scale_factor = None
-        self._mouse_pos = None
-        self._width = None
-        self._height = None
         if build_dimensions:
             self._build_dimensions = build_dimensions
         else:
             self._build_dimensions = [400, 400, 400, 200, 200, 200]
         self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
 
-        self._bed3d = Bed3D(self._build_dimensions, axes, bounding_box, every, subdivisions)
-        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
-        self._path3d = Path3D()
+        self._bed = GLBed(self, self._build_dimensions, axes, bounding_box, every, subdivisions)
+        self._viewcube = GLViewCube(self)
+        self._proxy3d = None # Proxy3D('Sphere', [1], (0, 53, 107))
+        # self._path3d = Path3D()
+        # self._path3d_list = []
         self._camera3d_list = []
-        self._path3d_list = []
         self._camera3d_scale = 10
-        self._thing3d_manager = Thing3DManager(self)
+
+        # screen is only refreshed from the OnIdle handler if it is dirty
+        self._dirty = False
+        self._gl_initialized = False
+        self._scale_factor = None
+        self._mouse_pos = None
 
         self._zoom = 1
-        self._rot_quat = [0.0, 0.0, 0.0, 1.0]
+        self._rot_quat = glm.quat()
         self._rot_lock = Lock()
         self._angle_z = 0
         self._angle_x = 0
         self._inside = False
         self._hover_id = -1
-
-        self._viewcube_pos = ViewCubePos.TOP_RIGHT
-        self._viewcube_size = ViewCubeSize.MEDIUM
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -143,11 +121,62 @@ class Canvas3D(glcanvas.GLCanvas):
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_MULTISAMPLE)
 
-        if not self._bed3d.init():
-            return False
+        # self.init_shaders()
 
         self._gl_initialized = True
         return True
+
+    def init_shaders(self):
+        vertex_shader = """
+        #version 330
+
+        in layout(location = 0) vec3 positions;
+        in layout(location = 1) vec3 colors;
+
+        out vec3 newColor;
+
+        void main() {
+            gl_Position = vec4(positions, 1.0);
+            newColor = colors;
+        }
+        """
+
+        fragment_shader = """
+        #version 330
+
+        in vec3 newColor;
+        out vec4 outColor;
+
+        void main() {
+            outColor = vec4(newColor, 1.0);
+        }
+        """
+
+        VERTEX_SHADER = shaders.compileShader(vertex_shader, GL_VERTEX_SHADER)
+        FRAGMENT_SHADER = shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER)
+        self.shader = shaders.compileProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+
+        volume = np.array([
+            0, 1, 0, 1, 0, 0,
+            -1, -1, 0, 0, 1, 0,
+            1, -1, 0, 0, 0, 1],
+        dtype=np.float32)
+
+        self.vao = glGenVertexArrays(1)
+        glBindVertexArray(self.vao)
+
+        self.vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
+        glBufferData(GL_ARRAY_BUFFER, volume.nbytes, volume, GL_STATIC_DRAW)
+
+        stride = 24
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(12))
+        glEnableVertexAttribArray(1)
+
+        # glUseProgram(self.shader)
 
     # @timing
     def render(self):
@@ -160,10 +189,8 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self.init_opengl():
             return
 
-        canvas_size = self.get_canvas_size()
+        canvas_size = self._canvas.get_canvas_size()
         glViewport(0, 0, canvas_size.width, canvas_size.height)
-        self._width = max(10, canvas_size.width)
-        self._height = max(10, canvas_size.height)
 
         self.apply_view_matrix()
         self.apply_projection()
@@ -173,7 +200,10 @@ class Canvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_objects()
-        self._render_viewcube()
+
+        # glBindVertexArray(self.vao)
+        # glDrawArrays(GL_TRIANGLES, 0, 3)
+        # self._render_viewcube()
 
         self._canvas.SwapBuffers()
 
@@ -330,7 +360,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         id_ = -1
 
-        canvas_size = self.get_canvas_size()
+        canvas_size = self._canvas.get_canvas_size()
         mouse = self._mouse_pos
         if self._inside:
             # rgb to id
@@ -346,81 +376,26 @@ class Canvas3D(glcanvas.GLCanvas):
         glClearColor(*self.color_background)
 
     def _render_objects(self):
-        if self._bed3d is not None:
-            self._bed3d.render()
+        if self._bed is not None:
+            self._bed.render()
 
-        if self._proxy3d is not None:
-            self._proxy3d.render()
+        # if self._proxy3d is not None:
+        #     self._proxy3d.render()
 
         if not self._camera3d_list:
             return
         for cam in self._camera3d_list:
             cam.render()
 
-        if not self._path3d_list:
-            return
-
-        self._thing3d_manager.render_all()
-
     def _render_viewcube(self):
-        if self._viewcube_pos is None or self._viewcube_size is None:
-            return
-
-        # restrict viewport to left/right corner
-        glViewport(*self._get_viewcube_viewport())
-
-        vertices = np.array([
-            1.0, 1.0, 1.0,
-            1.0, -1.0, 1.0,
-            1.0, -1.0, -1.0,
-            1.0, 1.0, -1.0,
-            -1.0, 1.0, -1.0,
-            -1.0, 1.0, 1.0,
-            -1.0, -1.0, 1.0,
-            -1.0, -1.0, -1.0])
-        indices = np.array([
-            0, 1, 2, 2, 3, 0,
-            0, 3, 4, 4, 5, 0,
-            0, 5, 6, 6, 1, 0,
-            1, 6, 7, 7, 2, 1,
-            7, 4, 3, 3, 2, 7,
-            4, 7, 6, 6, 5, 4])
-
-        # store current projection matrix, load orthographic projection
-        glMatrixMode(GL_PROJECTION)
-        glPushMatrix()
-        glLoadIdentity()
-        glOrtho(-2.0, 2.0, -2.0, 2.0, -2.0, 2.0)
-
-        # store current modelview and load identity transform
-        glMatrixMode(GL_MODELVIEW)
-        glPushMatrix()
-        glLoadIdentity()
-        glMultMatrixd(quat_to_transformation_matrix(self._rot_quat))
-
-        # disable depth testing so the quad is always on top
-        glDisable(GL_DEPTH_TEST)
-
-        # draw cube
-        glColor4f(0.7, 0.7, 0.7, 0.9)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, vertices)
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, indices)
-        glDisableClientState(GL_VERTEX_ARRAY)
-
-        # re-enable depth testing
-        glEnable(GL_DEPTH_TEST)
-
-        # restore modelview and projection to previous state
-        glPopMatrix()
-        glMatrixMode(GL_PROJECTION)
-        glPopMatrix()
-        glMatrixMode(GL_MODELVIEW)
+        if self._viewcube is not None:
+            self._viewcube.render()
 
     def _render_objects_for_picking(self):
         glDisable(GL_CULL_FACE)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
+        # glDrawArrays(GL_TRIANGLES, 0, 3)
 
         view_matrix = self.get_modelview_matrix()
 
@@ -441,19 +416,6 @@ class Canvas3D(glcanvas.GLCanvas):
         glDisableClientState(GL_VERTEX_ARRAY)
         glEnable(GL_CULL_FACE)
 
-    def _get_viewcube_viewport(self):
-        width, height = self._width, self._height
-        size = self._viewcube_size
-        if self._viewcube_pos == ViewCubePos.TOP_LEFT:
-            corner = (0, height - size)
-        elif self._viewcube_pos == ViewCubePos.TOP_RIGHT:
-            corner = (width - size, height - size)
-        elif self._viewcube_pos == ViewCubePos.BOTTOM_LEFT:
-            corner = (0, 0)
-        elif self._viewcube_pos == ViewCubePos.BOTTOM_LEFT:
-            corner = (width - size, 0)
-        return (*corner, size, size)
-
     # ------------------
     # Accessor functions
     # ------------------
@@ -462,28 +424,12 @@ class Canvas3D(glcanvas.GLCanvas):
         self.parent.set_zoom_slider(self._zoom)
 
     @property
-    def viewcube_pos(self):
-        return self._viewcube_pos
-
-    @viewcube_pos.setter
-    def viewcube_pos(self, value):
-        if value not in ViewCubePos:
-            return
-        self._viewcube_pos = value
+    def rot_quat(self):
+        return self._rot_quat
 
     @property
-    def viewcube_size(self):
-        return self._viewcube_size
-
-    @viewcube_size.setter
-    def viewcube_size(self, value):
-        if value not in ViewCubeSize:
-            return
-        self._viewcube_size = value
-
-    @property
-    def bed3d(self):
-        return self._bed3d
+    def bed(self):
+        return self._bed
 
     @property
     def proxy3d(self):
@@ -505,7 +451,7 @@ class Canvas3D(glcanvas.GLCanvas):
     @build_dimensions.setter
     def build_dimensions(self, value):
         self._build_dimensions = value
-        self._bed3d.build_dimensions = value
+        self._bed.build_dimensions = value
         self._dirty = True
 
     @property
@@ -539,7 +485,8 @@ class Canvas3D(glcanvas.GLCanvas):
             0.0, 0.0, self._dist * 1.5, # eyeX, eyeY, eyeZ
             0.0, 0.0, 0.0,              # centerX, centerY, centerZ
             0.0, 1.0, 0.0)              # upX, upY, upZ
-        glMultMatrixd(quat_to_transformation_matrix(self._rot_quat))
+
+        glMultMatrixd(np.array(glm.mat4_cast(self._rot_quat)))
 
     def apply_projection(self):
         """Set camera projection. Also updates zoom."""
@@ -547,8 +494,8 @@ class Canvas3D(glcanvas.GLCanvas):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
         gluPerspective(
-            np.arctan(np.tan(np.deg2rad(45.0)) / self._zoom) * 180 / math.pi,
-            float(self._width) / self._height,
+            math.atan(math.tan(math.radians(45.0)) / self._zoom) * 180 / math.pi,
+            self._canvas.get_canvas_size().aspect_ratio(),
             0.1,
             2000.0)
         glMatrixMode(GL_MODELVIEW)
@@ -582,28 +529,29 @@ class Canvas3D(glcanvas.GLCanvas):
         last = self._mouse_pos
         cur = event.GetPosition()
 
-        p1x = last.x * 2.0 / self._width - 1.0
-        p1y = 1 - last.y * 2.0 / self._height
-        p2x = cur.x * 2.0 / self._width - 1.0
-        p2y = 1 - cur.y * 2.0 / self._height
+        canvas_size = self._canvas.get_canvas_size()
+        p1x = last.x * 2.0 / canvas_size.width - 1.0
+        p1y = 1 - last.y * 2.0 / canvas_size.height
+        p2x = cur.x * 2.0 / canvas_size.width - 1.0
+        p2y = 1 - cur.y * 2.0 / canvas_size.height
 
         if p1x == p2x and p1y == p2y:
-            self._rot_quat = [0.0, 0.0, 0.0, 1.0]
+            self._rot_quat = glm.quat()
 
         with self._rot_lock:
             if orbit:
                 delta_x = p2y - p1y
-                self._angle_x += delta_x
-                rot_x = axis_angle_to_quat([1.0, 0.0, 0.0], self._angle_x)
+                self._angle_x -= delta_x
+                rot_x = glm.angleAxis(self._angle_x, glm.vec3(1.0, 0.0, 0.0))
 
                 delta_z = p2x - p1x
-                self._angle_z -= delta_z
-                rot_z = axis_angle_to_quat([0.0, 1.0, 0.0], self._angle_z)
+                self._angle_z += delta_z
+                rot_z = glm.angleAxis(self._angle_z, glm.vec3(0.0, 1.0, 0.0))
 
-                self._rot_quat = quat_product(rot_z, rot_x)
+                self._rot_quat = rot_x * rot_z
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)
-                self._rot_quat = quat_product(self._rot_quat, quat)
+                self._rot_quat = quat * self._rot_quat
         self._mouse_pos = cur
 
     def translate_camera(self, event):

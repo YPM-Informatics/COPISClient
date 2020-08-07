@@ -33,8 +33,8 @@ class ViewCubePos(Enum):
 
 
 class ViewCubeSize(IntEnum):
-    SMALLER = 85
-    SMALL = 100
-    MEDIUM = 115
+    SMALLER = 90
+    SMALL = 105
+    MEDIUM = 120
     LARGE = 140
-    LARGER = 170
+    LARGER = 160
