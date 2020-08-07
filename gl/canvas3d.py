@@ -28,6 +28,7 @@ from enums import ViewCubePos, ViewCubeSize
 from utils import timing
 
 
+
 class _Size(NamedTuple):
     width: int
     height: int
@@ -53,6 +54,7 @@ class Canvas3D(glcanvas.GLCanvas):
                          size=wx.DefaultSize, style=0, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
+        self._shader_program = None
 
         if build_dimensions:
             self._build_dimensions = build_dimensions
@@ -121,28 +123,31 @@ class Canvas3D(glcanvas.GLCanvas):
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_MULTISAMPLE)
 
-        # self.init_shaders()
+        self.init_shaders()
 
         self._gl_initialized = True
         return True
 
     def init_shaders(self):
-        vertex_shader = """
-        #version 330
+        vertex = """
+        #version 450 core
 
-        in layout(location = 0) vec3 positions;
-        in layout(location = 1) vec3 colors;
+        layout (location = 0) in vec3 positions;
+        layout (location = 1) in vec3 colors;
+
+        layout (location = 0) uniform mat4 projection;
+        layout (location = 1) uniform mat4 modelview;
 
         out vec3 newColor;
 
         void main() {
-            gl_Position = vec4(positions, 1.0);
+            gl_Position = projection * modelview * vec4(positions, 1.0);
             newColor = colors;
         }
         """
 
-        fragment_shader = """
-        #version 330
+        fragment = """
+        #version 450 core
 
         in vec3 newColor;
         out vec4 outColor;
@@ -152,33 +157,11 @@ class Canvas3D(glcanvas.GLCanvas):
         }
         """
 
-        VERTEX_SHADER = shaders.compileShader(vertex_shader, GL_VERTEX_SHADER)
-        FRAGMENT_SHADER = shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER)
-        self.shader = shaders.compileProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+        vertex_shader = shaders.compileShader(vertex, GL_VERTEX_SHADER)
+        fragment_shader = shaders.compileShader(fragment, GL_FRAGMENT_SHADER)
+        self._shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
 
-        volume = np.array([
-            0, 1, 0, 1, 0, 0,
-            -1, -1, 0, 0, 1, 0,
-            1, -1, 0, 0, 0, 1],
-        dtype=np.float32)
-
-        self.vao = glGenVertexArrays(1)
-        glBindVertexArray(self.vao)
-
-        self.vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
-        glBufferData(GL_ARRAY_BUFFER, volume.nbytes, volume, GL_STATIC_DRAW)
-
-        stride = 24
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, ctypes.c_void_p(12))
-        glEnableVertexAttribArray(1)
-
-        # glUseProgram(self.shader)
-
-    # @timing
+    @timing
     def render(self):
         """Render frame."""
         # ensure that canvas is current and initialized
@@ -199,11 +182,12 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
-        self._render_objects()
+        # self._render_objects()
+        self._render_bed()
 
         # glBindVertexArray(self.vao)
         # glDrawArrays(GL_TRIANGLES, 0, 3)
-        # self._render_viewcube()
+        self._render_viewcube()
 
         self._canvas.SwapBuffers()
 
@@ -375,10 +359,11 @@ class Canvas3D(glcanvas.GLCanvas):
     def _render_background(self):
         glClearColor(*self.color_background)
 
-    def _render_objects(self):
+    def _render_bed(self):
         if self._bed is not None:
             self._bed.render()
 
+    def _render_objects(self):
         # if self._proxy3d is not None:
         #     self._proxy3d.render()
 
@@ -500,16 +485,16 @@ class Canvas3D(glcanvas.GLCanvas):
             2000.0)
         glMatrixMode(GL_MODELVIEW)
 
-    def get_modelview_matrix(self):
-        """Return GL_MODELVIEW_MATRIX."""
-        mat = (GLdouble * 16)()
-        glGetDoublev(GL_MODELVIEW_MATRIX, mat)
-        return mat
-
     def get_projection_matrix(self):
         """Return GL_PROJECTION_MATRIX."""
         mat = (GLdouble * 16)()
         glGetDoublev(GL_PROJECTION_MATRIX, mat)
+        return mat
+
+    def get_modelview_matrix(self):
+        """Return GL_MODELVIEW_MATRIX."""
+        mat = (GLdouble * 16)()
+        glGetDoublev(GL_MODELVIEW_MATRIX, mat)
         return mat
 
     def get_viewport(self):
