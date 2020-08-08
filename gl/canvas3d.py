@@ -28,7 +28,6 @@ from enums import ViewCubePos, ViewCubeSize
 from utils import timing
 
 
-
 class _Size(NamedTuple):
     width: int
     height: int
@@ -122,6 +121,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_MULTISAMPLE)
+        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
         self.init_shaders()
 
@@ -179,14 +179,13 @@ class Canvas3D(glcanvas.GLCanvas):
         self.apply_projection()
 
         self._hover_id = self._picking_pass()
+        print(self._hover_id)
+        glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
-        # self._render_objects()
         self._render_bed()
-
-        # glBindVertexArray(self.vao)
-        # glDrawArrays(GL_TRIANGLES, 0, 3)
+        # self._render_objects()
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -338,7 +337,8 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        self._render_objects_for_picking()
+        # self._render_objects_for_picking()
+        self._viewcube.render_for_picking()
 
         glEnable(GL_MULTISAMPLE)
 
@@ -350,6 +350,7 @@ class Canvas3D(glcanvas.GLCanvas):
             # rgb to id
             color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1,
                                  GL_RGB, GL_UNSIGNED_BYTE)
+            print(color)
             id_ = color[0] + (color[1] << 8) + (color[2] << 16)
 
         if id_ == 15790320: # 15790320 is from the background color
@@ -364,8 +365,8 @@ class Canvas3D(glcanvas.GLCanvas):
             self._bed.render()
 
     def _render_objects(self):
-        # if self._proxy3d is not None:
-        #     self._proxy3d.render()
+        if self._proxy3d is not None:
+            self._proxy3d.render()
 
         if not self._camera3d_list:
             return
@@ -380,22 +381,19 @@ class Canvas3D(glcanvas.GLCanvas):
         glDisable(GL_CULL_FACE)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
-        # glDrawArrays(GL_TRIANGLES, 0, 3)
 
+        self._viewcube.render_for_picking()
         view_matrix = self.get_modelview_matrix()
 
         # encode id in color value
         for cam in self._camera3d_list:
             id_ = cam.cam_id
             r = (id_ & (0x0000000FF << 0)) >> 0
-            g = (id_ & (0x0000000FF << 6)) >> 8
+            g = (id_ & (0x0000000FF << 8)) >> 8
             b = (id_ & (0x0000000FF << 16)) >> 16
             a = 1.0
-            glColor4f(r / 255.0, g / 255.0, b / 255.0, a)
-            cam.render_for_picking()
-
-        # self._thing3d_manager.render_all_for_picking()
-        # render everything where color is related to id
+            # glColor4f(r / 255.0, g / 255.0, b / 255.0, a)
+            # cam.render_for_picking()
 
         glDisableClientState(GL_NORMAL_ARRAY)
         glDisableClientState(GL_VERTEX_ARRAY)

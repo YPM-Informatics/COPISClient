@@ -2,13 +2,11 @@
 """ViewCube class."""
 
 import numpy as np
-
-import wx
 import glm
 
+import wx
 from OpenGL.GL import *
 from OpenGL.GL import shaders
-from OpenGL.arrays import *
 from OpenGL.GLU import *
 
 from enums import ViewCubePos, ViewCubeSize
@@ -21,7 +19,10 @@ class GLViewCube():
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM
 
         self._shader_program = None
+        self._shader_program_picking = None
         self._vao = None
+        self._vao_picking = None
+        self._picked_side = -1
 
         self._volumes = None
         self._initialized = False
@@ -48,11 +49,10 @@ class GLViewCube():
         #version 450 core
 
         in vec3 newColor;
-        out vec4 outColor;
+        out vec4 color;
 
         void main() {
-            // outColor = vec4(0.8, 0.8, 0.8, 1.0);
-            outColor = vec4(newColor, 1.0);
+            color = vec4(newColor, 1.0);
         }
         """
 
@@ -62,14 +62,14 @@ class GLViewCube():
 
     def create_vao(self):
         vertices = np.array([
-            1.0, 1.0, 1.0,      1.0, 0.0, 0.0,
-            1.0, -1.0, 1.0,     0.0, 1.0, 0.0,
-            1.0, -1.0, -1.0,    0.0, 0.0, 1.0,
-            1.0, 1.0, -1.0,     1.0, 1.0, 1.0,
-            -1.0, 1.0, -1.0,    0.0, 1.0, 0.0,
-            -1.0, 1.0, 1.0,     1.0, 0.0, 1.0,
-            -1.0, -1.0, 1.0,    1.0, 1.0, 0.0,
-            -1.0, -1.0, -1.0,   0.0, 1.0, 1.0
+            1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
+            1.0, -1.0, 1.0, 0.5, 0.5, 0.5,
+            1.0, -1.0, -1.0, 0.5, 0.5, 0.5,
+            1.0, 1.0, -1.0, 0.7, 0.7, 0.7,
+            -1.0, 1.0, -1.0, 0.7, 0.7, 0.7,
+            -1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
+            -1.0, -1.0, 1.0, 0.5, 0.5, 0.5,
+            -1.0, -1.0, -1.0, 0.5, 0.5, 0.5
         ], dtype=np.float32)
 
         indices = np.array([
@@ -81,8 +81,8 @@ class GLViewCube():
             4, 7, 6, 6, 5, 4
         ], dtype=np.uint16)
 
-        self._vao = glGenVertexArrays(1)
-        vbo = glGenBuffers(3)
+        self._vao, self._vao_picking = glGenVertexArrays(2)
+        vbo = glGenBuffers(5)
 
         glBindVertexArray(self._vao)
 
@@ -99,32 +99,50 @@ class GLViewCube():
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
+
+        vertices = np.array([
+            1.0, 1.0, 1.0,      # 0 front   (id = 0)
+            -1.0, 1.0, 1.0,     # 5
+            -1.0, -1.0, 1.0,    # 6
+            1.0, -1.0, 1.0,     # 1
+            1.0, 1.0, 1.0,      # 0 top     (id = 1)
+            1.0, 1.0, -1.0,     # 3
+            -1.0, 1.0, -1.0,    # 4
+            -1.0, 1.0, 1.0,     # 5
+            1.0, 1.0, 1.0,      # 0 right   (id = 2)
+            1.0, -1.0, 1.0,     # 1
+            1.0, -1.0, -1.0,    # 2
+            1.0, 1.0, -1.0,     # 3
+            1.0, -1.0, 1.0,     # 1 bottom  (id = 3)
+            -1.0, -1.0, 1.0,    # 6
+            -1.0, -1.0, -1.0,   # 7
+            1.0, -1.0, -1.0,    # 2
+            -1.0, -1.0, -1.0,   # 7 left    (id = 4)
+            -1.0, -1.0, 1.0,    # 6
+            -1.0, 1.0, 1.0,     # 5
+            -1.0, 1.0, -1.0,    # 4
+            -1.0, -1.0, -1.0,   # 7 back    (id = 5)
+            -1.0, 1.0, -1.0,    # 4
+            1.0, 1.0, -1.0,     # 3
+            1.0, -1.0, -1.0     # 2
+        ], dtype=np.float32)
+
+        colors = np.zeros(72, dtype=np.float32)
+        colors[::3] = np.arange(6).repeat(4) / 255.0
+
+        glBindVertexArray(self._vao_picking)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[4])
+        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(1)
+
         glBindVertexArray(0)
-        """
-        glBindVertexArray(vaoIds[0]);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboIds[0]);  // coordinates
-        glBufferData(GL_ARRAY_BUFFER, sizeof(ave), ave, GL_STATIC_DRAW);
-        glVertexAttribPointer(vertexAttribCoords, nCoordsComponents, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(vertexAttribCoords);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboIds[1]);  // color
-        glBufferData(GL_ARRAY_BUFFER, sizeof(ace), ace, GL_STATIC_DRAW);
-        glVertexAttribPointer(vertexAttribColor, nColorComponents, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(vertexAttribColor);
-
-        // Bind VAO (set current) to define pyramid data
-        glBindVertexArray(vaoIds[1]);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboIds[2]);  // coordinates
-        glBufferData(GL_ARRAY_BUFFER, sizeof(pve), pve, GL_STATIC_DRAW);
-        glVertexAttribPointer(vertexAttribCoords, nCoordsComponents, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(vertexAttribCoords);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboIds[3]);  // color
-        glBufferData(GL_ARRAY_BUFFER, sizeof(pce), pce, GL_STATIC_DRAW);
-        glVertexAttribPointer(vertexAttribColor, nColorCo
-        """
 
     def init(self):
         if self._initialized:
@@ -160,6 +178,23 @@ class GLViewCube():
         if not self.init():
             return
 
+        glViewport(*self._get_viewcube_viewport())
+
+        proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
+        view = glm.mat4_cast(self.parent.rot_quat)
+
+        glUseProgram(self._shader_program)
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glBindVertexArray(self._vao_picking)
+        glDrawArrays(GL_QUADS, 0, 24)
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+    def _render_highlighted(self, side):
+        if side == -1:
+            return
+
     def _get_viewcube_viewport(self):
         canvas_size = self.parent.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
@@ -172,6 +207,14 @@ class GLViewCube():
         elif self._position == ViewCubePos.BOTTOM_LEFT:
             corner = (width - self._size, 0)
         return (*corner, self._size, self._size)
+
+    @property
+    def picked_side(self):
+        return self._picked_side
+
+    @picked_side.setter
+    def picked_side(self, value):
+        self._picked_side = value
 
     @property
     def position(self):
