@@ -7,7 +7,6 @@ import glm
 
 from OpenGL.GL import *
 from OpenGL.GL import shaders
-from OpenGL.arrays import *
 from OpenGL.GLU import *
 
 
@@ -33,7 +32,7 @@ class _Axes():
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
 
-        vao = glGenVertexArrays(2)
+        self._vao_axes, self._vao_arrows = glGenVertexArrays(2)
         vbo = glGenBuffers(4)
 
         points = np.array([
@@ -44,7 +43,7 @@ class _Axes():
             0.0, 0.0, z[0],  0.0, 0.0, 1.0,
             0.0, 0.0, -z[1], 0.0, 0.0, 1.0
         ], dtype=np.float32)
-        glBindVertexArray(vao[0])
+        glBindVertexArray(self._vao_axes)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
@@ -56,10 +55,9 @@ class _Axes():
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
         glEnableVertexAttribArray(1)
 
-        glBindVertexArray(vao[1])
+        glBindVertexArray(self._vao_arrows)
 
         glBindVertexArray(0)
-        self._vao_axes, self._vao_arrows = vao
 
     def render(self):
         """Render colored axes and arrows."""
@@ -70,33 +68,12 @@ class _Axes():
         glDrawArrays(GL_LINES, 0, 6)
 
         glBindVertexArray(0)
-        glUseProgram(0)
         return
 
         build_dimensions = self.parent.build_dimensions
-
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
-
-        verts = np.array([
-            x[0], 0, 0, -x[1], 0, 0,
-            0, y[0], 0, 0, -y[1], 0,
-            0, 0, z[0], 0, 0, -z[1]])
-        colors = np.array([
-            1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 1.0, 0.0, 0.0, 1.0])
-
-        glDisable(GL_DEPTH_TEST)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_COLOR_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 0, verts)
-        glColorPointer(3, GL_FLOAT, 0, colors)
-        glDrawArrays(GL_LINES, 0, 6)
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glDisableClientState(GL_COLOR_ARRAY)
-        glEnable(GL_DEPTH_TEST)
 
         # x axis
         glColor3f(1.0, 0.0, 0.0)
@@ -139,9 +116,9 @@ class _Axes():
 
 class GLBed():
     """GLBed class."""
-    color_light = 0.91
-    color_dark = 0.72
-    color_border = 0.40
+    col_light = 0.91
+    col_dark = 0.72
+    col_border = 0.40
 
     def __init__(self, parent, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
@@ -197,12 +174,12 @@ class GLBed():
         self._shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
 
     def create_vao(self):
-        vao = glGenVertexArrays(2)
+        self._vao_gridlines, self._vao_bounding_box = glGenVertexArrays(2)
         vbo = glGenBuffers(5)
 
         vertices, colors = self._generate_gridlines()
         self._count_gridlines = vertices.size // 3
-        glBindVertexArray(vao[0])
+        glBindVertexArray(self._vao_gridlines)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -214,27 +191,25 @@ class GLBed():
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
-        vertices, colors, indices = self._generate_bounding_box()
+        points, indices = self._generate_bounding_box()
         self._count_bounding_box = indices.size
-        glBindVertexArray(vao[1])
+        glBindVertexArray(self._vao_bounding_box)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
-        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
         glEnableVertexAttribArray(1)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[4])
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
-        glBindVertexArray(0)
-        self._vao_gridlines, self._vao_bounding_box = vao
-
         self._axes.create_vao()
+        glBindVertexArray(0)
 
     def init(self):
         """Initialize vertices."""
@@ -280,8 +255,8 @@ class GLBed():
         step = self._every / self._subdivisions
 
         def darken(a):
-            a[self._subdivisions-1::self._subdivisions] = self.color_dark
-            a[-1] = self.color_border
+            a[self._subdivisions-1::self._subdivisions] = self.col_dark
+            a[-1] = self.col_border
             return a
 
         if self._show_axes:
@@ -291,7 +266,7 @@ class GLBed():
             axes_verts = np.array([
                 x[0], 0, 0, -x[1], 0, 0,
                 0, 0, z[0], 0, 0, -z[1]])
-            axes_colors = np.array([self.color_dark]).repeat(12)
+            axes_colors = np.array([self.col_dark]).repeat(12)
 
         # gridlines parallel to x axis
         i = np.append(np.arange(-step, -z[1], -step), -z[1])
@@ -302,8 +277,8 @@ class GLBed():
         x_verts[0::6] = -x[1]
         x_verts[3::6] = x[0]
         x_colors = np.concatenate([
-            darken(np.full(i.size, self.color_light)),
-            darken(np.full(j.size, self.color_light))]).repeat(6)
+            darken(np.full(i.size, self.col_light)),
+            darken(np.full(j.size, self.col_light))]).repeat(6)
 
         # gridlines parallel to z axis
         i = np.append(np.arange(-step, -x[1], -step), -x[1])
@@ -314,8 +289,8 @@ class GLBed():
         z_verts[2::6] = -z[1]
         z_verts[5::6] = z[0]
         z_colors = np.concatenate([
-            darken(np.full(i.size, self.color_light)),
-            darken(np.full(j.size, self.color_light))]).repeat(6)
+            darken(np.full(i.size, self.col_light)),
+            darken(np.full(j.size, self.col_light))]).repeat(6)
 
         verts = np.concatenate([axes_verts, x_verts, z_verts]).astype(np.float32)
         colors = np.concatenate([axes_colors, x_colors, z_colors]).astype(np.float32)
@@ -328,15 +303,15 @@ class GLBed():
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
 
         # 8 corners
-        vertices = np.array([
-            x[0], y[0], z[0],
-            x[0], -y[1], z[0],
-            x[0], -y[1], -z[1],
-            x[0], y[0], -z[1],
-            -x[1], y[0], -z[1],
-            -x[1], y[0], z[0],
-            -x[1], -y[1], z[0],
-            -x[1], -y[1], -z[1]
+        points = np.array([
+            x[0], y[0], z[0],    self.col_dark, self.col_dark, self.col_dark,
+            x[0], -y[1], z[0],   self.col_dark, self.col_dark, self.col_dark,
+            x[0], -y[1], -z[1],  self.col_dark, self.col_dark, self.col_dark,
+            x[0], y[0], -z[1],   self.col_dark, self.col_dark, self.col_dark,
+            -x[1], y[0], -z[1],  self.col_dark, self.col_dark, self.col_dark,
+            -x[1], y[0], z[0],   self.col_dark, self.col_dark, self.col_dark,
+            -x[1], -y[1], z[0],  self.col_dark, self.col_dark, self.col_dark,
+            -x[1], -y[1], -z[1], self.col_dark, self.col_dark, self.col_dark
         ], dtype=np.float32)
 
         # 12 edges
@@ -346,7 +321,7 @@ class GLBed():
             4, 5, 5, 6, 6, 7, 7, 4
         ], dtype=np.uint16)
 
-        return vertices, np.full(24, self.color_dark, dtype=np.float32), indices
+        return points, indices
 
     def _render_gridlines(self):
         if self._vao_gridlines is None:
