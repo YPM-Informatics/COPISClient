@@ -125,7 +125,6 @@ class GLBed():
             raise ValueError('build dimension origin out of range')
         self.parent = parent
 
-        self._shader_program = None
         self._vao_gridlines = None
         self._vao_bounding_box = None
         self._count_gridlines = None
@@ -139,39 +138,6 @@ class GLBed():
         self._axes = _Axes(self)
 
         self._initialized = False
-
-    def init_shaders(self):
-        vertex = """
-        #version 450 core
-
-        layout (location = 0) in vec3 positions;
-        layout (location = 1) in vec3 colors;
-
-        layout (location = 0) uniform mat4 projection;
-        layout (location = 1) uniform mat4 modelview;
-
-        out vec3 newColor;
-
-        void main() {
-            gl_Position = projection * modelview * vec4(positions, 1.0);
-            newColor = colors;
-        }
-        """
-
-        fragment = """
-        #version 450 core
-
-        in vec3 newColor;
-        out vec4 color;
-
-        void main() {
-            color = vec4(newColor, 1.0);
-        }
-        """
-
-        vertex_shader = shaders.compileShader(vertex, GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(fragment, GL_FRAGMENT_SHADER)
-        self._shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
 
     def create_vao(self):
         self._vao_gridlines, self._vao_bounding_box = glGenVertexArrays(2)
@@ -216,7 +182,6 @@ class GLBed():
         if self._initialized:
             return True
 
-        self.init_shaders()
         self.create_vao()
 
         self._initialized = True
@@ -232,7 +197,7 @@ class GLBed():
         proj = glGetDoublev(GL_PROJECTION_MATRIX)
         view = glGetDoublev(GL_MODELVIEW_MATRIX)
 
-        glUseProgram(self._shader_program)
+        glUseProgram(self.parent.default_shader_program)
         glUniformMatrix4fv(0, 1, GL_FALSE, proj)
         glUniformMatrix4fv(1, 1, GL_FALSE, view)
 
