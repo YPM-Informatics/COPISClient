@@ -121,7 +121,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_MULTISAMPLE)
-        # glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         self.init_shaders()
 
@@ -178,8 +178,9 @@ class Canvas3D(glcanvas.GLCanvas):
         self.apply_view_matrix()
         self.apply_projection()
 
-        self._hover_id = self._picking_pass()
-        print(self._hover_id)
+        self._picking_pass()
+        # self._hover_id = self._picking_pass()
+        # print(self._hover_id)
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -337,8 +338,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # self._render_objects_for_picking()
-        self._viewcube.render_for_picking()
+        self._render_objects_for_picking()
 
         glEnable(GL_MULTISAMPLE)
 
@@ -348,14 +348,15 @@ class Canvas3D(glcanvas.GLCanvas):
         mouse = self._mouse_pos
         if self._inside:
             # rgb to id
-            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1,
-                                 GL_RGB, GL_UNSIGNED_BYTE)
-            print(color)
+            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
             id_ = color[0] + (color[1] << 8) + (color[2] << 16)
 
         if id_ == 15790320: # 15790320 is from the background color
-            return -1
-        return id_
+            id_ = -1
+
+
+
+        self._viewcube.picked_side = id_
 
     def _render_background(self):
         glClearColor(*self.color_background)
@@ -378,6 +379,9 @@ class Canvas3D(glcanvas.GLCanvas):
             self._viewcube.render()
 
     def _render_objects_for_picking(self):
+        self._viewcube.render_for_picking()
+        return
+
         glDisable(GL_CULL_FACE)
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
@@ -405,6 +409,10 @@ class Canvas3D(glcanvas.GLCanvas):
 
     def _update_parent_zoom_slider(self):
         self.parent.set_zoom_slider(self._zoom)
+
+    @property
+    def default_shader_program(self):
+        return self._shader_program
 
     @property
     def rot_quat(self):
