@@ -54,6 +54,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
         self._shader_program = None
+        self._shader_program_color = None
 
         if build_dimensions:
             self._build_dimensions = build_dimensions
@@ -129,7 +130,7 @@ class Canvas3D(glcanvas.GLCanvas):
         return True
 
     def init_shaders(self):
-        vertex = """
+        vertex_shader = """
         #version 450 core
 
         layout (location = 0) in vec3 positions;
@@ -145,23 +146,47 @@ class Canvas3D(glcanvas.GLCanvas):
             newColor = colors;
         }
         """
-
-        fragment = """
+        fragment_shader = """
         #version 450 core
 
         in vec3 newColor;
-        out vec4 outColor;
+        out vec4 color;
 
         void main() {
-            outColor = vec4(newColor, 1.0);
+            color = vec4(newColor, 1.0);
         }
         """
+        self._shader_program = shaders.compileProgram(
+            shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
+            shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
 
-        vertex_shader = shaders.compileShader(vertex, GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(fragment, GL_FRAGMENT_SHADER)
-        self._shader_program = shaders.compileProgram(vertex_shader, fragment_shader)
+        vertex_shader = """
+        #version 450 core
 
-    @timing
+        layout (location = 0) in vec3 positions;
+
+        layout (location = 0) uniform mat4 projection;
+        layout (location = 1) uniform mat4 modelview;
+
+        void main() {
+            gl_Position = projection * modelview * vec4(positions, 1.0);
+        }
+        """
+        fragment_shader = """
+        #version 450 core
+
+        uniform vec4 pickingColor;
+        out vec4 color;
+
+        void main() {
+            color = pickingColor;
+        }
+        """
+        self._shader_program_color = shaders.compileProgram(
+            shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
+            shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
+
+    # @timing
     def render(self):
         """Render frame."""
         # ensure that canvas is current and initialized
@@ -174,19 +199,13 @@ class Canvas3D(glcanvas.GLCanvas):
 
         canvas_size = self._canvas.get_canvas_size()
         glViewport(0, 0, canvas_size.width, canvas_size.height)
-
-        self.apply_view_matrix()
-        self.apply_projection()
-
         self._picking_pass()
-        # self._hover_id = self._picking_pass()
-        # print(self._hover_id)
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_bed()
-        # self._render_objects()
+        self._render_objects()
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -204,12 +223,11 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self._gl_initialized or self._canvas.IsFrozen():
             return
 
-        self._dirty = self._dirty or any((i.dirty for i in self._camera3d_list))
+        if not self._dirty:
+            return
 
         self._refresh_if_shown_on_screen()
 
-        for camera in self._camera3d_list:
-            camera.dirty = False
         self._dirty = False
 
     def on_key(self, event):
@@ -259,13 +277,14 @@ class Canvas3D(glcanvas.GLCanvas):
         """Handle EVT_LEFT_DCLICK."""
 
         # get current hovered id
-        cam_id = self._hover_id
-
-        # check if id is out of bounds
-        if cam_id == -1 or cam_id >= len(self._camera3d_list):
+        id_ = self._hover_id
+        if id_ == -1:
             return
 
-        wx.GetApp().mainframe.set_selected_camera(cam_id)
+        if self._viewcube.hovered:
+            pass
+        elif id_ < len(self._camera3d_list):
+            wx.GetApp().mainframe.set_selected_camera(id_)
 
     def on_enter_window(self, event):
         self._inside = True
@@ -331,11 +350,12 @@ class Canvas3D(glcanvas.GLCanvas):
             self.render()
 
     def _picking_pass(self):
-        glDisable(GL_MULTISAMPLE)
+        if self._mouse_pos is None:
+            return
 
+        glDisable(GL_MULTISAMPLE)
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self._render_objects_for_picking()
@@ -345,18 +365,30 @@ class Canvas3D(glcanvas.GLCanvas):
         id_ = -1
 
         canvas_size = self._canvas.get_canvas_size()
-        mouse = self._mouse_pos
+        mouse = list(self._mouse_pos.Get())
+        mouse[1] = canvas_size.height - mouse[1] - 1
+
         if self._inside:
-            # rgb to id
-            color = glReadPixels(mouse[0], canvas_size.height - mouse[1] -1, 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
+            # convert rgb value back to id
+            color = glReadPixels(mouse[0], mouse[1], 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
             id_ = color[0] + (color[1] << 8) + (color[2] << 16)
 
-        if id_ == 15790320: # 15790320 is from the background color
-            id_ = -1
+            # ignore the background color
+            if id_ == 15790320:
+                id_ = -1
 
+        viewcube_bounds = self._viewcube.get_viewport()
+        if viewcube_bounds[0] <= mouse[0] <= viewcube_bounds[0] + viewcube_bounds[2] and \
+           viewcube_bounds[1] <= mouse[1] <= viewcube_bounds[1] + viewcube_bounds[3]:
+            self._viewcube.hover_id = id_
+            for camera in self._camera3d_list:
+                camera.hovered = False
+        else:
+            self._viewcube.hover_id = -1
+            for camera in self._camera3d_list:
+                camera.hovered = camera.cam_id == id_
 
-
-        self._viewcube.picked_side = id_
+        self._hover_id = id_
 
     def _render_background(self):
         glClearColor(*self.color_background)
@@ -371,37 +403,32 @@ class Canvas3D(glcanvas.GLCanvas):
 
         if not self._camera3d_list:
             return
-        for cam in self._camera3d_list:
-            cam.render()
+        else:
+            for cam in self._camera3d_list:
+                cam.render()
 
     def _render_viewcube(self):
         if self._viewcube is not None:
             self._viewcube.render()
 
     def _render_objects_for_picking(self):
-        self._viewcube.render_for_picking()
-        return
-
-        glDisable(GL_CULL_FACE)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-
-        self._viewcube.render_for_picking()
-        view_matrix = self.get_modelview_matrix()
-
-        # encode id in color value
-        for cam in self._camera3d_list:
-            id_ = cam.cam_id
-            r = (id_ & (0x0000000FF << 0)) >> 0
-            g = (id_ & (0x0000000FF << 8)) >> 8
+        for camera in self._camera3d_list:
+            id_ = camera.cam_id
+            r = (id_ & (0x0000000FF << 0))  >> 0
+            g = (id_ & (0x0000000FF << 8))  >> 8
             b = (id_ & (0x0000000FF << 16)) >> 16
             a = 1.0
-            # glColor4f(r / 255.0, g / 255.0, b / 255.0, a)
-            # cam.render_for_picking()
 
-        glDisableClientState(GL_NORMAL_ARRAY)
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glEnable(GL_CULL_FACE)
+            glUseProgram(self.get_shader_program('color'))
+
+            glUniform4f(glGetUniformLocation(self.get_shader_program('color'), 'pickingColor'),
+                r / 255.0, g / 255.0, b / 255.0, a)
+            camera.render_for_picking()
+
+        self._viewcube.render_for_picking()
+
+        glBindVertexArray(0)
+        glUseProgram(0)
 
     # ------------------
     # Accessor functions
@@ -410,9 +437,11 @@ class Canvas3D(glcanvas.GLCanvas):
     def _update_parent_zoom_slider(self):
         self.parent.set_zoom_slider(self._zoom)
 
-    @property
-    def default_shader_program(self):
-        return self._shader_program
+    def get_shader_program(self, program='default'):
+        if program == 'default':
+            return self._shader_program
+        if program == 'color':
+            return self._shader_program_color
 
     @property
     def rot_quat(self):
@@ -451,9 +480,8 @@ class Canvas3D(glcanvas.GLCanvas):
 
     @camera3d_scale.setter
     def camera3d_scale(self, value):
-        for camera in self._camera3d_list:
-            camera.scale = value
-            camera.dirty = True
+        self._camera3d_scale = value
+        Camera3D.set_scale(value)
 
     @property
     def camera3d_list(self):
@@ -468,46 +496,18 @@ class Canvas3D(glcanvas.GLCanvas):
     # Canvas camera functions
     # -----------------------
 
-    def apply_view_matrix(self):
-        """Apply modelview matrix according to rotation quat."""
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
-        gluLookAt(
-            0.0, 0.0, self._dist * 1.5, # eyeX, eyeY, eyeZ
-            0.0, 0.0, 0.0,              # centerX, centerY, centerZ
-            0.0, 1.0, 0.0)              # upX, upY, upZ
+    @property
+    def projection_matrix(self):
+        return glm.perspective(
+            math.atan(math.tan(math.radians(45.0)) / self._zoom),
+            self._canvas.get_canvas_size().aspect_ratio(), 0.1, 2000.0)
 
-        glMultMatrixd(np.array(glm.mat4_cast(self._rot_quat)))
-
-    def apply_projection(self):
-        """Set camera projection. Also updates zoom."""
-        # TODO: add toggle between perspective and orthographic view modes
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(
-            math.atan(math.tan(math.radians(45.0)) / self._zoom) * 180 / math.pi,
-            self._canvas.get_canvas_size().aspect_ratio(),
-            0.1,
-            2000.0)
-        glMatrixMode(GL_MODELVIEW)
-
-    def get_projection_matrix(self):
-        """Return GL_PROJECTION_MATRIX."""
-        mat = (GLdouble * 16)()
-        glGetDoublev(GL_PROJECTION_MATRIX, mat)
-        return mat
-
-    def get_modelview_matrix(self):
-        """Return GL_MODELVIEW_MATRIX."""
-        mat = (GLdouble * 16)()
-        glGetDoublev(GL_MODELVIEW_MATRIX, mat)
-        return mat
-
-    def get_viewport(self):
-        """Return GL_VIEWPORT."""
-        vec = (GLint * 4)()
-        glGetIntegerv(GL_VIEWPORT, vec)
-        return vec
+    @property
+    def modelview_matrix(self):
+        mat = glm.lookAt(glm.vec3(0.0, 0.0, self._dist * 1.5),  # position
+                         glm.vec3(0.0, 0.0, 0.0),               # target
+                         glm.vec3(0.0, 1.0, 0.0))               # up
+        return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event, orbit=True):
         """Update _rot_quat based on mouse position.

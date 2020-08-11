@@ -22,7 +22,9 @@ class GLViewCube():
         self._vao_picking = None
         self._vao_highlight = None
 
-        self._picked_side = -1
+        self._hover_id = -1
+        self._hovered = False
+        self._selected = False
         self._initialized = False
 
     def create_vao(self):
@@ -69,22 +71,27 @@ class GLViewCube():
             -1.0, 1.0, 1.0,     # 5
             -1.0, -1.0, 1.0,    # 6
             1.0, -1.0, 1.0,     # 1
+
             1.0, 1.0, 1.0,      # 0 top     (id = 1)
             1.0, 1.0, -1.0,     # 3
             -1.0, 1.0, -1.0,    # 4
             -1.0, 1.0, 1.0,     # 5
+
             1.0, 1.0, 1.0,      # 0 right   (id = 2)
             1.0, -1.0, 1.0,     # 1
             1.0, -1.0, -1.0,    # 2
             1.0, 1.0, -1.0,     # 3
+
             1.0, -1.0, 1.0,     # 1 bottom  (id = 3)
             -1.0, -1.0, 1.0,    # 6
             -1.0, -1.0, -1.0,   # 7
             1.0, -1.0, -1.0,    # 2
+
             -1.0, -1.0, -1.0,   # 7 left    (id = 4)
             -1.0, -1.0, 1.0,    # 6
             -1.0, 1.0, 1.0,     # 5
             -1.0, 1.0, -1.0,    # 4
+
             -1.0, -1.0, -1.0,   # 7 back    (id = 5)
             -1.0, 1.0, -1.0,    # 4
             1.0, 1.0, -1.0,     # 3
@@ -148,12 +155,12 @@ class GLViewCube():
         if not self.init():
             return
 
-        glViewport(*self._get_viewcube_viewport())
+        glViewport(*self.get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
         view = glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.parent.default_shader_program)
+        glUseProgram(self.parent.get_shader_program())
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
@@ -170,12 +177,12 @@ class GLViewCube():
         if not self.init():
             return
 
-        glViewport(*self._get_viewcube_viewport())
+        glViewport(*self.get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
         view = glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.parent.default_shader_program)
+        glUseProgram(self.parent.get_shader_program())
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glBindVertexArray(self._vao_picking)
@@ -184,24 +191,23 @@ class GLViewCube():
         glUseProgram(0)
 
     def _render_highlighted(self):
-        if self._picked_side < 0 or self._picked_side > 5:
+        if not self._hovered:
             return
 
         glDisable(GL_DEPTH_TEST)
         glBindVertexArray(self._vao_highlight[0])
-        glDrawArrays(GL_QUADS, self._picked_side * 4, 4)
+        glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
 
         glLineWidth(1.5)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         glBindVertexArray(self._vao_highlight[1])
-        glDrawArrays(GL_QUADS, self._picked_side * 4, 4)
+        glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
 
         glLineWidth(1.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         glEnable(GL_DEPTH_TEST)
 
-
-    def _get_viewcube_viewport(self):
+    def get_viewport(self):
         canvas_size = self.parent.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
         if self._position == ViewCubePos.TOP_LEFT:
@@ -215,12 +221,32 @@ class GLViewCube():
         return (*corner, self._size, self._size)
 
     @property
-    def picked_side(self):
-        return self._picked_side
+    def hover_id(self):
+        return self._hover_id
 
-    @picked_side.setter
-    def picked_side(self, value):
-        self._picked_side = value
+    @hover_id.setter
+    def hover_id(self, value):
+        self._hover_id = value
+        if self._hover_id < 0 or self._hover_id > 5:
+            self._hovered = False
+        else:
+            self._hovered = True
+
+    @property
+    def hovered(self):
+        return self._hovered
+
+    @hovered.setter
+    def hovered(self, value):
+        self._hovered = value
+
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, value):
+        self._selected = value
 
     @property
     def position(self):

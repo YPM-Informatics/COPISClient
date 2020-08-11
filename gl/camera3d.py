@@ -3,25 +3,29 @@
 
 import math
 import numpy as np
-from enums import CamAxis, CamMode
 
-import wx
+import glm
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+from gl.thing import GLThing
+from enums import CamAxis, CamMode
 
-class Camera3D():
-    def __init__(self, cam_id, x, y, z, b, c):
-        self._dirty = False  # dirty flag to track when we need to re-render the camera
-        self.is_selected = False
 
+class Camera3D(GLThing):
+    _scale = 10
+
+    def __init__(self, parent, cam_id, x, y, z, b, c):
+        super().__init__(parent)
+        self._canvas = parent
         self._cam_id = cam_id
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
         self._b = float(b)
         self._c = float(c)
-        self._scale = 10
+
+        self._dirty = False  # dirty flag to track when we need to re-render the camera
 
         self.start = (self._x, self._y, self._z, self._b, self._c)
         self.mode = CamMode.NORMAL
@@ -35,16 +39,102 @@ class Camera3D():
         self.increment_y = 0
         self.increment_z = 0
 
+    def create_vao(self):
+        self._vao, self._vao_picking = glGenVertexArrays(2)
+        vbo = glGenBuffers(4)
+
+        vertices = np.array([
+            -0.5, -1.0, -1.0,  # bottom
+            0.5, -1.0, -1.0,
+            0.5, -1.0, 1.0,
+            -0.5, -1.0, 1.0,
+
+            -0.5, 1.0, -1.0,   # right
+            0.5, 1.0, -1.0,
+            0.5, -1.0, -1.0,
+            -0.5, -1.0, -1.0,
+
+            -0.5, 1.0, 1.0,    # top
+            0.5, 1.0, 1.0,
+            0.5, 1.0, -1.0,
+            -0.5, 1.0, -1.0,
+
+            -0.5, -1.0, 1.0,   # left
+            0.5, -1.0, 1.0,
+            0.5, 1.0, 1.0,
+            -0.5, 1.0, 1.0,
+
+            0.5, 1.0, -1.0,    # back
+            0.5, 1.0, 1.0,
+            0.5, -1.0, 1.0,
+            0.5, -1.0, -1.0,
+
+            -0.5, -1.0, -1.0,  # front
+            -0.5, -1.0, 1.0,
+            -0.5, 1.0, 1.0,
+            -0.5, 1.0, -1.0
+        ], dtype=np.float32)
+        glBindVertexArray(self._vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
     def render(self):
         """Render camera."""
+        if not self.init():
+            return
+
         # Set color based on selection
-        if self.is_selected:
-            color = (75, 230, 150)
+        if self._selected:
+            color = glm.vec4(75, 230, 150, 255) / 255.0
+        elif self._hovered:
+            color = glm.vec4(143, 156, 186, 255) / 255.0
         else:
-            color = (125, 125, 125)
+            color = glm.vec4(125, 125, 125, 255) / 255.0
 
-        scale = self._scale
+        proj = self._canvas.projection_matrix
+        view = self._canvas.modelview_matrix
+        scale = glm.vec3(self._scale, self._scale, self._scale)
+        view = glm.mat4(view) * \
+            glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+            glm.scale(glm.mat4(), scale) * \
+            glm.mat4_cast(self._canvas.rot_quat)
 
+        glUseProgram(self._canvas.get_shader_program('color'))
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniform4fv(2, 1, glm.value_ptr(color))
+
+        glBindVertexArray(self._vao)
+        glDrawArrays(GL_QUADS, 0, 24)
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+    def render_for_picking(self):
+        if not self.init():
+            return
+
+        proj = self._canvas.projection_matrix
+        view = self._canvas.modelview_matrix
+        scale = glm.vec3(self._scale, self._scale, self._scale)
+        view = glm.mat4(view) * \
+            glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+            glm.scale(glm.mat4(), scale) * \
+            glm.mat4_cast(self._canvas.rot_quat)
+
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        glBindVertexArray(self._vao)
+        glDrawArrays(GL_QUADS, 0, 24)
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+    def _(self):
         glPushMatrix()
         glTranslatef(self._x, self._y, self._z)
         if self.mode == CamMode.NORMAL:
@@ -119,83 +209,10 @@ class Camera3D():
         glPopMatrix()
         glPopMatrix()
 
-    def render_for_picking(self):
-        """Render camera for picking pass."""
-        scale = self._scale
-
-        glPushMatrix()
-        glTranslatef(self._x, self._y, self._z)
-        if self.mode == CamMode.NORMAL:
-            if self._b != 0.0:
-                glRotatef(self._b, 0, 0, 1)
-            if self._c != 0.0:
-                glRotatef(self._c, 0, 1, 0)
-        elif self.mode == CamMode.ROTATE:
-            glRotatef(self._angle, *self._rotation_vector)
-
-        glBegin(GL_QUADS)
-
-        # bottom
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-
-        # right
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-
-        # top
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-
-        # left
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-
-        # back
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-
-        # front
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glEnd()
-        glPushMatrix()
-
-        # lens
-        glTranslated(-0.5 * scale, 0.0, 0.0)
-        quadric = gluNewQuadric()
-        glRotatef(90.0, 0.0, 1.0, 0.0)
-        gluCylinder(quadric, 0.25 * scale, 0.25 * scale, 0.3 * scale, 16, 16)
-        gluDeleteQuadric(quadric)
-
-        # cap
-        circle_quad = gluNewQuadric()
-        gluQuadricOrientation(circle_quad, GLU_INSIDE)
-        gluDisk(circle_quad, 0.0, 0.25 * scale, 16, 1)
-        gluDeleteQuadric(circle_quad)
-
-        glPopMatrix()
-        glPopMatrix()
-
-    @property
-    def scale(self):
-        return self._scale
-
-    @scale.setter
-    def scale(self, value):
-        self._scale = value
+    # @scale.setter
+    @classmethod
+    def set_scale(cls, value):
+        cls._scale = value
 
     @property
     def cam_id(self):
@@ -207,6 +224,7 @@ class Camera3D():
 
     @property
     def dirty(self):
+        return False
         return self._dirty
 
     @dirty.setter
