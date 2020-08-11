@@ -502,11 +502,11 @@ class MainFrame(wx.Frame):
 
         # reset previously selected camera
         if last_selected:
-            last_selected.is_selected = False
+            last_selected.selected = False
 
         # update new selected camera
         self.selected_cam = new_selected
-        self.selected_cam.is_selected = True
+        self.selected_cam.selected = True
 
         # connect to physical camera
         if self.cam_list:

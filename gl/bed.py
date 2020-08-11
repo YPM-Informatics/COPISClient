@@ -14,12 +14,12 @@ class _Axes():
     origin = (0.0, 0.0, 0.0)
 
     def __init__(self, parent):
-        self.parent = parent
+        self._canvas = parent
 
         self._vao_axes = None
         self._vao_arrows = None
 
-        build_dimensions = self.parent.build_dimensions
+        build_dimensions = self._canvas.build_dimensions
         dist = 0.5 * (build_dimensions[1] + max(build_dimensions[0], build_dimensions[2]))
         self._arrow_base_radius = dist / 75.0
         self._arrow_length = 2.5 * self._arrow_base_radius
@@ -27,7 +27,7 @@ class _Axes():
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
     def create_vao(self):
-        build_dimensions = self.parent.build_dimensions
+        build_dimensions = self._canvas.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
@@ -70,7 +70,7 @@ class _Axes():
         glBindVertexArray(0)
         return
 
-        build_dimensions = self.parent.build_dimensions
+        build_dimensions = self._canvas.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
@@ -123,7 +123,7 @@ class GLBed():
     def __init__(self, parent, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
-        self.parent = parent
+        self._canvas = parent
 
         self._vao_gridlines = None
         self._vao_bounding_box = None
@@ -194,12 +194,12 @@ class GLBed():
 
         glDisable(GL_LINE_SMOOTH)
 
-        proj = glGetDoublev(GL_PROJECTION_MATRIX)
-        view = glGetDoublev(GL_MODELVIEW_MATRIX)
+        proj = self._canvas.projection_matrix
+        view = self._canvas.modelview_matrix
 
-        glUseProgram(self.parent.default_shader_program)
-        glUniformMatrix4fv(0, 1, GL_FALSE, proj)
-        glUniformMatrix4fv(1, 1, GL_FALSE, view)
+        glUseProgram(self._canvas.get_shader_program())
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         self._render_gridlines()
 

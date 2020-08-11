@@ -106,7 +106,7 @@ class VisualizerPanel(wx.Panel):
         """Return Camera3D list."""
         return self.camera3d_list
 
-    def add_camera(self, cam_id=-1):
+    def add_camera(self, id_=-1):
         """Add new Camera3D."""
         x = random.random() * self._build_dimensions[0] - self._build_dimensions[3]
         y = random.random() * self._build_dimensions[1] - self._build_dimensions[4]
@@ -114,20 +114,20 @@ class VisualizerPanel(wx.Panel):
         b = random.randrange(0, 360, 5)
         c = random.randrange(0, 360, 5)
 
-        if cam_id == -1:
-            cam_id = self._generate_camera_id()
+        if id_ == -1:
+            id_ = self._generate_camera_id()
 
-        cam_3d = Camera3D(cam_id, x, y, z, b, c)
-        self._glcanvas.camera3d_list.append(cam_3d)
+        camera = Camera3D(self._glcanvas, id_, x, y, z, b, c)
+        self._glcanvas.camera3d_list.append(camera)
         self._glcanvas.dirty = True
 
-        return str(cam_3d.cam_id)
+        return str(camera.cam_id)
 
-    def get_camera_by_id(self, cam_id):
+    def get_camera_by_id(self, id_):
         """Return Camera3D by id."""
         if self._glcanvas.camera3d_list:
             for cam in self._glcanvas.camera3d_list:
-                if cam.cam_id == cam_id:
+                if cam.cam_id == id_:
                     return cam
         return None
 
@@ -142,15 +142,15 @@ class VisualizerPanel(wx.Panel):
             return self._selected_cam
         return None
 
-    def set_selected_camera(self, id):
+    def set_selected_camera(self, id_):
         # reset previously selected camera
         last_selected = self.get_selected_camera()
         if last_selected:
-            last_selected.is_selected = False
+            last_selected.selected = False
 
         # update new selected camera
-        self._selected_cam = self.get_camera_by_id(id)
-        self._selected_cam.is_selected = True
+        self._selected_cam = self.get_camera_by_id(id_)
+        self._selected_cam.selected = True
 
         # refresh glcanvas
         self._glcanvas.dirty = True
