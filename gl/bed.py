@@ -27,6 +27,7 @@ class _Axes():
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
     def create_vao(self):
+        """Bind VAOs to define vertex data."""
         build_dimensions = self._canvas.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
@@ -44,6 +45,7 @@ class _Axes():
             0.0, 0.0, -z[1], 0.0, 0.0, 1.0
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
+        # colored axes lines
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
@@ -56,6 +58,7 @@ class _Axes():
         glEnableVertexAttribArray(1)
 
         glBindVertexArray(self._vao_arrows)
+        # colored axes arrows
 
         glBindVertexArray(0)
 
@@ -140,12 +143,14 @@ class GLBed():
         self._initialized = False
 
     def create_vao(self):
+        """Bind VAOs to define vertex data."""
         self._vao_gridlines, self._vao_bounding_box = glGenVertexArrays(2)
         vbo = glGenBuffers(5)
 
-        vertices, colors = self._generate_gridlines()
+        vertices, colors = self._get_gridlines()
         self._count_gridlines = vertices.size // 3
         glBindVertexArray(self._vao_gridlines)
+        # gridlines
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -157,9 +162,12 @@ class GLBed():
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
-        points, indices = self._generate_bounding_box()
+        # ---
+
+        points, indices = self._get_bounding_box()
         self._count_bounding_box = indices.size
         glBindVertexArray(self._vao_bounding_box)
+        # bounding box
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
@@ -178,7 +186,7 @@ class GLBed():
         glBindVertexArray(0)
 
     def init(self):
-        """Initialize vertices."""
+        """Initialize for rendering."""
         if self._initialized:
             return True
 
@@ -188,18 +196,18 @@ class GLBed():
         return True
 
     def render(self):
-        """Render bed."""
+        """Render bed to screen."""
         if not self.init():
             return
 
         glDisable(GL_LINE_SMOOTH)
 
         proj = self._canvas.projection_matrix
-        view = self._canvas.modelview_matrix
+        modelview = self._canvas.modelview_matrix
 
         glUseProgram(self._canvas.get_shader_program())
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
         self._render_gridlines()
 
@@ -213,8 +221,8 @@ class GLBed():
         glUseProgram(0)
         glEnable(GL_LINE_SMOOTH)
 
-    def _generate_gridlines(self):
-        """Generate vertices and colors for bed gridlines."""
+    def _get_gridlines(self):
+        """Get data for gridlines."""
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
         step = self._every / self._subdivisions
@@ -261,8 +269,8 @@ class GLBed():
         colors = np.concatenate([axes_colors, x_colors, z_colors]).astype(np.float32)
         return verts, colors
 
-    def _generate_bounding_box(self):
-        """Generate vertices and indices for bed bounding box."""
+    def _get_bounding_box(self):
+        """Get data for bed bounding box."""
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
         y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]

@@ -1,4 +1,4 @@
-"""Thing3D class."""
+"""GLThing class."""
 
 import math
 import numpy as np
@@ -26,9 +26,11 @@ class GLThing(ABC):
 
     @abstractmethod
     def create_vao(self):
+        """Bind VAOs to define vertex data."""
         pass
 
     def init(self):
+        """Initialize for rendering."""
         if self._initialized:
             return True
 
@@ -39,10 +41,13 @@ class GLThing(ABC):
 
     @abstractmethod
     def render(self):
+        """Render to screen."""
         pass
 
     @abstractmethod
     def render_for_picking(self):
+        """Render for picking pass. Usually disables any sort of multisampling
+        or antialiasing which may affect pixel values."""
         pass
 
     @property
