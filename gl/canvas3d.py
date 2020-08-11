@@ -79,8 +79,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._zoom = 1
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
-        self._angle_z = 0
-        self._angle_x = 0
         self._inside = False
         self._hover_id = -1
 
@@ -91,9 +89,6 @@ class Canvas3D(glcanvas.GLCanvas):
         self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
         self._canvas.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
         self._canvas.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
-        self._canvas.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
-        self._canvas.Bind(wx.EVT_ENTER_WINDOW, self.on_enter_window)
-        self._canvas.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave_window)
         self._canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
         self._canvas.Bind(wx.EVT_PAINT, self.on_paint)
         self._canvas.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
@@ -130,6 +125,7 @@ class Canvas3D(glcanvas.GLCanvas):
         return True
 
     def init_shaders(self):
+        """Compile vertex and fragment shaders."""
         vertex_shader = """
         #version 450 core
 
@@ -250,10 +246,13 @@ class Canvas3D(glcanvas.GLCanvas):
             LMB drag:   move viewport
             RMB drag:   unused
             LMB/RMB up: reset position
+
+        TODO: make this more robust, and capable of handling selection
         """
         if not self._gl_initialized or not self._set_current():
             return
 
+        id_ = self._hover_id
         scale = self.get_scale_factor()
         event.SetX(int(event.GetX() * scale))
         event.SetY(int(event.GetY() * scale))
@@ -263,34 +262,36 @@ class Canvas3D(glcanvas.GLCanvas):
                 self.rotate_camera(event, orbit=self.orbit_controls)
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
-        elif event.LeftUp() or event.MiddleUp() or event.RightUp() or event.Leaving():
+        elif event.LeftUp() or event.MiddleUp() or event.RightUp():
             pass
-            # if self._mouse_pos is not None:
-            #     self._mouse_pos = None
+        elif event.Entering():
+            self._inside = True
+        elif event.Leaving():
+            self._inside = False
+        elif event.LeftDClick() and id_ != -1:
+            if self._viewcube.hovered:
+                if id_ == 0:    # front
+                    self._rot_quat = glm.quat()
+                elif id_ == 1:  # top
+                    self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
+                elif id_ == 2:  # right
+                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, -90, 0)))
+                elif id_ == 3:  # bottom
+                    self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
+                elif id_ == 4:  # left
+                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 90, 0)))
+                elif id_ == 5:  # back
+                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
+                else:
+                    pass
+            elif id_ < len(self._camera3d_list):
+                wx.GetApp().mainframe.set_selected_camera(id_)
         elif event.Moving():
             self._mouse_pos = event.GetPosition()
         else:
             event.Skip()
+
         self._dirty = True
-
-    def on_left_dclick(self, event):
-        """Handle EVT_LEFT_DCLICK."""
-
-        # get current hovered id
-        id_ = self._hover_id
-        if id_ == -1:
-            return
-
-        if self._viewcube.hovered:
-            pass
-        elif id_ < len(self._camera3d_list):
-            wx.GetApp().mainframe.set_selected_camera(id_)
-
-    def on_enter_window(self, event):
-        self._inside = True
-
-    def on_leave_window(self, event):
-        self._inside = False
 
     def on_erase_background(self, event):
         """Handle the erase background event."""
@@ -350,9 +351,14 @@ class Canvas3D(glcanvas.GLCanvas):
             self.render()
 
     def _picking_pass(self):
+        """Render all nonfixed objects with colors corresponding to an internal
+        id value. Read pixels to convert from RGB to id. This should be simpler
+        than raycast intersections.
+        """
         if self._mouse_pos is None:
             return
 
+        # disable multisampling and antialiasing
         glDisable(GL_MULTISAMPLE)
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
@@ -377,6 +383,7 @@ class Canvas3D(glcanvas.GLCanvas):
             if id_ == 15790320:
                 id_ = -1
 
+        # check if mouse is inside viewcube area
         viewcube_bounds = self._viewcube.get_viewport()
         if viewcube_bounds[0] <= mouse[0] <= viewcube_bounds[0] + viewcube_bounds[2] and \
            viewcube_bounds[1] <= mouse[1] <= viewcube_bounds[1] + viewcube_bounds[3]:
@@ -412,6 +419,7 @@ class Canvas3D(glcanvas.GLCanvas):
             self._viewcube.render()
 
     def _render_objects_for_picking(self):
+        """Render for picking pass."""
         for camera in self._camera3d_list:
             id_ = camera.cam_id
             r = (id_ & (0x0000000FF << 0))  >> 0
@@ -531,21 +539,20 @@ class Canvas3D(glcanvas.GLCanvas):
 
         with self._rot_lock:
             if orbit:
-                delta_x = p2y - p1y
-                self._angle_x -= delta_x
-                rot_x = glm.angleAxis(self._angle_x, glm.vec3(1.0, 0.0, 0.0))
+                dx = p2y - p1y
+                dz = p2x - p1x
 
-                delta_z = p2x - p1x
-                self._angle_z += delta_z
-                rot_z = glm.angleAxis(self._angle_z, glm.vec3(0.0, 1.0, 0.0))
-
-                self._rot_quat = rot_x * rot_z
+                pitch = glm.angleAxis(dx, glm.vec3(-1.0, 0.0, 0.0))
+                yaw = glm.angleAxis(dz, glm.vec3(0.0, 1.0, 0.0))
+                self._rot_quat = pitch * self._rot_quat * yaw
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)
                 self._rot_quat = quat * self._rot_quat
         self._mouse_pos = cur
 
     def translate_camera(self, event):
+        """TODO: create me!
+        """
         if self._mouse_pos is None:
             self._mouse_pos = event.GetPosition()
             return
@@ -559,6 +566,9 @@ class Canvas3D(glcanvas.GLCanvas):
     # -------------------
 
     def get_scale_factor(self):
+        """Return scale factor. Fixes high dpi sizing issues prominent on
+        MacOS devices.
+        """
         if self._scale_factor is None:
             if pf.system() == 'Darwin': # MacOS
                 self._scale_factor = 2.0

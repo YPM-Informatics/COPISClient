@@ -1,4 +1,4 @@
-"""Thing3D manager class."""
+"""GLThing manager class."""
 
 import math
 import numpy as np

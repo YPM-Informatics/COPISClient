@@ -40,6 +40,9 @@ class Camera3D(GLThing):
         self.increment_z = 0
 
     def create_vao(self):
+        """
+        TODO: add cylinders to camera model
+        """
         self._vao, self._vao_picking = glGenVertexArrays(2)
         vbo = glGenBuffers(4)
 
@@ -81,12 +84,43 @@ class Camera3D(GLThing):
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
+        # glPushMatrix()
+        # glTranslatef(self._x, self._y, self._z)
+        # if self.mode == CamMode.NORMAL:
+        #     if self._b != 0.0:
+        #         glRotatef(self._b, 0, 0, 1)
+        #     if self._c != 0.0:
+        #         glRotatef(self._c, 0, 1, 0)
+        # elif self.mode == CamMode.ROTATE:
+        #     glRotatef(self._angle, *self._rotation_vector)
+
+        # if self.trans:
+        #     self.translate()
+        #     self._dirty = True
+
+        # # lens
+        # glColor3ub(*[x - 15 for x in color])
+        # glTranslated(-0.5 * scale, 0.0, 0.0)
+        # quadric = gluNewQuadric()
+        # glRotatef(90.0, 0.0, 1.0, 0.0)
+        # gluCylinder(quadric, 0.25 * scale, 0.25 * scale, 0.3 * scale, 16, 16)
+        # gluDeleteQuadric(quadric)
+
+        # # cap
+        # glColor3ub(*[x - 25 for x in color])
+        # circle_quad = gluNewQuadric()
+        # gluQuadricOrientation(circle_quad, GLU_INSIDE)
+        # gluDisk(circle_quad, 0.0, 0.25 * scale, 16, 1)
+        # gluDeleteQuadric(circle_quad)
+
+        # glPopMatrix()
+
     def render(self):
         """Render camera."""
         if not self.init():
             return
 
-        # Set color based on selection
+        # color based on selection type
         if self._selected:
             color = glm.vec4(75, 230, 150, 255) / 255.0
         elif self._hovered:
@@ -95,16 +129,11 @@ class Camera3D(GLThing):
             color = glm.vec4(125, 125, 125, 255) / 255.0
 
         proj = self._canvas.projection_matrix
-        view = self._canvas.modelview_matrix
-        scale = glm.vec3(self._scale, self._scale, self._scale)
-        view = glm.mat4(view) * \
-            glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
-            glm.scale(glm.mat4(), scale) * \
-            glm.mat4_cast(self._canvas.rot_quat)
+        modelview = self._canvas.modelview_matrix * self.get_model_matrix()
 
         glUseProgram(self._canvas.get_shader_program('color'))
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glUniform4fv(2, 1, glm.value_ptr(color))
 
         glBindVertexArray(self._vao)
@@ -118,15 +147,10 @@ class Camera3D(GLThing):
             return
 
         proj = self._canvas.projection_matrix
-        view = self._canvas.modelview_matrix
-        scale = glm.vec3(self._scale, self._scale, self._scale)
-        view = glm.mat4(view) * \
-            glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
-            glm.scale(glm.mat4(), scale) * \
-            glm.mat4_cast(self._canvas.rot_quat)
+        modelview = self._canvas.modelview_matrix * self.get_model_matrix()
 
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
         glBindVertexArray(self._vao)
         glDrawArrays(GL_QUADS, 0, 24)
@@ -134,80 +158,13 @@ class Camera3D(GLThing):
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def _(self):
-        glPushMatrix()
-        glTranslatef(self._x, self._y, self._z)
-        if self.mode == CamMode.NORMAL:
-            if self._b != 0.0:
-                glRotatef(self._b, 0, 0, 1)
-            if self._c != 0.0:
-                glRotatef(self._c, 0, 1, 0)
-        elif self.mode == CamMode.ROTATE:
-            glRotatef(self._angle, *self._rotation_vector)
+    def get_model_matrix(self):
+        scale = glm.vec3(self._scale, self._scale, self._scale)
+        return glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+            glm.scale(glm.mat4(), scale) * \
+            glm.rotate(glm.mat4(), self._b, glm.vec3(0.0, 0.0, 1.0)) * \
+            glm.rotate(glm.mat4(), self._c, glm.vec3(0.0, 1.0, 0.0))
 
-        if self.trans:
-            self.translate()
-            self._dirty = True
-
-        glBegin(GL_QUADS)
-
-        # bottom
-        glColor3ub(*color)
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-
-        # right
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-
-        # top
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-
-        # left
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-
-        # back
-        glVertex3f(0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glVertex3f(0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(0.25 * scale, -0.5 * scale, -0.5 * scale)
-
-        # front
-        glVertex3f(-0.25 * scale, -0.5 * scale, -0.5 * scale)
-        glVertex3f(-0.25 * scale, -0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, 0.5 * scale)
-        glVertex3f(-0.25 * scale, 0.5 * scale, -0.5 * scale)
-        glEnd()
-
-        glPushMatrix()
-
-        # lens
-        glColor3ub(*[x - 15 for x in color])
-        glTranslated(-0.5 * scale, 0.0, 0.0)
-        quadric = gluNewQuadric()
-        glRotatef(90.0, 0.0, 1.0, 0.0)
-        gluCylinder(quadric, 0.25 * scale, 0.25 * scale, 0.3 * scale, 16, 16)
-        gluDeleteQuadric(quadric)
-
-        # cap
-        glColor3ub(*[x - 25 for x in color])
-        circle_quad = gluNewQuadric()
-        gluQuadricOrientation(circle_quad, GLU_INSIDE)
-        gluDisk(circle_quad, 0.0, 0.25 * scale, 16, 1)
-        gluDeleteQuadric(circle_quad)
-
-        glPopMatrix()
-        glPopMatrix()
 
     # @scale.setter
     @classmethod

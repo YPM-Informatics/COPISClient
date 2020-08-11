@@ -2,9 +2,9 @@
 """ViewCube class."""
 
 import numpy as np
+import math
 import glm
 
-import wx
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
@@ -28,6 +28,7 @@ class GLViewCube():
         self._initialized = False
 
     def create_vao(self):
+        """Bind VAOs to define vertex data."""
         self._vao, self._vao_picking, *self._vao_highlight = glGenVertexArrays(4)
         vbo = glGenBuffers(9)
 
@@ -50,6 +51,7 @@ class GLViewCube():
             4, 7, 6, 6, 5, 4
         ], dtype=np.uint16)
         glBindVertexArray(self._vao)
+        # standard viewcube
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -100,6 +102,7 @@ class GLViewCube():
         colors = np.zeros(72, dtype=np.float32)
         colors[::3] = np.arange(6).repeat(4) / 255.0
         glBindVertexArray(self._vao_picking)
+        # viewcube for picking
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -115,6 +118,7 @@ class GLViewCube():
 
         colors_fill = np.tile(np.array([0.561, 0.612, 0.729], dtype=np.float32), 24)
         glBindVertexArray(self._vao_highlight[0])
+        # highlighted face of viewcube
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[5])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -128,6 +132,7 @@ class GLViewCube():
 
         colors_border = np.tile(np.array([0.220, 0.388, 0.659], dtype=np.float32), 24)
         glBindVertexArray(self._vao_highlight[1])
+        # outlined face of viewcube
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[7])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -158,11 +163,11 @@ class GLViewCube():
         glViewport(*self.get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        view = glm.mat4_cast(self.parent.rot_quat)
+        modelview = glm.mat4_cast(self.parent.rot_quat)
 
         glUseProgram(self.parent.get_shader_program())
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
@@ -180,11 +185,11 @@ class GLViewCube():
         glViewport(*self.get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        view = glm.mat4_cast(self.parent.rot_quat)
+        modelview = glm.mat4_cast(self.parent.rot_quat)
 
         glUseProgram(self.parent.get_shader_program())
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glBindVertexArray(self._vao_picking)
         glDrawArrays(GL_QUADS, 0, 24)
         glBindVertexArray(0)
@@ -196,7 +201,7 @@ class GLViewCube():
 
         glDisable(GL_DEPTH_TEST)
         glBindVertexArray(self._vao_highlight[0])
-        glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
+        # glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
 
         glLineWidth(1.5)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
