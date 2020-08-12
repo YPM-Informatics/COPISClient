@@ -20,7 +20,7 @@ class GLViewCube():
 
         self._vao = None
         self._vao_picking = None
-        self._vao_highlight = None
+        self._vao_outline = None
 
         self._hover_id = -1
         self._hovered = False
@@ -29,8 +29,8 @@ class GLViewCube():
 
     def create_vao(self):
         """Bind VAOs to define vertex data."""
-        self._vao, self._vao_picking, *self._vao_highlight = glGenVertexArrays(4)
-        vbo = glGenBuffers(9)
+        self._vao, self._vao_picking, self._vao_outline = glGenVertexArrays(3)
+        vbo = glGenBuffers(6)
 
         vertices = np.array([
             1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
@@ -116,35 +116,21 @@ class GLViewCube():
 
         # ---
 
-        colors_fill = np.tile(np.array([0.561, 0.612, 0.729], dtype=np.float32), 24)
-        glBindVertexArray(self._vao_highlight[0])
-        # highlighted face of viewcube
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[5])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[6])
-        glBufferData(GL_ARRAY_BUFFER, colors_fill.nbytes, colors_fill, GL_STATIC_DRAW)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(1)
-
-        colors_border = np.tile(np.array([0.220, 0.388, 0.659], dtype=np.float32), 24)
-        glBindVertexArray(self._vao_highlight[1])
+        colors_border = np.tile(np.array([0.220, 0.388, 0.759], dtype=np.float32), 24)
+        glBindVertexArray(self._vao_outline)
         # outlined face of viewcube
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[7])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[8])
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[5])
         glBufferData(GL_ARRAY_BUFFER, colors_border.nbytes, colors_border, GL_STATIC_DRAW)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
         glBindVertexArray(0)
+        glDeleteBuffers(6, vbo)
 
     def init(self):
         if self._initialized:
@@ -200,17 +186,15 @@ class GLViewCube():
             return
 
         glDisable(GL_DEPTH_TEST)
-        glBindVertexArray(self._vao_highlight[0])
-        # glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
-
-        glLineWidth(1.5)
+        glLineWidth(2.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-        glBindVertexArray(self._vao_highlight[1])
+
+        glBindVertexArray(self._vao_outline)
         glDrawArrays(GL_QUADS, self._hover_id * 4, 4)
 
+        glEnable(GL_DEPTH_TEST)
         glLineWidth(1.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        glEnable(GL_DEPTH_TEST)
 
     def get_viewport(self):
         canvas_size = self.parent.get_canvas_size()

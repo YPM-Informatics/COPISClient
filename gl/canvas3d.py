@@ -64,9 +64,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._bed = GLBed(self, self._build_dimensions, axes, bounding_box, every, subdivisions)
         self._viewcube = GLViewCube(self)
-        self._proxy3d = None # Proxy3D('Sphere', [1], (0, 53, 107))
-        # self._path3d = Path3D()
-        # self._path3d_list = []
+        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
         self._camera3d_list = []
         self._camera3d_scale = 10
 
@@ -77,10 +75,10 @@ class Canvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         self._zoom = 1
+        self._hover_id = -1
+        self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
-        self._inside = False
-        self._hover_id = -1
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -182,7 +180,6 @@ class Canvas3D(glcanvas.GLCanvas):
             shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
             shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
 
-    # @timing
     def render(self):
         """Render frame."""
         # ensure that canvas is current and initialized
@@ -195,9 +192,14 @@ class Canvas3D(glcanvas.GLCanvas):
 
         canvas_size = self._canvas.get_canvas_size()
         glViewport(0, 0, canvas_size.width, canvas_size.height)
+
+        # run picking pass
         self._picking_pass()
+
+        # reset viewport as _picking_pass tends to mess with it
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
+        # clear buffers and render everything
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_bed()
@@ -405,8 +407,8 @@ class Canvas3D(glcanvas.GLCanvas):
             self._bed.render()
 
     def _render_objects(self):
-        if self._proxy3d is not None:
-            self._proxy3d.render()
+        # if self._proxy3d is not None:
+        #     self._proxy3d.render()
 
         if not self._camera3d_list:
             return
@@ -490,6 +492,7 @@ class Canvas3D(glcanvas.GLCanvas):
     def camera3d_scale(self, value):
         self._camera3d_scale = value
         Camera3D.set_scale(value)
+        self._dirty = True
 
     @property
     def camera3d_list(self):

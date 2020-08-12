@@ -61,6 +61,7 @@ class _Axes():
         # colored axes arrows
 
         glBindVertexArray(0)
+        glDeleteBuffers(4, vbo)
 
     def render(self):
         """Render colored axes and arrows."""
@@ -183,7 +184,9 @@ class GLBed():
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
         self._axes.create_vao()
+
         glBindVertexArray(0)
+        glDeleteBuffers(5, vbo)
 
     def init(self):
         """Initialize for rendering."""
@@ -324,6 +327,7 @@ class GLBed():
     def show_axes(self, value):
         self._show_axes = value
         self.create_vao()
+        self._canvas.dirty = True
 
     @property
     def show_bounding_box(self):
@@ -332,6 +336,7 @@ class GLBed():
     @show_bounding_box.setter
     def show_bounding_box(self, value):
         self._show_bounding_box = value
+        self._canvas.dirty = True
 
     @property
     def build_dimensions(self):
