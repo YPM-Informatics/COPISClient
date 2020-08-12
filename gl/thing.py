@@ -17,9 +17,6 @@ class GLThing(ABC):
         self._mgr = parent
         self._volumes = None
 
-        self._vao = None
-        self._vao_picking = None
-
         self._hovered = False
         self._selected = False
         self._initialized = False
