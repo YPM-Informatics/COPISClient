@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import wx
+
 from enums import CamAxis
-from utils import set_dialog
 from util.Canon.EDSDKLib import *
+from utils import set_dialog
 
 
 class ControllerPanel(wx.VScrolledWindow):

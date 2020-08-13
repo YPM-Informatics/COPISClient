@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-
 import wx
+
 
 class PreferenceFrame(wx.Frame):
     def __init__(self, parent, *args, **kwargs):

@@ -3,6 +3,7 @@
 """TODO: Fill in docstring"""
 
 import wx
+
 from appconfig import AppConfig
 from gui.main_frame import MainFrame
 

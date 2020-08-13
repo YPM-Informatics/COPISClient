@@ -1,12 +1,11 @@
 """GLThing manager class."""
 
 import math
-import numpy as np
+from gl.thing import GLThing
 
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
-from gl.thing import GLThing
 
 from enums import ViewCubePos, ViewCubeSize
 from utils import timing

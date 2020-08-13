@@ -2,28 +2,24 @@
 """Canvas3D and associated classes."""
 
 import math
-import random
-import numpy as np
 import platform as pf
-import ctypes
-
-from typing import NamedTuple
+from gl.bed import GLBed
+from gl.camera3d import Camera3D
+from gl.glutils import arcball
+from gl.path3d import Path3D
+from gl.proxy3d import Proxy3D
+from gl.viewcube import GLViewCube
 from threading import Lock
+from typing import List, NamedTuple, Optional, Union
 
-import glm
+import numpy as np
 import wx
-from wx import glcanvas
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
+from wx import glcanvas
 
-from gl.glhelper import arcball
-from gl.path3d import Path3D
-from gl.camera3d import Camera3D
-from gl.proxy3d import Proxy3D
-from gl.viewcube import GLViewCube
-from gl.bed import GLBed
-
+import glm
 from enums import ViewCubePos, ViewCubeSize
 from utils import timing
 
@@ -33,19 +29,37 @@ class _Size(NamedTuple):
     height: int
     scale_factor: float
 
-    def aspect_ratio(self):
+    def aspect_ratio(self) -> float:
         return self.width / self.height
 
 
 class Canvas3D(glcanvas.GLCanvas):
-    """Canvas3D class."""
+    """Canvas3D class.
+
+    Args:
+        parent ([type]): [description]
+        build_dimensions ([type], optional): [description]. Defaults to None.
+        axes (bool, optional): [description]. Defaults to True.
+        bounding_box (bool, optional): [description]. Defaults to True.
+        every (int, optional): [description]. Defaults to 100.
+        subdivisions (int, optional): [description]. Defaults to 10.
+
+    Attributes:
+        Text
+    """
     # True: use arcball controls, False: use orbit controls
     orbit_controls = True
     color_background = (0.941, 0.941, 0.941, 1)
     zoom_min = 0.1
     zoom_max = 7.0
 
-    def __init__(self, parent, build_dimensions=None, axes=True, bounding_box=True, every=100, subdivisions=10):
+    def __init__(self, parent,
+        build_dimensions: Optional[List[int]] = None,
+        axes: bool = True,
+        bounding_box: bool = True,
+        every: int = 100,
+        subdivisions: int = 10):
+        """Inits Canvas3D with constructors."""
         self.parent = parent
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
