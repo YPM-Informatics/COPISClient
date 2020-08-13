@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """ViewCube class."""
 
-import math
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 from OpenGL.GL import *
@@ -13,14 +12,15 @@ from enums import ViewCubePos, ViewCubeSize
 
 
 class GLViewCube:
-    """Manage a ViewCube object. To be used in a GLCanvas.
+    """Manage a ViewCube object in a GLCanvas.
 
     Args:
         parent: Pointer to a parent GLCanvas.
-        position: An enums.ViewCubePos constant indicating which corner of the
-            viewport the ViewCube should be. Defaults to ViewCubePos.TOP_RIGHT.
-        size: An enums.ViewCubeSize constant indicating the size, in pixels,
-            of the ViewCube area. Defaults to ViewCubeSize.MEDIUM.
+        position: Optional; An enums.ViewCubePos constant indicating which
+            corner of the viewport the ViewCube should render in. Defaults to
+            ViewCubePos.TOP_RIGHT.
+        size: Optional; An enums.ViewCubeSize constant indicating the size in
+            pixels of the ViewCube render area. Defaults to ViewCubeSize.MEDIUM.
 
     Attributes:
         hover_id: An integer indicating which face of the ViewCube the mouse is
@@ -29,13 +29,13 @@ class GLViewCube:
             is hovered over by a mouse.
         selected: A boolean indicating whether or not a face of the ViewCube
             is selected by a mouse.
-        position: See Args.
-        size: See Args.
+        position: See Args section.
+        size: See Args section.
     """
 
     def __init__(self, parent,
-        position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
-        size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM):
+                 position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
+                 size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM) -> None:
         """Inits GLViewCube with constructors."""
         self.parent = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
@@ -50,7 +50,7 @@ class GLViewCube:
         self._selected = False
         self._initialized = False
 
-    def create_vao(self):
+    def create_vao(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao, self._vao_picking, self._vao_outline = glGenVertexArrays(3)
         vbo = glGenBuffers(6)
@@ -63,7 +63,7 @@ class GLViewCube:
             -1.0, 1.0, -1.0, 0.7, 0.7, 0.7,
             -1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
             -1.0, -1.0, 1.0, 0.5, 0.5, 0.5,
-            -1.0, -1.0, -1.0, 0.5, 0.5, 0.5
+            -1.0, -1.0, -1.0, 0.5, 0.5, 0.5,
         ], dtype=np.float32)
         indices = np.array([
             0, 1, 2, 2, 3, 0,
@@ -71,7 +71,7 @@ class GLViewCube:
             0, 5, 6, 6, 1, 0,
             1, 6, 7, 7, 2, 1,
             7, 4, 3, 3, 2, 7,
-            4, 7, 6, 6, 5, 4
+            4, 7, 6, 6, 5, 4,
         ], dtype=np.uint16)
         glBindVertexArray(self._vao)
         # standard viewcube
@@ -120,7 +120,7 @@ class GLViewCube:
             -1.0, -1.0, -1.0,   # 7 back    (id = 5)
             -1.0, 1.0, -1.0,    # 4
             1.0, 1.0, -1.0,     # 3
-            1.0, -1.0, -1.0     # 2
+            1.0, -1.0, -1.0,    # 2
         ], dtype=np.float32)
         colors = np.zeros(72, dtype=np.float32)
         colors[::3] = np.arange(6).repeat(4) / 255.0
@@ -155,7 +155,12 @@ class GLViewCube:
         glBindVertexArray(0)
         glDeleteBuffers(6, vbo)
 
-    def init(self):
+    def init(self) -> bool:
+        """Initialize for rendering.
+
+        Returns:
+            True if initialized without error, otherwise returns False.
+        """
         if self._initialized:
             return True
 
@@ -164,7 +169,7 @@ class GLViewCube:
         self._initialized = True
         return True
 
-    def render(self):
+    def render(self) -> None:
         """Render ViewCube."""
         if not self.init():
             return
@@ -186,7 +191,7 @@ class GLViewCube:
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def render_for_picking(self):
+    def render_for_picking(self) -> None:
         """Render ViewCube for picking pass."""
         if not self.init():
             return
@@ -204,7 +209,8 @@ class GLViewCube:
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def _render_highlighted(self):
+    def _render_highlighted(self) -> None:
+        """Render cube outline on face that is hovered."""
         if not self._hovered:
             return
 
@@ -219,7 +225,9 @@ class GLViewCube:
         glLineWidth(1.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    def get_viewport(self):
+    def get_viewport(self) -> Tuple[int, int, int, int]:
+        """Return (x, y, width, height) to set viewport according to position.
+        """
         canvas_size = self.parent.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
         if self._position == ViewCubePos.TOP_LEFT:
@@ -233,11 +241,16 @@ class GLViewCube:
         return (*corner, self._size, self._size)
 
     @property
-    def hover_id(self):
+    def hover_id(self) -> int:
+        """Return int corresponding to hovered face. -1 if not hovered.
+
+        0: front, 1: top, 2: right, 3: bottom, 4: left, 5: back.
+        """
         return self._hover_id
 
     @hover_id.setter
-    def hover_id(self, value):
+    def hover_id(self, value: int) -> None:
+        """Set hover_id. Checks if value is a valid side."""
         self._hover_id = value
         if self._hover_id < 0 or self._hover_id > 5:
             self._hovered = False
@@ -245,40 +258,38 @@ class GLViewCube:
             self._hovered = True
 
     @property
-    def hovered(self):
+    def hovered(self) -> bool:
         return self._hovered
 
     @hovered.setter
-    def hovered(self, value):
+    def hovered(self, value: bool) -> None:
         self._hovered = value
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
-    def selected(self, value):
+    def selected(self, value: bool) -> None:
         self._selected = value
 
     @property
-    def position(self):
+    def position(self) -> ViewCubePos:
         return self._position
 
     @position.setter
-    def position(self, value):
+    def position(self, value: ViewCubePos) -> None:
         if value not in ViewCubePos:
             return
         self._position = value
         self._initialized = False
 
     @property
-    def size(self):
+    def size(self) -> ViewCubeSize:
         return self._size
 
     @size.setter
-    def size(self, value):
-        print(value)
-        print(value in ViewCubeSize)
+    def size(self, value: ViewCubeSize) -> None:
         if value not in ViewCubeSize:
             return
         self._size = value
