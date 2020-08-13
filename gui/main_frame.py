@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-import wx
-import wx.svg as svg
-import wx.lib.agw.aui as aui
 from ctypes import *
 
-from utils import create_scaled_bitmap
+import wx
+import wx.lib.agw.aui as aui
+import wx.svg as svg
 
+from gui.about import *
 from gui.panels.console import ConsolePanel
 from gui.panels.controller import ControllerPanel
 from gui.panels.evf import EvfPanel
@@ -15,10 +15,9 @@ from gui.panels.properties import PropertiesPanel
 from gui.panels.timeline import TimelinePanel
 from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
-
 from gui.pathgen_frame import *
 from gui.pref_frame import *
-from gui.about import *
+from utils import create_scaled_bitmap
 
 
 class MainFrame(wx.Frame):

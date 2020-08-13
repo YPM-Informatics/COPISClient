@@ -2,13 +2,14 @@
 """Visualizer panel. Creates a Canvas3D OpenGL canvas."""
 
 import random
+from gl.camera3d import Camera3D
+from gl.canvas3d import Canvas3D
 
 import wx
-from gl.canvas3d import Canvas3D
-from gl.camera3d import Camera3D
 
 
 class VisualizerPanel(wx.Panel):
+
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, style=wx.BORDER_DEFAULT | wx.NO_FULL_REPAINT_ON_RESIZE)
 

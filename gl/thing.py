@@ -1,17 +1,23 @@
 """GLThing class."""
 
 import math
-import numpy as np
+from abc import ABC, abstractmethod
 
-import glm
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+import glm
 from utils import timing
-from abc import ABC, abstractmethod
 
 
 class GLThing(ABC):
+    """[summary]
+
+    Args:
+        ABC ([type]): [description]
+    """
+
     def __init__(self, parent):
         super().__init__()
         self._mgr = parent

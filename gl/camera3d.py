@@ -2,17 +2,26 @@
 """Camera3D class."""
 
 import math
-import numpy as np
+from gl.thing import GLThing
 
-import glm
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-from gl.thing import GLThing
+import glm
 from enums import CamAxis, CamMode
 
 
 class Camera3D(GLThing):
+    """[summary]
+
+    Args:
+        GLThing ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
     _scale = 10
 
     def __init__(self, parent, cam_id, x, y, z, b, c):

@@ -1,19 +1,42 @@
 #!/usr/bin/env python3
 """ViewCube class."""
 
-import numpy as np
 import math
-import glm
+from typing import Union
 
+import numpy as np
 from OpenGL.GL import *
-from OpenGL.GL import shaders
 from OpenGL.GLU import *
 
+import glm
 from enums import ViewCubePos, ViewCubeSize
 
 
-class GLViewCube():
-    def __init__(self, parent, position=ViewCubePos.TOP_RIGHT, size=ViewCubeSize.MEDIUM):
+class GLViewCube:
+    """Manage a ViewCube object. To be used in a GLCanvas.
+
+    Args:
+        parent: Pointer to a parent GLCanvas.
+        position: An enums.ViewCubePos constant indicating which corner of the
+            viewport the ViewCube should be. Defaults to ViewCubePos.TOP_RIGHT.
+        size: An enums.ViewCubeSize constant indicating the size, in pixels,
+            of the ViewCube area. Defaults to ViewCubeSize.MEDIUM.
+
+    Attributes:
+        hover_id: An integer indicating which face of the ViewCube the mouse is
+            hovering over.
+        hovered: A boolean indicating whether or not a face of the ViewCube
+            is hovered over by a mouse.
+        selected: A boolean indicating whether or not a face of the ViewCube
+            is selected by a mouse.
+        position: See Args.
+        size: See Args.
+    """
+
+    def __init__(self, parent,
+        position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
+        size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM):
+        """Inits GLViewCube with constructors."""
         self.parent = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM

@@ -3,13 +3,26 @@
 TODO: Give attribution to Printrun
 """
 
-from math import sqrt, sin, cos, tan, asin, acos
+from math import acos, asin, cos, sin, sqrt, tan
+
 import numpy as np
+
 import glm
 
 
-def arcball(p1x, p1y, p2x, p2y, r):
-    """Update arcball rotation."""
+def arcball(p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
+    """Update arcball rotation.
+
+    Args:
+        p1x: [description]
+        p1y: [description]
+        p2x: [description]
+        p2y: [description]
+        r: [description]
+
+    Returns:
+        glm.quat: [description]
+    """
     p1 = glm.vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
     p2 = glm.vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
     axis = glm.normalize(glm.cross(p1, p2))
@@ -26,7 +39,7 @@ def arcball(p1x, p1y, p2x, p2y, r):
     return glm.angleAxis(phi, axis)
 
 
-def project_to_sphere(r, x, y):
+def project_to_sphere(r: float, x: float, y: float) -> float:
     """Compute the intersection from screen coords to the arcball sphere."""
     d = sqrt(x * x + y * y)
     # https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball#Of_mice_and_manipulation
@@ -57,34 +70,7 @@ def rotate_basis_to(v0, v1, v2):
     return x, v, z
 
 
-from OpenGL.GL import (GL_VERTEX_ARRAY, GL_FLOAT, GL_LINE_STRIP,
-                       glEnableClientState, glVertexPointer,
-                       glDrawArrays, glDisableClientState)
-
-
-def draw_circle(p, n, r, sides=64):
-    """Draw circle."""
-    vertices, count = compute_circle(*p, *n, r, sides)
-
-    # draw vertices
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glDrawArrays(GL_LINE_STRIP, 0, count)
-    glDisableClientState(GL_VERTEX_ARRAY)
-
-
-def draw_helix(p, n, r, pitch, turns, sides=64):
-    """Wrapper function to draw helix."""
-    vertices, count = compute_helix(*p, *n, r, pitch, turns, sides)
-
-    # draw vertices
-    glEnableClientState(GL_VERTEX_ARRAY)
-    glVertexPointer(3, GL_FLOAT, 0, vertices)
-    glDrawArrays(GL_LINE_STRIP, 0, count)
-    glDisableClientState(GL_VERTEX_ARRAY)
-
-
-def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
+def get_circle(p0, p1, p2, n0, n1, n2, r, sides):
     """Create circle vertices given point, normal vector, radius, and # sides.
     Uses an approximation method to compute vertices versus many trig calls.
     """
@@ -97,19 +83,19 @@ def compute_circle(p0, p1, p2, n0, n1, n2, r, sides):
     count = sides + 1
     vertices = np.empty(count * 3)
     for i in range(count):
-        vertices[i*3] = x + p0
-        vertices[i*3 + 1] = y + p1
-        vertices[i*3 + 2] = z + p2
-        tx = (y*n[2] - z*n[1]) * tangential_factor
-        ty = (z*n[0] - x*n[2]) * tangential_factor
-        tz = (x*n[1] - y*n[0]) * tangential_factor
+        vertices[i * 3] = x + p0
+        vertices[i * 3 + 1] = y + p1
+        vertices[i * 3 + 2] = z + p2
+        tx = (y * n[2] - z * n[1]) * tangential_factor
+        ty = (z * n[0] - x * n[2]) * tangential_factor
+        tz = (x * n[1] - y * n[0]) * tangential_factor
         x = (x + tx) * radial_factor
         y = (y + ty) * radial_factor
         z = (z + tz) * radial_factor
     return vertices, count
 
 
-def compute_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
+def get_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
     """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides.
     Uses an approximation method rather than trig functions.
     """
@@ -123,20 +109,30 @@ def compute_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
     count = int(sides * turns) + 1
     vertices = np.empty(count * 3)
     for i in range(count):
-        vertices[i*3] = x + p0 + d0*i
-        vertices[i*3 + 1] = y + p1 + d1*i
-        vertices[i*3 + 2] = z + p2 + d2*i
-        tx = (y*n[2] - z*n[1]) * tangential_factor
-        ty = (z*n[0] - x*n[2]) * tangential_factor
-        tz = (x*n[1] - y*n[0]) * tangential_factor
+        vertices[i * 3] = x + p0 + d0 * i
+        vertices[i * 3 + 1] = y + p1 + d1 * i
+        vertices[i * 3 + 2] = z + p2 + d2 * i
+        tx = (y * n[2] - z * n[1]) * tangential_factor
+        ty = (z * n[0] - x * n[2]) * tangential_factor
+        tz = (x * n[1] - y * n[0]) * tangential_factor
         x = (x + tx) * radial_factor
         y = (y + ty) * radial_factor
         z = (z + tz) * radial_factor
     return vertices, count
 
 
-def draw_circle_trig(p, n, r, sides=36):
-    """Create circle vertices given point, normal vector, radius, and # sides."""
+def get_circle_trig(p, n, r, sides=36):
+    """[summary]
+
+    Args:
+        p ([type]): [description]
+        n ([type]): [description]
+        r ([type]): [description]
+        sides (int, optional): [description]. Defaults to 36.
+
+    Returns:
+        [type]: [description]
+    """
     a, b, n = rotate_basis_to(*n)
     tau = 6.28318530717958647692
 
@@ -149,7 +145,7 @@ def draw_circle_trig(p, n, r, sides=36):
     return vertices, count
 
 
-def draw_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
+def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
     """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides."""
     a, b, n = rotate_basis_to(*n)
     tau = 6.28318530717958647692
