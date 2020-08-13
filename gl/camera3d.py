@@ -86,7 +86,7 @@ class Camera3D(GLThing):
             -0.5, -1.0, -1.0,  # front
             -0.5, -1.0, 1.0,
             -0.5, 1.0, 1.0,
-            -0.5, 1.0, -1.0
+            -0.5, 1.0, -1.0,
         ], dtype=np.float32)
         glBindVertexArray(self._vao_box)
 
@@ -194,7 +194,7 @@ class Camera3D(GLThing):
             glm.rotate(glm.mat4(), self._c, glm.vec3(0.0, 1.0, 0.0))
 
     @classmethod
-    def set_scale(cls, value):
+    def set_scale(cls, value: int) -> None:
         cls._scale = value
 
     @property

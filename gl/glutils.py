@@ -4,24 +4,23 @@ TODO: Give attribution to Printrun
 """
 
 from math import acos, asin, cos, sin, sqrt, tan
+from typing import List, Optional, Tuple
 
 import numpy as np
 
 import glm
 
 
-def arcball(p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
-    """Update arcball rotation.
+def arcball(
+    p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
+    """Return updated quaternion after arcball rotation.
 
     Args:
-        p1x: [description]
-        p1y: [description]
-        p2x: [description]
-        p2y: [description]
-        r: [description]
-
-    Returns:
-        glm.quat: [description]
+        p1x: Previous screen x-coordinate, normalized.
+        p1y: Previous screen y-coordinate, normalized.
+        p2x: Current screen x-coordinate, normalized.
+        p2y: Current screen y-coordinate, normalized.
+        r: Radius of arcball.
     """
     p1 = glm.vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
     p2 = glm.vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
@@ -38,11 +37,19 @@ def arcball(p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.qua
 
     return glm.angleAxis(phi, axis)
 
-
 def project_to_sphere(r: float, x: float, y: float) -> float:
-    """Compute the intersection from screen coords to the arcball sphere."""
+    """Return intersection position from screen coords to the arcball.
+
+    See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for how
+    points outside the arcball are handled.
+
+    Args:
+        r: A float for radius.
+        x: Screen x-coordinate, normalized.
+        y: Screen y-coordinate, normalized.
+    """
     d = sqrt(x * x + y * y)
-    # https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball#Of_mice_and_manipulation
+
     # combines a sphere and a hyperbolic sheet for smooth transitions
     if d < r * 0.70710678118654752440:
         return sqrt(r * r - d * d)
@@ -50,71 +57,86 @@ def project_to_sphere(r: float, x: float, y: float) -> float:
     return t * t / d
 
 
-def rotate_basis_to(v0, v1, v2):
-    """Compute normal basis vectors after a change of basis.
-    Calculates rotation matrix such that R*(0,0,1) = v."""
-    v = np.array([v0, v1, v2])
-    if not v.any():
+def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
+    """Return normal basis vectors such that R * <0,0,1> = v.
+
+    Args:
+        v: A glm.vec3 to rotate to. Does not need to be normalized.
+
+    Raises:
+        ValueError: If vector provided is zero.
+    """
+    if not glm.equal(v, glm.vec3()):
         raise ValueError('zero magnitude vector')
-    v = v / sqrt(v0*v0 + v1*v1 + v2*v2)
-    x = np.array([1, 0, 0]) # x axis normal basis vector
-    z = np.array([0, 0, 1]) # z axis normal basis vector
+    v = v / glm.length(v)
+    x = glm.vec3(1, 0, 0) # x axis normal basis vector
+    z = glm.vec3(0, 0, 1) # z axis normal basis vector
 
     # rotate such that that the basis vector for the y axis (up) aligns with v
-    if (v != np.array([0, 0, 1])).any():
-        phi = acos(v[1])                   # np.dot(v, [0, 1, 0])
-        axis = glm.vec3(v[2], 0.0, -v[0])               # np.cross([0, 1, 0], v)
+    if not glm.equal(v, glm.vec3(0, 1, 0)):
+        phi = acos(v.x)                         # glm.dot(v, glm.vec3(0, 1, 0))
+        axis = glm.vec3(v.z, 0.0, -v.x)         # glm.cross(glm.vec3(0, 1, 0), v)
         rot = glm.mat3_cast(glm.angleAxis(phi, axis))
-        x = [rot[0][0], rot[1][0], rot[2][0]]   # rot.dot(x)
-        z = [rot[0][2], rot[1][2], rot[2][2]]   # rot.dot(z)
+        x = glm.dot(rot, x)
+        z = glm.dot(rot, z)
     return x, v, z
 
 
-def get_circle(p0, p1, p2, n0, n1, n2, r, sides):
+def get_circle(p: glm.vec3,
+               n: glm.vec3,
+               r: float,
+               sides: Optional[int] = 36) -> Tuple[np.ndarray, int]:
     """Create circle vertices given point, normal vector, radius, and # sides.
+
     Uses an approximation method to compute vertices versus many trig calls.
     """
-    a, _, n = rotate_basis_to(n0, n1, n2)
+    a, _, n = rotate_basis_to(n)
     theta = 6.28318530717958647692 / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 
-    x, y, z = r * a[0], r * a[1], r * a[2]
+    x, y, z = a * r
     count = sides + 1
     vertices = np.empty(count * 3)
     for i in range(count):
-        vertices[i * 3] = x + p0
-        vertices[i * 3 + 1] = y + p1
-        vertices[i * 3 + 2] = z + p2
-        tx = (y * n[2] - z * n[1]) * tangential_factor
-        ty = (z * n[0] - x * n[2]) * tangential_factor
-        tz = (x * n[1] - y * n[0]) * tangential_factor
+        vertices[i * 3] = x + p.x
+        vertices[i * 3 + 1] = y + p.y
+        vertices[i * 3 + 2] = z + p.z
+        tx = (y * n.z - z * n.y) * tangential_factor
+        ty = (z * n.x - x * n.z) * tangential_factor
+        tz = (x * n.y - y * n.x) * tangential_factor
         x = (x + tx) * radial_factor
         y = (y + ty) * radial_factor
         z = (z + tz) * radial_factor
     return vertices, count
 
 
-def get_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
+def get_helix(p: glm.vec3,
+              n: glm.vec3,
+              r: float,
+              pitch: Optional[int] = 1,
+              turns: Optional[float] = 1.0,
+              sides: Optional[int] = 36) -> Tuple[np.ndarray, int]:
     """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides.
+
     Uses an approximation method rather than trig functions.
     """
-    a, _, n = rotate_basis_to(n0, n1, n2)
+    a, _, n = rotate_basis_to(n)
     theta = 6.28318530717958647692 / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 
-    x, y, z = r * a[0], r * a[1], r * a[2]
-    d0, d1, d2 = n[0] * pitch / sides, n[1] * pitch / sides, n[2] * pitch / sides
+    x, y, z = a * r
+    d = n * pitch / sides
     count = int(sides * turns) + 1
     vertices = np.empty(count * 3)
     for i in range(count):
-        vertices[i * 3] = x + p0 + d0 * i
-        vertices[i * 3 + 1] = y + p1 + d1 * i
-        vertices[i * 3 + 2] = z + p2 + d2 * i
-        tx = (y * n[2] - z * n[1]) * tangential_factor
-        ty = (z * n[0] - x * n[2]) * tangential_factor
-        tz = (x * n[1] - y * n[0]) * tangential_factor
+        vertices[i * 3] = x + p.x + d.x * i
+        vertices[i * 3 + 1] = y + p.y + d.y * i
+        vertices[i * 3 + 2] = z + p.z + d.z * i
+        tx = (y * n.z - z * n.y) * tangential_factor
+        ty = (z * n.x - x * n.z) * tangential_factor
+        tz = (x * n.y - y * n.x) * tangential_factor
         x = (x + tx) * radial_factor
         y = (y + ty) * radial_factor
         z = (z + tz) * radial_factor
@@ -122,18 +144,7 @@ def get_helix(p0, p1, p2, n0, n1, n2, r, pitch, turns, sides):
 
 
 def get_circle_trig(p, n, r, sides=36):
-    """[summary]
-
-    Args:
-        p ([type]): [description]
-        n ([type]): [description]
-        r ([type]): [description]
-        sides (int, optional): [description]. Defaults to 36.
-
-    Returns:
-        [type]: [description]
-    """
-    a, b, n = rotate_basis_to(*n)
+    a, b, n = rotate_basis_to(glm.vec3(*n))
     tau = 6.28318530717958647692
 
     count = sides + 1
@@ -146,8 +157,7 @@ def get_circle_trig(p, n, r, sides=36):
 
 
 def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
-    """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides."""
-    a, b, n = rotate_basis_to(*n)
+    a, b, n = rotate_basis_to(glm.vec3(*n))
     tau = 6.28318530717958647692
 
     count = int(sides * turns) + 1

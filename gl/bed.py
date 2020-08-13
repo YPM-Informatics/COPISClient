@@ -42,7 +42,7 @@ class _Axes():
             0.0, y[0], 0.0,  0.0, 1.0, 0.0,
             0.0, -y[1], 0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, z[0],  0.0, 0.0, 1.0,
-            0.0, 0.0, -z[1], 0.0, 0.0, 1.0
+            0.0, 0.0, -z[1], 0.0, 0.0, 1.0,
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
         # colored axes lines
@@ -287,14 +287,14 @@ class GLBed():
             -x[1], y[0], -z[1],  self.col_dark, self.col_dark, self.col_dark,
             -x[1], y[0], z[0],   self.col_dark, self.col_dark, self.col_dark,
             -x[1], -y[1], z[0],  self.col_dark, self.col_dark, self.col_dark,
-            -x[1], -y[1], -z[1], self.col_dark, self.col_dark, self.col_dark
+            -x[1], -y[1], -z[1], self.col_dark, self.col_dark, self.col_dark,
         ], dtype=np.float32)
 
         # 12 edges
         indices = np.array([
             0, 1, 1, 2, 2, 3, 3, 0,
             0, 5, 1, 6, 2, 7, 3, 4,
-            4, 5, 5, 6, 6, 7, 7, 4
+            4, 5, 5, 6, 6, 7, 7, 4,
         ], dtype=np.uint16)
 
         return points, indices

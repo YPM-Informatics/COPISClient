@@ -34,31 +34,54 @@ class _Size(NamedTuple):
 
 
 class Canvas3D(glcanvas.GLCanvas):
-    """Canvas3D class.
+    """Manage the OpenGL canvas in a wx.Window.
 
     Args:
-        parent ([type]): [description]
-        build_dimensions ([type], optional): [description]. Defaults to None.
-        axes (bool, optional): [description]. Defaults to True.
-        bounding_box (bool, optional): [description]. Defaults to True.
-        every (int, optional): [description]. Defaults to 100.
-        subdivisions (int, optional): [description]. Defaults to 10.
+        parent: Pointer to a parent wx.Window.
+        build_dimensions: Optional; A list indicating dimensions and origin.
+            First three values specify xyz build dimensions, and last three
+            values specificy xyz origin position. Defaults to
+            [400, 400, 400, 200, 200, 200] = 400x400x400mm, (200,200,200).
+        axes: Optional; If axes is False, origin axes will not be rendered.
+        bounding_box: A boolean representing whether or not to render the bed
+            with bounding boxes. Optional; Defaults to True.
+        every: Optional; An integer representing units between every major
+            gridline (displayed darker). Defaults to 100.
+        subdivisions: Optional; An integer representing subdivisions between
+            major gridlines (displayed lighter). Defaults to 10.
 
     Attributes:
-        Text
+        dirty: A boolean representing whether or not the canvas needs updating.
+            Avoids unnecessary work by deferring it until the result is needed.
+            See https://gameprogrammingpatterns.com/dirty-flag.html.
+        rot_quat: Read ony; A glm quaternion representing current rotation as a
+            quaternion. To convert to a 4x4 transformation matrix, use
+            glm.mat4_cast(rot_quat).
+        bed: Read only; A GLBed object.
+        proxy3d: Read only; A Proxy3D object.
+        zoom: A float representing zoom level (higher is more zoomed in).
+            Zoom is achieved in projection_matrix by modifying the fov.
+        build_dimensions: See Args section.
+        camera3d_scale: An int representing the scale level of all Camera3D
+            objects in the canvas.
+        camera3d_list: A list of all Camera3D objects.
+        projection_matrix: Read only; A glm.mat4 representing the current
+            projection matrix.
+        modelview_matrix: Read only; A glm.mat4 representing the current
+            modelview matrix.
     """
-    # True: use arcball controls, False: use orbit controls
-    orbit_controls = True
+
+    orbit_controls = True  # True: use arcball controls, False: use orbit controls
     color_background = (0.941, 0.941, 0.941, 1)
     zoom_min = 0.1
     zoom_max = 7.0
 
     def __init__(self, parent,
-        build_dimensions: Optional[List[int]] = None,
-        axes: bool = True,
-        bounding_box: bool = True,
-        every: int = 100,
-        subdivisions: int = 10):
+                 build_dimensions: Optional[List[int]] = [400, 400, 400, 200, 200, 200],
+                 axes: bool = True,
+                 bounding_box: bool = True,
+                 every: int = 100,
+                 subdivisions: int = 10) -> None:
         """Inits Canvas3D with constructors."""
         self.parent = parent
         display_attrs = glcanvas.GLAttributes()
@@ -69,12 +92,9 @@ class Canvas3D(glcanvas.GLCanvas):
         self._context = glcanvas.GLContext(self._canvas)
         self._shader_program = None
         self._shader_program_color = None
-
-        if build_dimensions:
-            self._build_dimensions = build_dimensions
-        else:
-            self._build_dimensions = [400, 400, 400, 200, 200, 200]
-        self._dist = 0.5 * (self._build_dimensions[1] + max(self._build_dimensions[0], self._build_dimensions[2]))
+        self._build_dimensions = build_dimensions
+        self._dist = 0.5 * (self._build_dimensions[1] + \
+                            max(self._build_dimensions[0], self._build_dimensions[2]))
 
         self._bed = GLBed(self, self._build_dimensions, axes, bounding_box, every, subdivisions)
         self._viewcube = GLViewCube(self)
@@ -105,8 +125,12 @@ class Canvas3D(glcanvas.GLCanvas):
         self._canvas.Bind(wx.EVT_PAINT, self.on_paint)
         self._canvas.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
 
-    def init_opengl(self):
-        """Initialize OpenGL."""
+    def init_opengl(self) -> bool:
+        """Initialize and set OpenGL capabilities.
+
+        Returns:
+            True if initialized without error, otherwise returns False.
+        """
         if self._gl_initialized:
             return True
 
@@ -136,7 +160,7 @@ class Canvas3D(glcanvas.GLCanvas):
         self._gl_initialized = True
         return True
 
-    def init_shaders(self):
+    def init_shaders(self) -> None:
         """Compile vertex and fragment shaders."""
         vertex_shader = """
         #version 450 core
@@ -195,7 +219,11 @@ class Canvas3D(glcanvas.GLCanvas):
             shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
 
     def render(self):
-        """Render frame."""
+        """Render frame.
+
+        First runs through a picking pass, clears the buffer, and then calls all
+        rendering sub-methods.
+        """
         # ensure that canvas is current and initialized
         if not self._is_shown_on_screen() or not self._set_current():
             return
@@ -226,12 +254,12 @@ class Canvas3D(glcanvas.GLCanvas):
     # Canvas event handlers
     # ---------------------
 
-    def on_size(self, event):
-        """Handle EVT_SIZE."""
+    def on_size(self, event: wx.SizeEvent) -> None:
+        """On EVT_SIZE, set dirty flag true."""
         self._dirty = True
 
-    def on_idle(self, event):
-        """Handle EVT_IDLE."""
+    def on_idle(self, event: wx.IdleEvent) -> None:
+        """On EVT_IDLE, check if canvas needs rendering."""
         if not self._gl_initialized or self._canvas.IsFrozen():
             return
 
@@ -242,12 +270,12 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._dirty = False
 
-    def on_key(self, event):
+    def on_key(self, event: wx.KeyEvent) -> None:
         """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
         pass
 
-    def on_mouse_wheel(self, event):
-        """Handle mouse wheel event and adjust zoom."""
+    def on_mouse_wheel(self, event: wx.MouseEvent) -> None:
+        """On mouse wheel change, adjust zoom accordingly."""
         if not self._gl_initialized or event.MiddleIsDown():
             return
 
@@ -257,12 +285,14 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
 
-    def on_mouse(self, event):
+    def on_mouse(self, event: wx.MouseEvent) -> None:
         """Handle mouse events.
-            LMB drag:   move viewport
-            RMB drag:   unused
-            LMB/RMB up: reset position
 
+        Args:
+            event: A wx.MouseEvent.
+                LMB drag:   move viewport
+                RMB drag:   unused
+                LMB/RMB up: reset position
         TODO: make this more robust, and capable of handling selection
         """
         if not self._gl_initialized or not self._set_current():
@@ -309,23 +339,23 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._dirty = True
 
-    def on_erase_background(self, event):
-        """Handle the erase background event."""
-        pass  # Do nothing, to avoid flashing on MSW.
+    def on_erase_background(self, event: wx.EraseEvent) -> None:
+        """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
+        pass
 
-    def on_paint(self, event):
-        """Handle EVT_PAINT."""
+    def on_paint(self, event: wx.PaintEvent) -> None:
+        """On EVT_PAINT, try to refresh canvas."""
         if self._gl_initialized:
             self._dirty = True
         else:
             self.render()
 
-    def on_set_focus(self, event):
-        """Handle EVT_SET_FOCUS."""
+    def on_set_focus(self, event: wx.FocusEvent) -> None:
+        """On EVT_SET_FOCUS, try to refresh canvas."""
         self._refresh_if_shown_on_screen()
 
-    def get_canvas_size(self):
-        """Get canvas size based on scaling factor."""
+    def get_canvas_size(self) -> _Size:
+        """Return canvas size as _Size based on scaling factor."""
         w, h = self._canvas.GetSize()
         factor = self.get_scale_factor()
         w = int(w * factor)
@@ -336,41 +366,44 @@ class Canvas3D(glcanvas.GLCanvas):
     # Canvas util functions
     # ---------------------
 
-    def destroy(self):
+    def destroy(self) -> None:
         """Clean up the OpenGL context."""
         self._context.destroy()
         glcanvas.GLCanvas.Destroy()
 
     @property
-    def dirty(self):
+    def dirty(self) -> bool:
         return self._dirty
 
     @dirty.setter
-    def dirty(self, value):
+    def dirty(self, value: bool) -> None:
         self._dirty = value
 
-    def _is_shown_on_screen(self):
+    def _is_shown_on_screen(self) -> bool:
         return self._canvas.IsShownOnScreen()
 
-    def _set_current(self):
+    def _set_current(self) -> bool:
         return False if self._context is None else self._canvas.SetCurrent(self._context)
 
-    def _update_camera_zoom(self, delta_zoom):
+    def _update_camera_zoom(self, delta_zoom: float) -> None:
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
         self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
         self._update_parent_zoom_slider()
 
-    def _refresh_if_shown_on_screen(self):
+    def _refresh_if_shown_on_screen(self) -> None:
         if self._is_shown_on_screen():
             self._set_current()
             self.render()
 
-    def _picking_pass(self):
-        """Render all nonfixed objects with colors corresponding to an internal
-        id value. Read pixels to convert from RGB to id. This should be simpler
-        than raycast intersections.
+    def _picking_pass(self) -> None:
+        """Set _hover_id to represent what the user is currently hovering over.
+
+        This is achieved by rendering pickable objects with the RGB color
+        corresponding its id, and reading pixels to convert the color back to
+        an id. Simpler than raycast intersections.
         """
+        # pylint: disable=no-value-for-parameter
         if self._mouse_pos is None:
             return
 
@@ -400,9 +433,9 @@ class Canvas3D(glcanvas.GLCanvas):
                 id_ = -1
 
         # check if mouse is inside viewcube area
-        viewcube_bounds = self._viewcube.get_viewport()
-        if viewcube_bounds[0] <= mouse[0] <= viewcube_bounds[0] + viewcube_bounds[2] and \
-           viewcube_bounds[1] <= mouse[1] <= viewcube_bounds[1] + viewcube_bounds[3]:
+        viewcube_area = self._viewcube.get_viewport()
+        if viewcube_area[0] <= mouse[0] <= viewcube_area[0] + viewcube_area[2] and \
+           viewcube_area[1] <= mouse[1] <= viewcube_area[1] + viewcube_area[3]:
             self._viewcube.hover_id = id_
             for camera in self._camera3d_list:
                 camera.hovered = False
@@ -413,29 +446,8 @@ class Canvas3D(glcanvas.GLCanvas):
 
         self._hover_id = id_
 
-    def _render_background(self):
-        glClearColor(*self.color_background)
-
-    def _render_bed(self):
-        if self._bed is not None:
-            self._bed.render()
-
-    def _render_objects(self):
-        # if self._proxy3d is not None:
-        #     self._proxy3d.render()
-
-        if not self._camera3d_list:
-            return
-        else:
-            for cam in self._camera3d_list:
-                cam.render()
-
-    def _render_viewcube(self):
-        if self._viewcube is not None:
-            self._viewcube.render()
-
-    def _render_objects_for_picking(self):
-        """Render for picking pass."""
+    def _render_objects_for_picking(self) -> None:
+        """Renders pickable objects with RGB color corresponding to id."""
         for camera in self._camera3d_list:
             id_ = camera.cam_id
             r = (id_ & (0x0000000FF << 0))  >> 0
@@ -445,7 +457,8 @@ class Canvas3D(glcanvas.GLCanvas):
 
             glUseProgram(self.get_shader_program('color'))
 
-            glUniform4f(glGetUniformLocation(self.get_shader_program('color'), 'pickingColor'),
+            glUniform4f(glGetUniformLocation(
+                self.get_shader_program('color'), 'pickingColor'),
                 r / 255.0, g / 255.0, b / 255.0, a)
             camera.render_for_picking()
 
@@ -454,66 +467,97 @@ class Canvas3D(glcanvas.GLCanvas):
         glBindVertexArray(0)
         glUseProgram(0)
 
+    def _render_background(self) -> None:
+        glClearColor(*self.color_background)
+
+    def _render_bed(self) -> None:
+        if self._bed is not None:
+            self._bed.render()
+
+    def _render_objects(self) -> None:
+        # if self._proxy3d is not None:
+        #     self._proxy3d.render()
+
+        if not self._camera3d_list:
+            return
+        else:
+            for cam in self._camera3d_list:
+                cam.render()
+
+    def _render_viewcube(self) -> None:
+        if self._viewcube is not None:
+            self._viewcube.render()
+
     # ------------------
     # Accessor functions
     # ------------------
 
-    def _update_parent_zoom_slider(self):
+    def _update_parent_zoom_slider(self) -> None:
+        """Update VisualizerPanel zoom slider."""
         self.parent.set_zoom_slider(self._zoom)
 
-    def get_shader_program(self, program='default'):
-        if program == 'default':
-            return self._shader_program
+    def get_shader_program(self, program: Optional[str] = 'default') -> GLuint:
+        """Return specified shader program.
+
+        Args:
+            program: Optional; A string for selection. Defaults to 'default'.
+
+        Returns:
+            A GLuint compiled shader reference. See
+            http://pyopengl.sourceforge.net/documentation/pydoc/OpenGL.GL.shaders.html
+            for more info.
+        """
         if program == 'color':
             return self._shader_program_color
+        return self._shader_program # 'default'
 
     @property
-    def rot_quat(self):
+    def rot_quat(self) -> glm.quat:
         return self._rot_quat
 
     @property
-    def bed(self):
+    def bed(self) -> GLBed:
         return self._bed
 
     @property
-    def proxy3d(self):
+    def proxy3d(self) -> Proxy3D:
         return self._proxy3d
 
     @property
-    def zoom(self):
+    def zoom(self) -> float:
         return self._zoom
 
     @zoom.setter
-    def zoom(self, value):
+    def zoom(self, value: float) -> None:
         self._zoom = value
         self._dirty = True
 
     @property
-    def build_dimensions(self):
+    def build_dimensions(self) -> List[int]:
         return self._build_dimensions
 
     @build_dimensions.setter
-    def build_dimensions(self, value):
+    def build_dimensions(self, value: List[int]) -> None:
         self._build_dimensions = value
         self._bed.build_dimensions = value
         self._dirty = True
 
     @property
-    def camera3d_scale(self):
+    def camera3d_scale(self) -> int:
         return self._camera3d_scale
 
     @camera3d_scale.setter
-    def camera3d_scale(self, value):
+    def camera3d_scale(self, value: int) -> None:
         self._camera3d_scale = value
         Camera3D.set_scale(value)
         self._dirty = True
 
     @property
-    def camera3d_list(self):
+    def camera3d_list(self) -> List[Camera3D]:
         return self._camera3d_list
 
     @camera3d_list.setter
-    def camera3d_list(self, value):
+    def camera3d_list(self, value: List[Camera3D]) -> None:
         self._camera3d_list = value
         self._dirty = True
 
@@ -522,22 +566,28 @@ class Canvas3D(glcanvas.GLCanvas):
     # -----------------------
 
     @property
-    def projection_matrix(self):
+    def projection_matrix(self) -> glm.mat4:
+        """Returns a glm.mat4 representing the current projection matrix."""
         return glm.perspective(
             math.atan(math.tan(math.radians(45.0)) / self._zoom),
             self._canvas.get_canvas_size().aspect_ratio(), 0.1, 2000.0)
 
     @property
-    def modelview_matrix(self):
+    def modelview_matrix(self) -> glm.mat4:
+        """Returns a glm.mat4 representing the current modelview matrix."""
         mat = glm.lookAt(glm.vec3(0.0, 0.0, self._dist * 1.5),  # position
                          glm.vec3(0.0, 0.0, 0.0),               # target
                          glm.vec3(0.0, 1.0, 0.0))               # up
         return mat * glm.mat4_cast(self._rot_quat)
 
-    def rotate_camera(self, event, orbit=True):
-        """Update _rot_quat based on mouse position.
-            orbit = True:   Use orbit method to rotate.
-            orbit = False:  Use arcball method to rotate.
+    def rotate_camera(
+        self, event: wx.MouseEvent, orbit: Optional[bool] = True) -> None:
+        """Update rotate quat to reflect rotation controls.
+
+        Args:
+            event: A wx.MouseEvent representing an updated mouse position.
+            orbit: Optional; True: uses orbit controls, False: uses arcball
+                controls. Defaults to True.
         """
         if self._mouse_pos is None:
             self._mouse_pos = event.GetPosition()
@@ -567,8 +617,13 @@ class Canvas3D(glcanvas.GLCanvas):
                 self._rot_quat = quat * self._rot_quat
         self._mouse_pos = cur
 
-    def translate_camera(self, event):
-        """TODO: create me!
+    def translate_camera(self, event: wx.MouseEvent) -> None:
+        """Translate camera.
+
+        Args:
+            event: A wx.MouseEvent representing an updated mouse position.
+
+        TODO: implement this!
         """
         if self._mouse_pos is None:
             self._mouse_pos = event.GetPosition()
@@ -582,9 +637,11 @@ class Canvas3D(glcanvas.GLCanvas):
     # Misc util functions
     # -------------------
 
-    def get_scale_factor(self):
-        """Return scale factor. Fixes high dpi sizing issues prominent on
-        MacOS devices.
+    def get_scale_factor(self) -> float:
+        """Return scale factor based on display dpi.
+
+        Currently very rudimentary; only checks if system is MacOS or not.
+        TODO: make more robust and actually detect dpi?
         """
         if self._scale_factor is None:
             if pf.system() == 'Darwin': # MacOS
