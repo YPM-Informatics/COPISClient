@@ -1,10 +1,9 @@
 """GLBed and associated classes."""
 
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from OpenGL.GL import *
-from OpenGL.GL import shaders
 from OpenGL.GLU import *
 
 import glm
@@ -188,11 +187,11 @@ class GLBed:
     col_border = 0.40
 
     def __init__(self, parent,
-                 build_dimensions: Optional[List[int]] = [400, 400, 400, 200, 200, 200],
-                 axes: Optional[bool] = True,
-                 bounding_box: Optional[bool] = True,
-                 every: Optional[int] = 100,
-                 subdivisions: Optional[int] = 10) -> None:
+                 build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
+                 axes: bool = True,
+                 bounding_box: bool = True,
+                 every: int = 100,
+                 subdivisions: int = 10) -> None:
         """Inits GLBed with constructors.
 
         Raises:

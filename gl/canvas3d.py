@@ -9,7 +9,7 @@ from gl.path3d import Path3D
 from gl.proxy3d import Proxy3D
 from gl.viewcube import GLViewCube
 from threading import Lock
-from typing import List, NamedTuple, Optional, Union
+from typing import List, NamedTuple, Optional
 
 import numpy as np
 import wx
@@ -19,7 +19,6 @@ from OpenGL.GLU import *
 from wx import glcanvas
 
 import glm
-from enums import ViewCubePos, ViewCubeSize
 from utils import timing
 
 
@@ -73,7 +72,7 @@ class Canvas3D(glcanvas.GLCanvas):
     zoom_max = 7.0
 
     def __init__(self, parent,
-                 build_dimensions: Optional[List[int]] = [400, 400, 400, 200, 200, 200],
+                 build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
                  axes: bool = True,
                  bounding_box: bool = True,
                  every: int = 100,
@@ -228,7 +227,7 @@ class Canvas3D(glcanvas.GLCanvas):
         if not self.init_opengl():
             return
 
-        canvas_size = self._canvas.get_canvas_size()
+        canvas_size = self.get_canvas_size()
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         # run picking pass
@@ -415,7 +414,7 @@ class Canvas3D(glcanvas.GLCanvas):
 
         id_ = -1
 
-        canvas_size = self._canvas.get_canvas_size()
+        canvas_size = self.get_canvas_size()
         mouse = list(self._mouse_pos.Get())
         mouse[1] = canvas_size.height - mouse[1] - 1
 
@@ -492,7 +491,8 @@ class Canvas3D(glcanvas.GLCanvas):
         """Update VisualizerPanel zoom slider."""
         self.parent.set_zoom_slider(self._zoom)
 
-    def get_shader_program(self, program: Optional[str] = 'default') -> GLuint:
+    def get_shader_program(
+        self, program: Optional[str] = 'default') -> Optional[shaders.ShaderProgram]:
         """Return specified shader program.
 
         Args:
@@ -566,7 +566,7 @@ class Canvas3D(glcanvas.GLCanvas):
         """Returns a glm.mat4 representing the current projection matrix."""
         return glm.perspective(
             math.atan(math.tan(math.radians(45.0)) / self._zoom),
-            self._canvas.get_canvas_size().aspect_ratio(), 0.1, 2000.0)
+            self.get_canvas_size().aspect_ratio(), 0.1, 2000.0)
 
     @property
     def modelview_matrix(self) -> glm.mat4:
@@ -576,8 +576,7 @@ class Canvas3D(glcanvas.GLCanvas):
                          glm.vec3(0.0, 1.0, 0.0))               # up
         return mat * glm.mat4_cast(self._rot_quat)
 
-    def rotate_camera(
-        self, event: wx.MouseEvent, orbit: Optional[bool] = True) -> None:
+    def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
         """Update rotate quat to reflect rotation controls.
 
         Args:

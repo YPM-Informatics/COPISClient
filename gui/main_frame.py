@@ -6,7 +6,6 @@ from typing import Any, Optional
 
 import wx
 import wx.lib.agw.aui as aui
-import wx.svg as svg
 
 from gui.about import *
 from gui.panels.console import ConsolePanel
@@ -25,7 +24,7 @@ from utils import create_scaled_bitmap
 class MainFrame(wx.Frame):
     """Main frame.
 
-    Contains
+    Manages menubar, statusbar, and aui manager.
 
     Attributes:
         console_panel: A pointer to the console panel.
@@ -45,7 +44,7 @@ class MainFrame(wx.Frame):
         # set minimum size to show whole interface properly
         self.SetMinSize(wx.Size(800, 575))
 
-        self.menubar = None
+        self._menubar = None
         self._mgr = None
 
         # dictionary of panels and menu items
@@ -118,10 +117,10 @@ class MainFrame(wx.Frame):
                 - &Visit COPIS website      Ctrl+F1
                 - &About COPIS...
         """
-        if self.menubar is not None:
+        if self._menubar is not None:
             return
 
-        self.menubar = wx.MenuBar(0)
+        self._menubar = wx.MenuBar(0)
 
         # File menu
         file_menu = wx.Menu()
@@ -216,18 +215,18 @@ class MainFrame(wx.Frame):
         _item.SetBitmap(create_scaled_bitmap('info', 16))
         self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(_item))
 
-        self.menubar.Append(file_menu, '&File')
-        self.menubar.Append(edit_menu, '&Edit')
-        self.menubar.Append(view_menu, '&View')
-        self.menubar.Append(tools_menu, '&Tools')
-        self.menubar.Append(window_menu, '&Window')
-        self.menubar.Append(help_menu, '&Help')
-        self.SetMenuBar(self.menubar)
+        self._menubar.Append(file_menu, '&File')
+        self._menubar.Append(edit_menu, '&Edit')
+        self._menubar.Append(view_menu, '&View')
+        self._menubar.Append(tools_menu, '&Tools')
+        self._menubar.Append(window_menu, '&Window')
+        self._menubar.Append(help_menu, '&Help')
+        self.SetMenuBar(self._menubar)
 
-    def on_new_project(self, event: wx.MenuEvent) -> None:
+    def on_new_project(self, event: wx.CommandEvent) -> None:
         pass
 
-    def on_open(self, event: wx.MenuEvent) -> None:
+    def on_open(self, event: wx.CommandEvent) -> None:
         """Open 'open' dialog."""
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
@@ -248,10 +247,10 @@ class MainFrame(wx.Frame):
             except IOError:
                 wx.LogError(f'Could not open file "{path}".')
 
-    def on_save(self, event: wx.MenuEvent) -> None:
+    def on_save(self, event: wx.CommandEvent) -> None:
         """Open 'save' dialog."""
 
-    def on_save_as(self, event: wx.MenuEvent) -> None:
+    def on_save_as(self, event: wx.CommandEvent) -> None:
         """Open 'save as' dialog."""
         with wx.FileDialog(
             self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
@@ -277,7 +276,7 @@ class MainFrame(wx.Frame):
         """Load project from file Path."""
         print(file)
 
-    def update_statusbar(self, event: wx.MenuEvent) -> None:
+    def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
         if event.IsChecked():
             self.GetStatusBar().Show()
@@ -352,36 +351,42 @@ class MainFrame(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
+        self.panels['path'] = PathPanel(self)
         self.panels['toolbar'] = ToolbarPanel(self)
 
         # add visualizer panel
-        self._mgr.AddPane(self.panels['visualizer'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['visualizer'], aui.AuiPaneInfo(). \
             Name('visualizer').Caption('Visualizer'). \
             Dock().Center().MaximizeButton().MinimizeButton(). \
             DefaultPane().MinSize(380, 250))
 
         # add console, timeline panel
-        self._mgr.AddPane(self.panels['console'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['console'], aui.AuiPaneInfo(). \
             Name('console').Caption('Console'). \
             Dock().Bottom().Position(0).Layer(0). \
             MinSize(50, 150).Show(True))
-        self._mgr.AddPane(self.panels['timeline'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['timeline'], aui.AuiPaneInfo(). \
             Name('timeline').Caption('Timeline'). \
             Dock().Bottom().Position(1).Layer(0). \
             MinSize(50, 150).Show(True),
             target=self._mgr.GetPane('console'))
 
         # add controller, properties, path panel
-        self._mgr.AddPane(self.panels['controller'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['controller'], aui.AuiPaneInfo(). \
             Name('controller').Caption('Controller'). \
             Dock().Right().Position(0).Layer(1). \
             MinSize(325, 420).Show(True))
-        self._mgr.AddPane(self.panels['properties'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
             Dock().Right().Position(1).Layer(1). \
             MinSize(200, 50).Show(True))
-        self.panels['path'] = PathPanel(self)
-        self._mgr.AddPane(self.panels['path'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['path'], aui.AuiPaneInfo(). \
             Name('path').Caption('Paths'). \
             Dock().Right().Position(2).Layer(1). \
             MinSize(200, 50).Show(True),
@@ -393,7 +398,8 @@ class MainFrame(wx.Frame):
 
         # add toolbar panel
         self.panels['toolbar'].Realize()
-        self._mgr.AddPane(self.panels['toolbar'], aui.AuiPaneInfo().
+        self._mgr.AddPane(
+            self.panels['toolbar'], aui.AuiPaneInfo().
             Name('toolbar').Caption('Toolbar'). \
             ToolbarPane().BottomDockable(False). \
             Top().Layer(10))
@@ -402,34 +408,42 @@ class MainFrame(wx.Frame):
 
     def add_evf_pane(self) -> None:
         self.panels['evf'] = EvfPanel(self)
-        self.AddPane(self.panels['evf'], aui.AuiPaneInfo(). \
+        self._mgr.AddPane(
+            self.panels['evf'], aui.AuiPaneInfo(). \
             Name('Evf').Caption('Live View'). \
             Float().Right().Position(1).Layer(0). \
             MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
         self.Update()
 
-    def update_console_panel(self, event: wx.MenuEvent) -> None:
+    def update_console_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide console panel."""
         self._mgr.ShowPane(self.console_panel, event.IsChecked())
 
-    def update_controller_panel(self, event: wx.MenuEvent) -> None:
+    def update_controller_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide controller panel."""
         self._mgr.ShowPane(self.controller_panel, event.IsChecked())
 
-    def update_evf_panel(self, event: wx.MenuEvent) -> None:
+    def update_evf_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide evf panel."""
         self._mgr.ShowPane(self.evf_panel, event.IsChecked())
 
-    def update_path_panel(self, event: wx.MenuEvent) -> None:
+    def update_path_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide path panel."""
         self._mgr.ShowPane(self.path_panel, event.IsChecked())
 
-    def update_properties_panel(self, event: wx.MenuEvent) -> None:
+    def update_properties_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide properties panel."""
         self._mgr.ShowPane(self.properties_panel, event.IsChecked())
 
-    def update_timeline_panel(self, event: wx.MenuEvent) -> None:
+    def update_timeline_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide timeline panel."""
         self._mgr.ShowPane(self.timeline_panel, event.IsChecked())
 
-    def update_visualizer_panel(self, event: wx.MenuEvent) -> None:
+    def update_visualizer_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide visualizer panel."""
         self._mgr.ShowPane(self.visualizer_panel, event.IsChecked())
 
-    def on_pane_close(self, event: wx.MenuEvent) -> None:
+    def on_pane_close(self, event: aui.framemanager.AuiManagerEvent) -> None:
         """Update menu itmes in the Window menu when a pane has been closed."""
         pane = event.GetPane()
 
@@ -509,7 +523,7 @@ class MainFrame(wx.Frame):
         self.console_panel.print(message)
 
         for i in range(cam_count):
-            cam_id = self.visualizer_panel.add_camera(cam_id=i)
+            cam_id = self.visualizer_panel.add_camera(id_=i)
             self.controller_panel.masterCombo.Append('camera ' + cam_id)
 
     def get_selected_camera(self) -> Optional[Any]:
@@ -523,7 +537,7 @@ class MainFrame(wx.Frame):
         last_selected = self.get_selected_camera()
 
         if new_selected == last_selected:
-            return 0
+            return
 
         # reset previously selected camera
         if last_selected:
@@ -536,7 +550,7 @@ class MainFrame(wx.Frame):
         # connect to physical camera
         if self.cam_list:
             if self.cam_list[cam_id]:
-                self.parent.cam_list.set_selected_cam_by_id(cam_id)
+                self.cam_list.set_selected_cam_by_id(cam_id)
 
         # refresh canvas and combobox
         self.visualizer_panel.dirty = True
@@ -563,7 +577,8 @@ class MainFrame(wx.Frame):
         self._mgr.UnInit()
         self.Destroy()
 
-    def on_exit(self, event: wx.MenuEvent) -> None:
+    def on_exit(self, event: wx.CommandEvent) -> None:
+        """On menu close, exit application."""
         self.Close()
 
     def __del__(self) -> None:

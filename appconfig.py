@@ -2,6 +2,7 @@
 
 import configparser
 from pathlib import Path
+from typing import Optional
 
 
 class AppConfig():
@@ -12,6 +13,7 @@ class AppConfig():
         dirty: A boolean indicating if a config value has been modified or not.
             Only saves when dirty is True.
     """
+
     def __init__(self) -> None:
         """Inits AppConfig."""
         self._config = None
@@ -27,6 +29,9 @@ class AppConfig():
     def load(self) -> bool:
         """Read config file.
 
+        Raises:
+            IOError: If config file could not be loaded.
+
         Returns:
             True if config file loaded without error, False otherwise.
 
@@ -41,7 +46,6 @@ class AppConfig():
             raise IOError(
                 'Error reading COPIS config file.\n'
                 'Try to manually delete the file to recover from the error.\n')
-            return False
         finally:
             pass
         return True
@@ -50,7 +54,7 @@ class AppConfig():
         """Save config file.
 
         Returns:
-            True if config file saved without error, False oehterwise.
+            True if config file saved without error, False otherwise.
         """
         if not self._dirty:
             return True
@@ -61,7 +65,7 @@ class AppConfig():
         return True
 
     @property
-    def config(self) -> configparser.ConfigParser:
+    def config(self) -> Optional[configparser.ConfigParser]:
         return self._config
 
     @config.setter
@@ -97,4 +101,4 @@ class AppConfig():
 
     def __iter__(self):
         """TODO"""
-        return
+        yield

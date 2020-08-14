@@ -2,7 +2,7 @@
 
 from functools import wraps
 from time import time
-from typing import Callable, Optional
+from typing import Callable
 
 import wx
 import wx.svg as svg
@@ -16,7 +16,7 @@ def set_dialog(msg: str) -> None:
 
 
 def create_scaled_bitmap(bmp_name: str,
-                         px_cnt: Optional[int] = 16) -> wx.Bitmap:
+                         px_cnt: int = 16) -> wx.Bitmap:
     """Return scaled wx.Bitmap from svg file name.
 
     Args:

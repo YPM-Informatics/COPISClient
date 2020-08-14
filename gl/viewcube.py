@@ -237,9 +237,9 @@ class GLViewCube:
             corner = (width - self._size, height - self._size)
         elif self._position == ViewCubePos.BOTTOM_LEFT:
             corner = (0, 0)
-        elif self._position == ViewCubePos.BOTTOM_LEFT:
+        else: # self._position == ViewCubePos.BOTTOM_LEFT:
             corner = (width - self._size, 0)
-        return (*corner, self._size, self._size)
+        return *corner, self._size, self._size
 
     @property
     def hover_id(self) -> int:
@@ -275,7 +275,7 @@ class GLViewCube:
         self._selected = value
 
     @property
-    def position(self) -> ViewCubePos:
+    def position(self) -> Union[str, ViewCubePos]:
         return self._position
 
     @position.setter
@@ -286,7 +286,7 @@ class GLViewCube:
         self._initialized = False
 
     @property
-    def size(self) -> ViewCubeSize:
+    def size(self) -> Union[int, ViewCubeSize]:
         return self._size
 
     @size.setter
