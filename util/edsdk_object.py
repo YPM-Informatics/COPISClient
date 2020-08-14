@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import time
-import utils
+from ctypes import *
 
 import wx
-from ctypes import *
+
+import utils
 from util.Canon.EDSDKLib import *
 
 _edsdk = None

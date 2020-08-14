@@ -1,22 +1,34 @@
-#!/usr/bin/env python3
+"""AppConfig class."""
 
 import configparser
 from pathlib import Path
 
 
 class AppConfig():
-    def __init__(self):
+    """Manage saving, loading, and parsing a configuration file.
+
+    Attributes:
+        config: A configparser.ConfigParser instance.
+        dirty: A boolean indicating if a config value has been modified or not.
+            Only saves when dirty is True.
+    """
+    def __init__(self) -> None:
+        """Inits AppConfig."""
         self._config = None
-        # whether or not the config file needs to be saved
         self._dirty = False
 
-    def set_defaults(self):
+    def set_defaults(self) -> None:
         """Override missing or keys with their defaults.
-        TODO"""
+
+        TODO
+        """
         pass
 
-    def load(self):
+    def load(self) -> bool:
         """Read config file.
+
+        Returns:
+            True if config file loaded without error, False otherwise.
 
         TODO: look into property trees (c++ Boost), perhaps instead of storing
         the ConfigParser we could store the property tree instead
@@ -29,12 +41,17 @@ class AppConfig():
             raise IOError(
                 'Error reading COPIS config file.\n'
                 'Try to manually delete the file to recover from the error.\n')
+            return False
         finally:
             pass
         return True
 
-    def save(self):
-        """Save config."""
+    def save(self) -> bool:
+        """Save config file.
+
+        Returns:
+            True if config file saved without error, False oehterwise.
+        """
         if not self._dirty:
             return True
 
@@ -44,33 +61,33 @@ class AppConfig():
         return True
 
     @property
-    def config(self):
+    def config(self) -> configparser.ConfigParser:
         return self._config
 
     @config.setter
-    def config(self, value):
+    def config(self, value: configparser.ConfigParser) -> None:
         self._config = value
         self._dirty = True
 
     @property
-    def dirty(self):
+    def dirty(self) -> bool:
         return self._dirty
 
     @dirty.setter
-    def dirty(self, value):
+    def dirty(self, value: bool) -> None:
         self._dirty = value
 
-    def update_config_dir(self, dir):
-        """TODO"""
+    def update_config_dir(self, dir: Path) -> None:
+        """Update config file directory given the dir Path."""
         self._dirty = True
 
-    def exists(self):
+    def exists(self) -> bool:
+        """Return if the config path exists or not."""
         return self.config_path().exists()
 
-    def config_path(self):
+    def config_path(self) -> Path:
         """Return path to config file.
 
-        (from PrusaSlicer)
         TODO: set data directory?
         """
         # Unix: ~/.COPIS

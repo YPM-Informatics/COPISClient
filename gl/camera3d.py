@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Camera3D class."""
 
 import math

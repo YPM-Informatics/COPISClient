@@ -1,19 +1,26 @@
-#!/usr/bin/env python3
 """GLBed and associated classes."""
 
+from typing import List, Optional, Tuple
+
 import numpy as np
-
-import glm
-
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 
+import glm
+
 
 class _Axes():
+    """Manage origin axes in a GLBed.
+
+    Args:
+        parent: Pointer to a parent GLBed.
+    """
+
     origin = (0.0, 0.0, 0.0)
 
     def __init__(self, parent):
+        """Inits _Axes with constructors."""
         self._canvas = parent
 
         self._vao_axes = None
@@ -119,12 +126,43 @@ class _Axes():
 
 
 class GLBed():
-    """GLBed class."""
+    """Manage build dimensions and bed surface in a GLCanvas.
+
+    Args:
+        parent: Pointer to a parent GLCanvas.
+        build_dimensions: Optional; A list indicating dimensions and origin.
+            First three values specify xyz build dimensions, and last three
+            values specificy xyz origin position. Defaults to
+            [400, 400, 400, 200, 200, 200] = 400x400x400mm, (200,200,200).
+        axes: Optional; A boolean indicating if origin axes should be rendered
+            or not. Defaults to True.
+        bounding_box: Optional; A boolean indicating if a bounding box should be
+            rendered or not. Defaults to True.
+        every: Optional; An integer representing units between every major
+            gridline (displayed darker). Defaults to 100.
+        subdivisions: Optional; An integer representing subdivisions between
+            major gridlines (displayed lighter). Defaults to 10.
+
+    Attributes:
+        build_dimensions: See Args section.
+        axes: See Args section.
+        bounding_box: See Args section.
+    """
     col_light = 0.91
     col_dark = 0.72
     col_border = 0.40
 
-    def __init__(self, parent, build_dimensions, axes=True, bounding_box=True, every=100, subdivisions=10):
+    def __init__(self, parent,
+                 build_dimensions: Optional[List[int]] = [400, 400, 400, 200, 200, 200],
+                 axes: Optional[bool] = True,
+                 bounding_box: Optional[bool] = True,
+                 every: Optional[int] = 100,
+                 subdivisions: Optional[int] = 10) -> None:
+        """Inits GLBed with constructors.
+
+        Raises:
+            ValueError: If provided build dimension is invalid.
+        """
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
         self._canvas = parent
@@ -135,15 +173,15 @@ class GLBed():
         self._count_bounding_box = None
 
         self._build_dimensions = build_dimensions
-        self._show_axes = axes
-        self._show_bounding_box = bounding_box
+        self._axes = axes
+        self._bounding_box = bounding_box
         self._every = every
         self._subdivisions = subdivisions
         self._axes = _Axes(self)
 
         self._initialized = False
 
-    def create_vao(self):
+    def create_vao(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao_gridlines, self._vao_bounding_box = glGenVertexArrays(2)
         vbo = glGenBuffers(5)
@@ -188,8 +226,12 @@ class GLBed():
         glBindVertexArray(0)
         glDeleteBuffers(5, vbo)
 
-    def init(self):
-        """Initialize for rendering."""
+    def init(self) -> bool:
+        """Initialize for rendering.
+
+        Returns:
+            True if initialized without error, False otherwise.
+        """
         if self._initialized:
             return True
 
@@ -198,8 +240,8 @@ class GLBed():
         self._initialized = True
         return True
 
-    def render(self):
-        """Render bed to screen."""
+    def render(self) -> None:
+        """Render bed to canvas."""
         if not self.init():
             return
 
@@ -214,18 +256,22 @@ class GLBed():
 
         self._render_gridlines()
 
-        if self._show_axes:
+        if self._axes:
             self._render_axes()
 
-        if self._show_bounding_box:
+        if self._bounding_box:
             self._render_bounding_box()
 
         glBindVertexArray(0)
         glUseProgram(0)
         glEnable(GL_LINE_SMOOTH)
 
-    def _get_gridlines(self):
-        """Get data for gridlines."""
+    def _get_gridlines(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Return vertices and colors to draw gridlines using GL_LINES.
+
+        Returns:
+            An np.ndarray for vertices, and an np.ndarray for color values.
+        """
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
         step = self._every / self._subdivisions
@@ -235,7 +281,7 @@ class GLBed():
             a[-1] = self.col_border
             return a
 
-        if self._show_axes:
+        if self._axes:
             axes_verts = np.array([])
             axes_colors = np.array([])
         else:
@@ -272,8 +318,12 @@ class GLBed():
         colors = np.concatenate([axes_colors, x_colors, z_colors]).astype(np.float32)
         return verts, colors
 
-    def _get_bounding_box(self):
-        """Get data for bed bounding box."""
+    def _get_bounding_box(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Return vertices and indices to draw bounding box using GL_LINES.
+
+        Returns:
+            An np.ndarray for vertices, and an np.ndarray for color values.
+        """
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
         y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
@@ -299,50 +349,53 @@ class GLBed():
 
         return points, indices
 
-    def _render_gridlines(self):
+    def _render_gridlines(self) -> None:
+        """Render gridlines."""
         if self._vao_gridlines is None:
             return
 
         glBindVertexArray(self._vao_gridlines)
         glDrawArrays(GL_LINES, 0, self._count_gridlines)
 
-    def _render_bounding_box(self):
+    def _render_bounding_box(self) -> None:
+        """Render bounding box."""
         if self._vao_bounding_box is None:
             return
 
         glBindVertexArray(self._vao_bounding_box)
         glDrawElements(GL_LINES, self._count_bounding_box, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
 
-    def _render_axes(self):
+    def _render_axes(self) -> None:
+        """Render axes if enabled."""
         if self._axes is None:
             return
 
         self._axes.render()
 
     @property
-    def show_axes(self):
-        return self._show_axes
+    def build_dimensions(self) -> List[int]:
+        return self._build_dimensions
+
+    @build_dimensions.setter
+    def build_dimensions(self, value: List[int]) -> None:
+        self._build_dimensions = value
+        self._initialized = False
+
+    @property
+    def show_axes(self) -> bool:
+        return self._axes
 
     @show_axes.setter
-    def show_axes(self, value):
-        self._show_axes = value
+    def show_axes(self, value: bool) -> None:
+        self._axes = value
         self.create_vao()
         self._canvas.dirty = True
 
     @property
-    def show_bounding_box(self):
-        return self._show_bounding_box
+    def show_bounding_box(self) -> bool:
+        return self._bounding_box
 
     @show_bounding_box.setter
-    def show_bounding_box(self, value):
-        self._show_bounding_box = value
+    def show_bounding_box(self, value: bool) -> None:
+        self._bounding_box = value
         self._canvas.dirty = True
-
-    @property
-    def build_dimensions(self):
-        return self._build_dimensions
-
-    @build_dimensions.setter
-    def build_dimensions(self, value):
-        self._build_dimensions = value
-        self._initialized = False

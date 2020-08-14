@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import wx
-import wx.svg as svg
 import wx.lib.agw.aui as aui
-from utils import set_dialog, create_scaled_bitmap
-from enums import ToolIds
+import wx.svg as svg
 
+from enums import ToolIds
 from gui.settings_frame import SettingsFrame
 from util.serial_controller import SerialController
+from utils import create_scaled_bitmap, set_dialog
 
 
 class ToolbarPanel(aui.AuiToolBar):

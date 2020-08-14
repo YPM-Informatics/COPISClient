@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Helper functions for quaternion math, arcball rotation, and paths.
 TODO: Give attribution to Printrun
 """
@@ -64,7 +63,7 @@ def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
         v: A glm.vec3 to rotate to. Does not need to be normalized.
 
     Raises:
-        ValueError: If vector provided is zero.
+        ValueError: If vector provided has a magnitude of zero.
     """
     if not glm.equal(v, glm.vec3()):
         raise ValueError('zero magnitude vector')

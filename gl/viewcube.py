@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ViewCube class."""
 
 from typing import Tuple, Union
@@ -16,19 +15,19 @@ class GLViewCube:
 
     Args:
         parent: Pointer to a parent GLCanvas.
-        position: Optional; An enums.ViewCubePos constant indicating which
+        position: Optional; An enums.ViewCubePos constant representing which
             corner of the viewport the ViewCube should render in. Defaults to
             ViewCubePos.TOP_RIGHT.
-        size: Optional; An enums.ViewCubeSize constant indicating the size in
+        size: Optional; An enums.ViewCubeSize constant representing the size in
             pixels of the ViewCube render area. Defaults to ViewCubeSize.MEDIUM.
 
     Attributes:
         hover_id: An integer indicating which face of the ViewCube the mouse is
             hovering over.
-        hovered: A boolean indicating whether or not a face of the ViewCube
-            is hovered over by a mouse.
-        selected: A boolean indicating whether or not a face of the ViewCube
-            is selected by a mouse.
+        hovered: A boolean indicating if the mouse has hovered over a face of
+            the ViewCube or not.
+        selected: A boolean indicating if the mouse has selected a face of the
+            ViewCube or not.
         position: See Args section.
         size: See Args section.
     """
@@ -159,7 +158,7 @@ class GLViewCube:
         """Initialize for rendering.
 
         Returns:
-            True if initialized without error, otherwise returns False.
+            True if initialized without error, False otherwise.
         """
         if self._initialized:
             return True
@@ -170,7 +169,7 @@ class GLViewCube:
         return True
 
     def render(self) -> None:
-        """Render ViewCube."""
+        """Render ViewCube to canvas."""
         if not self.init():
             return
 

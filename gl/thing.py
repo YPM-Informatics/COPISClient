@@ -12,13 +12,10 @@ from utils import timing
 
 
 class GLThing(ABC):
-    """[summary]
-
-    Args:
-        ABC ([type]): [description]
+    """TODO
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         super().__init__()
         self._mgr = parent
         self._volumes = None
@@ -28,11 +25,11 @@ class GLThing(ABC):
         self._initialized = False
 
     @abstractmethod
-    def create_vao(self):
+    def create_vao(self) -> None:
         """Bind VAOs to define vertex data."""
         pass
 
-    def init(self):
+    def init(self) -> None:
         """Initialize for rendering."""
         if self._initialized:
             return True
@@ -43,28 +40,28 @@ class GLThing(ABC):
         return True
 
     @abstractmethod
-    def render(self):
+    def render(self) -> None:
         """Render to screen."""
         pass
 
     @abstractmethod
-    def render_for_picking(self):
+    def render_for_picking(self) -> None:
         """Render for picking pass. Usually disables any sort of multisampling
         or antialiasing which may affect pixel values."""
         pass
 
     @property
-    def hovered(self):
+    def hovered(self) -> bool:
         return self._hovered
 
     @hovered.setter
-    def hovered(self, value):
+    def hovered(self, value: bool) -> None:
         self._hovered = value
 
     @property
-    def selected(self):
+    def selected(self) -> bool:
         return self._selected
 
     @selected.setter
-    def selected(self, value):
+    def selected(self, value: bool) -> None:
         self._selected = value
