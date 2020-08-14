@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import serial
 from serial.tools import list_ports

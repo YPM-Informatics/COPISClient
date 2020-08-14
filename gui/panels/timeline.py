@@ -1,13 +1,15 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import wx
+
 from utils import set_dialog
 
 
-"""
-TODO: Improve timeline panel
-"""
 class TimelinePanel(wx.Panel):
+    """
+
+    TODO: Improve timeline panel
+    """
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.init_ui()

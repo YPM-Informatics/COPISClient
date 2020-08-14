@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""Enums."""
 
 from enum import Enum, IntEnum
 

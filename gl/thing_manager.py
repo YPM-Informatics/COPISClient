@@ -1,4 +1,4 @@
-"""GLThing manager class."""
+"""GLThingManager class."""
 
 import math
 from gl.thing import GLThing
@@ -14,7 +14,7 @@ from utils import timing
 class GLThingManager():
     id_ = 0
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         self._canvas = parent
 
         self._things = {}
@@ -22,21 +22,21 @@ class GLThingManager():
         self._selected_id = -1
         self._initialized = False
 
-    def init(self):
+    def init(self) -> None:
         if self._initialized:
             return True
 
         self._initialized = True
         return True
 
-    def render_all(self):
+    def render_all(self) -> None:
         if not self._things:
             return
 
         for thing in self._things:
             thing.render()
 
-    def render_all_for_picking(self):
+    def render_all_for_picking(self) -> None:
         if not self._things:
             return
 
@@ -54,30 +54,30 @@ class GLThingManager():
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def add(self, thing):
+    def add(self, thing: GLThing) -> None:
         self._things[self.id_] = thing
         self.id_ += 1
         self._canvas.dirty = True
 
     @property
-    def hovered_id(self):
+    def hovered_id(self) -> int:
         return self._hovered_id
 
     @hovered_id.setter
-    def hovered_id(self, value):
+    def hovered_id(self, value: int) -> None:
         self._things[self._hovered_id] = False
         self._things[value].hovered = True
         self._hovered_id = value
 
     @property
-    def selected_id(self):
+    def selected_id(self) -> int:
         return self._selected_id
 
     @selected_id.setter
-    def selected_id(self, value):
+    def selected_id(self, value: int) -> None:
         self._things[self._selected_id] = False
         self._things[value].selected = True
         self._selected_id = value
 
-    def get_shader_program(self, value):
+    def get_shader_program(self, value: str) -> GLuint:
         return self._canvas.get_shader_program(value)

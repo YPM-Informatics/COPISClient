@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Canvas3D and associated classes."""
 
 import math
@@ -38,20 +37,14 @@ class Canvas3D(glcanvas.GLCanvas):
 
     Args:
         parent: Pointer to a parent wx.Window.
-        build_dimensions: Optional; A list indicating dimensions and origin.
-            First three values specify xyz build dimensions, and last three
-            values specificy xyz origin position. Defaults to
-            [400, 400, 400, 200, 200, 200] = 400x400x400mm, (200,200,200).
-        axes: Optional; If axes is False, origin axes will not be rendered.
-        bounding_box: A boolean representing whether or not to render the bed
-            with bounding boxes. Optional; Defaults to True.
-        every: Optional; An integer representing units between every major
-            gridline (displayed darker). Defaults to 100.
-        subdivisions: Optional; An integer representing subdivisions between
-            major gridlines (displayed lighter). Defaults to 10.
+        build_dimensions: Optional; See GLBed.
+        axes: Optional; See GLBed.
+        bounding_box: Optional; See GLBed.
+        every: Optional; See GLBed.
+        subdivisions: Optional; See GLBed.
 
     Attributes:
-        dirty: A boolean representing whether or not the canvas needs updating.
+        dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
         rot_quat: Read ony; A glm quaternion representing current rotation as a
@@ -129,7 +122,7 @@ class Canvas3D(glcanvas.GLCanvas):
         """Initialize and set OpenGL capabilities.
 
         Returns:
-            True if initialized without error, otherwise returns False.
+            True if initialized without error, False otherwise.
         """
         if self._gl_initialized:
             return True
