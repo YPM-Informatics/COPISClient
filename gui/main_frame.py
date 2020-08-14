@@ -253,8 +253,9 @@ class MainFrame(wx.Frame):
 
     def on_save_as(self, event: wx.MenuEvent) -> None:
         """Open 'save as' dialog."""
-        with wx.FileDialog(self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
-                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+        with wx.FileDialog(
+            self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
