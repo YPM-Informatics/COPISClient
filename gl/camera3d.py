@@ -2,7 +2,7 @@
 
 import math
 from gl.thing import GLThing
-from typing import Optional
+from typing import Union
 
 import numpy as np
 from OpenGL.GL import *
@@ -243,7 +243,7 @@ class Camera3D(GLThing):
     def get_z_by_angle(self, angle: float) -> float:
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
-    def on_move(self, axis: Optional[CamAxis], amount: float) -> None:
+    def on_move(self, axis: Union[CamAxis, str], amount: float) -> None:
         """Update camera position or angle."""
         if axis in CamAxis and amount != 0:
             if axis == CamAxis.X:
@@ -258,9 +258,9 @@ class Camera3D(GLThing):
                 self._c += amount
 
     def translate(self,
-                  newx: Optional[float] = 0,
-                  newy: Optional[float] = 0,
-                  newz: Optional[float] = 0) -> None:
+                  newx: float = 0,
+                  newy: float = 0,
+                  newz: float = 0) -> None:
         # initialize n_increment and increment_*, skip if already initialized
         if self.trans:
             return

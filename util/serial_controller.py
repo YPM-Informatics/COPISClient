@@ -5,6 +5,7 @@ from serial.tools import list_ports
 
 
 class SerialController(object):
+
     def __init__(self):
         super(SerialController, self).__init__()
         self.selected_serial = None

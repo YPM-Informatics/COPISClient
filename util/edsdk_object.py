@@ -241,6 +241,7 @@ class Camera:
 
 
 class CameraList:
+
     def __init__(self):
         self.list = c_void_p(None)
 
@@ -282,8 +283,8 @@ class CameraList:
                     index += 1
         return None
 
-    def set_selected_cam_by_id(self, id):
-        self.selected_camera = self.get_camera_by_id(id)
+    def set_selected_cam_by_id(self, id_):
+        self.selected_camera = self.get_camera_by_id(id_)
         self.selected_camera.connect()
 
         global _camera

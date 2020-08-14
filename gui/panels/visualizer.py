@@ -121,9 +121,9 @@ class VisualizerPanel(wx.Panel):
 
     def get_camera_objects(self) -> List[Camera3D]:
         """Return Camera3D list."""
-        return self.camera3d_list
+        return self._glcanvas.camera3d_list
 
-    def add_camera(self, id_: Optional[int] = -1) -> str:
+    def add_camera(self, id_: int = -1) -> str:
         """Add new Camera3D."""
         x = random.random() * self._build_dimensions[0] - self._build_dimensions[3]
         y = random.random() * self._build_dimensions[1] - self._build_dimensions[4]

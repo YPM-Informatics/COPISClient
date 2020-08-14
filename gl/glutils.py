@@ -3,7 +3,7 @@ TODO: Give attribution to Printrun
 """
 
 from math import acos, asin, cos, sin, sqrt, tan
-from typing import List, Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 
@@ -84,7 +84,7 @@ def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
 def get_circle(p: glm.vec3,
                n: glm.vec3,
                r: float,
-               sides: Optional[int] = 36) -> Tuple[np.ndarray, int]:
+               sides: int = 36) -> Tuple[np.ndarray, int]:
     """Create circle vertices given point, normal vector, radius, and # sides.
 
     Uses an approximation method to compute vertices versus many trig calls.
@@ -113,9 +113,9 @@ def get_circle(p: glm.vec3,
 def get_helix(p: glm.vec3,
               n: glm.vec3,
               r: float,
-              pitch: Optional[int] = 1,
-              turns: Optional[float] = 1.0,
-              sides: Optional[int] = 36) -> Tuple[np.ndarray, int]:
+              pitch: int = 1,
+              turns: float = 1.0,
+              sides: int = 36) -> Tuple[np.ndarray, int]:
     """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides.
 
     Uses an approximation method rather than trig functions.
