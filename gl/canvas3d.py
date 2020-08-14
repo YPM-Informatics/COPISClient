@@ -24,6 +24,7 @@ from utils import timing
 
 
 class _Size(NamedTuple):
+
     width: int
     height: int
     scale_factor: float
@@ -62,6 +63,8 @@ class Canvas3D(glcanvas.GLCanvas):
             projection matrix.
         modelview_matrix: Read only; A glm.mat4 representing the current
             modelview matrix.
+
+    TODO: Add more documentation regarding OpenGL.
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls

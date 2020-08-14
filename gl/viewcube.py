@@ -151,6 +151,8 @@ class GLViewCube:
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
+        # ---
+
         glBindVertexArray(0)
         glDeleteBuffers(6, vbo)
 

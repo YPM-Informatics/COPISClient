@@ -2,6 +2,7 @@
 
 import math
 from gl.thing import GLThing
+from typing import Optional
 
 import numpy as np
 from OpenGL.GL import *
@@ -12,18 +13,24 @@ from enums import CamAxis, CamMode
 
 
 class Camera3D(GLThing):
-    """[summary]
+    """Manage a virtual camera in a GLCanvas.
 
     Args:
-        GLThing ([type]): [description]
+        parent: Pointer to a parent GLCanvas.
+        TODO: add other arguments.
 
-    Returns:
-        [type]: [description]
+    Attributes:
+        cam_id: An integer representing the id of the camera.
+
+    TODO: consolidate Camera3D and physical camera object into some sort of
+    general object class.
     """
 
     _scale = 10
 
-    def __init__(self, parent, cam_id, x, y, z, b, c):
+    def __init__(self, parent, cam_id: int,
+                 x: float, y: float, z: float, b: float, c: float) -> None:
+        """Inits Camera3D with constructors."""
         super().__init__(parent)
         self._canvas = parent
         self._cam_id = cam_id
@@ -33,11 +40,11 @@ class Camera3D(GLThing):
         self._b = float(b)
         self._c = float(c)
 
-        self.start = (self._x, self._y, self._z, self._b, self._c)
-        self.mode = CamMode.NORMAL
+        self._start = (self._x, self._y, self._z, self._b, self._c)
+        self._mode = CamMode.NORMAL
 
-        self._angle = 0
-        self._rotation_vector = []
+        self._rotation_angle = 0
+        self._rotation_vec = glm.vec3()
 
         self.trans = False
         self.n_increment = 0
@@ -49,10 +56,8 @@ class Camera3D(GLThing):
         self._vao_side = None
         self._vao_top = None
 
-    def create_vao(self):
-        """
-        TODO: add cylinders to camera model
-        """
+    def create_vao(self) -> None:
+        """Bind VAOs to define vertex data."""
         self._vao_box, self._vao_side, self._vao_top = glGenVertexArrays(3)
         vbo = glGenBuffers(4)
 
@@ -61,27 +66,22 @@ class Camera3D(GLThing):
             0.5, -1.0, -1.0,
             0.5, -1.0, 1.0,
             -0.5, -1.0, 1.0,
-
             -0.5, 1.0, -1.0,   # right
             0.5, 1.0, -1.0,
             0.5, -1.0, -1.0,
             -0.5, -1.0, -1.0,
-
             -0.5, 1.0, 1.0,    # top
             0.5, 1.0, 1.0,
             0.5, 1.0, -1.0,
             -0.5, 1.0, -1.0,
-
             -0.5, -1.0, 1.0,   # left
             0.5, -1.0, 1.0,
             0.5, 1.0, 1.0,
             -0.5, 1.0, 1.0,
-
             0.5, 1.0, -1.0,    # back
             0.5, 1.0, 1.0,
             0.5, -1.0, 1.0,
             0.5, -1.0, -1.0,
-
             -0.5, -1.0, -1.0,  # front
             -0.5, -1.0, 1.0,
             -0.5, 1.0, 1.0,
@@ -124,10 +124,12 @@ class Camera3D(GLThing):
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3])
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
+        # ---
+
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
-    def render(self):
+    def render(self) -> None:
         """Render camera."""
         if not self.init():
             return
@@ -164,7 +166,7 @@ class Camera3D(GLThing):
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def render_for_picking(self):
+    def render_for_picking(self) -> None:
         if not self.init():
             return
 
@@ -185,50 +187,64 @@ class Camera3D(GLThing):
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def get_model_matrix(self):
+    def get_model_matrix(self) -> glm.mat4:
+        """Returns a glm.mat4 representing the camera's modelview matrix."""
         scale = glm.vec3(self._scale, self._scale, self._scale)
+
+        if self._mode == CamMode.NORMAL:
+            return glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+                glm.scale(glm.mat4(), scale) * \
+                glm.rotate(glm.mat4(), self._b, glm.vec3(0.0, 0.0, 1.0)) * \
+                glm.rotate(glm.mat4(), self._c, glm.vec3(0.0, 1.0, 0.0))
+
+        # self._mode == CamMode.ROTATE:
         return glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
             glm.scale(glm.mat4(), scale) * \
-            glm.rotate(glm.mat4(), self._b, glm.vec3(0.0, 0.0, 1.0)) * \
-            glm.rotate(glm.mat4(), self._c, glm.vec3(0.0, 1.0, 0.0))
+            glm.rotate(glm.mat4(), self._rotation_angle, self._rotation_vec)
+
+    @property
+    def cam_id(self) -> int:
+        return self._cam_id
+
+    @cam_id.setter
+    def cam_id(self, value: int) -> None:
+        self._cam_id = value
 
     @classmethod
     def set_scale(cls, value: int) -> None:
         cls._scale = value
 
-    @property
-    def cam_id(self):
-        return self._cam_id
+    def get_rotation_angle(self, v1: glm.vec3, v2: glm.vec3) -> float:
+        """Return rotation angle between two vectors.
 
-    @cam_id.setter
-    def cam_id(self, value):
-        self._cam_id = value
+        TODO: convert to only using glm
+        """
+        v1 = glm.normalize(v1)
+        v2 = glm.normalize(v2)
+        return np.degrees(np.arccos(np.clip(np.dot(v1, v2), -1, 1)))
 
-    def get_rotation_angle(self, v1, v2):
-        v1_u = self.get_unit_vector(v1)
-        v2_u = self.get_unit_vector(v2)
-        return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1, 1)))
+    def on_focus_center(self) -> None:
+        """Point camera towards origin.
 
-    def get_unit_vector(self, vector):
-        return vector / np.linalg.norm(vector)
+        TODO: currently broken.
+        """
+        self._mode = CamMode.ROTATE
+        camera_center = glm.vec3(self._x, self._y, self._z)
+        current_facing = glm.vec3(self._x - 0.5, self._y, self._z)
+        target_facing = glm.vec3(self._canvas.build_dimensions[:3])
 
-    def on_focus_center(self):
-        self.mode = CamMode.ROTATE
-        camera_center = (self._x, self._y, self._z)
-        current_facing = (self._x - 0.5, self._y, self._z)
-        target_facing = (0.0, 0.0, 0.0)
+        v1 = current_facing - camera_center
+        v2 = target_facing - camera_center
 
-        v1 = np.subtract(current_facing, camera_center)
-        v2 = np.subtract(target_facing, camera_center)
+        self._rotation_angle = self.get_rotation_angle(v1, v2)
+        self._rotation_vec = glm.cross(glm.normalize(v1), glm.normalize(v2))
+        self._canvas.dirty = True
 
-        self._angle = self.get_rotation_angle(v1, v2)
-        self._rotation_vector = np.cross(self.get_unit_vector(v1), self.get_unit_vector(v2))
-        self.render()
-
-    def get_z_by_angle(self, angle):
+    def get_z_by_angle(self, angle: float) -> float:
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
-    def on_move(self, axis, amount):
+    def on_move(self, axis: Optional[CamAxis], amount: float) -> None:
+        """Update camera position or angle."""
         if axis in CamAxis and amount != 0:
             if axis == CamAxis.X:
                 self._x += amount
@@ -241,8 +257,11 @@ class Camera3D(GLThing):
             elif axis == CamAxis.C:
                 self._c += amount
 
-    def translate(self, newx=0, newy=0, newz=0):
-        # initialize nIncre and increxyz, skip if already initialized
+    def translate(self,
+                  newx: Optional[float] = 0,
+                  newy: Optional[float] = 0,
+                  newz: Optional[float] = 0) -> None:
+        # initialize n_increment and increment_*, skip if already initialized
         if self.trans:
             return
 
@@ -253,10 +272,10 @@ class Camera3D(GLThing):
         maxd = max(dx, dy, dz)
         scale = maxd / 0.01
 
-        self.nIncre = scale
-        self.increx = dx / scale
-        self.increy = dy / scale
-        self.increz = dz / scale
+        self.n_increment = scale
+        self.increment_x = dx / scale
+        self.increment_y = dy / scale
+        self.increment_z = dz / scale
 
         # setting trans to true allows this function to be called on cam.render
         self.trans = True

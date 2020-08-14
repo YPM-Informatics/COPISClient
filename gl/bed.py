@@ -11,7 +11,7 @@ import glm
 
 
 class _Axes():
-    """Manage origin axes in a GLBed.
+    """Manage and render origin axes in a GLBed.
 
     Args:
         parent: Pointer to a parent GLBed.
@@ -19,7 +19,7 @@ class _Axes():
 
     origin = (0.0, 0.0, 0.0)
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         """Inits _Axes with constructors."""
         self._canvas = parent
 
@@ -33,22 +33,21 @@ class _Axes():
         self._quadric = gluNewQuadric()
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
-    def create_vao(self):
+    def create_vao(self) -> None:
         """Bind VAOs to define vertex data."""
+        self._vao_axes, *self._vao_arrows = glGenVertexArrays(3)
+        vbo = glGenBuffers(5)
+
         build_dimensions = self._canvas.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
-
-        self._vao_axes, self._vao_arrows = glGenVertexArrays(2)
-        vbo = glGenBuffers(4)
-
         points = np.array([
-            x[0], 0.0, 0.0,  1.0, 0.0, 0.0,
+            x[0], 0.0, 0.0, 1.0, 0.0, 0.0,
             -x[1], 0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, y[0], 0.0,  0.0, 1.0, 0.0,
+            0.0, y[0], 0.0, 0.0, 1.0, 0.0,
             0.0, -y[1], 0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, z[0],  0.0, 0.0, 1.0,
+            0.0, 0.0, z[0], 0.0, 0.0, 1.0,
             0.0, 0.0, -z[1], 0.0, 0.0, 1.0,
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
@@ -64,68 +63,104 @@ class _Axes():
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
         glEnableVertexAttribArray(1)
 
-        glBindVertexArray(self._vao_arrows)
-        # colored axes arrows
+        # ---
+
+        vertices, colors = self._get_cones()
+        glBindVertexArray(self._vao_arrows[0])
+        # colored axes arrows, cone
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
+        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(1)
+
+        # ---
+
+        vertices[0] = x[1]
+        vertices[17*3+1] = y[1]
+        vertices[17*6+2] = z[1]
+        glBindVertexArray(self._vao_arrows[1])
+        # colored axes arrows, base
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[4])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
+        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_STATIC_DRAW)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(1)
+
+        # ---
 
         glBindVertexArray(0)
-        glDeleteBuffers(4, vbo)
+        glDeleteBuffers(5, vbo)
 
-    def render(self):
+    def render(self) -> None:
         """Render colored axes and arrows."""
         if self._quadric is None:
             return
 
         glBindVertexArray(self._vao_axes)
         glDrawArrays(GL_LINES, 0, 6)
+        glBindVertexArray(self._vao_arrows[0])
+        glMultiDrawArrays(GL_TRIANGLE_FAN, (0, 17, 34), (17, 17, 17), 3)
+        glFrontFace(GL_CW)
+        glBindVertexArray(self._vao_arrows[1])
+        glMultiDrawArrays(GL_TRIANGLE_FAN, (0, 17, 34), (17, 17, 17), 3)
+        glFrontFace(GL_CCW)
 
         glBindVertexArray(0)
-        return
 
-        build_dimensions = self._canvas.build_dimensions
-        x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
-        y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
-        z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
+    def _get_cones(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Return vertices and colors to draw colored axes end arrows.
 
-        # x axis
-        glColor3f(1.0, 0.0, 0.0)
-        glPushMatrix()
-        glTranslated(*self.origin)
-        glRotated(90.0, 0.0, 1.0, 0.0)
-        self._render_arrow(x[0])
-        glPopMatrix()
+        Draw using:
+            glMultiDrawArrays(GL_TRIANGLE_FAN, (0, 17, 34), (17, 17, 17), 3)
 
-        # y axis
-        glColor3f(0.0, 1.0, 0.0)
-        glPushMatrix()
-        glTranslated(*self.origin)
-        glRotated(-90.0, 1.0, 0.0, 0.0)
-        self._render_arrow(y[0])
-        glPopMatrix()
+        Returns:
+            An np.ndarray for vertices, and an np.ndarray for color values.
+        """
+        x, y, z = self._canvas.build_dimensions[3:]
+        thetas = np.linspace(0, 2 * np.pi, 16, endpoint=True)
+        cos = np.cos(thetas) * self._arrow_base_radius
+        sin = np.sin(thetas) * self._arrow_base_radius
+        vertices = np.zeros(9 * 17, dtype=np.float32)
 
-        # z axis
-        glColor3f(0.0, 0.0, 1.0)
-        glPushMatrix()
-        glTranslated(*self.origin)
-        self._render_arrow(z[0])
-        glPopMatrix()
+        # x-axis cone
+        vertices[0] = x + self._arrow_length
+        vertices[3:3*17:3] = x
+        vertices[4:3*17:3] = cos
+        vertices[5:3*17:3] = sin
 
-        # origin sphere
-        glColor3f(0.0, 0.0, 0.0)
-        gluSphere(self._quadric, self._arrow_base_radius, 32, 32)
+        # y-axis cone
+        vertices[17*3+1] = y + self._arrow_length
+        vertices[3*17+3:6*17:3] = sin
+        vertices[3*17+4:6*17:3] = y
+        vertices[3*17+5:6*17:3] = cos
 
-    def _render_arrow(self, length):
-        glTranslated(0.0, 0.0, length)
-        gluQuadricOrientation(self._quadric, GLU_OUTSIDE)
-        gluCylinder(self._quadric, self._arrow_base_radius, 0.0, self._arrow_length, 32, 1)
-        gluQuadricOrientation(self._quadric, GLU_INSIDE)
-        gluDisk(self._quadric, 0.0, self._arrow_base_radius, 32, 1)
+        # z-axis cone
+        vertices[17*6+2] = z + self._arrow_length
+        vertices[6*17+3::3] = cos
+        vertices[6*17+4::3] = sin
+        vertices[6*17+5::3] = z
 
-    def __delete__(self, _):
-        if not self._quadric:
-            gluDeleteQuadric(self._quadric)
+        # 17 red, 17 blue, 17 green
+        colors = np.zeros(9 * 17, dtype=np.float32)
+        colors[:3*17:3] = 0.9
+        colors[3*17+1:6*17:3] = 0.9
+        colors[6*17+2::3] = 0.9
+
+        return vertices, colors
 
 
-class GLBed():
+class GLBed:
     """Manage build dimensions and bed surface in a GLCanvas.
 
     Args:
@@ -145,8 +180,8 @@ class GLBed():
 
     Attributes:
         build_dimensions: See Args section.
-        axes: See Args section.
-        bounding_box: See Args section.
+        show_axes: See Args section for axes.
+        show_bounding_box: See Args section for bounding_box.
     """
     col_light = 0.91
     col_dark = 0.72
@@ -173,8 +208,8 @@ class GLBed():
         self._count_bounding_box = None
 
         self._build_dimensions = build_dimensions
-        self._axes = axes
-        self._bounding_box = bounding_box
+        self._show_axes = axes
+        self._show_bounding_box = bounding_box
         self._every = every
         self._subdivisions = subdivisions
         self._axes = _Axes(self)
@@ -256,10 +291,10 @@ class GLBed():
 
         self._render_gridlines()
 
-        if self._axes:
+        if self._show_axes:
             self._render_axes()
 
-        if self._bounding_box:
+        if self._show_bounding_box:
             self._render_bounding_box()
 
         glBindVertexArray(0)
@@ -281,7 +316,7 @@ class GLBed():
             a[-1] = self.col_border
             return a
 
-        if self._axes:
+        if self._show_axes:
             axes_verts = np.array([])
             axes_colors = np.array([])
         else:
@@ -383,19 +418,19 @@ class GLBed():
 
     @property
     def show_axes(self) -> bool:
-        return self._axes
+        return self._show_axes
 
     @show_axes.setter
     def show_axes(self, value: bool) -> None:
-        self._axes = value
+        self._show_axes = value
         self.create_vao()
         self._canvas.dirty = True
 
     @property
     def show_bounding_box(self) -> bool:
-        return self._bounding_box
+        return self._show_bounding_box
 
     @show_bounding_box.setter
     def show_bounding_box(self, value: bool) -> None:
-        self._bounding_box = value
+        self._show_bounding_box = value
         self._canvas.dirty = True

@@ -77,18 +77,22 @@ class VisualizerPanel(wx.Panel):
         self.SetSizerAndFit(sizer)
 
     def on_zoom_slider(self, event: wx.ScrollEvent) -> None:
+        """Update Canvas3D zoom when slider is updated."""
         self._glcanvas.zoom = event.GetInt() / 10
 
     def set_zoom_slider(self, value: float) -> None:
+        """Update slider value."""
         self.zoom_slider.SetValue(value * 10)
 
     def on_axes_check(self, event: wx.CommandEvent) -> None:
+        "Show or hide GLBed axes when checkbox is updated."
         if self._glcanvas is None:
             return
 
         self._glcanvas.bed.show_axes = event.IsChecked()
 
     def on_bbox_check(self, event: wx.CommandEvent) -> None:
+        "Show or hide GLBed bounding box when checkbox is updated."
         if self._glcanvas is None:
             return
 
