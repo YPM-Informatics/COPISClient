@@ -4,7 +4,6 @@ import gl.shaders as shaderlib
 import math
 import platform as pf
 from gl.bed import GLBed
-from gl.camera3d import Camera3D
 from gl.glutils import arcball
 from gl.path3d import Path3D
 from gl.proxy3d import Proxy3D
@@ -53,9 +52,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         zoom: A float representing zoom level (higher is more zoomed in).
             Zoom is achieved in projection_matrix by modifying the fov.
         build_dimensions: See Args section.
-        camera3d_scale: An int representing the scale level of all Camera3D
-            objects in the canvas.
-        camera3d_list: A list of all Camera3D objects.
         projection_matrix: Read only; A glm.mat4 representing the current
             projection matrix.
         modelview_matrix: Read only; A glm.mat4 representing the current
@@ -95,8 +91,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._bed = GLBed(self, build_dimensions, axes, bounding_box, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
-        self._camera3d_list = []
-        self._camera3d_scale = 10
 
         # screen is only refreshed from the OnIdle handler if it is dirty
         self._dirty = False
@@ -109,6 +103,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
+        self._object_scale = 10
 
         # temporary
         self._vao_box = None
@@ -353,9 +348,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
                     self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
                 else:
                     pass
-            elif id_ < len(self._camera3d_list):
-                wx.GetApp().mainframe.set_selected_camera(id_)
-                wx.GetApp().mainframe.selected_camera = id_
+            # elif id_ < len(self._camera3d_list):
+            wx.GetApp().mainframe.selected_camera = id_
         elif event.Moving():
             self._mouse_pos = event.GetPosition()
         else:
@@ -461,17 +455,20 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if viewcube_area[0] <= mouse[0] <= viewcube_area[0] + viewcube_area[2] and \
            viewcube_area[1] <= mouse[1] <= viewcube_area[1] + viewcube_area[3]:
             self._viewcube.hover_id = id_
-            for camera in self._camera3d_list:
-                camera.hovered = False
+            # for camera in self._camera3d_list:
+                # camera.hovered = False
         else:
             self._viewcube.hover_id = -1
-            for camera in self._camera3d_list:
-                camera.hovered = camera.cam_id == id_
+            # for camera in self._camera3d_list:
+                # camera.hovered = camera.cam_id == id_
 
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
-        """Renders pickable objects with RGB color corresponding to id."""
+        """Renders pickable objects with RGB color corresponding to id.
+
+        TODO: needs changing"""
+        return
         for camera in self._camera3d_list:
             id_ = camera.cam_id
             r = (id_ & (0x0000000FF << 0))  >> 0
@@ -513,7 +510,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             a, b = point.tilt, point.pan
             model =  \
                 glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
-                glm.scale(glm.mat4(), glm.vec3(10, 10, 10)) * \
+                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
                 glm.mat4(math.cos(a) * math.cos(b), -math.sin(a), math.cos(a) * math.sin(b), 0.0,
                          math.sin(a) * math.cos(b), math.cos(a), math.sin(a) * math.sin(b), 0.0,
                          -math.sin(b), 0.0, math.cos(b), 0.0,
@@ -542,14 +539,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # if self._proxy3d is not None:
         #     self._proxy3d.render()
-
-        # if not self._camera3d_list:
-        #     return
-        # else:
-        #     for cam in self._camera3d_list:
-        #         cam.render()
-
-        # pass
 
     def _render_viewcube(self) -> None:
         if self._viewcube is not None:
@@ -612,22 +601,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     @property
-    def camera3d_scale(self) -> int:
-        return self._camera3d_scale
+    def object_scale(self) -> float:
+        return self._object_scale
 
-    @camera3d_scale.setter
-    def camera3d_scale(self, value: int) -> None:
-        self._camera3d_scale = value
-        Camera3D.set_scale(value)
-        self._dirty = True
-
-    @property
-    def camera3d_list(self) -> List[Camera3D]:
-        return self._camera3d_list
-
-    @camera3d_list.setter
-    def camera3d_list(self, value: List[Camera3D]) -> None:
-        self._camera3d_list = value
+    @object_scale.setter
+    def object_scale(self, value: float) -> None:
+        self._object_scale = value
         self._dirty = True
 
     # -----------------------

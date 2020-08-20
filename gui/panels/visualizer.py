@@ -1,7 +1,5 @@
 """VisualizerPanel class."""
 
-import random
-from gl.camera3d import Camera3D
 from gl.glcanvas import GLCanvas3D
 from typing import List, Optional
 
@@ -109,56 +107,3 @@ class VisualizerPanel(wx.Panel):
     @property
     def glcanvas(self) -> GLCanvas3D:
         return self._glcanvas
-
-
-    # ------------------
-    # Camera3D functions
-    # ------------------
-
-    # def on_clear_cameras(self) -> None:
-    #     """Clear Camera3D list."""
-    #     self.parent.selected_camera = None
-    #     self._glcanvas.camera3d_list = []
-    #     self._glcanvas.dirty = True
-
-    def get_camera_objects(self) -> List[Camera3D]:
-        """Return Camera3D list."""
-        return self._glcanvas.camera3d_list
-
-    def add_camera(self, id_: int = -1) -> str:
-        """Add new Camera3D."""
-        x = random.random() * self._build_dimensions[0] - self._build_dimensions[3]
-        y = random.random() * self._build_dimensions[1] - self._build_dimensions[4]
-        z = random.random() * self._build_dimensions[2] - self._build_dimensions[5]
-        b = random.randrange(0, 360, 5)
-        c = random.randrange(0, 360, 5)
-
-        if id_ == -1:
-            id_ = self._generate_camera_id()
-
-        camera = Camera3D(self._glcanvas, id_, x, y, z, b, c)
-        self._glcanvas.camera3d_list.append(camera)
-        self._glcanvas.dirty = True
-
-        return str(camera.cam_id)
-
-    def get_camera_by_id(self, id_: int) -> Optional[Camera3D]:
-        """Return Camera3D given id."""
-        if self._glcanvas.camera3d_list:
-            for cam in self._glcanvas.camera3d_list:
-                if cam.cam_id == id_:
-                    return cam
-        return None
-
-    def _generate_camera_id(self) -> int:
-        """Generate a new id for a camera."""
-        if self._glcanvas.camera3d_list:
-            self._glcanvas.camera3d_list.sort(key=lambda x: x.cam_id)
-            return self._glcanvas.camera3d_list[-1].cam_id + 1
-        return 0
-
-    def get_selected_camera(self) -> Optional[Camera3D]:
-        """Return currently selected Camera3D."""
-        if self._selected_cam:
-            return self._selected_cam
-        return None
