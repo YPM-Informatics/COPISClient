@@ -5,6 +5,7 @@
 import wx
 
 from appconfig import AppConfig
+from copiscore import COPISCore
 from gui.main_frame import MainFrame
 
 
@@ -15,6 +16,8 @@ class COPISApp(wx.App):
 
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
+
+        self.core = COPISCore()
 
         self.appconfig = None
         self.appconfig_exists = False

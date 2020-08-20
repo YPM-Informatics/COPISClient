@@ -2,21 +2,21 @@
 
 import random
 from gl.camera3d import Camera3D
-from gl.canvas3d import Canvas3D
+from gl.glcanvas import GLCanvas3D
 from typing import List, Optional
 
 import wx
 
 
 class VisualizerPanel(wx.Panel):
-    """Visualizer panel. Creates a Canvas3D OpenGL canvas.
+    """Visualizer panel. Creates a GLCanvas3D OpenGL canvas.
 
     Args:
         parent: Pointer to a parent wx.Frame.
 
     Attributes:
         dirty: A boolean indicating if the OpenGL canvas needs updating or not.
-        glcanvas: Read only; A Canvas3D object.
+        glcanvas: Read only; A GLCanvas3D object.
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -27,7 +27,7 @@ class VisualizerPanel(wx.Panel):
         self._selected_cam = None
         self._build_dimensions = [400, 400, 400, 200, 200, 200]
 
-        self._glcanvas = Canvas3D(
+        self._glcanvas = GLCanvas3D(
             self,
             build_dimensions=self._build_dimensions,
             axes=True,
@@ -72,12 +72,12 @@ class VisualizerPanel(wx.Panel):
         navbar.SetSizerAndFit(navbar_sizer)
         sizer.Add(navbar, 0, wx.EXPAND)
 
-        # add Canvas3D
+        # add GLCanvas3D
         sizer.Add(self._glcanvas, 1, wx.EXPAND)
         self.SetSizerAndFit(sizer)
 
     def on_zoom_slider(self, event: wx.ScrollEvent) -> None:
-        """Update Canvas3D zoom when slider is updated."""
+        """Update GLCanvas3D zoom when slider is updated."""
         self._glcanvas.zoom = event.GetInt() / 10
 
     def set_zoom_slider(self, value: float) -> None:
@@ -107,17 +107,19 @@ class VisualizerPanel(wx.Panel):
         self._glcanvas.dirty = value
 
     @property
-    def glcanvas(self) -> Canvas3D:
+    def glcanvas(self) -> GLCanvas3D:
         return self._glcanvas
+
 
     # ------------------
     # Camera3D functions
     # ------------------
 
-    def on_clear_cameras(self) -> None:
-        """Clear Camera3D list."""
-        self._glcanvas.camera3d_list = []
-        self._glcanvas.dirty = True
+    # def on_clear_cameras(self) -> None:
+    #     """Clear Camera3D list."""
+    #     self.parent.selected_camera = None
+    #     self._glcanvas.camera3d_list = []
+    #     self._glcanvas.dirty = True
 
     def get_camera_objects(self) -> List[Camera3D]:
         """Return Camera3D list."""
@@ -160,17 +162,3 @@ class VisualizerPanel(wx.Panel):
         if self._selected_cam:
             return self._selected_cam
         return None
-
-    def set_selected_camera(self, id_: int) -> None:
-        """Select an existing Camera3D based on id."""
-        # reset previously selected camera
-        last_selected = self.get_selected_camera()
-        if last_selected:
-            last_selected.selected = False
-
-        # update new selected camera
-        self._selected_cam = self.get_camera_by_id(id_)
-        self._selected_cam.selected = True
-
-        # refresh glcanvas
-        self._glcanvas.dirty = True
