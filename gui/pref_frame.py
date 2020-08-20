@@ -13,7 +13,7 @@ class PreferenceFrame(wx.Frame):
 
     def init_panel(self):
         curr_dims = self._glcanvas.build_dimensions
-        curr_scale = self._glcanvas.camera3d_scale
+        curr_scale = self._glcanvas.object_scale
         curr_proxy_style = self._glcanvas.proxy3d.style
         curr_proxy_dims = self._glcanvas.proxy3d.dimensions
         curr_proxy_color = self._glcanvas.proxy3d.color
@@ -258,4 +258,4 @@ class PreferenceFrame(wx.Frame):
 
     def on_slider(self, event):
         slider = event.GetEventObject()
-        self._glcanvas.camera3d_scale = slider.Value
+        self._glcanvas.object_scale = slider.Value

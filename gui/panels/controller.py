@@ -62,9 +62,9 @@ class ControllerPanel(wx.VScrolledWindow):
         hboxTop.Add(self.refreshBtn)
         hboxTop.AddStretchSpacer()
 
-        self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='&Create 3D camera')
-        self.createVCamBtn.Bind(wx.EVT_BUTTON, self.on_create_virtual_camera)
-        hboxTop.Add(self.createVCamBtn)
+        # self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='&Create 3D camera')
+        # self.createVCamBtn.Bind(wx.EVT_BUTTON, self.on_create_virtual_camera)
+        # hboxTop.Add(self.createVCamBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag=wx.LEFT|wx.BOTTOM|wx.EXPAND, border=15)
 
         hboxXyzbc = wx.BoxSizer()
@@ -213,6 +213,8 @@ class ControllerPanel(wx.VScrolledWindow):
         return vbox
 
     def on_move(self, event):
+        set_dialog('DEBUG: on_move()')
+        return
         camera = self.main_combo.GetSelection()
         if camera != -1:
             axis = event.GetEventObject().axis
@@ -238,16 +240,17 @@ class ControllerPanel(wx.VScrolledWindow):
             set_dialog('Please select the camera to control.')
 
     def on_focus_center(self, event):
+        set_dialog('DEBUG: on_focus_center()')
+        return
         if self.parent.selected_cam is not None:
             self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camera).on_focus_center()
         else:
             set_dialog('Please select the camera to control.')
 
     def on_main_combo(self, event):
-        camera = self.main_combo.GetSelection()
-        self.parent.set_selected_camera(camera)
-        self.parent.selected_camera = camera
-        print("on_main_combo, controller.py: ", camera)
+        id_ = self.main_combo.GetSelection()
+        self.parent.selected_camera = id_
+        print("on_main_combo, controller.py: ", id_)
 
     def on_take_picture(self, event):
         camera = self.main_combo.GetSelection()
@@ -259,7 +262,7 @@ class ControllerPanel(wx.VScrolledWindow):
     def onRemoteUSBRadioGroup(self, event):
         rb = event.GetEventObject()
 
-        self.visualizer_panel.on_clear_cameras()
+        # self.visualizer_panel.on_clear_cameras()
         self.main_combo.Clear()
 
         if rb.Label == 'USB':
@@ -288,12 +291,25 @@ class ControllerPanel(wx.VScrolledWindow):
 
     def on_refresh(self, event):
         # self.visualizer_panel.on_clear_cameras()
-        self.main_combo.Clear()
+        # self.main_combo.Clear()
 
         if self.edsdkRb.GetValue():
             self.parent.is_edsdk_on = False
-            self.parent.get_camera_list()
+            cam_list = self.parent.get_edsdk_camera_list()
+            cam_count = cam_list.get_count()
 
-    def on_create_virtual_camera(self, event):
-        camera = self.visualizer_panel.add_camera()
-        self.parent.controller_panel.main_combo.Append('camera ' + camera)
+            message = str(cam_count)
+            if cam_count == 0:
+                message = 'There is no camera '
+
+            elif cam_count == 1:
+                message += ' camera is '
+            else:
+                message += ' cameras are '
+            message += 'connected.'
+
+            self.parent.console_panel.print(message)
+
+            for i in range(cam_count):
+                # cam_id = self.visualizer_panel.add_camera(id_=i)
+                self.main_combo.Append('camera ' + cam_id)

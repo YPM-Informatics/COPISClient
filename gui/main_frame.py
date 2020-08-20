@@ -508,7 +508,10 @@ class MainFrame(wx.Frame):
         self.is_edsdk_on = True
         self.get_camera_list()
 
-    def get_camera_list(self) -> None:
+
+    def get_edsdk_camera_list(self) -> Any:
+        """TODO: improve"""
+        return self.edsdk_object.CameraList()
         self.cam_list = self.edsdk_object.CameraList()
         cam_count = self.cam_list.get_count()
 
@@ -529,35 +532,10 @@ class MainFrame(wx.Frame):
             self.controller_panel.main_combo.Append('camera ' + cam_id)
 
     def get_selected_camera(self) -> Optional[Any]:
+        """TODO: improve"""
         if self.selected_cam:
             return self.selected_cam
         return None
-
-    def set_selected_camera(self, cam_id: int) -> None:
-        # check if selection is the same as previous selection
-        new_selected = self.visualizer_panel.get_camera_by_id(cam_id)
-        last_selected = self.get_selected_camera()
-
-        if new_selected == last_selected:
-            return
-
-        # reset previously selected camera
-        if last_selected:
-            last_selected.selected = False
-
-        # update new selected camera
-        self.selected_cam = new_selected
-        self.selected_cam.selected = True
-
-        # connect to physical camera
-        if self.cam_list:
-            if self.cam_list[cam_id]:
-                self.cam_list.set_selected_cam_by_id(cam_id)
-
-        # refresh canvas and combobox
-        self.visualizer_panel.dirty = True
-        self.controller_panel.main_combo.SetSelection(cam_id)
-
 
 
     @property

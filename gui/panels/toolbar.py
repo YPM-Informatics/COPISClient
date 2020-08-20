@@ -103,13 +103,8 @@ class ToolbarPanel(aui.AuiToolBar):
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.GetId() == ToolIds.PLAY.value:
-            cam_id = self.parent.controller_panel.main_combo.GetSelection()
-            if cam_id != -1:
-                cam = self.parent.visualizer_panel.get_camera_by_id(cam_id)
-                if cam:
-                    cam.translate(1, 1, 1)
-            else:
-                set_dialog('Please select the camera to control.')
+            camera = self.parent.controller_panel.main_combo.GetSelection()
+            set_dialog(f'DEBUG: selected camera "{camera}".')
         elif event.GetId() == ToolIds.PAUSE.value:
             pass
         else:
