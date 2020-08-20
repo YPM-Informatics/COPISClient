@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import wx
+
 from enums import CamAxis
-from utils import set_dialog
 from util.Canon.EDSDKLib import *
+from utils import set_dialog
 
 
 class ControllerPanel(wx.VScrolledWindow):
@@ -50,7 +51,7 @@ class ControllerPanel(wx.VScrolledWindow):
         hboxTop = wx.BoxSizer()
         camLabel = wx.StaticText(self, wx.ID_ANY, label='Camera: ', style=wx.ALIGN_LEFT)
         hboxTop.Add(camLabel)
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(75, -1))
+        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(80, -1))
         self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
         hboxTop.Add(self.masterCombo)
         # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
@@ -212,8 +213,8 @@ class ControllerPanel(wx.VScrolledWindow):
         return vbox
 
     def OnMove(self, event):
-        camid = self.masterCombo.GetSelection()
-        if camid != -1:
+        cam_id = self.masterCombo.GetSelection()
+        if cam_id != -1:
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
 
@@ -229,7 +230,7 @@ class ControllerPanel(wx.VScrolledWindow):
                 if direction == CamAxis.MINUS:
                     size = -size
 
-            cam = self.visualizer_panel.get_camera_by_id(camid)
+            cam = self.visualizer_panel.get_camera_by_id(cam_id)
             if cam:
                 cam.on_move(axis, size)
             self.visualizer_panel.dirty = True
@@ -238,18 +239,16 @@ class ControllerPanel(wx.VScrolledWindow):
 
     def OnFocusCenter(self, event):
         if self.parent.selected_cam is not None:
-            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camid).on_focus_center()
+            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.cam_id).on_focus_center()
         else:
             set_dialog('Please select the camera to control.')
 
     def OnMasterCombo(self, event):
-        choice = self.masterCombo.GetStringSelection()
-        id = int(choice[-1])
-
-        self.parent.set_selected_camera(id)
+        cam_id = self.masterCombo.GetSelection()
+        self.parent.set_selected_camera(cam_id)
 
     def OnTakePicture(self, event):
-        camid = self.masterCombo.GetSelection()
+        cam_id = self.masterCombo.GetSelection()
         if self.parent.get_selected_camera() is not None:
             self.parent.get_selected_camera().shoot()
         else:
@@ -294,5 +293,5 @@ class ControllerPanel(wx.VScrolledWindow):
             self.parent.get_camera_list()
 
     def onCreateVirtualCam(self, event):
-        camid = self.visualizer_panel.add_camera()
-        self.parent.controller_panel.masterCombo.Append('camera ' + camid)
+        cam_id = self.visualizer_panel.add_camera()
+        self.parent.controller_panel.masterCombo.Append('camera ' + cam_id)

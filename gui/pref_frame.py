@@ -1,21 +1,22 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import wx
+
 
 class PreferenceFrame(wx.Frame):
     def __init__(self, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, wx.ID_ANY, 'Preferences', size=(300, 360))
-        self.canvas = parent.visualizer_panel.glcanvas
+        self._glcanvas = parent.visualizer_panel.glcanvas
 
         self.init_panel()
         self.Centre()
 
     def init_panel(self):
-        curr_dims = self.canvas.build_dimensions
-        curr_scale = self.canvas.camera3d_scale
-        curr_proxy_style = self.canvas.proxy3d.style
-        curr_proxy_dims = self.canvas.proxy3d.dimensions
-        curr_proxy_color = self.canvas.proxy3d.color
+        curr_dims = self._glcanvas.build_dimensions
+        curr_scale = self._glcanvas.camera3d_scale
+        curr_proxy_style = self._glcanvas.proxy3d.style
+        curr_proxy_dims = self._glcanvas.proxy3d.dimensions
+        curr_proxy_color = self._glcanvas.proxy3d.color
 
         self.panel = wx.Panel(self, style=wx.BORDER_DEFAULT)
 
@@ -201,7 +202,7 @@ class PreferenceFrame(wx.Frame):
         scale_box = wx.BoxSizer()
         scale_label = wx.StaticText(self.panel, wx.ID_ANY, label='Scale: ')
         scale_box.Add(scale_label)
-        self.scale_slider = wx.Slider(self.panel, value=curr_scale, minValue=50, maxValue=1000)
+        self.scale_slider = wx.Slider(self.panel, wx.ID_ANY, curr_scale, 5, 50, size=(225, -1))
         scale_box.Add(self.scale_slider)
 
         camera_box.Add(scale_box, 1, flag=wx.LEFT, border=15)
@@ -243,18 +244,18 @@ class PreferenceFrame(wx.Frame):
 
         # Handles dimension spin controls
         if name[0] == 'd' or name[0] == 'o':
-            self.canvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
+            self._glcanvas.build_dimensions = [self.width_sc.Value, self.length_sc.Value, self.height_sc.Value, self.x_sc.Value, self.y_sc.Value, self.z_sc.Value]
         # Handles proxy spin controls
         elif name[0] == 'p':
-            self.canvas.proxy3d.style = self.proxy_style_combo.Value
-            self.canvas.proxy3d.color = self.canvas.proxy3d.color = [self.color_r_sc.Value, self.color_g_sc.Value, self.color_b_sc.Value]
+            self._glcanvas.proxy3d.style = self.proxy_style_combo.Value
+            self._glcanvas.proxy3d.color = self._glcanvas.proxy3d.color = [self.color_r_sc.Value, self.color_g_sc.Value, self.color_b_sc.Value]
             if self.proxy_style_combo.Value == 'Sphere':
-                self.canvas.proxy3d.dimensions = [self.sphere_radius_sc.Value]
+                self._glcanvas.proxy3d.dimensions = [self.sphere_radius_sc.Value]
             elif self.proxy_style_combo.Value == 'Cylinder':
-                self.canvas.proxy3d.dimensions = [self.cylinder_radius_sc.Value, self.cylinder_height_sc.Value]
+                self._glcanvas.proxy3d.dimensions = [self.cylinder_radius_sc.Value, self.cylinder_height_sc.Value]
             elif self.proxy_style_combo.Value == 'Cube':
-                self.canvas.proxy3d.dimensions = [self.cube_width_sc.Value, self.cube_length_sc.Value, self.cube_height_sc.Value]
+                self._glcanvas.proxy3d.dimensions = [self.cube_width_sc.Value, self.cube_length_sc.Value, self.cube_height_sc.Value]
 
     def on_slider(self, event):
         slider = event.GetEventObject()
-        self.canvas.camera3d_scale = slider.Value
+        self._glcanvas.camera3d_scale = slider.Value
