@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Proxy3D class."""
 
 from OpenGL.GL import *

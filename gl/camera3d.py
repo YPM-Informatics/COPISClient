@@ -1,33 +1,50 @@
-#!/usr/bin/env python3
 """Camera3D class."""
 
 import math
-import numpy as np
-from enums import CamAxis, CamMode
+from gl.thing import GLThing
+from typing import Union
 
-import wx
+import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+import glm
+from enums import CamAxis, CamMode
 
-class Camera3D():
-    def __init__(self, camid, x, y, z, b, c):
-        self._dirty = False  # dirty flag to track when we need to re-render the camera
-        self.is_selected = False
 
-        self._camid = camid
+class Camera3D(GLThing):
+    """Manage a virtual camera in a GLCanvas.
+
+    Args:
+        parent: Pointer to a parent GLCanvas.
+        TODO: add other arguments.
+
+    Attributes:
+        cam_id: An integer representing the id of the camera.
+
+    TODO: consolidate Camera3D and physical camera object into some sort of
+    general object class.
+    """
+
+    _scale = 10
+
+    def __init__(self, parent, cam_id: int,
+                 x: float, y: float, z: float, b: float, c: float) -> None:
+        """Inits Camera3D with constructors."""
+        super().__init__(parent)
+        self._canvas = parent
+        self._cam_id = cam_id
         self._x = float(x)
         self._y = float(y)
         self._z = float(z)
         self._b = float(b)
         self._c = float(c)
-        self._scale = 1
 
-        self.start = (self._x, self._y, self._z, self._b, self._c)
-        self.mode = CamMode.NORMAL
+        self._start = (self._x, self._y, self._z, self._b, self._c)
+        self._mode = CamMode.NORMAL
 
-        self._angle = 0
-        self._rotation_vector = []
+        self._rotation_angle = 0
+        self._rotation_vec = glm.vec3()
 
         self.trans = False
         self.n_increment = 0
@@ -35,140 +52,199 @@ class Camera3D():
         self.increment_y = 0
         self.increment_z = 0
 
-    def render(self):
+        self._vao_box = None
+        self._vao_side = None
+        self._vao_top = None
+
+    def create_vao(self) -> None:
+        """Bind VAOs to define vertex data."""
+        self._vao_box, self._vao_side, self._vao_top = glGenVertexArrays(3)
+        vbo = glGenBuffers(4)
+
+        vertices = np.array([
+            -0.5, -1.0, -1.0,  # bottom
+            0.5, -1.0, -1.0,
+            0.5, -1.0, 1.0,
+            -0.5, -1.0, 1.0,
+            -0.5, 1.0, -1.0,   # right
+            0.5, 1.0, -1.0,
+            0.5, -1.0, -1.0,
+            -0.5, -1.0, -1.0,
+            -0.5, 1.0, 1.0,    # top
+            0.5, 1.0, 1.0,
+            0.5, 1.0, -1.0,
+            -0.5, 1.0, -1.0,
+            -0.5, -1.0, 1.0,   # left
+            0.5, -1.0, 1.0,
+            0.5, 1.0, 1.0,
+            -0.5, 1.0, 1.0,
+            0.5, 1.0, -1.0,    # back
+            0.5, 1.0, 1.0,
+            0.5, -1.0, 1.0,
+            0.5, -1.0, -1.0,
+            -0.5, -1.0, -1.0,  # front
+            -0.5, -1.0, 1.0,
+            -0.5, 1.0, 1.0,
+            -0.5, 1.0, -1.0,
+        ], dtype=np.float32)
+        glBindVertexArray(self._vao_box)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        # ---
+
+        thetas = np.linspace(0, 2 * np.pi, 24, endpoint=True)
+        y = np.cos(thetas) * 0.7
+        z = np.sin(thetas) * 0.7
+        vertices = np.zeros(6 * 24, dtype=np.float32)
+        vertices[::3] = np.tile(np.array([1.0, 0.5], dtype=np.float32), 24)
+        vertices[1::3] = np.repeat(y, 2)
+        vertices[2::3] = np.repeat(z, 2)
+        glBindVertexArray(self._vao_side)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        # ---
+
+        vertices = np.concatenate((np.array([1.0, 0.0, 0.0]), vertices)).astype(np.float32)
+        indices = np.insert(np.arange(24) * 2 + 1, 0, 0).astype(np.uint16)
+        glBindVertexArray(self._vao_top)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+
+        # ---
+
+        glBindVertexArray(0)
+        glDeleteBuffers(4, vbo)
+
+    def render(self) -> None:
         """Render camera."""
-        # Set color based on selection
-        if self.is_selected:
-            color = (75, 230, 150)
+        if not self.init():
+            return
+
+        # color based on selection type
+        if self._selected:
+            color = glm.vec4(75, 230, 150, 255) / 255.0
+        elif self._hovered:
+            color = glm.vec4(151, 191, 237, 255) / 255.0
         else:
-            hue = 125 - self._camid
-            color = [hue, hue, hue]
+            color = glm.vec4(125, 125, 125, 255) / 255.0
 
-        scale = self._scale
+        proj = self._canvas.projection_matrix
+        modelview = self._canvas.modelview_matrix * self.get_model_matrix()
 
-        glPushMatrix()
-        glTranslatef(self._x, self._y, self._z)
-        if self.mode == CamMode.NORMAL:
-            if self._b != 0.0:
-                glRotatef(self._b, 0, 0, 1)
-            if self._c != 0.0:
-                glRotatef(self._c, 0, 1, 0)
-        elif self.mode == CamMode.ROTATE:
-            glRotatef(self._angle, *self._rotation_vector)
+        glUseProgram(self._canvas.get_shader_program('color'))
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
+        glUniform4fv(2, 1, glm.value_ptr(color))
 
-        if self.trans:
-            self.translate()
-            self._dirty = True
+        glBindVertexArray(self._vao_box)
+        glDrawArrays(GL_QUADS, 0, 24)
 
-        glBegin(GL_QUADS)
+        color -= 0.03
+        glUniform4fv(2, 1, glm.value_ptr(color))
+        glBindVertexArray(self._vao_side)
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 48)
 
-        # bottom
-        glColor3ub(*color)
-        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
-        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
+        color -= 0.03
+        glUniform4fv(2, 1, glm.value_ptr(color))
+        glBindVertexArray(self._vao_top)
+        glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
 
-        # right
-        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
-        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
-        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glBindVertexArray(0)
+        glUseProgram(0)
 
-        # top
-        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
-        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
+    def render_for_picking(self) -> None:
+        if not self.init():
+            return
 
-        # left
-        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
-        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
+        proj = self._canvas.projection_matrix
+        modelview = self._canvas.modelview_matrix * self.get_model_matrix()
 
-        # back
-        glVertex3f( 0.025 * scale,  0.05 * scale, -0.05 * scale)
-        glVertex3f( 0.025 * scale,  0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale,  0.05 * scale)
-        glVertex3f( 0.025 * scale, -0.05 * scale, -0.05 * scale)
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
-        # front
-        glVertex3f(-0.025 * scale, -0.05 * scale, -0.05 * scale)
-        glVertex3f(-0.025 * scale, -0.05 * scale,  0.05 * scale)
-        glVertex3f(-0.025 * scale,  0.05 * scale,  0.05 * scale)
-        glVertex3f(-0.025 * scale,  0.05 * scale, -0.05 * scale)
-        glEnd()
+        # render all parts of camera
+        glBindVertexArray(self._vao_box)
+        glDrawArrays(GL_QUADS, 0, 24)
+        glBindVertexArray(self._vao_side)
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 48)
+        glBindVertexArray(self._vao_top)
+        glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
 
-        glPushMatrix()
+        glBindVertexArray(0)
+        glUseProgram(0)
 
-        # lens
-        glColor3ub(*[x - 15 for x in color])
-        glTranslated(-0.05 * scale, 0.0, 0.0)
-        quadric = gluNewQuadric()
-        glRotatef(90.0, 0.0, 1.0, 0.0)
-        gluCylinder(quadric, 0.025 * scale, 0.025 * scale, 0.03 * scale, 16, 16)
-        gluDeleteQuadric(quadric)
+    def get_model_matrix(self) -> glm.mat4:
+        """Returns a glm.mat4 representing the camera's modelview matrix."""
+        scale = glm.vec3(self._scale, self._scale, self._scale)
 
-        # cap
-        glColor3ub(*[x - 25 for x in color])
-        circleQuad = gluNewQuadric()
-        gluQuadricOrientation(circleQuad, GLU_INSIDE)
-        gluDisk(circleQuad, 0.0, 0.025 * scale, 16, 1)
-        gluDeleteQuadric(circleQuad)
+        if self._mode == CamMode.NORMAL:
+            return glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+                glm.scale(glm.mat4(), scale) * \
+                glm.rotate(glm.mat4(), self._b, glm.vec3(0.0, 0.0, 1.0)) * \
+                glm.rotate(glm.mat4(), self._c, glm.vec3(0.0, 1.0, 0.0))
 
-        glPopMatrix()
-        glPopMatrix()
+        # self._mode == CamMode.ROTATE:
+        return glm.translate(glm.mat4(), glm.vec3(self._x, self._y, self._z)) * \
+            glm.scale(glm.mat4(), scale) * \
+            glm.rotate(glm.mat4(), self._rotation_angle, self._rotation_vec)
 
     @property
-    def scale(self):
-        return self._scale
+    def cam_id(self) -> int:
+        return self._cam_id
 
-    @scale.setter
-    def scale(self, value):
-        self._scale = value
+    @cam_id.setter
+    def cam_id(self, value: int) -> None:
+        self._cam_id = value
 
-    @property
-    def camid(self):
-        return self._camid
+    @classmethod
+    def set_scale(cls, value: int) -> None:
+        cls._scale = value
 
-    @camid.setter
-    def camid(self, value):
-        self._camid = value
+    def get_rotation_angle(self, v1: glm.vec3, v2: glm.vec3) -> float:
+        """Return rotation angle between two vectors.
 
-    @property
-    def dirty(self):
-        return self._dirty
+        TODO: convert to only using glm
+        """
+        v1 = glm.normalize(v1)
+        v2 = glm.normalize(v2)
+        return np.degrees(np.arccos(np.clip(np.dot(v1, v2), -1, 1)))
 
-    @dirty.setter
-    def dirty(self, value):
-        self._dirty = value
+    def on_focus_center(self) -> None:
+        """Point camera towards origin.
 
-    def get_rotation_angle(self, v1, v2):
-        v1_u = self.get_unit_vector(v1)
-        v2_u = self.get_unit_vector(v2)
-        return np.degrees(np.arccos(np.clip(np.dot(v1_u, v2_u), -1, 1)))
+        TODO: currently broken.
+        """
+        self._mode = CamMode.ROTATE
+        camera_center = glm.vec3(self._x, self._y, self._z)
+        current_facing = glm.vec3(self._x - 0.5, self._y, self._z)
+        target_facing = glm.vec3(self._canvas.build_dimensions[:3])
 
-    def get_unit_vector(self, vector):
-        return vector / np.linalg.norm(vector)
+        v1 = current_facing - camera_center
+        v2 = target_facing - camera_center
 
-    def on_focus_center(self):
-        self.mode = CamMode.ROTATE
-        camera_center = (self._x, self._y, self._z)
-        current_facing = (self._x - 0.5, self._y, self._z)
-        target_facing = (0.0, 0.0, 0.0)
+        self._rotation_angle = self.get_rotation_angle(v1, v2)
+        self._rotation_vec = glm.cross(glm.normalize(v1), glm.normalize(v2))
+        self._canvas.dirty = True
 
-        v1 = np.subtract(current_facing, camera_center)
-        v2 = np.subtract(target_facing, camera_center)
-
-        self._angle = self.get_rotation_angle(v1, v2)
-        self._rotation_vector = np.cross(self.get_unit_vector(v1), self.get_unit_vector(v2))
-        self.render()
-
-    def get_z_by_angle(self, angle):
+    def get_z_by_angle(self, angle: float) -> float:
         return np.sqrt(np.square(0.5 / angle) - 0.25)
 
-    def on_move(self, axis, amount):
+    def on_move(self, axis: Union[CamAxis, str], amount: float) -> None:
+        """Update camera position or angle."""
         if axis in CamAxis and amount != 0:
             if axis == CamAxis.X:
                 self._x += amount
@@ -181,8 +257,11 @@ class Camera3D():
             elif axis == CamAxis.C:
                 self._c += amount
 
-    def translate(self, newx=0, newy=0, newz=0):
-        # initialize nIncre and increxyz, skip if already initialized
+    def translate(self,
+                  newx: float = 0,
+                  newy: float = 0,
+                  newz: float = 0) -> None:
+        # initialize n_increment and increment_*, skip if already initialized
         if self.trans:
             return
 
@@ -193,10 +272,10 @@ class Camera3D():
         maxd = max(dx, dy, dz)
         scale = maxd / 0.01
 
-        self.nIncre = scale
-        self.increx = dx / scale
-        self.increy = dy / scale
-        self.increz = dz / scale
+        self.n_increment = scale
+        self.increment_x = dx / scale
+        self.increment_y = dy / scale
+        self.increment_z = dz / scale
 
         # setting trans to true allows this function to be called on cam.render
         self.trans = True
@@ -212,5 +291,3 @@ class Camera3D():
             self._y = round(self._y, 2)
             self._z = round(self._z, 2)
             self.trans = False
-
-        self._dirty = True

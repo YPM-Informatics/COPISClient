@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
+"""Enums."""
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class ToolIds(Enum):
-    PLAY     = 1
-    PAUSE    = 2
-    STOP     = 3
+    PLAY = 1
+    PAUSE = 2
+    STOP = 3
     SETTINGS = 4
 
 
@@ -23,3 +23,18 @@ class CamAxis(Enum):
 class CamMode(Enum):
     NORMAL = 'normal'
     ROTATE = 'rotate'
+
+
+class ViewCubePos(Enum):
+    TOP_LEFT = 0
+    TOP_RIGHT = 1
+    BOTTOM_LEFT = 2
+    BOTTOM_RIGHT = 3
+
+
+class ViewCubeSize(IntEnum):
+    SMALLER = 90
+    SMALL = 105
+    MEDIUM = 120
+    LARGE = 140
+    LARGER = 160

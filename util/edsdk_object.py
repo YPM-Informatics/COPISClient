@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
+"""TODO"""
 
 import time
-import utils
+from ctypes import *
 
 import wx
-from ctypes import *
+
+import utils
 from util.Canon.EDSDKLib import *
 
 _edsdk = None
@@ -143,9 +144,9 @@ property_handler = PropertyHandlerType(_handle_property)
 
 
 class Camera:
-    def __init__(self, camid, camref):
+    def __init__(self, cam_id, camref):
         self.camref = camref
-        self.camid = camid
+        self.cam_id = cam_id
         self.device = c_void_p()
         self.is_evf_on = False
         self.running = False
@@ -167,7 +168,7 @@ class Camera:
             _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
             _edsdk.EdsSetCapacity(self.camref, EdsCapacity(10000000, 512, 1))
         except Exception as e:
-            _console.print('An exception occurred while connecting to a camera' + str(self.camid + 1) + ': ' + e.args[0])
+            _console.print('An exception occurred while connecting to a camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
     def __del__(self):
         if self.camref is not None:
@@ -176,13 +177,13 @@ class Camera:
                 _edsdk.EdsRelease(self.camref)
                 _running = False
             except Exception as e:
-                _console.print('An exception occurred while disconnecting a camera' + str(self.camid + 1) + ': ' + e.args[0])
+                _console.print('An exception occurred while disconnecting a camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
     def shoot(self):
         try:
             _edsdk.EdsSendCommand(self.camref, 0, 0)
         except Exception as e:
-            _console.print('An exception occurred while taking a photo with camera' + str(self.camid + 1) + ': ' + e.args[0])
+            _console.print('An exception occurred while taking a photo with camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
     def startEvf(self):
         if not self.is_evf_on:
@@ -197,7 +198,7 @@ class Camera:
                 self.evfStream = _edsdk.EdsCreateMemoryStream(0)
                 self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
             except Exception as e:
-                _console.print('An exception occurred while starting a live view with camera' + str(self.camid + 1) + ': ' + e.args[0])
+                _console.print('An exception occurred while starting a live view with camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
             time.sleep(0.5)
             self.download_evf()
@@ -219,7 +220,7 @@ class Camera:
             image_data_pointer = _edsdk.EdsGetPointer(self.evfStream, image_data)
             self.img_byte_data = bytearray(string_at(image_data_pointer, output_length.value))
         except Exception as e:
-            _console.print('An exception occurred while downloading a live view image with camera' + str(self.camid + 1) + ': ' + e.args[0])
+            _console.print('An exception occurred while downloading a live view image with camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
 
     def end_evf(self):
@@ -236,10 +237,11 @@ class Camera:
             _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(device), device.value)
             _console.print('Live view is off.')
         except Exception as e:
-            _console.print('An exception occurred while closing a live view with camera' + str(self.camid + 1) + ': ' + e.args[0])
+            _console.print('An exception occurred while closing a live view with camera' + str(self.cam_id + 1) + ': ' + e.args[0])
 
 
 class CameraList:
+
     def __init__(self):
         self.list = c_void_p(None)
 
@@ -281,8 +283,8 @@ class CameraList:
                     index += 1
         return None
 
-    def set_selected_cam_by_id(self, id):
-        self.selected_camera = self.get_camera_by_id(id)
+    def set_selected_cam_by_id(self, id_):
+        self.selected_camera = self.get_camera_by_id(id_)
         self.selected_camera.connect()
 
         global _camera
