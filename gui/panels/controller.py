@@ -51,19 +51,19 @@ class ControllerPanel(wx.VScrolledWindow):
         hboxTop = wx.BoxSizer()
         camLabel = wx.StaticText(self, wx.ID_ANY, label='Camera: ', style=wx.ALIGN_LEFT)
         hboxTop.Add(camLabel)
-        self.masterCombo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(80, -1))
-        self.masterCombo.Bind(wx.EVT_COMBOBOX, self.OnMasterCombo)
-        hboxTop.Add(self.masterCombo)
+        self.main_combo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(80, -1))
+        self.main_combo.Bind(wx.EVT_COMBOBOX, self.on_main_combo)
+        hboxTop.Add(self.main_combo)
         # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
         # hboxTop.Add(self.setCenterBtn, 1, flag=wx.LEFT, border=5)
 
         self.refreshBtn = wx.Button(self, wx.ID_ANY, label='&Refresh', size=(65, -1))
-        self.refreshBtn.Bind(wx.EVT_BUTTON, self.onRefresh)
+        self.refreshBtn.Bind(wx.EVT_BUTTON, self.on_refresh)
         hboxTop.Add(self.refreshBtn)
         hboxTop.AddStretchSpacer()
 
         self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='&Create 3D camera')
-        self.createVCamBtn.Bind(wx.EVT_BUTTON, self.onCreateVirtualCam)
+        self.createVCamBtn.Bind(wx.EVT_BUTTON, self.on_create_virtual_camera)
         hboxTop.Add(self.createVCamBtn)
         vboxPositioning.Add(hboxTop, 0.5 , flag=wx.LEFT|wx.BOTTOM|wx.EXPAND, border=15)
 
@@ -84,12 +84,12 @@ class ControllerPanel(wx.VScrolledWindow):
         self.yiBtn.axis = CamAxis.Y
         self.yiBtn.direction = CamAxis.PLUS
         hboxYzInc.Add(self.yiBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
-        self.yiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.yiBtn.Bind(wx.EVT_BUTTON, self.on_move)
         self.ziBtn = wx.Button(self, wx.ID_ANY, label='Z+', style=wx.BU_EXACTFIT)
         self.ziBtn.axis = CamAxis.Z
         self.ziBtn.direction = CamAxis.PLUS
         hboxYzInc.Add(self.ziBtn)
-        self.ziBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.ziBtn.Bind(wx.EVT_BUTTON, self.on_move)
         vboxXyz.Add(hboxYzInc)
 
         hboxX = wx.BoxSizer()
@@ -97,12 +97,12 @@ class ControllerPanel(wx.VScrolledWindow):
         self.xrBtn.axis = CamAxis.X
         self.xrBtn.direction = CamAxis.MINUS
         hboxX.Add(self.xrBtn)
-        self.xrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.xrBtn.Bind(wx.EVT_BUTTON, self.on_move)
         self.xiBtn = wx.Button(self, wx.ID_ANY, label='X+', style=wx.BU_EXACTFIT)
         self.xiBtn.axis = CamAxis.X
         self.xiBtn.direction = CamAxis.PLUS
         hboxX.Add(self.xiBtn, 1, flag=wx.LEFT, border=25)
-        self.xiBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.xiBtn.Bind(wx.EVT_BUTTON, self.on_move)
         vboxXyz.Add(hboxX)
 
         hboxYzDec = wx.BoxSizer()
@@ -110,12 +110,12 @@ class ControllerPanel(wx.VScrolledWindow):
         self.yrBtn.axis = CamAxis.Y
         self.yrBtn.direction = CamAxis.MINUS
         hboxYzDec.Add(self.yrBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
-        self.yrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.yrBtn.Bind(wx.EVT_BUTTON, self.on_move)
         self.zrBtn = wx.Button(self, wx.ID_ANY, label='Z-', style=wx.BU_EXACTFIT)
         self.zrBtn.axis = CamAxis.Z
         self.zrBtn.direction = CamAxis.MINUS
         hboxYzDec.Add(self.zrBtn)
-        self.zrBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.zrBtn.Bind(wx.EVT_BUTTON, self.on_move)
         vboxXyz.Add(hboxYzDec)
         hboxXyzbc.Add(vboxXyz)
 
@@ -133,28 +133,28 @@ class ControllerPanel(wx.VScrolledWindow):
         self.ciBtn.axis = CamAxis.C
         self.ciBtn.direction = CamAxis.PLUS
         vboxBc.Add(self.ciBtn, 1, flag=wx.LEFT, border=65)
-        self.ciBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.ciBtn.Bind(wx.EVT_BUTTON, self.on_move)
 
         hboxB = wx.BoxSizer()
         self.brBtn = wx.Button(self, wx.ID_ANY, label='Pan-', style=wx.BU_EXACTFIT)
         self.brBtn.axis = CamAxis.B
         self.brBtn.direction = CamAxis.MINUS
         hboxB.Add(self.brBtn)
-        self.brBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.brBtn.Bind(wx.EVT_BUTTON, self.on_move)
         self.cBtn = wx.Button(self, wx.ID_ANY, label='Center')
         hboxB.Add(self.cBtn)
-        self.cBtn.Bind(wx.EVT_BUTTON, self.OnFocusCenter)
+        self.cBtn.Bind(wx.EVT_BUTTON, self.on_focus_center)
         self.biBtn = wx.Button(self, wx.ID_ANY, label='Pan+', style=wx.BU_EXACTFIT)
         self.biBtn.axis = CamAxis.B
         self.biBtn.direction = CamAxis.PLUS
         hboxB.Add(self.biBtn)
-        self.biBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.biBtn.Bind(wx.EVT_BUTTON, self.on_move)
         vboxBc.Add(hboxB)
         self.crBtn = wx.Button(self, wx.ID_ANY, label='Tilt-', style=wx.BU_EXACTFIT)
         self.crBtn.axis = CamAxis.C
         self.crBtn.direction = CamAxis.MINUS
         vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=65)
-        self.crBtn.Bind(wx.EVT_BUTTON, self.OnMove)
+        self.crBtn.Bind(wx.EVT_BUTTON, self.on_move)
         hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border=25)
 
         vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
@@ -202,19 +202,19 @@ class ControllerPanel(wx.VScrolledWindow):
         vbox2 = wx.BoxSizer(wx.VERTICAL)
         self.takePictureBtn = wx.Button(self, wx.ID_ANY, label='Take Picture')
         vbox2.Add(self.takePictureBtn)
-        self.takePictureBtn.Bind(wx.EVT_BUTTON, self.OnTakePicture)
+        self.takePictureBtn.Bind(wx.EVT_BUTTON, self.on_take_picture)
 
         self.startEvfBtn = wx.Button(self, wx.ID_ANY, label='Start Liveview')
         vbox2.Add(self.startEvfBtn)
-        self.startEvfBtn.Bind(wx.EVT_BUTTON, self.onStartEvf)
+        self.startEvfBtn.Bind(wx.EVT_BUTTON, self.on_start_evf)
         hbox.Add(vbox2, 1, flag=wx.LEFT, border=10)
         vbox.Add(hbox, 1, flag=wx.LEFT)
 
         return vbox
 
-    def OnMove(self, event):
-        cam_id = self.masterCombo.GetSelection()
-        if cam_id != -1:
+    def on_move(self, event):
+        camera = self.main_combo.GetSelection()
+        if camera != -1:
             axis = event.GetEventObject().axis
             direction = event.GetEventObject().direction
 
@@ -230,25 +230,27 @@ class ControllerPanel(wx.VScrolledWindow):
                 if direction == CamAxis.MINUS:
                     size = -size
 
-            cam = self.visualizer_panel.get_camera_by_id(cam_id)
+            cam = self.visualizer_panel.get_camera_by_id(camera)
             if cam:
                 cam.on_move(axis, size)
             self.visualizer_panel.dirty = True
         else:
             set_dialog('Please select the camera to control.')
 
-    def OnFocusCenter(self, event):
+    def on_focus_center(self, event):
         if self.parent.selected_cam is not None:
-            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.cam_id).on_focus_center()
+            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camera).on_focus_center()
         else:
             set_dialog('Please select the camera to control.')
 
-    def OnMasterCombo(self, event):
-        cam_id = self.masterCombo.GetSelection()
-        self.parent.set_selected_camera(cam_id)
+    def on_main_combo(self, event):
+        camera = self.main_combo.GetSelection()
+        self.parent.set_selected_camera(camera)
+        self.parent.selected_camera = camera
+        print("on_main_combo, controller.py: ", camera)
 
-    def OnTakePicture(self, event):
-        cam_id = self.masterCombo.GetSelection()
+    def on_take_picture(self, event):
+        camera = self.main_combo.GetSelection()
         if self.parent.get_selected_camera() is not None:
             self.parent.get_selected_camera().shoot()
         else:
@@ -258,7 +260,7 @@ class ControllerPanel(wx.VScrolledWindow):
         rb = event.GetEventObject()
 
         self.visualizer_panel.on_clear_cameras()
-        self.masterCombo.Clear()
+        self.main_combo.Clear()
 
         if rb.Label == 'USB':
             self.edsdkRb.Enable()
@@ -277,21 +279,21 @@ class ControllerPanel(wx.VScrolledWindow):
             if self.parent.is_edsdk_on:
                 self.parent.terminate_edsdk()
 
-    def onStartEvf(self, event):
+    def on_start_evf(self, event):
         if self.parent.get_selected_camera() is not None:
             self.parent.get_selected_camera().startEvf()
             self.parent.add_evf_pane()
         else:
             set_dialog('Please select the camera to start live view.')
 
-    def onRefresh(self, event):
-        self.visualizer_panel.on_clear_cameras()
-        self.masterCombo.Clear()
+    def on_refresh(self, event):
+        # self.visualizer_panel.on_clear_cameras()
+        self.main_combo.Clear()
 
         if self.edsdkRb.GetValue():
             self.parent.is_edsdk_on = False
             self.parent.get_camera_list()
 
-    def onCreateVirtualCam(self, event):
-        cam_id = self.visualizer_panel.add_camera()
-        self.parent.controller_panel.masterCombo.Append('camera ' + cam_id)
+    def on_create_virtual_camera(self, event):
+        camera = self.visualizer_panel.add_camera()
+        self.parent.controller_panel.main_combo.Append('camera ' + camera)

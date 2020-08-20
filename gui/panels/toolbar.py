@@ -103,7 +103,7 @@ class ToolbarPanel(aui.AuiToolBar):
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.GetId() == ToolIds.PLAY.value:
-            cam_id = self.parent.controller_panel.masterCombo.GetSelection()
+            cam_id = self.parent.controller_panel.main_combo.GetSelection()
             if cam_id != -1:
                 cam = self.parent.visualizer_panel.get_camera_by_id(cam_id)
                 if cam:

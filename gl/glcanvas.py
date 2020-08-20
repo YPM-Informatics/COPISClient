@@ -1,5 +1,6 @@
-"""Canvas3D and associated classes."""
+"""GLCanvas3D and associated classes."""
 
+import gl.shaders as shaderlib
 import math
 import platform as pf
 from gl.bed import GLBed
@@ -28,11 +29,8 @@ class _Size(NamedTuple):
     height: int
     scale_factor: float
 
-    def aspect_ratio(self) -> float:
-        return self.width / self.height
 
-
-class Canvas3D(glcanvas.GLCanvas):
+class GLCanvas3D(glcanvas.GLCanvas):
     """Manage the OpenGL canvas in a wx.Window.
 
     Args:
@@ -77,7 +75,7 @@ class Canvas3D(glcanvas.GLCanvas):
                  bounding_box: bool = True,
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits Canvas3D with constructors."""
+        """Inits GLCanvas3D with constructors."""
         self.parent = parent
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
@@ -85,13 +83,16 @@ class Canvas3D(glcanvas.GLCanvas):
                          size=wx.DefaultSize, style=0, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
-        self._shader_program = None
-        self._shader_program_color = None
+
+        self._default_shader = None
+        self._color_shader = None
+        self._instanced_color_shader = None
+
         self._build_dimensions = build_dimensions
         self._dist = 0.5 * (self._build_dimensions[1] + \
                             max(self._build_dimensions[0], self._build_dimensions[2]))
 
-        self._bed = GLBed(self, self._build_dimensions, axes, bounding_box, every, subdivisions)
+        self._bed = GLBed(self, build_dimensions, axes, bounding_box, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
         self._camera3d_list = []
@@ -108,6 +109,11 @@ class Canvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
+
+        # temporary
+        self._vao_box = None
+        self._vao_side = None
+        self._vao_top = None
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -150,69 +156,90 @@ class Canvas3D(glcanvas.GLCanvas):
         glEnable(GL_MULTISAMPLE)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        self.init_shaders()
+        self.create_vaos()
+
+        # compile shader programs
+        self._default_shader = shaderlib.compile_shader(*shaderlib.default)
+        self._color_shader = shaderlib.compile_shader(*shaderlib.single_color)
+        self._instanced_color_shader = shaderlib.compile_shader(*shaderlib.single_color_instanced)
 
         self._gl_initialized = True
         return True
 
-    def init_shaders(self) -> None:
-        """Compile vertex and fragment shaders."""
-        vertex_shader = """
-        #version 450 core
+    def create_vaos(self) -> None:
+        """Bind VAOs to define vertex data."""
+        self._vao_box, self._vao_side, self._vao_top = glGenVertexArrays(3)
+        vbo = glGenBuffers(4)
 
-        layout (location = 0) in vec3 positions;
-        layout (location = 1) in vec3 colors;
+        vertices = np.array([
+            -0.5, -1.0, -1.0,  # bottom
+            0.5, -1.0, -1.0,
+            0.5, -1.0, 1.0,
+            -0.5, -1.0, 1.0,
+            -0.5, 1.0, -1.0,   # right
+            0.5, 1.0, -1.0,
+            0.5, -1.0, -1.0,
+            -0.5, -1.0, -1.0,
+            -0.5, 1.0, 1.0,    # top
+            0.5, 1.0, 1.0,
+            0.5, 1.0, -1.0,
+            -0.5, 1.0, -1.0,
+            -0.5, -1.0, 1.0,   # left
+            0.5, -1.0, 1.0,
+            0.5, 1.0, 1.0,
+            -0.5, 1.0, 1.0,
+            0.5, 1.0, -1.0,    # back
+            0.5, 1.0, 1.0,
+            0.5, -1.0, 1.0,
+            0.5, -1.0, -1.0,
+            -0.5, -1.0, -1.0,  # front
+            -0.5, -1.0, 1.0,
+            -0.5, 1.0, 1.0,
+            -0.5, 1.0, -1.0,
+        ], dtype=np.float32)
+        glBindVertexArray(self._vao_box)
 
-        layout (location = 0) uniform mat4 projection;
-        layout (location = 1) uniform mat4 modelview;
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
 
-        out vec3 newColor;
+        # ---
 
-        void main() {
-            gl_Position = projection * modelview * vec4(positions, 1.0);
-            newColor = colors;
-        }
-        """
-        fragment_shader = """
-        #version 450 core
+        thetas = np.linspace(0, 2 * np.pi, 24, endpoint=True)
+        y = np.cos(thetas) * 0.7
+        z = np.sin(thetas) * 0.7
+        vertices = np.zeros(6 * 24, dtype=np.float32)
+        vertices[::3] = np.tile(np.array([1.0, 0.5], dtype=np.float32), 24)
+        vertices[1::3] = np.repeat(y, 2)
+        vertices[2::3] = np.repeat(z, 2)
+        glBindVertexArray(self._vao_side)
 
-        in vec3 newColor;
-        out vec4 color;
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
 
-        void main() {
-            color = vec4(newColor, 1.0);
-        }
-        """
-        self._shader_program = shaders.compileProgram(
-            shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
-            shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
+        # ---
 
-        vertex_shader = """
-        #version 450 core
+        vertices = np.concatenate((np.array([1.0, 0.0, 0.0]), vertices)).astype(np.float32)
+        indices = np.insert(np.arange(24) * 2 + 1, 0, 0).astype(np.uint16)
+        glBindVertexArray(self._vao_top)
 
-        layout (location = 0) in vec3 positions;
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
 
-        layout (location = 0) uniform mat4 projection;
-        layout (location = 1) uniform mat4 modelview;
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[3])
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
-        void main() {
-            gl_Position = projection * modelview * vec4(positions, 1.0);
-        }
-        """
-        fragment_shader = """
-        #version 450 core
+        # ---
 
-        uniform vec4 pickingColor;
-        out vec4 color;
+        glBindVertexArray(0)
+        glDeleteBuffers(4, vbo)
 
-        void main() {
-            color = pickingColor;
-        }
-        """
-        self._shader_program_color = shaders.compileProgram(
-            shaders.compileShader(vertex_shader, GL_VERTEX_SHADER),
-            shaders.compileShader(fragment_shader, GL_FRAGMENT_SHADER))
-
+    @timing
     def render(self):
         """Render frame.
 
@@ -231,7 +258,7 @@ class Canvas3D(glcanvas.GLCanvas):
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         # run picking pass
-        self._picking_pass()
+        # self._picking_pass()
 
         # reset viewport as _picking_pass tends to mess with it
         glViewport(0, 0, canvas_size.width, canvas_size.height)
@@ -288,6 +315,7 @@ class Canvas3D(glcanvas.GLCanvas):
                 LMB drag:   move viewport
                 RMB drag:   unused
                 LMB/RMB up: reset position
+
         TODO: make this more robust, and capable of handling selection
         """
         if not self._gl_initialized or not self._set_current():
@@ -327,6 +355,7 @@ class Canvas3D(glcanvas.GLCanvas):
                     pass
             elif id_ < len(self._camera3d_list):
                 wx.GetApp().mainframe.set_selected_camera(id_)
+                wx.GetApp().mainframe.selected_camera = id_
         elif event.Moving():
             self._mouse_pos = event.GetPosition()
         else:
@@ -470,14 +499,57 @@ class Canvas3D(glcanvas.GLCanvas):
             self._bed.render()
 
     def _render_objects(self) -> None:
+        points = wx.GetApp().core.points
+
+        # glUseProgram(self._instanced_color_shader)
+        glUseProgram(self._color_shader)
+
+        proj = self.projection_matrix
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        view = self.modelview_matrix
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        for point in points:
+            a, b = point.tilt, point.pan
+            model =  \
+                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
+                glm.scale(glm.mat4(), glm.vec3(10, 10, 10)) * \
+                glm.mat4(math.cos(a) * math.cos(b), -math.sin(a), math.cos(a) * math.sin(b), 0.0,
+                         math.sin(a) * math.cos(b), math.cos(a), math.sin(a) * math.sin(b), 0.0,
+                         -math.sin(b), 0.0, math.cos(b), 0.0,
+                         0.0, 0.0, 0.0, 1.0)
+
+
+            color = glm.vec4(75, 230, 150, 255) / 255.0
+            glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+            glBindVertexArray(self._vao_box)
+            glUniform4fv(3, 1, glm.value_ptr(color))
+            glDrawArrays(GL_QUADS, 0, 24)
+
+            color -= 0.03
+            glUniform4fv(3, 1, glm.value_ptr(color))
+            glBindVertexArray(self._vao_side)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 48)
+
+            color -= 0.03
+            glUniform4fv(3, 1, glm.value_ptr(color))
+            glBindVertexArray(self._vao_top)
+            glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
         # if self._proxy3d is not None:
         #     self._proxy3d.render()
 
-        if not self._camera3d_list:
-            return
-        else:
-            for cam in self._camera3d_list:
-                cam.render()
+        # if not self._camera3d_list:
+        #     return
+        # else:
+        #     for cam in self._camera3d_list:
+        #         cam.render()
+
+        # pass
 
     def _render_viewcube(self) -> None:
         if self._viewcube is not None:
@@ -492,7 +564,8 @@ class Canvas3D(glcanvas.GLCanvas):
         self.parent.set_zoom_slider(self._zoom)
 
     def get_shader_program(
-        self, program: Optional[str] = 'default') -> Optional[shaders.ShaderProgram]:
+        self, program: Optional[str] = 'default'
+    ) -> Optional[shaders.ShaderProgram]:
         """Return specified shader program.
 
         Args:
@@ -504,8 +577,8 @@ class Canvas3D(glcanvas.GLCanvas):
             for more info.
         """
         if program == 'color':
-            return self._shader_program_color
-        return self._shader_program # 'default'
+            return self._color_shader
+        return self._default_shader # 'default'
 
     @property
     def rot_quat(self) -> glm.quat:
@@ -564,9 +637,11 @@ class Canvas3D(glcanvas.GLCanvas):
     @property
     def projection_matrix(self) -> glm.mat4:
         """Returns a glm.mat4 representing the current projection matrix."""
+        canvas_size = self.get_canvas_size()
+        aspect_ratio = canvas_size.width / canvas_size.height
         return glm.perspective(
             math.atan(math.tan(math.radians(45.0)) / self._zoom),
-            self.get_canvas_size().aspect_ratio(), 0.1, 2000.0)
+            aspect_ratio, 0.1, 2000.0)
 
     @property
     def modelview_matrix(self) -> glm.mat4:

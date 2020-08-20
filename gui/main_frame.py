@@ -40,6 +40,7 @@ class MainFrame(wx.Frame):
     def __init__(self, *args, **kwargs) -> None:
         """Inits MainFrame with constructors."""
         super(MainFrame, self).__init__(*args, **kwargs)
+        self._core = wx.GetApp().core
 
         # set minimum size to show whole interface properly
         self.SetMinSize(wx.Size(800, 575))
@@ -51,6 +52,7 @@ class MainFrame(wx.Frame):
         self.panels = {}
         self.menuitems = {}
 
+        self._selected_camera: Optional[int] = None
         self.cam_list = []
         self.selected_cam = None
         self.is_edsdk_on = False
@@ -524,7 +526,7 @@ class MainFrame(wx.Frame):
 
         for i in range(cam_count):
             cam_id = self.visualizer_panel.add_camera(id_=i)
-            self.controller_panel.masterCombo.Append('camera ' + cam_id)
+            self.controller_panel.main_combo.Append('camera ' + cam_id)
 
     def get_selected_camera(self) -> Optional[Any]:
         if self.selected_cam:
@@ -554,7 +556,23 @@ class MainFrame(wx.Frame):
 
         # refresh canvas and combobox
         self.visualizer_panel.dirty = True
-        self.controller_panel.masterCombo.SetSelection(cam_id)
+        self.controller_panel.main_combo.SetSelection(cam_id)
+
+
+
+    @property
+    def selected_camera(self) -> Optional[int]:
+        return self._core.selected_camera
+
+    @selected_camera.setter
+    def selected_camera(self, id_: int) -> None:
+        self._core.selected_camera = id_
+
+        # TODO: improve the inter-panel calling stuff
+        self.visualizer_panel.dirty = True
+        self.controller_panel.main_combo.SetSelection(id_)
+
+
 
     def terminate_edsdk(self) -> None:
         if not self.is_edsdk_on:
