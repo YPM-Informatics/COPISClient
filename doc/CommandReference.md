@@ -23,17 +23,17 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
   * Command: G0	
   * Format:	G0X[##]Y[##]Z[##]P[##]T[##]
   * Examples: G1X100Y50T25	
-* *Linear movement at feed rate (F) in distance mm/minute
+* *Linear movement at feed rate (F) in distance mm/minute*
   * Command: G1
   * Format:	G1X[##]Y[##]Z[##]P[##]T[##]F[##]
   * Examples: G1X100Y50T25F900
-* *Movement in an arc at specified feed rate (F)
+* *Movement in an arc at specified feed rate (F)*
   * Commands: G2 & G3	
   * Notes: Not yet implemented	
-* *Pause device for P milliseconds or S seconds
+* *Pause device for P milliseconds or S seconds*
   * Command: G4	
   * Format: G4[P/S][TIME]	
-* *Select a plane for G2 & G3 arcs
+* *Select a plane for G2 & G3 arcs*
   * Commands: G17, G18 & G19
   * G17 -> XY plane
   * G18 -> ZX plane
@@ -52,7 +52,8 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
   * Command: G91		
 * *Set Position of one or more axis*	
   * Command: G92		
-* *Remote Shutter Control
+
+**Remote Shutter Control**
 * *Press Shutter for P milliseconds or S seconds*		
   * Command: C0
   * Format: C0[P/S][TIME]	
@@ -62,10 +63,15 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
 
 **USB PTP Camera Control**
 * *Shutter Release*
+  * In development
 * *Auto Focus*
+  * In development
 * *Bulb Mode*
+  * In development
 * *Transfer Imgaery*
+  * In development
 * *Live View*
+  * In development
   
 **Other Commands**			
 * *Pause/Resume Processing*
