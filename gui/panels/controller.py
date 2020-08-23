@@ -1,315 +1,234 @@
 """TODO"""
 
+
+from collections import OrderedDict
+from typing import Tuple
+
 import wx
 
-from enums import CamAxis
-from util.Canon.EDSDKLib import *
-from utils import set_dialog
+from utils import create_scaled_bitmap
 
 
-class ControllerPanel(wx.VScrolledWindow):
-    def __init__(self, parent, *args, **kwargs):
+class ControllerPanel(wx.Panel):
+    """TODO
+
+    """
+
+    xyz_unit_steps = [10, 1, 0.1, 0.01]
+    xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
+    ab_unit_steps = [10, 5, 1, 0.1, 0.01]
+    ab_units = OrderedDict([('deg', 10000), ('rad', 100000)]) # TODO!
+
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Inits ControllerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
 
         self.parent = parent
-        self.init_panel()
+        self.init_gui()
 
-    def init_panel(self):
-        vboxLeft = wx.BoxSizer(wx.VERTICAL)
+    def init_gui(self) -> None:
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # header font
-        self.font = wx.SystemSettings.GetFont(wx.SYS_SYSTEM_FONT)
-        self.font.SetPointSize(15)
+        info_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Controller State'), wx.VERTICAL)
+        info_grid = wx.FlexGridSizer(6, 7, 0, 0)
+        info_grid.SetFlexibleDirection(wx.BOTH)
+        info_grid.SetNonFlexibleGrowMode(wx.FLEX_GROWMODE_SPECIFIED)
+        for col in (2, 5):
+            info_grid.AddGrowableCol(col)
 
-        # positioning section starts
-        positioning_vbox = self.InitPositioning()
-        vboxLeft.Add(positioning_vbox, 0.5, flag=wx.LEFT|wx.TOP, border=5)
+        x_text = wx.StaticText(self, label='X')
+        y_text = wx.StaticText(self, label='Y')
+        z_text = wx.StaticText(self, label='Z')
+        a_text = wx.StaticText(self, label='A')
+        b_text = wx.StaticText(self, label='B')
+        for text in (x_text, y_text, z_text, a_text, b_text):
+            text.Font = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        # camera control section
-        cam_control_vbox = self.InitCamControl()
-        vboxLeft.Add(cam_control_vbox, 0.5, flag=wx.LEFT|wx.TOP, border=5)
+        # axis_text = wx.StaticText(self, label='Axis')
+        mpos_text = wx.StaticText(self, label='Machine')
+        wpos_text = wx.StaticText(self, label='World')
+        mzero_text = wx.StaticText(self, label='Zero')
+        wzero_text = wx.StaticText(self, label='Zero')
+        for text in (mpos_text, wpos_text, mzero_text, wzero_text):
+            text.Font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        self.SetSizerAndFit(vboxLeft)
+        self.x_m_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.y_m_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.z_m_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.a_m_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.b_m_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.x_w_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.y_w_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.z_w_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.a_w_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        self.b_w_text = wx.TextCtrl(self, value='0.000', size=(50, 24), style=wx.TE_READONLY)
+        for text in (self.x_m_text, self.y_m_text, self.z_m_text, self.a_m_text, self.b_m_text,
+                     self.x_w_text, self.y_w_text, self.z_w_text, self.a_w_text, self.b_w_text):
+            text.Font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-    @property
-    def visualizer_panel(self):
-        return self.parent.visualizer_panel
+        self.x0_m_btn = wx.Button(self, label='X0', size=(30, -1))
+        self.y0_m_btn = wx.Button(self, label='Y0', size=(30, -1))
+        self.z0_m_btn = wx.Button(self, label='Z0', size=(30, -1))
+        self.a0_m_btn = wx.Button(self, label='A0', size=(30, -1))
+        self.b0_m_btn = wx.Button(self, label='B0', size=(30, -1))
+        self.x0_w_btn = wx.Button(self, label='X0', size=(30, -1))
+        self.y0_w_btn = wx.Button(self, label='Y0', size=(30, -1))
+        self.z0_w_btn = wx.Button(self, label='Z0', size=(30, -1))
+        self.a0_w_btn = wx.Button(self, label='A0', size=(30, -1))
+        self.b0_w_btn = wx.Button(self, label='B0', size=(30, -1))
+        for btn in (self.x0_m_btn, self.y0_m_btn, self.z0_m_btn, self.a0_m_btn, self.b0_m_btn,
+                    self.x0_w_btn, self.y0_w_btn, self.z0_w_btn, self.a0_w_btn, self.b0_w_btn):
+            btn.Font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-    @property
-    def timeline_panel(self):
-        return self.parent.timeline_panel
+        info_grid.AddMany([
+            (0, 0),
+            (10, 0),
+            (mpos_text, 0, 0, 0),
+            (mzero_text, 0, 0, 0),
+            (10, 0),
+            (wpos_text, 0, 0, 0),
+            (wzero_text, 0, 0, 0),
 
-    def InitPositioning(self):
-        vboxPositioning = wx.BoxSizer(wx.VERTICAL)
-        self.hboxCameraInfo = wx.BoxSizer()
-        vboxPositioning.Add(self.hboxCameraInfo, 0.5, wx.EXPAND)
+            (x_text, 0, 0, 0),
+            (0, 0),
+            (self.x_m_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.x0_m_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (self.x_w_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.x0_w_btn, 0, wx.EXPAND, 0),
 
-        positionLabel = wx.StaticText(self, wx.ID_ANY, label='Positioning', style=wx.ALIGN_LEFT)
-        positionLabel.SetFont(self.font)
-        vboxPositioning.Add(positionLabel, 0.5, flag=wx.BOTTOM|wx.TOP, border=10)
+            (y_text, 0, 0, 0),
+            (0, 0),
+            (self.y_m_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.y0_m_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (self.y_w_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.y0_w_btn, 0, wx.EXPAND, 0),
 
-        hboxTop = wx.BoxSizer()
-        camLabel = wx.StaticText(self, wx.ID_ANY, label='Camera: ', style=wx.ALIGN_LEFT)
-        hboxTop.Add(camLabel)
-        self.main_combo = wx.ComboBox(self, wx.ID_ANY, style=wx.CB_READONLY, size=(80, -1))
-        self.main_combo.Bind(wx.EVT_COMBOBOX, self.on_main_combo)
-        hboxTop.Add(self.main_combo)
-        # self.setCenterBtn = wx.Button(self, wx.ID_ANY, label='Set Center')
-        # hboxTop.Add(self.setCenterBtn, 1, flag=wx.LEFT, border=5)
+            (z_text, 0, 0, 0),
+            (0, 0),
+            (self.z_m_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.z0_m_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (self.z_w_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.z0_w_btn, 0, wx.EXPAND, 0),
 
-        self.refreshBtn = wx.Button(self, wx.ID_ANY, label='&Refresh', size=(65, -1))
-        self.refreshBtn.Bind(wx.EVT_BUTTON, self.on_refresh)
-        hboxTop.Add(self.refreshBtn)
-        hboxTop.AddStretchSpacer()
+            (a_text, 0, 0, 0),
+            (0, 0),
+            (self.a_m_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.a0_m_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (self.a_w_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.a0_w_btn, 0, wx.EXPAND, 0),
 
-        # self.createVCamBtn = wx.Button(self, wx.ID_ANY, label='&Create 3D camera')
-        # self.createVCamBtn.Bind(wx.EVT_BUTTON, self.on_create_virtual_camera)
-        # hboxTop.Add(self.createVCamBtn)
-        vboxPositioning.Add(hboxTop, 0.5 , flag=wx.LEFT|wx.BOTTOM|wx.EXPAND, border=15)
+            (b_text, 0, 0, 0),
+            (0, 0),
+            (self.b_m_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.b0_m_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (self.b_w_text, 0, wx.ALL|wx.EXPAND, 1),
+            (self.b0_w_btn, 0, wx.EXPAND, 0),
+        ])
 
-        hboxXyzbc = wx.BoxSizer()
-        vboxXyz = wx.BoxSizer(wx.VERTICAL)
-        xyzLabel = wx.StaticText(self, wx.ID_ANY, label='XYZ Step Size', style=wx.ALIGN_LEFT)
-        vboxXyz.Add(xyzLabel, 1, flag=wx.BOTTOM, border=10)
+        info_sizer.Add(info_grid, 1, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(info_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-        hboxXyzSize = wx.BoxSizer()
-        self.xyzSc = wx.SpinCtrl(self, value='0', size=(60, -1), min=0, max=100)
-        hboxXyzSize.Add(self.xyzSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=5)
-        mmLabel = wx.StaticText(self, wx.ID_ANY, label='mm', style=wx.ALIGN_LEFT)
-        hboxXyzSize.Add(mmLabel)
-        vboxXyz.Add(hboxXyzSize)
+        # ---
 
-        hboxYzInc = wx.BoxSizer()
-        self.yiBtn = wx.Button(self, wx.ID_ANY, label='Y+', style=wx.BU_EXACTFIT)
-        self.yiBtn.axis = CamAxis.Y
-        self.yiBtn.direction = CamAxis.PLUS
-        hboxYzInc.Add(self.yiBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
-        self.yiBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        self.ziBtn = wx.Button(self, wx.ID_ANY, label='Z+', style=wx.BU_EXACTFIT)
-        self.ziBtn.axis = CamAxis.Z
-        self.ziBtn.direction = CamAxis.PLUS
-        hboxYzInc.Add(self.ziBtn)
-        self.ziBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        vboxXyz.Add(hboxYzInc)
+        xyzab_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jog Controller'), wx.VERTICAL)
 
-        hboxX = wx.BoxSizer()
-        self.xrBtn = wx.Button(self, wx.ID_ANY, label='X-', style=wx.BU_EXACTFIT)
-        self.xrBtn.axis = CamAxis.X
-        self.xrBtn.direction = CamAxis.MINUS
-        hboxX.Add(self.xrBtn)
-        self.xrBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        self.xiBtn = wx.Button(self, wx.ID_ANY, label='X+', style=wx.BU_EXACTFIT)
-        self.xiBtn.axis = CamAxis.X
-        self.xiBtn.direction = CamAxis.PLUS
-        hboxX.Add(self.xiBtn, 1, flag=wx.LEFT, border=25)
-        self.xiBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        vboxXyz.Add(hboxX)
+        xyzab_grid = wx.FlexGridSizer(6, 6, 0, 0)
+        xyzab_grid.SetFlexibleDirection(wx.BOTH)
+        xyzab_grid.SetNonFlexibleGrowMode(wx.FLEX_GROWMODE_SPECIFIED)
+        for col in (0, 1, 2, 3):
+            xyzab_grid.AddGrowableCol(col)
 
-        hboxYzDec = wx.BoxSizer()
-        self.yrBtn = wx.Button(self, wx.ID_ANY, label='Y-', style=wx.BU_EXACTFIT)
-        self.yrBtn.axis = CamAxis.Y
-        self.yrBtn.direction = CamAxis.MINUS
-        hboxYzDec.Add(self.yrBtn, 1, flag=wx.LEFT|wx.RIGHT, border=28)
-        self.yrBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        self.zrBtn = wx.Button(self, wx.ID_ANY, label='Z-', style=wx.BU_EXACTFIT)
-        self.zrBtn.axis = CamAxis.Z
-        self.zrBtn.direction = CamAxis.MINUS
-        hboxYzDec.Add(self.zrBtn)
-        self.zrBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        vboxXyz.Add(hboxYzDec)
-        hboxXyzbc.Add(vboxXyz)
+        self.arrow_nw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_nw', 20), size=(30, 30))
+        self.arrow_ne_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_ne', 20), size=(30, 30))
+        self.arrow_sw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_sw', 20), size=(30, 30))
+        self.arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 20), size=(30, 30))
 
-        vboxBc = wx.BoxSizer(wx.VERTICAL)
-        bcLabel = wx.StaticText(self, wx.ID_ANY, label='BC Step Size', style=wx.ALIGN_LEFT)
-        vboxBc.Add(bcLabel, 1, flag=wx.BOTTOM, border=10)
+        self.x_pos_btn = wx.Button(self, label='X+', size=(30, 30))
+        self.x_neg_btn = wx.Button(self, label='X-', size=(30, 30))
+        self.y_pos_btn = wx.Button(self, label='Y+', size=(30, 30))
+        self.y_neg_btn = wx.Button(self, label='Y-', size=(30, 30))
+        self.xy_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('keyboard', 24), size=(30, 30))
+        self.z_pos_btn = wx.Button(self, label='Z+', size=(30, 30))
+        self.z_neg_btn = wx.Button(self, label='Z-', size=(30, 30))
 
-        hboxBcSize = wx.BoxSizer()
-        self.bcSc = wx.SpinCtrl(self, value='0', size=(60, -1), min=0, max=100)
-        hboxBcSize.Add(self.bcSc, 1, flag=wx.RIGHT|wx.BOTTOM, border=0)
-        ddLabel = wx.StaticText(self, wx.ID_ANY, label='dd', style=wx.ALIGN_LEFT)
-        hboxBcSize.Add(ddLabel)
-        vboxBc.Add(hboxBcSize)
-        self.ciBtn = wx.Button(self, wx.ID_ANY, label='Tilt+', style=wx.BU_EXACTFIT)
-        self.ciBtn.axis = CamAxis.C
-        self.ciBtn.direction = CamAxis.PLUS
-        vboxBc.Add(self.ciBtn, 1, flag=wx.LEFT, border=65)
-        self.ciBtn.Bind(wx.EVT_BUTTON, self.on_move)
+        self.tilt_up_btn = wx.Button(self, label='A+', size=(48, 30))
+        self.tilt_down_btn = wx.Button(self, label='A-', size=(48, 30))
+        tilt_up_90_btn = wx.Button(self, label='A+90', size=(48, 30))
+        tilt_down_90_btn = wx.Button(self, label='A-90', size=(48, 30))
+        self.pan_right_btn = wx.Button(self, label='B+', size=(48, 30))
+        self.pan_left_btn = wx.Button(self, label='B-', size=(48, 30))
+        pan_right_90_btn = wx.Button(self, label='B+90', size=(48, 30))
+        pan_left_90_btn = wx.Button(self, label='B-90', size=(48, 30))
 
-        hboxB = wx.BoxSizer()
-        self.brBtn = wx.Button(self, wx.ID_ANY, label='Pan-', style=wx.BU_EXACTFIT)
-        self.brBtn.axis = CamAxis.B
-        self.brBtn.direction = CamAxis.MINUS
-        hboxB.Add(self.brBtn)
-        self.brBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        self.cBtn = wx.Button(self, wx.ID_ANY, label='Center')
-        hboxB.Add(self.cBtn)
-        self.cBtn.Bind(wx.EVT_BUTTON, self.on_focus_center)
-        self.biBtn = wx.Button(self, wx.ID_ANY, label='Pan+', style=wx.BU_EXACTFIT)
-        self.biBtn.axis = CamAxis.B
-        self.biBtn.direction = CamAxis.PLUS
-        hboxB.Add(self.biBtn)
-        self.biBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        vboxBc.Add(hboxB)
-        self.crBtn = wx.Button(self, wx.ID_ANY, label='Tilt-', style=wx.BU_EXACTFIT)
-        self.crBtn.axis = CamAxis.C
-        self.crBtn.direction = CamAxis.MINUS
-        vboxBc.Add(self.crBtn, 1, flag=wx.LEFT, border=65)
-        self.crBtn.Bind(wx.EVT_BUTTON, self.on_move)
-        hboxXyzbc.Add(vboxBc, flag=wx.LEFT, border=25)
+        for btn in (self.x_pos_btn, self.x_neg_btn, self.y_pos_btn, self.y_neg_btn, self.z_pos_btn, self.z_neg_btn,
+                    self.tilt_up_btn, self.pan_left_btn, self.tilt_down_btn, self.pan_right_btn,
+                    tilt_up_90_btn, tilt_down_90_btn, pan_right_90_btn, pan_left_90_btn):
+            btn.Font = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        vboxPositioning.Add(hboxXyzbc, 1, flag=wx.LEFT, border=15)
-        return vboxPositioning
+        step_text = wx.StaticText(self, label='Step size', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        step_text.Font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        xyz_step = wx.ComboBox(self, value='1', size=(50, -1), choices=list(map(str, self.xyz_unit_steps)), style=wx.TE_CENTRE)
+        xyz_unit = wx.Choice(self, size=(60, -1), choices=list(self.xyz_units.keys()), style=wx.TE_CENTRE)
+        xyz_unit.SetSelection(0)
+        ab_step = wx.ComboBox(self, value='1', size=(50, -1), choices=list(map(str, self.ab_unit_steps)), style=wx.TE_CENTRE)
+        ab_unit = wx.Choice(self, size=(60, -1), choices=list(self.ab_units.keys()), style=wx.TE_CENTRE)
+        ab_unit.SetSelection(0)
 
-    def InitCamControl(self):
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        cameraControlLabel = wx.StaticText(self, wx.ID_ANY, label='Camera Control', style=wx.ALIGN_LEFT)
-        cameraControlLabel.SetFont(self.font)
-        vbox.Add(cameraControlLabel, 0, flag=wx.TOP | wx.BOTTOM, border=10)
+        for control in (xyz_step, xyz_unit, ab_step, ab_unit):
+            control.Font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        hbox = wx.BoxSizer()
-        vbox1 = wx.BoxSizer(wx.VERTICAL)
-        self.remoteRb = wx.RadioButton(self, label='Remote Shutter', style=wx.RB_GROUP)
-        vbox1.Add(self.remoteRb)
+        xyzab_grid.AddMany([
+            (self.arrow_nw_btn, 0, wx.EXPAND, 0),
+            (self.y_pos_btn, 0, wx.EXPAND, 0),
+            (self.arrow_ne_btn, 0, wx.EXPAND, 0),
+            (self.z_pos_btn, 0, wx.EXPAND, 0),
+            (10, 0),
+            (step_text, 0, wx.ALIGN_BOTTOM|wx.BOTTOM|wx.EXPAND, 5),
 
-        vboxAFShutter = wx.BoxSizer()
-        self.afBtn = wx.Button(self, wx.ID_ANY, label='A/F')
-        vboxAFShutter.Add(self.afBtn)
-        self.shutterBtn = wx.Button(self, wx.ID_ANY, label='Shutter')
-        vboxAFShutter.Add(self.shutterBtn)
-        vbox1.Add(vboxAFShutter, 1, flag=wx.LEFT, border=5)
+            (self.x_neg_btn, 0, wx.EXPAND, 0),
+            (self.xy_btn, 0, wx.EXPAND, 0),
+            (self.x_pos_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (0, 0),
+            (xyz_step, 0, wx.ALL|wx.EXPAND, 1),
 
-        self.usbRb = wx.RadioButton(self, label='USB')
-        vbox1.Add(self.usbRb)
-        self.Bind(wx.EVT_RADIOBUTTON, self.onRemoteUSBRadioGroup)
+            (self.arrow_sw_btn, 0, wx.EXPAND, 0),
+            (self.y_neg_btn, 0, wx.EXPAND, 0),
+            (self.arrow_se_btn, 0, wx.EXPAND, 0),
+            (self.z_neg_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (xyz_unit, 0, wx.ALL|wx.EXPAND, 1),
 
-        self.edsdkRb = wx.RadioButton(self, label='EDSDK', style=wx.RB_GROUP)
-        vbox1.Add(self.edsdkRb, flag=wx.LEFT | wx.TOP, border=10)
-        self.edsdkRb.SetValue(False)
-        self.edsdkRb.Disable()
+            (0, 5), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
 
-        self.ptpRb = wx.RadioButton(self, label='PTP')
-        vbox1.Add(self.ptpRb, flag=wx.LEFT | wx.TOP, border=10)
-        self.ptpRb.Disable()
+            (self.pan_left_btn, 0, wx.EXPAND, 0),
+            (self.pan_right_btn, 0, wx.EXPAND, 0),
+            (self.tilt_up_btn, 0, wx.EXPAND, 0),
+            (tilt_up_90_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (ab_step, 0, wx.ALL|wx.EXPAND, 1),
 
-        hboxF = wx.BoxSizer()
-        self.frBtn = wx.Button(self, wx.ID_ANY, label='Focus-')
-        hboxF.Add(self.frBtn)
-        self.fiBtn = wx.Button(self, wx.ID_ANY, label='Focus+')
-        hboxF.Add(self.fiBtn)
-        vbox1.Add(hboxF, 1, flag=wx.TOP, border=15)
-        hbox.Add(vbox1, 1, flag=wx.LEFT, border=30)
+            (pan_left_90_btn, 0, wx.EXPAND, 0),
+            (pan_right_90_btn, 0, wx.EXPAND, 0),
+            (self.tilt_down_btn, 0, wx.EXPAND, 0),
+            (tilt_down_90_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (ab_unit, 0, wx.ALL|wx.EXPAND, 1),
+        ])
 
-        vbox2 = wx.BoxSizer(wx.VERTICAL)
-        self.takePictureBtn = wx.Button(self, wx.ID_ANY, label='Take Picture')
-        vbox2.Add(self.takePictureBtn)
-        self.takePictureBtn.Bind(wx.EVT_BUTTON, self.on_take_picture)
+        xyzab_sizer.Add(xyzab_grid, 1, wx.ALL | wx.EXPAND, 5)
+        main_sizer.Add(xyzab_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-        self.startEvfBtn = wx.Button(self, wx.ID_ANY, label='Start Liveview')
-        vbox2.Add(self.startEvfBtn)
-        self.startEvfBtn.Bind(wx.EVT_BUTTON, self.on_start_evf)
-        hbox.Add(vbox2, 1, flag=wx.LEFT, border=10)
-        vbox.Add(hbox, 1, flag=wx.LEFT)
+        self.SetSizer(main_sizer)
+        self.Layout()
 
-        return vbox
+    def update_machine_pos(self, pos: Tuple[float, float, float, float, float]) -> None:
+        pass
 
-    def on_move(self, event):
-        set_dialog('DEBUG: on_move()')
-        return
-        camera = self.main_combo.GetSelection()
-        if camera != -1:
-            axis = event.GetEventObject().axis
-            direction = event.GetEventObject().direction
-
-            if axis in [CamAxis.X, CamAxis.Y, CamAxis.Z]:
-                cmdbox = self.timeline_panel.cmd
-                size = self.xyzSc.GetValue()
-
-                if direction == CamAxis.MINUS:
-                    size = -size
-            else:
-                size = self.bcSc.GetValue()
-
-                if direction == CamAxis.MINUS:
-                    size = -size
-
-            cam = self.visualizer_panel.get_camera_by_id(camera)
-            if cam:
-                cam.on_move(axis, size)
-            self.visualizer_panel.dirty = True
-        else:
-            set_dialog('Please select the camera to control.')
-
-    def on_focus_center(self, event):
-        set_dialog('DEBUG: on_focus_center()')
-        return
-        if self.parent.selected_cam is not None:
-            self.visualizer_panel.get_camera_by_id(self.parent.selected_cam.camera).on_focus_center()
-        else:
-            set_dialog('Please select the camera to control.')
-
-    def on_main_combo(self, event):
-        id_ = self.main_combo.GetSelection()
-        self.parent.selected_camera = id_
-        print("on_main_combo, controller.py: ", id_)
-
-    def on_take_picture(self, event):
-        camera = self.main_combo.GetSelection()
-        if self.parent.get_selected_camera() is not None:
-            self.parent.get_selected_camera().shoot()
-        else:
-            set_dialog('Please select the camera to take a picture.')
-
-    def onRemoteUSBRadioGroup(self, event):
-        rb = event.GetEventObject()
-
-        # self.visualizer_panel.on_clear_cameras()
-        self.main_combo.Clear()
-
-        if rb.Label == 'USB':
-            self.edsdkRb.Enable()
-            self.ptpRb.Enable()
-        elif rb.Label == 'Remote Shutter':
-            self.edsdkRb.SetValue(False)
-            self.ptpRb.SetValue(False)
-            self.edsdkRb.Disable()
-            self.ptpRb.Disable()
-
-            if self.parent.is_edsdk_on:
-                self.parent.terminate_edsdk()
-        elif rb.Label == 'EDSDK':
-            self.parent.initEDSDK()
-        else:
-            if self.parent.is_edsdk_on:
-                self.parent.terminate_edsdk()
-
-    def on_start_evf(self, event):
-        if self.parent.get_selected_camera() is not None:
-            self.parent.get_selected_camera().startEvf()
-            self.parent.add_evf_pane()
-        else:
-            set_dialog('Please select the camera to start live view.')
-
-    def on_refresh(self, event):
-        # self.visualizer_panel.on_clear_cameras()
-        # self.main_combo.Clear()
-
-        if self.edsdkRb.GetValue():
-            self.parent.is_edsdk_on = False
-            cam_list = self.parent.get_edsdk_camera_list()
-            cam_count = cam_list.get_count()
-
-            message = str(cam_count)
-            if cam_count == 0:
-                message = 'There is no camera '
-
-            elif cam_count == 1:
-                message += ' camera is '
-            else:
-                message += ' cameras are '
-            message += 'connected.'
-
-            self.parent.console_panel.print(message)
-
-            for i in range(cam_count):
-                # cam_id = self.visualizer_panel.add_camera(id_=i)
-                self.main_combo.Append('camera ' + cam_id)
+    def update_world_pos(self, pos: Tuple[float, float, float, float, float]) -> None:
+        pass

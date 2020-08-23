@@ -74,7 +74,7 @@ single_color = _Shader(
 
     out vec4 color;
 
-    uniform vec4 new_color;
+    layout (location = 3) uniform vec4 new_color;
 
     void main() {
         color = new_color;
@@ -102,10 +102,10 @@ single_color_instanced = _Shader(
 
     out vec4 color;
 
-    uniform vec4 in_color;
+    layout (location = 2) uniform vec4 new_color;
 
     void main() {
-        color = in_color;
+        color = new_color;
     }
     """)
 )

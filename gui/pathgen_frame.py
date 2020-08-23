@@ -106,7 +106,7 @@ class PathgenFrame(wx.Frame):
         self.panel.SetSizer(self.boxsizer)
 
     def onStyleRadioGroup(self, event):
-        choice = self.styleCombo.GetStringSelection()
+        choice = self.styleCombo.StringSelection
 
         if choice == 'Cylinder' or choice == 'Sphere':
             self.boxsizer.Show(self.hboxRadius)

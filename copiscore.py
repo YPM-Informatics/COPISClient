@@ -3,6 +3,7 @@
 TODO: add license boilerplate
 """
 
+import math
 import os
 import platform
 import random
@@ -11,6 +12,7 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
+from gl.glutils import get_helix
 from typing import Any, Dict, List, Optional, Tuple
 
 import glm
@@ -39,21 +41,26 @@ class Camera:
 
 
 class COPISCore():
-    """COPISCore.
-
-    TODO functions
-    - connect
-    - disconnect
+    """COPISCore. Connects and interacts with cameras in system.
     """
 
     def __init__(self, *args, **kwargs) -> None:
         """Inits a CopisCore instance.
         """
 
+        path, count = get_helix(glm.vec3(0, -125, 0),
+                                glm.vec3(0, 1, 0),
+                                175, 50, 5, 36)
+        # path = [random.randint(-200, 200) for _ in range(300)]
+        # count = 100
         self._points = [
-            Point(0, random.randint(-200, 200),
-                random.randint(-200, 200),
-                random.randint(-200, 200)) for _ in range(100)
+            Point(0,
+                  path[i * 3],
+                  path[i * 3 + 1],
+                  path[i * 3 + 2],
+                  math.atan2(path[i*3+2], path[i*3]) + math.pi,
+                  math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2)))
+            for i in range(count)
         ]
 
         self._cameras = {
@@ -64,6 +71,14 @@ class COPISCore():
         }
 
         self._selected_camera_id: int = -1
+
+    def connect(self):
+        """TODO"""
+        pass
+
+    def disconnect(self):
+        """TODO"""
+        pass
 
     def add_point(
         self, id_: int, pos: Tuple[float, float, float, float, float]) -> None:

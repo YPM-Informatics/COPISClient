@@ -35,9 +35,9 @@ class VisualizerPanel(wx.Panel):
 
         self.zoom_slider = None
 
-        self.init_panel()
+        self.init_gui()
 
-    def init_panel(self) -> None:
+    def init_gui(self) -> None:
         """Initialize panel."""
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -76,7 +76,7 @@ class VisualizerPanel(wx.Panel):
 
     def on_zoom_slider(self, event: wx.ScrollEvent) -> None:
         """Update GLCanvas3D zoom when slider is updated."""
-        self._glcanvas.zoom = event.GetInt() / 10
+        self._glcanvas.zoom = event.Int / 10
 
     def set_zoom_slider(self, value: float) -> None:
         """Update slider value."""

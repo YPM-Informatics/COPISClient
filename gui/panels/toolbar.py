@@ -42,12 +42,14 @@ class ToolbarPanel(aui.AuiToolBar):
         Icons taken from https://material.io/resources/icons/?style=baseline.
         """
         # add port, baud comboboxes
-        self.AddControl(wx.StaticText(self, wx.ID_ANY, 'Port', style=wx.ALIGN_LEFT))
-        self.port_cb = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY, size=(75, -1))
-        self.Bind(wx.EVT_COMBOBOX, self.on_select_port, self.AddControl(self.port_cb, label='Port combobox'))
+        self.AddControl(wx.StaticText(self, label='Port', style=wx.ALIGN_LEFT))
+        self.port_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
+        self.AddControl(self.port_cb, label='Port combobox')
+        self.refresh_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('refresh', 20), size=(-1, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_refresh_port, self.AddControl(self.refresh_btn, label='Refresh port'))
         self.AddSpacer(10)
-        self.AddControl(wx.StaticText(self, wx.ID_ANY, 'Baud', style=wx.ALIGN_LEFT))
-        self.baud_cb = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_READONLY, size=(75, -1))
+        self.AddControl(wx.StaticText(self, label='Baud', style=wx.ALIGN_LEFT))
+        self.baud_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.Bind(wx.EVT_COMBOBOX, self.on_select_baud, self.AddControl(self.baud_cb, label='Baud combobox'))
         self.AddSpacer(10)
         self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))))
@@ -68,8 +70,10 @@ class ToolbarPanel(aui.AuiToolBar):
         _bmp = create_scaled_bitmap('settings', 24)
         self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
-    def on_select_port(self, event: wx.CommandEvent) -> None:
-        port = event.GetString()
+    def on_refresh_port(self, event: wx.CommandEvent) -> None:
+        port = self.port_cb.StringSelection
+        if not port:
+            return
         if self.serial_controller.set_current_serial(port):
             self.update_bauds()
         else:
@@ -77,10 +81,10 @@ class ToolbarPanel(aui.AuiToolBar):
             self.port_cb.SetSelection(-1)
 
     def on_select_baud(self, event: wx.CommandEvent) -> None:
-        self.serial_controller.selected_serial.baudrate = int(event.GetString())
+        self.serial_controller.selected_serial.baudrate = int(event.String)
 
-    def on_connect(self, event):
-        connect_btn = self.FindControl(event.GetId())
+    def on_connect(self, event: wx.CommandEvent) -> None:
+        connect_btn = self.FindControl(event.Id)
         if self.serial_controller.selected_serial:
             if self.serial_controller.selected_serial.is_open:
                 self.serial_controller.selected_serial.close()
@@ -99,13 +103,13 @@ class ToolbarPanel(aui.AuiToolBar):
             self.baud_cb.Set([str(i) for i in self.serial_controller.bauds])
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
-        if event.GetId() == ToolIds.SETTINGS.value:
+        if event.Id == ToolIds.SETTINGS.value:
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
-        elif event.GetId() == ToolIds.PLAY.value:
-            camera = self.parent.controller_panel.main_combo.GetSelection()
+        elif event.Id == ToolIds.PLAY.value:
+            camera = self.parent.controller_panel.main_combo.Selection
             set_dialog(f'DEBUG: selected camera "{camera}".')
-        elif event.GetId() == ToolIds.PAUSE.value:
+        elif event.Id == ToolIds.PAUSE.value:
             pass
         else:
             pass

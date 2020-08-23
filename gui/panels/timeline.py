@@ -10,11 +10,13 @@ class TimelinePanel(wx.Panel):
 
     TODO: Improve timeline panel
     """
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.init_ui()
 
-    def init_ui(self):
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Inits TimelinePanel with constructors."""
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
+        self.init_gui()
+
+    def init_gui(self) -> None:
         hboxBottom = wx.BoxSizer()
         vboxCmd = wx.BoxSizer(wx.VERTICAL)
         self.cmd = wx.ListBox(self, style=wx.LB_SINGLE)
@@ -60,18 +62,18 @@ class TimelinePanel(wx.Panel):
         self.SetSizer(hboxBottom)
         self.Layout()
 
-    def on_add_command(self, event):
-        cmd = self.cmdWriter.GetValue()
+    def on_add_command(self, event) -> None:
+        cmd = self.cmdWriter.Value
         if cmd != '':
             self.cmd.Append(cmd)
             self.cmdWriter.SetValue('')
 
-    def on_move_command(self, event):
-        selected = self.cmd.GetStringSelection()
+    def on_move_command(self, event) -> None:
+        selected = self.cmd.StringSelection
 
         if selected != '':
-            direction = event.GetEventObject().direction
-            index = self.cmd.GetSelection()
+            direction = event.EventObject.direction
+            index = self.cmd.Selection
             self.cmd.Delete(index)
 
             if direction == 'up':
@@ -81,11 +83,11 @@ class TimelinePanel(wx.Panel):
 
             self.cmd.InsertItems([selected], index)
 
-    def on_replace_command(self, event):
-        selected = self.cmd.GetSelection()
+    def on_replace_command(self, event) -> None:
+        selected = self.cmd.Selection
 
         if selected != -1:
-            replacement = self.cmdWriter.GetValue()
+            replacement = self.cmdWriter.Value
 
             if replacement != '':
                 self.cmd.SetString(selected, replacement)
@@ -95,10 +97,10 @@ class TimelinePanel(wx.Panel):
         else:
             set_dialog('Please select the command to replace.')
 
-    def on_delete_command(self, event):
-        size = event.GetEventObject().size
+    def on_delete_command(self, event) -> None:
+        size = event.EventObject.size
         if size == 'single':
-            index = self.cmd.GetSelection()
+            index = self.cmd.Selection
             if index != -1:
                 self.cmd.Delete(index)
             else:

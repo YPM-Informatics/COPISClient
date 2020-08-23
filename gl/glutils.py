@@ -57,7 +57,7 @@ def project_to_sphere(r: float, x: float, y: float) -> float:
 
 
 def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
-    """Return normal basis vectors such that R * <0,0,1> = v.
+    """Return normal basis vectors such that R * <0,1,0> = v.
 
     Args:
         v: A glm.vec3 to rotate to. Does not need to be normalized.
@@ -89,8 +89,7 @@ def get_circle(p: glm.vec3,
 
     Uses an approximation method to compute vertices versus many trig calls.
     """
-    a, _, n = rotate_basis_to(n)
-    theta = 6.28318530717958647692 / sides
+    a, n, _ = rotate_basis_to(n)
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 
@@ -120,7 +119,7 @@ def get_helix(p: glm.vec3,
 
     Uses an approximation method rather than trig functions.
     """
-    a, _, n = rotate_basis_to(n)
+    a, n, _ = rotate_basis_to(n)
     theta = 6.28318530717958647692 / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
@@ -143,7 +142,7 @@ def get_helix(p: glm.vec3,
 
 
 def get_circle_trig(p, n, r, sides=36):
-    a, b, n = rotate_basis_to(glm.vec3(*n))
+    a, n, b = rotate_basis_to(glm.vec3(*n))
     tau = 6.28318530717958647692
 
     count = sides + 1
@@ -156,7 +155,7 @@ def get_circle_trig(p, n, r, sides=36):
 
 
 def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
-    a, b, n = rotate_basis_to(glm.vec3(*n))
+    a, n, b = rotate_basis_to(glm.vec3(*n))
     tau = 6.28318530717958647692
 
     count = int(sides * turns) + 1
