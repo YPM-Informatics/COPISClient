@@ -2,7 +2,7 @@
 
 from ctypes import *
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import wx
 import wx.lib.agw.aui as aui
@@ -72,7 +72,7 @@ class MainFrame(wx.Frame):
 
     def init_statusbar(self) -> None:
         """Initialize statusbar."""
-        if self.GetStatusBar() is not None:
+        if self.StatusBar is not None:
             return
 
         self.CreateStatusBar(1, id=wx.ID_ANY)
@@ -167,7 +167,7 @@ class MainFrame(wx.Frame):
         # View menu
         view_menu = wx.Menu()
         self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, '&Status &Bar', 'Toggle status bar visibility', wx.ITEM_CHECK)
-        view_menu.Check(self.statusbar_menuitem.GetId(), True)
+        view_menu.Check(self.statusbar_menuitem.Id, True)
         self.Bind(wx.EVT_MENU, self.update_statusbar, self.statusbar_menuitem)
 
         # Tools menu
@@ -242,7 +242,7 @@ class MainFrame(wx.Frame):
                 return     # the user changed their mind
 
             # Proceed loading the file chosen by the user
-            path = fileDialog.GetPath()
+            path = fileDialog.Path
             try:
                 with open(path, 'r') as file:
                     self.do_load_project(file)
@@ -262,7 +262,7 @@ class MainFrame(wx.Frame):
                 return
 
             # save the current contents in the file
-            path = file_dialog.GetPath()
+            path = file_dialog.Path
             try:
                 with open(path, 'w') as file:
                     self.do_save_project(file)
@@ -281,9 +281,9 @@ class MainFrame(wx.Frame):
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
         if event.IsChecked():
-            self.GetStatusBar().Show()
+            self.StatusBar.Show()
         else:
-            self.GetStatusBar().Hide() # or .Show(False)
+            self.StatusBar.Hide() # or .Show(False)
         self._mgr.Update()
 
     def update_menubar(self) -> None:
@@ -361,7 +361,7 @@ class MainFrame(wx.Frame):
             self.panels['visualizer'], aui.AuiPaneInfo(). \
             Name('visualizer').Caption('Visualizer'). \
             Dock().Center().MaximizeButton().MinimizeButton(). \
-            DefaultPane().MinSize(380, 250))
+            DefaultPane().MinSize(350, 250))
 
         # add console, timeline panel
         self._mgr.AddPane(
@@ -378,21 +378,21 @@ class MainFrame(wx.Frame):
 
         # add controller, properties, path panel
         self._mgr.AddPane(
-            self.panels['controller'], aui.AuiPaneInfo(). \
-            Name('controller').Caption('Controller'). \
-            Dock().Right().Position(0).Layer(1). \
-            MinSize(325, 420).Show(True))
-        self._mgr.AddPane(
             self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
-            Dock().Right().Position(1).Layer(1). \
-            MinSize(200, 50).Show(True))
+            Dock().Right().Position(0).Layer(1). \
+            MinSize(200, 200).Show(True))
         self._mgr.AddPane(
             self.panels['path'], aui.AuiPaneInfo(). \
             Name('path').Caption('Paths'). \
             Dock().Right().Position(2).Layer(1). \
             MinSize(200, 50).Show(True),
             target=self._mgr.GetPane('properties'))
+        self._mgr.AddPane(
+            self.panels['controller'], aui.AuiPaneInfo(). \
+            Name('controller').Caption('Controller'). \
+            Dock().Right().Position(1).Layer(1). \
+            MinSize(275, 400).Show(True))
 
         # set first tab of all auto notebooks as the one selected
         for notebook in self._mgr.GetNotebooks():
@@ -550,7 +550,8 @@ class MainFrame(wx.Frame):
         self.visualizer_panel.dirty = True
         self.controller_panel.main_combo.SetSelection(id_)
 
-
+    def get_camera_list(self) -> Dict[int, Any]:
+        return self._core.cameras
 
     def terminate_edsdk(self) -> None:
         if not self.is_edsdk_on:

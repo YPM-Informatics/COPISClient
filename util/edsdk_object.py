@@ -264,7 +264,7 @@ class CameraList:
         return self.count
 
     def get_camera_by_index(self, index):
-        return cam_model_list[index]
+        return self.cam_model_list[index]
 
     def get_camera_by_id(self, id):
         if id not in range(len(self.cam_model_list)):

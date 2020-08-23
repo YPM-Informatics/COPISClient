@@ -103,7 +103,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
-        self._object_scale = 10
+        self._object_scale = 7.5
 
         # temporary
         self._vao_box = None
@@ -253,7 +253,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         # run picking pass
-        # self._picking_pass()
+        self._picking_pass()
 
         # reset viewport as _picking_pass tends to mess with it
         glViewport(0, 0, canvas_size.width, canvas_size.height)
@@ -297,10 +297,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         scale = self.get_scale_factor()
-        event.SetX(int(event.GetX() * scale))
-        event.SetY(int(event.GetY() * scale))
+        event.SetX(int(event.x * scale))
+        event.SetY(int(event.y * scale))
 
-        self._update_camera_zoom(event.GetWheelRotation() / event.GetWheelDelta())
+        self._update_camera_zoom(event.WheelRotation / event.WheelDelta)
 
     def on_mouse(self, event: wx.MouseEvent) -> None:
         """Handle mouse events.
@@ -318,8 +318,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         id_ = self._hover_id
         scale = self.get_scale_factor()
-        event.SetX(int(event.GetX() * scale))
-        event.SetY(int(event.GetY() * scale))
+        event.SetX(int(event.x * scale))
+        event.SetY(int(event.y * scale))
 
         if event.Dragging():
             if event.LeftIsDown():
@@ -351,7 +351,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             # elif id_ < len(self._camera3d_list):
             wx.GetApp().mainframe.selected_camera = id_
         elif event.Moving():
-            self._mouse_pos = event.GetPosition()
+            self._mouse_pos = event.Position
         else:
             event.Skip()
 
@@ -374,7 +374,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def get_canvas_size(self) -> _Size:
         """Return canvas size as _Size based on scaling factor."""
-        w, h = self._canvas.GetSize()
+        w, h = self._canvas.Size
         factor = self.get_scale_factor()
         w = int(w * factor)
         h = int(h * factor)
@@ -407,7 +407,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         zoom = self._zoom / (1.0 - max(min(delta_zoom, 4.0), -4.0) * 0.1)
         self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
-        self._update_parent_zoom_slider()
+
+        # update visualizer panel zoom slider
+        self.parent.set_zoom_slider(self._zoom)
 
     def _refresh_if_shown_on_screen(self) -> None:
         if self._is_shown_on_screen():
@@ -417,9 +419,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _picking_pass(self) -> None:
         """Set _hover_id to represent what the user is currently hovering over.
 
-        This is achieved by rendering pickable objects with the RGB color
-        corresponding its id, and reading pixels to convert the color back to
-        an id. Simpler than raycast intersections.
+        Calls _render_objects_for_picking, and reads pixels to convert the
+        moused-over color to an id. Simpler than raycast intersections.
         """
         # pylint: disable=no-value-for-parameter
         if self._mouse_pos is None:
@@ -465,23 +466,22 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
-        """Renders pickable objects with RGB color corresponding to id.
+        """Render objects with RGB color corresponding to id for picking.
 
         TODO: needs changing"""
-        return
-        for camera in self._camera3d_list:
-            id_ = camera.cam_id
-            r = (id_ & (0x0000000FF << 0))  >> 0
-            g = (id_ & (0x0000000FF << 8))  >> 8
-            b = (id_ & (0x0000000FF << 16)) >> 16
-            a = 1.0
+        # for camera in self._camera3d_list:
+        #     id_ = camera.cam_id
+        #     r = (id_ & (0x0000000FF << 0))  >> 0
+        #     g = (id_ & (0x0000000FF << 8))  >> 8
+        #     b = (id_ & (0x0000000FF << 16)) >> 16
+        #     a = 1.0
 
-            glUseProgram(self.get_shader_program('color'))
+        #     glUseProgram(self.get_shader_program('color'))
 
-            glUniform4f(glGetUniformLocation(
-                self.get_shader_program('color'), 'pickingColor'),
-                r / 255.0, g / 255.0, b / 255.0, a)
-            camera.render_for_picking()
+        #     glUniform4f(glGetUniformLocation(
+        #         self.get_shader_program('color'), 'pickingColor'),
+        #         r / 255.0, g / 255.0, b / 255.0, a)
+        #     camera.render_for_picking()
 
         self._viewcube.render_for_picking()
 
@@ -489,23 +489,21 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glUseProgram(0)
 
     def _render_background(self) -> None:
+        """Clear the background color."""
         glClearColor(*self.color_background)
 
     def _render_bed(self) -> None:
+        """Render bed."""
         if self._bed is not None:
             self._bed.render()
 
     def _render_objects(self) -> None:
+        """Render objects, such as cameras and paths."""
         points = wx.GetApp().core.points
+        amount = len(points)
 
-        # glUseProgram(self._instanced_color_shader)
-        glUseProgram(self._color_shader)
-
-        proj = self.projection_matrix
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        view = self.modelview_matrix
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
+        lines = np.array([], dtype=np.float32)
+        model_mats = np.array([], dtype=np.float32)
         for point in points:
             a, b = point.tilt, point.pan
             model =  \
@@ -515,42 +513,92 @@ class GLCanvas3D(glcanvas.GLCanvas):
                          math.sin(a) * math.cos(b), math.cos(a), math.sin(a) * math.sin(b), 0.0,
                          -math.sin(b), 0.0, math.cos(b), 0.0,
                          0.0, 0.0, 0.0, 1.0)
+            # http://planning.cs.uiuc.edu/node102.html
 
+            model_mats = np.append(model_mats, np.array(model, dtype=np.float32))
+            lines = np.append(lines, np.array([point.x, point.y, point.z], dtype=np.float32))
 
-            color = glm.vec4(75, 230, 150, 255) / 255.0
-            glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, amount * glm.sizeof(glm.mat4), model_mats, GL_STATIC_DRAW)
 
-            glBindVertexArray(self._vao_box)
-            glUniform4fv(3, 1, glm.value_ptr(color))
-            glDrawArrays(GL_QUADS, 0, 24)
+        for vao in (self._vao_box, self._vao_side, self._vao_top):
+            glBindVertexArray(vao)
 
-            color -= 0.03
-            glUniform4fv(3, 1, glm.value_ptr(color))
-            glBindVertexArray(self._vao_side)
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 48)
+            # set attribute pointers for matrix (4 times vec4)
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(3)
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+            glEnableVertexAttribArray(4)
+            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(5)
+            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(6)
 
-            color -= 0.03
-            glUniform4fv(3, 1, glm.value_ptr(color))
-            glBindVertexArray(self._vao_top)
-            glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
+            glVertexAttribDivisor(3, 1)
+            glVertexAttribDivisor(4, 1)
+            glVertexAttribDivisor(5, 1)
+            glVertexAttribDivisor(6, 1)
+
+            glBindVertexArray(0)
+
+        glUseProgram(self._instanced_color_shader)
+        proj = self.projection_matrix
+        view = self.modelview_matrix
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        color = glm.vec4(175, 175, 175, 255) / 255.0
+        glBindVertexArray(self._vao_box)
+        glUniform4fv(2, 1, glm.value_ptr(color))
+        glDrawArraysInstanced(GL_QUADS, 0, 24, amount)
+
+        color -= 0.05
+        glUniform4fv(2, 1, glm.value_ptr(color))
+        glBindVertexArray(self._vao_side)
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, amount)
+
+        color -= 0.05
+        glUniform4fv(2, 1, glm.value_ptr(color))
+        glBindVertexArray(self._vao_top)
+        glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
+        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), amount)
+
+        glBindVertexArray(0)
+
+        # ---
+
+        vao = glGenVertexArrays(1)
+        glBindVertexArray(vao)
+
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, lines.nbytes, lines, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        glUseProgram(self._color_shader)
+        color = glm.vec4(180, 180, 180, 255) / 255.0
+        glUniform4fv(3, 1, glm.value_ptr(color))
+        model = glm.mat4()
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+        glBindVertexArray(vao)
+        glDrawArrays(GL_LINE_STRIP, 0, lines.size // 3)
 
         glBindVertexArray(0)
         glUseProgram(0)
 
-        # if self._proxy3d is not None:
-        #     self._proxy3d.render()
-
     def _render_viewcube(self) -> None:
+        """Render ViewCube."""
         if self._viewcube is not None:
             self._viewcube.render()
 
     # ------------------
     # Accessor functions
     # ------------------
-
-    def _update_parent_zoom_slider(self) -> None:
-        """Update VisualizerPanel zoom slider."""
-        self.parent.set_zoom_slider(self._zoom)
 
     def get_shader_program(
         self, program: Optional[str] = 'default'
@@ -639,10 +687,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 controls. Defaults to True.
         """
         if self._mouse_pos is None:
-            self._mouse_pos = event.GetPosition()
+            self._mouse_pos = event.Position
             return
         last = self._mouse_pos
-        cur = event.GetPosition()
+        cur = event.Position
 
         canvas_size = self._canvas.get_canvas_size()
         p1x = last.x * 2.0 / canvas_size.width - 1.0
@@ -675,10 +723,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         TODO: implement this!
         """
         if self._mouse_pos is None:
-            self._mouse_pos = event.GetPosition()
+            self._mouse_pos = event.Position
             return
         last = self._mouse_pos
-        cur = event.GetPosition()
+        cur = event.Position
         # Do stuff
         self._mouse_pos = cur
 

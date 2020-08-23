@@ -24,7 +24,7 @@ class EvfPanel(wx.Panel):
     def get_bitmap(self):
         if  self.cam.img_byte_data:
             img = (Image.open(io.BytesIO(self.cam.img_byte_data)))
-            img.resize(self.GetSize())
+            img.resize(self.Size)
             width, height = img.size
             buffer = img.convert('RGB').tobytes()
             bitmap = wx.Bitmap.FromBuffer(width, height, buffer)

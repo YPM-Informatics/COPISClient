@@ -218,9 +218,9 @@ class PreferenceFrame(wx.Frame):
         self.Bind(wx.EVT_COMBOBOX, self.on_combo)
         self.Bind(wx.EVT_SLIDER, self.on_slider)
 
-    def on_combo(self, event):
+    def on_combo(self, event: wx.CommandEvent) -> None:
         # Populate the proxy style options for the selected style
-        choice = event.GetString()
+        choice = event.String
 
         if choice == 'Sphere':
             self.proxy_style_box.Hide(self.cylinder_style_box)
@@ -239,7 +239,7 @@ class PreferenceFrame(wx.Frame):
             self.boxsizer.Layout()
 
     def on_spin_control(self, event):
-        sc = event.GetEventObject()
+        sc = event.EventObject
         name = sc.Name
 
         # Handles dimension spin controls
@@ -257,5 +257,5 @@ class PreferenceFrame(wx.Frame):
                 self._glcanvas.proxy3d.dimensions = [self.cube_width_sc.Value, self.cube_length_sc.Value, self.cube_height_sc.Value]
 
     def on_slider(self, event):
-        slider = event.GetEventObject()
+        slider = event.EventObject
         self._glcanvas.object_scale = slider.Value
