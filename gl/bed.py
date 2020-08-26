@@ -182,9 +182,9 @@ class GLBed:
         show_axes: See Args section for axes.
         show_bounding_box: See Args section for bounding_box.
     """
-    col_light = 0.91
-    col_dark = 0.72
-    col_border = 0.40
+    col_light = 0.96
+    col_dark = 0.80
+    col_border = 0.50
 
     def __init__(self, parent,
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],

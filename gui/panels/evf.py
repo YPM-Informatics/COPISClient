@@ -11,7 +11,7 @@ class EvfPanel(wx.Panel):
         self.parent = parent
         self.timer = wx.CallLater(15, self.update)
         self.cam = self.parent.get_selected_camera()
-        self.SetBackgroundStyle(wx.BG_STYLE_CUSTOM)
+        self.BackgroundStyle = wx.BG_STYLE_CUSTOM
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.update()
 

@@ -87,7 +87,7 @@ class PreferenceFrame(wx.Frame):
         build_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, -1, 'Build Settings'), wx.HORIZONTAL)
         build_static_sizer.Add(build_settings_box)
 
-        self.boxsizer.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(build_static_sizer, 0, flag=wx.ALIGN_TOP|wx.ALL|wx.EXPAND, border=5)
 
         # Proxy Object Box
         proxy_obj_box = wx.BoxSizer(wx.VERTICAL)
@@ -153,11 +153,11 @@ class PreferenceFrame(wx.Frame):
         cube_length_box = wx.BoxSizer()
         cube_length_label = wx.StaticText(self.panel, wx.ID_ANY, label='Length: ')
         cube_length_box.Add(cube_length_label)
-        self.cube_length_sc= wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=0, max=1000, name='pcubl')
+        self.cube_length_sc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=0, max=1000, name='pcubl')
         cube_length_box.Add(self.cube_length_sc)
 
         cube_height_box = wx.BoxSizer()
-        cube_height_label =  wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
+        cube_height_label = wx.StaticText(self.panel, wx.ID_ANY, label='Height: ')
         cube_height_box.Add(cube_height_label)
         self.cube_height_sc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=0, max=1000, name='pcubh')
         cube_height_box.Add(self.cube_height_sc, 1, flag=wx.LEFT, border=1)
@@ -194,7 +194,7 @@ class PreferenceFrame(wx.Frame):
         proxy_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, -1, 'Proxy Object'), wx.HORIZONTAL)
         proxy_static_sizer.Add(proxy_obj_box)
 
-        self.boxsizer.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(proxy_static_sizer, 0, flag=wx.ALIGN_TOP|wx.ALL|wx.EXPAND, border=5)
 
         # Camera box
         camera_box = wx.BoxSizer(wx.VERTICAL)
@@ -210,9 +210,9 @@ class PreferenceFrame(wx.Frame):
         camera_static_sizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, 0, 'Virtual Cameras'), wx.HORIZONTAL)
         camera_static_sizer.Add(camera_box)
 
-        self.boxsizer.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP | wx.ALL | wx.EXPAND, border=5)
+        self.boxsizer.Add(camera_static_sizer, 0, flag=wx.ALIGN_TOP|wx.ALL|wx.EXPAND, border=5)
 
-        self.panel.SetSizer(self.boxsizer)
+        self.panel.Sizer = self.boxsizer
 
         self.Bind(wx.EVT_SPINCTRL, self.on_spin_control)
         self.Bind(wx.EVT_COMBOBOX, self.on_combo)

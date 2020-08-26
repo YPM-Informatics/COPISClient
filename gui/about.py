@@ -9,12 +9,11 @@ class AboutDialog(wx.Dialog):
 
         self.SetSizeHints(wx.Size(200, 100), wx.DefaultSize)
 
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         statictext = wx.StaticText(self, wx.ID_ANY, 'Under Construction', wx.DefaultPosition, wx.DefaultSize, 0)
-        sizer.Add(statictext, 1, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, 5)
+        self.Sizer.Add(statictext, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
 
-        self.SetSizer(sizer)
         self.Layout()
 
     def __del__(self):

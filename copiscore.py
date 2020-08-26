@@ -48,9 +48,9 @@ class COPISCore():
         """Inits a CopisCore instance.
         """
 
-        path, count = get_helix(glm.vec3(0, -125, 0),
+        path, count = get_helix(glm.vec3(0, -100, 0),
                                 glm.vec3(0, 1, 0),
-                                175, 50, 5, 36)
+                                185, 50, 4, 36)
         # path = [random.randint(-200, 200) for _ in range(300)]
         # count = 100
         self._points = [

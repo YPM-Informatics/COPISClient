@@ -3,6 +3,7 @@
 """TODO: Fill in module docstring"""
 
 import wx
+import wx.lib.inspection
 
 from appconfig import AppConfig
 from copiscore import COPISCore
@@ -23,7 +24,7 @@ class COPISApp(wx.App):
         self.appconfig_exists = False
         self.init_appconfig()
 
-        self.SetAppName('COPIS')
+        self.AppName = 'COPIS'
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
         self.mainframe = MainFrame(
             None,
@@ -49,6 +50,7 @@ class COPISApp(wx.App):
 if __name__ == '__main__':
     app = COPISApp()
     try:
+        # wx.lib.inspection.InspectionTool().Show()
         app.MainLoop()
     except KeyboardInterrupt:
         pass
