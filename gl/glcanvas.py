@@ -44,9 +44,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
-        rot_quat: Read ony; A glm quaternion representing current rotation as a
-            quaternion. To convert to a 4x4 transformation matrix, use
-            glm.mat4_cast(rot_quat).
+        rot_quat: Read ony; A glm quaternion representing current rotation.
+            To convert to a transformation matrix, use glm.mat4_cast(rot_quat).
         bed: Read only; A GLBed object.
         proxy3d: Read only; A Proxy3D object.
         zoom: A float representing zoom level (higher is more zoomed in).
@@ -61,7 +60,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls
-    color_background = (0.941, 0.941, 0.941, 1)
+    color_background = (1.0, 1.0, 1.0, 1.0)
     zoom_min = 0.1
     zoom_max = 7.0
 
@@ -76,7 +75,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                         size=wx.DefaultSize, style=0, name='GLCanvas', palette=wx.NullPalette)
+                         size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
 
@@ -259,7 +258,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         # clear buffers and render everything
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_bed()
         self._render_objects()
@@ -276,7 +275,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     def on_idle(self, event: wx.IdleEvent) -> None:
-        """On EVT_IDLE, check if canvas needs rendering."""
+        """On EVT_IDLE, render only if needed."""
         if not self._gl_initialized or self._canvas.IsFrozen():
             return
 
@@ -284,6 +283,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         self._refresh_if_shown_on_screen()
+        # event.RequestMore()
 
         self._dirty = False
 
@@ -297,8 +297,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         scale = self.get_scale_factor()
-        event.SetX(int(event.x * scale))
-        event.SetY(int(event.y * scale))
+        event.x = int(event.x * scale)
+        event.y = int(event.y * scale)
 
         self._update_camera_zoom(event.WheelRotation / event.WheelDelta)
 
@@ -318,8 +318,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         id_ = self._hover_id
         scale = self.get_scale_factor()
-        event.SetX(int(event.x * scale))
-        event.SetY(int(event.y * scale))
+        event.x = int(event.x * scale)
+        event.y = int(event.y * scale)
 
         if event.Dragging():
             if event.LeftIsDown():
@@ -386,7 +386,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def destroy(self) -> None:
         """Clean up the OpenGL context."""
-        self._context.destroy()
+        self._context.Destroy()
         glcanvas.GLCanvas.Destroy()
 
     @property
@@ -430,7 +430,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glDisable(GL_MULTISAMPLE)
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
         self._render_objects_for_picking()
 
@@ -447,8 +447,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
             color = glReadPixels(mouse[0], mouse[1], 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
             id_ = color[0] + (color[1] << 8) + (color[2] << 16)
 
-            # ignore the background color
-            if id_ == 15790320:
+            # ignore white (background color)
+            if id_ == 16777215:
                 id_ = -1
 
         # check if mouse is inside viewcube area
@@ -548,7 +548,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        color = glm.vec4(175, 175, 175, 255) / 255.0
+        color = glm.vec4(200, 200, 200, 200) / 255.0
         glBindVertexArray(self._vao_box)
         glUniform4fv(2, 1, glm.value_ptr(color))
         glDrawArraysInstanced(GL_QUADS, 0, 24, amount)

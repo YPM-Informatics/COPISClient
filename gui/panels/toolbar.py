@@ -14,8 +14,8 @@ class ToolbarPanel(aui.AuiToolBar):
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ToolbarPanel with constructors."""
-        super().__init__(parent, agwStyle=
-            aui.AUI_TB_PLAIN_BACKGROUND | aui.AUI_TB_OVERFLOW)
+        super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
+            aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
 
         self.serial_controller = None
@@ -78,7 +78,7 @@ class ToolbarPanel(aui.AuiToolBar):
             self.update_bauds()
         else:
             set_dialog(f'Could not open port "{port}".')
-            self.port_cb.SetSelection(-1)
+            self.port_cb.Selection = -1
 
     def on_select_baud(self, event: wx.CommandEvent) -> None:
         self.serial_controller.selected_serial.baudrate = int(event.String)
@@ -88,19 +88,19 @@ class ToolbarPanel(aui.AuiToolBar):
         if self.serial_controller.selected_serial:
             if self.serial_controller.selected_serial.is_open:
                 self.serial_controller.selected_serial.close()
-                connect_btn.SetLabel('Connect')
+                connect_btn.Label = 'Connect'
             else:
                 self.serial_controller.selected_serial.open()
-                connect_btn.SetLabel('Disconnect')
+                connect_btn.Label = 'Disconnect'
         else:
             set_dialog('Please select a port to connect to.')
 
     def update_ports(self) -> None:
-        self.port_cb.Set(self.serial_controller.ports)
+        self.port_cb.Items = self.serial_controller.ports
 
     def update_bauds(self) -> None:
         if self.serial_controller.bauds is not None:
-            self.baud_cb.Set([str(i) for i in self.serial_controller.bauds])
+            self.baud_cb.Items = [str(i) for i in self.serial_controller.bauds]
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         if event.Id == ToolIds.SETTINGS.value:
