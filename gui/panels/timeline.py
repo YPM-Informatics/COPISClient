@@ -2,7 +2,7 @@
 
 import wx
 
-from utils import set_dialog
+from gui.main_frame import set_dialog
 
 
 class TimelinePanel(wx.Panel):
@@ -23,8 +23,9 @@ class TimelinePanel(wx.Panel):
 
         self.init_gui()
 
-        for i in wx.GetApp().core.points:
-            self.add_command(f'{i.x:.3f}, {i.y:.3f}, {i.z:.3f}, {i.pan:.3f}, {i.tilt:.3f}')
+        for device_id, point in wx.GetApp().core.points:
+            # self.add_command(f'{point.x:.3f}, {point.y:.3f}, {point.z:.3f}, {point.p:.3f}, {point.t:.3f}')
+            self.add_command(f'{str(device_id)}: {str(point)}')
 
         self.Layout()
 

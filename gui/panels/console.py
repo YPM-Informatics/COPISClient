@@ -2,7 +2,7 @@
 
 import wx
 
-from utils import create_scaled_bitmap
+from gui.main_frame import create_scaled_bitmap
 
 
 class ConsolePanel(wx.Panel):

@@ -6,7 +6,7 @@ import wx.lib.agw.aui as aui
 from enums import ToolIds
 from gui.settings_frame import SettingsFrame
 from util.serial_controller import SerialController
-from utils import create_scaled_bitmap, set_dialog
+from gui.main_frame import create_scaled_bitmap, set_dialog
 
 
 class ToolbarPanel(aui.AuiToolBar):

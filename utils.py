@@ -1,31 +1,9 @@
 """Util functions."""
 
+from dataclasses import dataclass
 from functools import wraps
 from time import time
 from typing import Callable
-
-import wx
-import wx.svg as svg
-
-
-def set_dialog(msg: str) -> None:
-    """Show a wx.MessageDialog with msg as the message."""
-    dialog = wx.MessageDialog(None, msg, 'Confirm Exit', wx.OK)
-    dialog.ShowModal()
-    dialog.Destroy()
-
-
-def create_scaled_bitmap(bmp_name: str,
-                         px_cnt: int = 16) -> wx.Bitmap:
-    """Return scaled wx.Bitmap from svg file name.
-
-    Args:
-        bmp_name: A string representing the svg image to convert.
-        px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
-    """
-    image = svg.SVGimage.CreateFromFile(
-        'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
-    return image
 
 
 def timing(f: Callable) -> Callable:
@@ -39,3 +17,19 @@ def timing(f: Callable) -> Callable:
             f'func:{f.__name__} args:[{args}, {kw}] took: {(te-ts)*1000:.4f}ms')
         return result
     return wrap
+
+
+@dataclass
+class Point5:
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    p: float = 0.0
+    t: float = 0.0
+
+
+@dataclass
+class Point3:
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0

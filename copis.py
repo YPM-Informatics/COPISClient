@@ -50,6 +50,7 @@ class COPISApp(wx.App):
 if __name__ == '__main__':
     app = COPISApp()
     try:
+        # debug window:
         # wx.lib.inspection.InspectionTool().Show()
         app.MainLoop()
     except KeyboardInterrupt:
