@@ -78,13 +78,11 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
   * Pause Command: M0
   * Resume Command: M24	
   * Notes: M0 & M24 are used for syncing positions of cameras allowing the master or the PC to insert pauses until other commands complete. Also useful when EDSDK is being used from a PC to control camera therefore allowing the controller to wait until PC has finished downloading imagery (or some other process) before proceeding on to next action in the buffer. Alternatively, the PC could hold back on sending commands until transfer is finished, theby not needing to issue a Pause command.		
-* Enable Motors
-  * Command: M17[AXIS_LIST]
-  * Example: M17XZPT
-  * Notes: M17 without parameters enables motors on all axes. 
-* Disable Motors
-  * Command: M18[AXIS_LIST]
-  * Example: M18XZPT
-  * Notes: M18 without parameters disables motors on all axes. 
+* *Enable All Motors*
+  * Command: M17
+  * Example: M17
+* *Disable All Motors*
+  * Command: M18
+  * Example: M18
   
 
