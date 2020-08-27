@@ -66,8 +66,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def __init__(self, parent,
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
-                 axes: bool = True,
-                 bounding_box: bool = True,
                  every: int = 100,
                  subdivisions: int = 10) -> None:
         """Inits GLCanvas3D with constructors."""
@@ -87,7 +85,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dist = 0.5 * (self._build_dimensions[1] + \
                             max(self._build_dimensions[0], self._build_dimensions[2]))
 
-        self._bed = GLBed(self, build_dimensions, axes, bounding_box, every, subdivisions)
+        self._bed = GLBed(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
 
@@ -266,9 +264,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self._canvas.SwapBuffers()
 
-    # ---------------------
-    # Canvas event handlers
-    # ---------------------
+    # --------------------------------------------------------------------------
+    # Event handlers
+    # --------------------------------------------------------------------------
 
     def on_size(self, event: wx.SizeEvent) -> None:
         """On EVT_SIZE, set dirty flag true."""
@@ -380,9 +378,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         h = int(h * factor)
         return _Size(w, h, factor)
 
-    # ---------------------
-    # Canvas util functions
-    # ---------------------
+    # --------------------------------------------------------------------------
+    # Render util methods
+    # --------------------------------------------------------------------------
 
     def destroy(self) -> None:
         """Clean up the OpenGL context."""
@@ -504,14 +502,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         lines = np.array([], dtype=np.float32)
         model_mats = np.array([], dtype=np.float32)
-        for point in points:
-            a, b = point.tilt, point.pan
+        for id_, point in points:
+            p, t = point.p, point.t
             model =  \
                 glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
                 glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
-                glm.mat4(math.cos(a) * math.cos(b), -math.sin(a), math.cos(a) * math.sin(b), 0.0,
-                         math.sin(a) * math.cos(b), math.cos(a), math.sin(a) * math.sin(b), 0.0,
-                         -math.sin(b), 0.0, math.cos(b), 0.0,
+                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
+                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
+                         -math.sin(p), 0.0, math.cos(p), 0.0,
                          0.0, 0.0, 0.0, 1.0)
             # http://planning.cs.uiuc.edu/node102.html
 
@@ -596,9 +594,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._viewcube is not None:
             self._viewcube.render()
 
-    # ------------------
+    # --------------------------------------------------------------------------
     # Accessor functions
-    # ------------------
+    # --------------------------------------------------------------------------
 
     def get_shader_program(
         self, program: Optional[str] = 'default'
@@ -657,9 +655,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._object_scale = value
         self._dirty = True
 
-    # -----------------------
-    # Canvas camera functions
-    # -----------------------
+    # --------------------------------------------------------------------------
+    # Matrix transformation methods
+    # --------------------------------------------------------------------------
 
     @property
     def projection_matrix(self) -> glm.mat4:
@@ -730,9 +728,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # Do stuff
         self._mouse_pos = cur
 
-    # -------------------
-    # Misc util functions
-    # -------------------
+    # --------------------------------------------------------------------------
+    # Misc util methods
+    # --------------------------------------------------------------------------
 
     def get_scale_factor(self) -> float:
         """Return scale factor based on display dpi.

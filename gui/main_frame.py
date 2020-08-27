@@ -6,9 +6,11 @@ from typing import Any, Dict, Optional
 
 import wx
 import wx.lib.agw.aui as aui
-from wx.lib.agw.aui.aui_utilities import BitmapFromBits, StepColour, IndentPressedBitmap, ChopText
-from wx.lib.agw.aui.aui_utilities import GetBaseColour, DrawMACCloseButton, LightColour, TakeScreenShot
+import wx.svg as svg
 from wx.lib.agw.aui.aui_constants import *
+from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
+                                          IndentPressedBitmap, StepColour,
+                                          TakeScreenShot)
 
 from gui.about import *
 from gui.panels.console import ConsolePanel
@@ -21,7 +23,27 @@ from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
 from gui.pathgen_frame import *
 from gui.pref_frame import *
-from utils import create_scaled_bitmap
+from utils import Point3, Point5
+
+
+def set_dialog(msg: str) -> None:
+    """Show a wx.MessageDialog with msg as the message."""
+    dialog = wx.MessageDialog(None, msg, 'Confirm Exit', wx.OK)
+    dialog.ShowModal()
+    dialog.Destroy()
+
+
+def create_scaled_bitmap(bmp_name: str,
+                         px_cnt: int = 16) -> wx.Bitmap:
+    """Return scaled wx.Bitmap from svg file name.
+
+    Args:
+        bmp_name: A string representing the svg image to convert.
+        px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
+    """
+    image = svg.SVGimage.CreateFromFile(
+        'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
+    return image
 
 
 class MainFrame(wx.Frame):
@@ -80,6 +102,10 @@ class MainFrame(wx.Frame):
 
         self.CreateStatusBar(1)
         self.SetStatusText('Ready')
+
+    # --------------------------------------------------------------------------
+    # Menubar related methods
+    # --------------------------------------------------------------------------
 
     def init_menubar(self) -> None:
         """Initialize menubar.
@@ -307,11 +333,19 @@ class MainFrame(wx.Frame):
         about = AboutDialog(self)
         about.Show()
 
+    def on_exit(self, event: wx.CommandEvent) -> None:
+        """On menu close, exit application."""
+        self.Close()
+
+    # --------------------------------------------------------------------------
+    # AUI related methods
+    # --------------------------------------------------------------------------
+
     def init_mgr(self) -> None:
         """Initialize AuiManager and attach panes.
 
-        NOTE: We are NOT USING wx.aui, but wx.lib.agw.aui, which is a pure
-        Python implementation of wx.aui. As such, the correct documentation on
+        NOTE: We are NOT USING wx.aui, but wx.lib.agw.aui, a pure Python
+        implementation of wx.aui. As such, the correct documentation on
         wxpython.org should begin with
         https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui rather than
         https://wxpython.org/Phoenix/docs/html/wx.aui.
@@ -334,21 +368,22 @@ class MainFrame(wx.Frame):
             aui.AUI_NB_TAB_SPLIT |
             aui.AUI_NB_TAB_MOVE |
             aui.AUI_NB_SCROLL_BUTTONS |
+            aui.AUI_NB_WINDOWLIST_BUTTON |
             aui.AUI_NB_MIDDLE_CLICK_CLOSE |
             aui.AUI_NB_CLOSE_ON_ACTIVE_TAB |
             aui.AUI_NB_TAB_FLOAT)
 
-        # set panel colors and style
+        # set aui colors and style
+        # see https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui.dockart.AuiDefaultDockArt.html
         dockart = aui.AuiDefaultDockArt()
         dockart.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 3)
         dockart.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, 18)
         dockart.SetMetric(aui.AUI_DOCKART_PANE_BUTTON_SIZE, 16)
-        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_COLOUR, '#F0F0F0')
-        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_GRADIENT_COLOUR, '#F0F0F0')
+        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
+        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_GRADIENT_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
+        dockart.SetColor(aui.AUI_DOCKART_SASH_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
         dockart.SetColor(aui.AUI_DOCKART_ACTIVE_CAPTION_COLOUR, '#FFFFFF')
         dockart.SetColor(aui.AUI_DOCKART_INACTIVE_CAPTION_COLOUR, '#FFFFFF')
-        dockart.SetColor(aui.AUI_DOCKART_ACTIVE_CAPTION_TEXT_COLOUR, '#000000')
-        dockart.SetColor(aui.AUI_DOCKART_INACTIVE_CAPTION_TEXT_COLOUR, '#000000')
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
         self._mgr.SetArtProvider(dockart)
 
@@ -376,12 +411,12 @@ class MainFrame(wx.Frame):
             self.panels['console'], aui.AuiPaneInfo(). \
             Name('console').Caption('Console'). \
             Dock().Bottom().Position(0).Layer(0). \
-            MinSize(50, 150).Show(True))
+            MinSize(280, 180).Show(True))
         self._mgr.AddPane(
             self.panels['timeline'], aui.AuiPaneInfo(). \
             Name('timeline').Caption('Timeline'). \
             Dock().Bottom().Position(1).Layer(0). \
-            MinSize(50, 150).Show(True),
+            MinSize(280, 180).Show(True),
             target=self._mgr.GetPane('console'))
 
         # add controller, properties, path panel
@@ -475,6 +510,10 @@ class MainFrame(wx.Frame):
         #     self.DetachPane(pane.window)
         #     pane.window.Destroy()
 
+    # --------------------------------------------------------------------------
+    # Attribute and accessor methods
+    # --------------------------------------------------------------------------
+
     @property
     def console_panel(self) -> ConsolePanel:
         return self.panels['console']
@@ -507,7 +546,36 @@ class MainFrame(wx.Frame):
     def visualizer_panel(self) -> VisualizerPanel:
         return self.panels['visualizer']
 
-    def initEDSDK(self) -> None:
+    @property
+    def points(self) -> List[Tuple[int, Point5]]:
+        return self._core.points
+
+    def insert_point(self, index: int, point: Point5) -> None:
+        self._core.points.insert(index, point)
+
+    def append_point(self, point: Point5) -> None:
+        self._core.points.append(point)
+
+    @property
+    def selected_camera(self) -> Optional[int]:
+        return self._core.selected_camera
+
+    @selected_camera.setter
+    def selected_camera(self, id_: int) -> None:
+        self._core.selected_camera = id_
+
+        # TODO: improve the inter-panel calling stuff
+        self.visualizer_panel.dirty = True
+        self.controller_panel.main_combo.Selection = id_
+
+    def get_camera_list(self) -> Dict[int, Any]:
+        return self._core.cameras
+
+    # --------------------------------------------------------------------------
+    # EDSDK methods
+    # --------------------------------------------------------------------------
+
+    def init_edsdk(self) -> None:
         if self.is_edsdk_on:
             return
 
@@ -547,22 +615,6 @@ class MainFrame(wx.Frame):
             return self.selected_cam
         return None
 
-
-    @property
-    def selected_camera(self) -> Optional[int]:
-        return self._core.selected_camera
-
-    @selected_camera.setter
-    def selected_camera(self, id_: int) -> None:
-        self._core.selected_camera = id_
-
-        # TODO: improve the inter-panel calling stuff
-        self.visualizer_panel.dirty = True
-        self.controller_panel.main_combo.Selection = id_
-
-    def get_camera_list(self) -> Dict[int, Any]:
-        return self._core.cameras
-
     def terminate_edsdk(self) -> None:
         if not self.is_edsdk_on:
             return
@@ -583,10 +635,6 @@ class MainFrame(wx.Frame):
 
         self._mgr.UnInit()
         self.Destroy()
-
-    def on_exit(self, event: wx.CommandEvent) -> None:
-        """On menu close, exit application."""
-        self.Close()
 
     def __del__(self) -> None:
         pass

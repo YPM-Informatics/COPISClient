@@ -8,7 +8,7 @@ from typing import Tuple
 import wx
 import wx.lib.scrolledpanel as scrolled
 
-from utils import create_scaled_bitmap
+from gui.main_frame import create_scaled_bitmap
 
 
 class ControllerPanel(scrolled.ScrolledPanel):
@@ -39,8 +39,6 @@ class ControllerPanel(scrolled.ScrolledPanel):
         info_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='State'), wx.VERTICAL)
 
         info_grid = wx.FlexGridSizer(6, 7, 0, 0)
-        info_grid.FlexibleDirection = wx.BOTH
-        info_grid.NonFlexibleGrowMode = wx.FLEX_GROWMODE_SPECIFIED
         for col in (2, 5):
             info_grid.AddGrowableCol(col)
 
@@ -87,10 +85,10 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         info_grid.AddMany([
             (0, 0),
-            (10, 0),
+            (8, 0),
             (mpos_text, 0, 0, 0),
             (mzero_text, 0, 0, 0),
-            (10, 0),
+            (8, 0),
             (wpos_text, 0, 0, 0),
             (wzero_text, 0, 0, 0),
 
@@ -135,16 +133,14 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (t0_w_btn, 0, wx.EXPAND, 0),
         ])
 
-        info_sizer.Add(info_grid, 1, wx.ALL|wx.EXPAND, 5)
-        self.Sizer.Add(info_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        info_sizer.Add(info_grid, 1, wx.ALL|wx.EXPAND, 4)
+        self.Sizer.Add(info_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def add_jog_controls(self) -> None:
         """Initialize jog controller sizer and setup child elements."""
         jog_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jogging'), wx.VERTICAL)
 
         xyzab_grid = wx.FlexGridSizer(6, 6, 0, 0)
-        xyzab_grid.FlexibleDirection = wx.BOTH
-        xyzab_grid.NonFlexibleGrowMode = wx.FLEX_GROWMODE_SPECIFIED
         for col in (0, 1, 2, 3):
             xyzab_grid.AddGrowableCol(col)
 
@@ -188,7 +184,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (y_pos_btn, 0, wx.EXPAND, 0),
             (arrow_ne_btn, 0, wx.EXPAND, 0),
             (z_pos_btn, 0, wx.EXPAND, 0),
-            (10, 0),
+            (8, 0),
             (step_text, 0, wx.ALIGN_BOTTOM|wx.BOTTOM|wx.EXPAND, 3),
 
             (x_neg_btn, 0, wx.EXPAND, 0),
@@ -222,8 +218,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (self.ab_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
         ])
 
-        jog_sizer.Add(xyzab_grid, 1, wx.ALL|wx.EXPAND, 5)
-        self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        jog_sizer.Add(xyzab_grid, 1, wx.ALL|wx.EXPAND, 4)
+        self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def update_machine_pos(self, pos: Tuple[float, float, float, float, float]) -> None:
         pass

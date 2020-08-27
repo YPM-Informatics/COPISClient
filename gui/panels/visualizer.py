@@ -15,6 +15,9 @@ class VisualizerPanel(wx.Panel):
     Attributes:
         dirty: A boolean indicating if the OpenGL canvas needs updating or not.
         glcanvas: Read only; A GLCanvas3D object.
+        bbox_shown: A boolean indicating if the canvas bed bounding box is shown
+            or not.
+        axes_shown: A boolean indicating if the canvas axes is shown or not
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -31,8 +34,6 @@ class VisualizerPanel(wx.Panel):
         self._glcanvas = GLCanvas3D(
             self,
             build_dimensions=self._build_dimensions,
-            axes=True,
-            bounding_box=True,
             every=100,
             subdivisions=10)
         self.init_gui()
@@ -41,7 +42,7 @@ class VisualizerPanel(wx.Panel):
 
     def init_gui(self) -> None:
         """Initialize panel."""
-        navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 28), style=wx.BORDER_DEFAULT)
+        navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 23), style=wx.BORDER_DEFAULT)
         navbar.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # add zoom slider and text
@@ -51,26 +52,11 @@ class VisualizerPanel(wx.Panel):
         self.zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
         navbar.Sizer.Add(self.zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5)
 
-        wx.StaticLine(navbar, wx.ID_ANY, style=wx.LI_VERTICAL)
-        navbar.Sizer.Add(wx.StaticLine(navbar, wx.ID_ANY, style=wx.LI_VERTICAL), 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
-
-        # add axes checkbox
-        axes_check = wx.CheckBox(navbar, wx.ID_ANY, '&Axes')
-        axes_check.Value = True
-        axes_check.Bind(wx.EVT_CHECKBOX, self.on_axes_check)
-        navbar.Sizer.Add(axes_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT, 5)
-
-        # add bounding box checkbox
-        bbox_check = wx.CheckBox(navbar, wx.ID_ANY, '&Bounding boxes')
-        bbox_check.Value = True
-        bbox_check.Bind(wx.EVT_CHECKBOX, self.on_bbox_check)
-        navbar.Sizer.Add(bbox_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT, 5)
+        # add GLCanvas3D
+        self.Sizer.Add(self._glcanvas, 1, wx.EXPAND|wx.ALL, 0)
 
         # add navbar
         self.Sizer.Add(navbar, 0, wx.EXPAND)
-
-        # add GLCanvas3D
-        self.Sizer.Add(self._glcanvas, 1, wx.EXPAND|wx.ALL, 0)
 
     def on_zoom_slider(self, event: wx.ScrollEvent) -> None:
         """Update GLCanvas3D zoom when slider is updated."""
@@ -80,19 +66,47 @@ class VisualizerPanel(wx.Panel):
         """Update slider value."""
         self.zoom_slider.Value = value * 10
 
-    def on_axes_check(self, event: wx.CommandEvent) -> None:
-        "Show or hide GLBed axes when checkbox is updated."
+    @property
+    def grid_shown(self) -> bool:
+        if self._glcanvas is None:
+            return False
+
+        return self._glcanvas.bed.grid_shown
+
+    @grid_shown.setter
+    def grid_shown(self, value: bool) -> None:
         if self._glcanvas is None:
             return
 
-        self._glcanvas.bed.show_axes = event.IsChecked()
+        self._glcanvas.bed.grid_shown = value
 
-    def on_bbox_check(self, event: wx.CommandEvent) -> None:
-        "Show or hide GLBed bounding box when checkbox is updated."
+    @property
+    def axes_shown(self) -> bool:
+        if self._glcanvas is None:
+            return False
+
+        return self._glcanvas.bed.axes_shown
+
+    @axes_shown.setter
+    def axes_shown(self, value: bool) -> None:
         if self._glcanvas is None:
             return
 
-        self._glcanvas.bed.show_bounding_box = event.IsChecked()
+        self._glcanvas.bed.axes_shown = value
+
+    @property
+    def bbox_shown(self) -> bool:
+        if self._glcanvas is None:
+            return False
+
+        return self._glcanvas.bed.bbox_shown
+
+    @bbox_shown.setter
+    def bbox_shown(self, value: bool) -> None:
+        if self._glcanvas is None:
+            return
+
+        self._glcanvas.bed.bbox_shown = value
 
     @property
     def dirty(self) -> bool:
