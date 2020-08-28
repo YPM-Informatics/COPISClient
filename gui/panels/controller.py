@@ -7,8 +7,10 @@ from typing import Tuple
 
 import wx
 import wx.lib.scrolledpanel as scrolled
+from pydispatch import dispatcher
 
 from gui.wxutils import create_scaled_bitmap
+from utils import Point3, Point5
 
 
 class ControllerPanel(scrolled.ScrolledPanel):
@@ -32,7 +34,24 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.add_jog_controls()
 
         self.SetupScrolling(scroll_x=False)
+
+        # start disabled, as no devices will be selected
+        self.Disable()
         self.Layout()
+
+        # bind copiscore listeners
+        dispatcher.connect(self.on_device_selected, signal='core_device_selected')
+        dispatcher.connect(self.on_deselected, signal='core_device_deselected')
+
+    def on_device_selected(self, device) -> None:
+        """TODO"""
+        self.update_machine_pos(device.position)
+        self.Enable()
+
+    def on_deselected(self) -> None:
+        """TODO"""
+        self.update_machine_pos(Point5())
+        self.Disable()
 
     def add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
@@ -221,8 +240,16 @@ class ControllerPanel(scrolled.ScrolledPanel):
         jog_sizer.Add(xyzab_grid, 1, wx.ALL|wx.EXPAND, 4)
         self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
-    def update_machine_pos(self, pos: Tuple[float, float, float, float, float]) -> None:
-        pass
+    def update_machine_pos(self, pos: Point5) -> None:
+        self.x_m_text.Value = f'{pos.x:.3f}'
+        self.y_m_text.Value = f'{pos.y:.3f}'
+        self.z_m_text.Value = f'{pos.z:.3f}'
+        self.p_m_text.Value = f'{pos.p:.3f}'
+        self.t_m_text.Value = f'{pos.t:.3f}'
 
-    def update_world_pos(self, pos: Tuple[float, float, float, float, float]) -> None:
-        pass
+    def update_world_pos(self, pos: Point5) -> None:
+        self.x_w_text.Value = f'{pos.x:.3f}'
+        self.y_w_text.Value = f'{pos.y:.3f}'
+        self.z_w_text.Value = f'{pos.z:.3f}'
+        self.p_w_text.Value = f'{pos.p:.3f}'
+        self.t_w_text.Value = f'{pos.t:.3f}'

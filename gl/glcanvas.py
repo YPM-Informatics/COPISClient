@@ -287,7 +287,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self._dirty = True
 
-    # @timing
+    @timing
     def render(self):
         """Render frame.
 
@@ -558,9 +558,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._render_paths()
 
     def _render_cameras(self) -> None:
+        """Render TODO."""
         pass
 
     def _render_paths(self) -> None:
+        """Render TODO."""
         glUseProgram(self._instanced_color_shader)
         proj = self.projection_matrix
         view = self.modelview_matrix
