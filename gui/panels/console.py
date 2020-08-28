@@ -1,6 +1,7 @@
 """TODO"""
 
 import wx
+from pydispatch import dispatcher
 
 from gui.wxutils import create_scaled_bitmap
 from utils import Point5
@@ -22,6 +23,13 @@ class ConsolePanel(wx.Panel):
         self.init_gui()
 
         self.Layout()
+
+        # bind copiscore listeners
+        dispatcher.connect(self.on_notification, signal='core_point_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_device_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_device_selected')
+        dispatcher.connect(self.on_notification, signal='core_device_deselected')
+        dispatcher.connect(self.on_notification, signal='core_error')
 
     def init_gui(self) -> None:
         self.console = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_CHARWRAP)
@@ -45,13 +53,16 @@ class ConsolePanel(wx.Panel):
         if not event.String:
             return
 
-        wx.GetApp().core.selected_device_id = int(event.String)
-
         self.console.AppendText(f'\n$ {event.String}')
         self.console_writer.ChangeValue('')
+
+        wx.GetApp().core.selected_device_id = int(event.String)
 
     def on_command_cleared(self, event: wx.CommandEvent) -> None:
         self.console_writer.ChangeValue('')
 
     def print(self, msg: str) -> None:
-        self.console.AppendText(msg + '\n')
+        self.console.AppendText(f'\n{msg}')
+
+    def on_notification(self, signal: str, message: str = '') -> None:
+        self.print(f'notification: {signal} {message}')

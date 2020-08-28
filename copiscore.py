@@ -21,18 +21,6 @@ if sys.version_info.major < 3:
     sys.exit(-1)
 
 
-@dataclass
-class Device:
-    device_id: int = 0
-    device_name: str = ''
-    device_type: str = ''
-    interfaces: Optional[List[str]] = None
-    home_position: Point5 = Point5()
-    max_feed_rates: Point5 = Point5()
-    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-
-
 class MonitoredList(list):
     def __init__(self, iterable, signal: str) -> None:
         super().__init__(iterable)
@@ -76,6 +64,19 @@ class MonitoredList(list):
         dispatcher.send(self.signal)
 
 
+@dataclass
+class Device:
+    device_id: int = 0
+    device_name: str = ''
+    device_type: str = ''
+    interfaces: Optional[List[str]] = None
+    position: Point5 = Point5()
+    home_position: Point5 = Point5()
+    max_feed_rates: Point5 = Point5()
+    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
+    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
+
+
 class COPISCore:
     """COPISCore. Connects and interacts with devices in system.
 
@@ -88,6 +89,7 @@ class COPISCore:
         core_point_list_changed:
         core_device_list_changed:
         core_device_selected:
+        core_device_deselected:
         core_error:
     """
 
@@ -97,14 +99,15 @@ class COPISCore:
 
         path, count = get_helix(glm.vec3(0, -100, 0),
                                 glm.vec3(0, 1, 0),
-                                185, 40, 5, 18)
+                                185, 20, 10, 48)
         self._points: List[Tuple[int, Point5]] = MonitoredList([
             (0, Point5(
                 path[i * 3],
                 path[i * 3 + 1],
                 path[i * 3 + 2],
                 math.atan2(path[i*3+2], path[i*3]) + math.pi,
-                math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2))))
+                math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2)))
+            )
             for i in range(count)
         ], 'core_point_list_changed')
 
