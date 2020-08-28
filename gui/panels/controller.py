@@ -8,7 +8,7 @@ from typing import Tuple
 import wx
 import wx.lib.scrolledpanel as scrolled
 
-from gui.main_frame import create_scaled_bitmap
+from gui.wxutils import create_scaled_bitmap
 
 
 class ControllerPanel(scrolled.ScrolledPanel):

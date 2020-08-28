@@ -1,8 +1,9 @@
 """TODO"""
 
 import wx
+from pydispatch import dispatcher
 
-from gui.main_frame import set_dialog
+from gui.wxutils import set_dialog
 
 
 class TimelinePanel(wx.Panel):
@@ -22,10 +23,10 @@ class TimelinePanel(wx.Panel):
         self.timeline_writer = None
 
         self.init_gui()
+        self.update_timeline()
 
-        for device_id, point in wx.GetApp().core.points:
-            # self.add_command(f'{point.x:.3f}, {point.y:.3f}, {point.z:.3f}, {point.p:.3f}, {point.t:.3f}')
-            self.add_command(f'{str(device_id)}: {str(point)}')
+        # bind copiscore listeners
+        dispatcher.connect(self.update_timeline, signal='core_point_list_changed')
 
         self.Layout()
 
@@ -92,7 +93,7 @@ class TimelinePanel(wx.Panel):
         """TODO"""
         cmd = self.timeline_writer.Value
         self.add_command(cmd)
-        wx.GetApp().core.add_point(0, tuple(map(float, cmd.split(', '))))
+        # wx.GetApp().core.append_point(0, tuple(map(float, cmd.split(', '))))
         self.parent.visualizer_panel.dirty = True
         self.timeline_writer.Value = ''
 
@@ -142,3 +143,11 @@ class TimelinePanel(wx.Panel):
                 set_dialog('Please select the command to delete.')
         else:
             self.timeline.Clear()
+
+    def update_timeline(self) -> None:
+        """When points are modified, redisplay timeline commands.
+
+        Handles core_point_list_changed signal sent by wx.GetApp().core.
+        """
+        for device_id, point in wx.GetApp().core.points:
+            self.add_command(f'{str(device_id)}: {str(point)}')

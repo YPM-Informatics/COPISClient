@@ -1,17 +1,28 @@
 """TODO"""
 
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import wx
 import wx.lib.scrolledpanel as scrolled
+from pydispatch import dispatcher
 
-from gui.main_frame import create_scaled_bitmap
+from gui.wxutils import create_scaled_bitmap
+
+
+def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
+    return wx.StaticText(parent, label=label, size=(width, -1), style=wx.ALIGN_RIGHT)
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
     """TODO
 
     """
+    config = {
+        'Default': ('visualizer', 'quick_actions'),
+        'Camera': ('camera_info', 'camera_controls', 'quick_actions'),
+        'Point': ('transform', 'quick_actions'),
+    }
+
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits PropertiesPanel with constructors."""
@@ -26,42 +37,70 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         self._current = 'No Selection'
         self.current_text = wx.StaticText(self, label=self._current)
-        self.Sizer.AddSpacer(15)
-        self.Sizer.Add(self.current_text, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 15)
-        self.Sizer.AddSpacer(5)
+        self.Sizer.AddSpacer(16)
+        self.Sizer.Add(self.current_text, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 16)
+        self.Sizer.AddSpacer(4)
 
-        self._properties = {}
+        self._property_panels = {}
 
         self.init_all_property_panels()
-
-        for _, p in self._properties.items():
-            self.Sizer.Add(p, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
-        # self.Sizer.Add(self._properties['visualizer'], 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
+        self.update_to_selected('Default')
 
         self.SetupScrolling(scroll_x=False)
         self.Layout()
 
+        # bind copiscore listeners
+        dispatcher.connect(self.on_device_selected, signal='core_device_selected')
+        dispatcher.connect(self.on_deselected, signal='core_device_deselected')
+
     def init_all_property_panels(self) -> None:
-        """"""
-        self._properties['camera_info'] = _PropCameraInfo(self)
-        self._properties['visualizer'] = _PropVisualizer(self)
-        self._properties['transform'] = _PropTransform(self)
-        self._properties['camera_controls'] = _PropCamera(self)
+        """TODO"""
+        self._property_panels['visualizer'] = _PropVisualizer(self)
+        self._property_panels['transform'] = _PropTransform(self)
+        self._property_panels['camera_info'] = _PropCameraInfo(self)
+        self._property_panels['camera_controls'] = _PropCamera(self)
+
+        for _, panel in self._property_panels.items():
+            self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
+
+    def update_to_selected(self, selected: str) -> None:
+        """TODO"""
+        if selected not in self.config:
+            return
+        for _, panel in self._property_panels.items():
+            panel.Hide()
+        for name in self.config[selected]:
+            panel = self._property_panels.get(name, None)
+            if panel is not None:
+                panel.Show()
+
+        self.Layout()
+        w, h = self.Sizer.GetMinSize()
+        self.SetVirtualSize((w, h))
 
     @property
     def current(self) -> str:
         return self._current
 
     @current.setter
-    def current(self, value: str) -> None:
-        if value == '':
+    def current(self, value: Optional[str]) -> None:
+        if not value:
             value = 'No Selection'
         self._current = value
         self.current_text.Label = value
 
+    def on_device_selected(self, device) -> None:
+        """TODO"""
+        self.current = 'Camera'
+        self._property_panels['camera_info'].device_id = device.device_id
+        self._property_panels['camera_info'].device_name = device.device_name
+        self._property_panels['camera_info'].device_type = device.device_type
+        self.update_to_selected('Camera')
 
-def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
-    return wx.StaticText(parent, label=label, size=(width, -1), style=wx.ALIGN_RIGHT)
+    def on_deselected(self) -> None:
+        """TODO"""
+        self.current = None
+        self.update_to_selected('Default')
 
 
 class _PropVisualizer(wx.Panel):
@@ -238,9 +277,9 @@ class _PropCameraInfo(wx.Panel):
         grid = wx.FlexGridSizer(3, 2, 4, 8)
         grid.AddGrowableCol(1, 0)
 
-        self.id_text = wx.StaticText(self, label='0')
-        self.name_text = wx.StaticText(self, label='Cam 1')
-        self.type_text = wx.StaticText(self, label='Canon EOS 80D')
+        self.id_text = wx.StaticText(self, label='')
+        self.name_text = wx.StaticText(self, label='')
+        self.type_text = wx.StaticText(self, label='')
 
         grid.AddMany([
             (_text(self, 'Device ID:', 80), 0, wx.EXPAND, 0),

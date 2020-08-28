@@ -6,14 +6,12 @@ TODO: add license boilerplate
 import math
 import os
 import platform
-import random
 import sys
-import threading
-import time
-import uuid
 from dataclasses import dataclass
 from gl.glutils import get_helix
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
+
+from pydispatch import dispatcher
 
 import glm
 from utils import Point3, Point5
@@ -24,7 +22,7 @@ if sys.version_info.major < 3:
 
 
 @dataclass
-class Camera:
+class Device:
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''
@@ -35,17 +33,62 @@ class Camera:
     collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
 
 
-# @dataclass
-# class Action:
+class MonitoredList(list):
+    def __init__(self, iterable, signal: str) -> None:
+        super().__init__(iterable)
+        self.signal = signal
+
+    def clear(self) -> None:
+        super().clear()
+        dispatcher.send(self.signal)
+
+    def append(self, __object) -> None:
+        super().append(__object)
+        dispatcher.send(self.signal)
+
+    def extend(self, __iterable) -> None:
+        super().extend(__iterable)
+        dispatcher.send(self.signal)
+
+    def pop(self, __index: int):
+        value = super().pop(__index)
+        dispatcher.send(self.signal)
+        return value
+
+    def insert(self, __index: int, __object) -> None:
+        super().insert(__index, __object)
+        dispatcher.send(self.signal)
+
+    def remove(self, __value) -> None:
+        super().remove(__value)
+        dispatcher.send(self.signal)
+
+    def reverse(self) -> None:
+        super().reverse()
+        dispatcher.send(self.signal)
+
+    def __setitem__(self, key, value) -> None:
+        super().__setitem__(key, value)
+        dispatcher.send(self.signal)
+
+    def __delitem__(self, key) -> None:
+        super().__delitem__(key)
+        dispatcher.send(self.signal)
 
 
-class COPISCore():
-    """COPISCore. Connects and interacts with cameras in system.
+class COPISCore:
+    """COPISCore. Connects and interacts with devices in system.
 
     Attributes:
-        selected_camera
-        points
-        cameras
+        points:
+        devices:
+        selected_device:
+
+    Emits:
+        core_point_list_changed:
+        core_device_list_changed:
+        core_device_selected:
+        core_error:
     """
 
     def __init__(self, *args, **kwargs) -> None:
@@ -54,8 +97,8 @@ class COPISCore():
 
         path, count = get_helix(glm.vec3(0, -100, 0),
                                 glm.vec3(0, 1, 0),
-                                185, 50, 4, 36)
-        self._points: List[Tuple[int, Point5]] = [
+                                185, 40, 5, 18)
+        self._points: List[Tuple[int, Point5]] = MonitoredList([
             (0, Point5(
                 path[i * 3],
                 path[i * 3 + 1],
@@ -63,16 +106,17 @@ class COPISCore():
                 math.atan2(path[i*3+2], path[i*3]) + math.pi,
                 math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2))))
             for i in range(count)
-        ]
+        ], 'core_point_list_changed')
 
-        self._cameras = [
-            Camera(0, 'Camera A', 'Canon EOS 80D DSLR', ['RemoteShutter'], Point5(100, 100, 100)),
-            Camera(1, 'Camera B', 'Canon EOS 80D DSLR', ['USBHost-PTP'], Point5(-100, 100, 100)),
-            Camera(2, 'Camera C', 'Canon EOS 80D DSLR', ['PC', 'PC-External'], Point5(100, -100, 100)),
-            Camera(3, 'Camera D', 'Canon EOS 80D DSLR', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
-        ]
+        self._devices = MonitoredList([
+            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
+            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 100, 100)),
+            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
+            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
+            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
+        ], 'core_device_list_changed')
 
-        self._selected_camera_id: int = -1
+        self._selected_device: Optional[Device] = None
 
     def connect(self):
         """TODO"""
@@ -82,29 +126,37 @@ class COPISCore():
         """TODO"""
         pass
 
-    def add_point(self, device_id: int, pos: Point5) -> None:
-        if device_id not in self._cameras:
-            return
-        self._points.append((device_id, pos))
-
-    def clear_points(self) -> None:
-        """Clear points list. (for testing)"""
-        self._points = []
-
-    @property
-    def selected_camera(self) -> int:
-        return self._selected_camera_id
-
-    @selected_camera.setter
-    def selected_camera(self, device_id: int) -> None:
-        if device_id != -1 and device_id not in (c.device_id for c in self._cameras):
-            return
-        self._selected_camera_id = device_id
-
     @property
     def points(self) -> List[Tuple[int, Point5]]:
         return self._points
 
     @property
-    def cameras(self) -> List[Camera]:
-        return self._cameras
+    def devices(self) -> List[Device]:
+        return self._devices
+
+    def check_point(self, point: Tuple[int, Point5]) -> bool:
+        if point[0] not in (c.device_id for c in self._devices):
+            dispatcher.send('core_error', message=f'invalid point {point}')
+            return False
+        return True
+
+    @property
+    def selected_device(self) -> Optional[Device]:
+        return self._selected_device
+
+    @property
+    def selected_device_id(self) -> int:
+        if self._selected_device is None:
+            return -1
+        return self._selected_device.device_id
+
+    @selected_device_id.setter
+    def selected_device_id(self, device_id: int) -> None:
+        device = next((x for x in self._devices if x.device_id == device_id), None)
+        if device_id == -1 or device is None:
+            dispatcher.send('core_device_deselected', device=self.selected_device)
+            self._selected_device = None
+            # dispatcher.send('core_error', message=f'invalid device id {device_id}')
+            return
+        self._selected_device = device
+        dispatcher.send('core_device_selected', device=device)

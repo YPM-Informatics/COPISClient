@@ -2,7 +2,8 @@
 
 import wx
 
-from gui.main_frame import create_scaled_bitmap
+from gui.wxutils import create_scaled_bitmap
+from utils import Point5
 
 
 class ConsolePanel(wx.Panel):
@@ -43,6 +44,9 @@ class ConsolePanel(wx.Panel):
         """On EVT_TEXT_ENTER, process entered console command."""
         if not event.String:
             return
+
+        wx.GetApp().core.selected_device_id = int(event.String)
+
         self.console.AppendText(f'\n$ {event.String}')
         self.console_writer.ChangeValue('')
 
