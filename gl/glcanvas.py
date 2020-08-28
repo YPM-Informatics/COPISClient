@@ -5,7 +5,6 @@ import math
 import platform as pf
 from gl.bed import GLBed
 from gl.glutils import arcball
-from gl.path3d import Path3D
 from gl.proxy3d import Proxy3D
 from gl.viewcube import GLViewCube
 from threading import Lock
@@ -16,6 +15,7 @@ import wx
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
+from pydispatch import dispatcher
 from wx import glcanvas
 
 import glm
@@ -106,6 +106,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
+        self._point_lines = None
+        self._point_count = None
+
+        # bind copiscore listeners
+        dispatcher.connect(self.update_volumes, signal='core_point_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -149,6 +154,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         self.create_vaos()
+        self.update_volumes()
 
         # compile shader programs
         self._default_shader = shaderlib.compile_shader(*shaderlib.default)
@@ -231,7 +237,57 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
-    @timing
+    def update_volumes(self) -> None:
+        """When points are is modified, recalculate volumes for rendering.
+
+        Handles core_point_list_changed signal sent by wx.GetApp().core.
+        """
+        points = wx.GetApp().core.points
+        self._point_count = len(points)
+
+        self._point_lines = np.array([], dtype=np.float32)
+        point_mats = np.array([], dtype=np.float32)
+        for id_, point in points:
+            p, t = point.p, point.t
+            model =  \
+                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
+                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
+                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
+                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
+                         -math.sin(p), 0.0, math.cos(p), 0.0,
+                         0.0, 0.0, 0.0, 1.0)
+            # http://planning.cs.uiuc.edu/node102.html
+
+            point_mats = np.append(point_mats, np.array(model, dtype=np.float32))
+            self._point_lines = np.append(self._point_lines, np.array([point.x, point.y, point.z], dtype=np.float32))
+
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, self._point_count * glm.sizeof(glm.mat4), point_mats, GL_STATIC_DRAW)
+
+        for vao in (self._vao_box, self._vao_side, self._vao_top):
+            glBindVertexArray(vao)
+
+            # set attribute pointers for matrix (4 times vec4)
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(3)
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+            glEnableVertexAttribArray(4)
+            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(5)
+            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(6)
+
+            glVertexAttribDivisor(3, 1)
+            glVertexAttribDivisor(4, 1)
+            glVertexAttribDivisor(5, 1)
+            glVertexAttribDivisor(6, 1)
+
+            glBindVertexArray(0)
+
+        self._dirty = True
+
+    # @timing
     def render(self):
         """Render frame.
 
@@ -346,8 +402,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
                     self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
                 else:
                     pass
-            # elif id_ < len(self._camera3d_list):
-            wx.GetApp().mainframe.selected_camera = id_
+            elif id_ < len(self._camera3d_list):
+                wx.GetApp().mainframe.selected_camera = id_
         elif event.Moving():
             self._mouse_pos = event.Position
         else:
@@ -497,49 +553,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects(self) -> None:
         """Render objects, such as cameras and paths."""
-        points = wx.GetApp().core.points
-        amount = len(points)
 
-        lines = np.array([], dtype=np.float32)
-        model_mats = np.array([], dtype=np.float32)
-        for id_, point in points:
-            p, t = point.p, point.t
-            model =  \
-                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
-                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
-                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
-                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
-                         -math.sin(p), 0.0, math.cos(p), 0.0,
-                         0.0, 0.0, 0.0, 1.0)
-            # http://planning.cs.uiuc.edu/node102.html
+        self._render_cameras()
+        self._render_paths()
 
-            model_mats = np.append(model_mats, np.array(model, dtype=np.float32))
-            lines = np.append(lines, np.array([point.x, point.y, point.z], dtype=np.float32))
+    def _render_cameras(self) -> None:
+        pass
 
-        vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, amount * glm.sizeof(glm.mat4), model_mats, GL_STATIC_DRAW)
-
-        for vao in (self._vao_box, self._vao_side, self._vao_top):
-            glBindVertexArray(vao)
-
-            # set attribute pointers for matrix (4 times vec4)
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(3)
-            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
-            glEnableVertexAttribArray(4)
-            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(5)
-            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(6)
-
-            glVertexAttribDivisor(3, 1)
-            glVertexAttribDivisor(4, 1)
-            glVertexAttribDivisor(5, 1)
-            glVertexAttribDivisor(6, 1)
-
-            glBindVertexArray(0)
-
+    def _render_paths(self) -> None:
         glUseProgram(self._instanced_color_shader)
         proj = self.projection_matrix
         view = self.modelview_matrix
@@ -549,18 +570,18 @@ class GLCanvas3D(glcanvas.GLCanvas):
         color = glm.vec4(200, 200, 200, 200) / 255.0
         glBindVertexArray(self._vao_box)
         glUniform4fv(2, 1, glm.value_ptr(color))
-        glDrawArraysInstanced(GL_QUADS, 0, 24, amount)
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
 
         color -= 0.05
         glUniform4fv(2, 1, glm.value_ptr(color))
         glBindVertexArray(self._vao_side)
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, amount)
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, self._point_count)
 
         color -= 0.05
         glUniform4fv(2, 1, glm.value_ptr(color))
         glBindVertexArray(self._vao_top)
         glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
-        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), amount)
+        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
 
         glBindVertexArray(0)
 
@@ -571,7 +592,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         vbo = glGenBuffers(1)
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, lines.nbytes, lines, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
@@ -584,7 +605,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         glBindVertexArray(vao)
-        glDrawArrays(GL_LINE_STRIP, 0, lines.size // 3)
+        glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
 
         glBindVertexArray(0)
         glUseProgram(0)

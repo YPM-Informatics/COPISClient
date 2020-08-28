@@ -2,11 +2,12 @@
 
 from ctypes import *
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import wx
 import wx.lib.agw.aui as aui
 import wx.svg as svg
+from pydispatch import dispatcher
 from wx.lib.agw.aui.aui_constants import *
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
                                           IndentPressedBitmap, StepColour,
@@ -23,27 +24,8 @@ from gui.panels.toolbar import ToolbarPanel
 from gui.panels.visualizer import VisualizerPanel
 from gui.pathgen_frame import *
 from gui.pref_frame import *
+from gui.wxutils import create_scaled_bitmap, set_dialog
 from utils import Point3, Point5
-
-
-def set_dialog(msg: str) -> None:
-    """Show a wx.MessageDialog with msg as the message."""
-    dialog = wx.MessageDialog(None, msg, 'Confirm Exit', wx.OK)
-    dialog.ShowModal()
-    dialog.Destroy()
-
-
-def create_scaled_bitmap(bmp_name: str,
-                         px_cnt: int = 16) -> wx.Bitmap:
-    """Return scaled wx.Bitmap from svg file name.
-
-    Args:
-        bmp_name: A string representing the svg image to convert.
-        px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
-    """
-    image = svg.SVGimage.CreateFromFile(
-        'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
-    return image
 
 
 class MainFrame(wx.Frame):
@@ -92,6 +74,7 @@ class MainFrame(wx.Frame):
         self.init_mgr()
 
         self.Centre()
+
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -550,19 +533,13 @@ class MainFrame(wx.Frame):
     def points(self) -> List[Tuple[int, Point5]]:
         return self._core.points
 
-    def insert_point(self, index: int, point: Point5) -> None:
-        self._core.points.insert(index, point)
-
-    def append_point(self, point: Point5) -> None:
-        self._core.points.append(point)
-
     @property
     def selected_camera(self) -> Optional[int]:
         return self._core.selected_camera
 
     @selected_camera.setter
     def selected_camera(self, id_: int) -> None:
-        self._core.selected_camera = id_
+        self._core.selected_device = id_
 
         # TODO: improve the inter-panel calling stuff
         self.visualizer_panel.dirty = True

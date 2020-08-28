@@ -1,9 +1,8 @@
 """Util functions."""
 
-from dataclasses import dataclass
 from functools import wraps
 from time import time
-from typing import Callable
+from typing import Callable, NamedTuple
 
 
 def timing(f: Callable) -> Callable:
@@ -19,8 +18,7 @@ def timing(f: Callable) -> Callable:
     return wrap
 
 
-@dataclass
-class Point5:
+class Point5(NamedTuple):
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
@@ -28,8 +26,7 @@ class Point5:
     t: float = 0.0
 
 
-@dataclass
-class Point3:
+class Point3(NamedTuple):
     x: float = 0.0
     y: float = 0.0
     z: float = 0.0
