@@ -3,12 +3,12 @@
 
 import math
 from collections import OrderedDict
-from typing import Tuple
 
 import wx
 import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
+import utils
 from gui.wxutils import create_scaled_bitmap
 from utils import Point3, Point5
 
@@ -17,11 +17,6 @@ class ControllerPanel(scrolled.ScrolledPanel):
     """TODO
 
     """
-
-    xyz_unit_steps = [10, 1, 0.1, 0.01]
-    xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
-    ab_unit_steps = [10, 5, 1, 0.1, 0.01]
-    ab_units = OrderedDict([('dd', 1), ('rad', 180 / math.pi)])
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ControllerPanel with constructors."""
@@ -40,8 +35,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.Layout()
 
         # bind copiscore listeners
-        dispatcher.connect(self.on_device_selected, signal='core_device_selected')
-        dispatcher.connect(self.on_deselected, signal='core_device_deselected')
+        dispatcher.connect(self.on_device_selected, signal='core_d_selected')
+        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
 
     def on_device_selected(self, device) -> None:
         """TODO"""
@@ -191,12 +186,12 @@ class ControllerPanel(scrolled.ScrolledPanel):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         step_text = wx.StaticText(jog_sizer.StaticBox, label='Step sizes', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        self.xyz_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, self.xyz_unit_steps)), style=wx.TE_CENTRE)
-        self.xyz_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(self.xyz_units.keys()), style=wx.TE_CENTRE)
+        self.xyz_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, utils.xyz_steps)), style=wx.TE_CENTRE)
+        self.xyz_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.xyz_units.keys()), style=wx.TE_CENTRE)
         self.xyz_unit_choice.Selection = 0
-        self.ab_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, self.ab_unit_steps)), style=wx.TE_CENTRE)
-        self.ab_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(self.ab_units.keys()), style=wx.TE_CENTRE)
-        self.ab_unit_choice.Selection = 0
+        self.pt_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, utils.pt_steps)), style=wx.TE_CENTRE)
+        self.pt_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.pt_units.keys()), style=wx.TE_CENTRE)
+        self.pt_unit_choice.Selection = 0
 
         xyzab_grid.AddMany([
             (arrow_nw_btn, 0, wx.EXPAND, 0),
@@ -227,29 +222,31 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (tilt_up_btn, 0, wx.EXPAND, 0),
             (tilt_up_90_btn, 0, wx.EXPAND, 0),
             (0, 0),
-            (self.ab_step_cb, 0, wx.ALL|wx.EXPAND, 1),
+            (self.pt_step_cb, 0, wx.ALL|wx.EXPAND, 1),
 
             (pan_left_90_btn, 0, wx.EXPAND, 0),
             (pan_right_90_btn, 0, wx.EXPAND, 0),
             (tilt_down_btn, 0, wx.EXPAND, 0),
             (tilt_down_90_btn, 0, wx.EXPAND, 0),
             (0, 0),
-            (self.ab_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
+            (self.pt_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
         ])
 
         jog_sizer.Add(xyzab_grid, 1, wx.ALL|wx.EXPAND, 4)
         self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def update_machine_pos(self, pos: Point5) -> None:
-        self.x_m_text.Value = f'{pos.x:.3f}'
-        self.y_m_text.Value = f'{pos.y:.3f}'
-        self.z_m_text.Value = f'{pos.z:.3f}'
-        self.p_m_text.Value = f'{pos.p:.3f}'
-        self.t_m_text.Value = f'{pos.t:.3f}'
+        """TODO"""
+        self.x_m_text.ChangeValue(f'{pos.x:.3f}')
+        self.y_m_text.ChangeValue(f'{pos.y:.3f}')
+        self.z_m_text.ChangeValue(f'{pos.z:.3f}')
+        self.p_m_text.ChangeValue(f'{pos.p:.3f}')
+        self.t_m_text.ChangeValue(f'{pos.t:.3f}')
 
     def update_world_pos(self, pos: Point5) -> None:
-        self.x_w_text.Value = f'{pos.x:.3f}'
-        self.y_w_text.Value = f'{pos.y:.3f}'
-        self.z_w_text.Value = f'{pos.z:.3f}'
-        self.p_w_text.Value = f'{pos.p:.3f}'
-        self.t_w_text.Value = f'{pos.t:.3f}'
+        """TODO"""
+        self.x_w_text.ChangeValue(f'{pos.x:.3f}')
+        self.y_w_text.ChangeValue(f'{pos.y:.3f}')
+        self.z_w_text.ChangeValue(f'{pos.z:.3f}')
+        self.p_w_text.ChangeValue(f'{pos.p:.3f}')
+        self.t_w_text.ChangeValue(f'{pos.t:.3f}')

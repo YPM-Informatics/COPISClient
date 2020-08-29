@@ -83,9 +83,9 @@ class _Axes():
 
         # ---
 
-        vertices[0] = x[1]
-        vertices[17*3+1] = y[1]
-        vertices[17*6+2] = z[1]
+        vertices[0] = x[0]
+        vertices[17*3+1] = y[0]
+        vertices[17*6+2] = z[0]
         glBindVertexArray(self._vao_arrows[1])
         # colored axes arrows, base
 
@@ -129,7 +129,10 @@ class _Axes():
         Returns:
             An np.ndarray for vertices, and an np.ndarray for color values.
         """
-        x, y, z = self._canvas.build_dimensions[3:]
+        x = self._canvas.build_dimensions[0] - self._canvas.build_dimensions[3]
+        y = self._canvas.build_dimensions[1] - self._canvas.build_dimensions[4]
+        z = self._canvas.build_dimensions[2] - self._canvas.build_dimensions[5]
+
         thetas = np.linspace(0, 2 * np.pi, 16, endpoint=True)
         cos = np.cos(thetas) * self._arrow_base_radius
         sin = np.sin(thetas) * self._arrow_base_radius

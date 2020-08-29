@@ -26,7 +26,7 @@ class TimelinePanel(wx.Panel):
         self.update_timeline()
 
         # bind copiscore listeners
-        dispatcher.connect(self.update_timeline, signal='core_point_list_changed')
+        dispatcher.connect(self.update_timeline, signal='core_p_list_changed')
 
         self.Layout()
 
@@ -147,7 +147,7 @@ class TimelinePanel(wx.Panel):
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
 
-        Handles core_point_list_changed signal sent by wx.GetApp().core.
+        Handles core_p_list_changed signal sent by wx.GetApp().core.
         """
         for device_id, point in wx.GetApp().core.points:
             self.add_command(f'{str(device_id)}: {str(point)}')
