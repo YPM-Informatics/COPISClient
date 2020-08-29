@@ -90,6 +90,7 @@ def get_circle(p: glm.vec3,
     Uses an approximation method to compute vertices versus many trig calls.
     """
     a, n, _ = rotate_basis_to(n)
+    theta = 6.28318530717958647692 / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 

@@ -1,11 +1,13 @@
 """TODO"""
 
+import re
 from typing import Any, List, Optional, Union
 
 import wx
 import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
+import utils
 from gui.wxutils import create_scaled_bitmap
 from utils import Point3, Point5
 
@@ -18,13 +20,13 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """TODO
 
     """
+
     config = {
         'Default': ('visualizer', 'quick_actions'),
         'Camera': ('camera_info', 'camera_config', 'quick_actions'),
         'Point': ('transform', 'quick_actions'),
         'Group': ('transform', 'quick_actions'),
     }
-
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits PropertiesPanel with constructors."""
@@ -33,9 +35,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         # self.BackgroundColour = wx.SystemSettings().GetColour(wx.SYS_COLOUR_WINDOW)
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-
-        self.text_style = wx.EXPAND | wx.ALIGN_CENTER_VERTICAL
-        self.text_size = wx.Size(40, -1)
 
         self._current = 'No Selection'
         self.current_text = wx.StaticText(self, label=self._current)
@@ -52,9 +51,9 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.Layout()
 
         # bind copiscore listeners
-        dispatcher.connect(self.on_device_selected, signal='core_device_selected')
-        dispatcher.connect(self.on_deselected, signal='core_device_deselected')
-        dispatcher.connect(self.on_points_selected, signal='core_point_selected')
+        dispatcher.connect(self.on_device_selected, signal='core_d_selected')
+        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
+        dispatcher.connect(self.on_points_selected, signal='core_p_selected')
 
     def init_all_property_panels(self) -> None:
         """Inits all property panels."""
@@ -62,6 +61,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
         self._property_panels['camera_config'] = _PropCameraConfig(self)
+        self._property_panels['quick_actions'] = _PropQuickActions(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
@@ -70,12 +70,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """Update property panels to reflect current selection."""
         if selected not in self.config:
             return
-        for _, panel in self._property_panels.items():
-            panel.Hide()
-        for name in self.config[selected]:
-            panel = self._property_panels.get(name, None)
-            if panel is not None:
-                panel.Show()
+
+        # show/hide appropriate panels
+        for name, panel in self._property_panels.items():
+            panel.Show(name in self.config[selected])
 
         self.Layout()
         w, h = self.Sizer.GetMinSize()
@@ -93,7 +91,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.current_text.Label = value
 
     def on_device_selected(self, device) -> None:
-        """On on_device_selected, set to camera view."""
+        """On core_d_selected, set to camera view."""
         self.current = 'Camera'
         self._property_panels['camera_info'].device_id = device.device_id
         self._property_panels['camera_info'].device_name = device.device_name
@@ -101,12 +99,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.update_to_selected('Camera')
 
     def on_deselected(self) -> None:
-        """On core_device_deselected, reset to default view."""
+        """On core_d_deselected, reset to default view."""
         self.current = None
         self.update_to_selected('Default')
 
     def on_points_selected(self, points: List[int]) -> None:
-        """On core_points_selected, set to point view."""
+        """On core_p_selected, set to point view."""
         if len(points) == 1:
             self.current = 'Point'
             point = wx.GetApp().core.points[points[0]]
@@ -120,8 +118,12 @@ class _PropVisualizer(wx.Panel):
         """Inits _PropVisualizer with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.text_style = parent.text_style
-        self.text_size = parent.text_size
+
+        self._x: float = 0.0
+        self._y: float = 0.0
+        self._z: float = 0.0
+        self._p: float = 0.0
+        self._t: float = 0.0
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Visualizer'), wx.VERTICAL)
@@ -159,13 +161,22 @@ class _PropVisualizer(wx.Panel):
 
 
 class _PropTransform(wx.Panel):
+    """[summary]
+
+    Attributes:
+        x: A float representing x value.
+        y: A float representing y value.
+        z: A float representing z value.
+        p: A float representing p value.
+        t: A float representing t value.
+    """
 
     def __init__(self, parent) -> None:
         """Inits _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.text_style = parent.text_style
-        self.text_size = parent.text_size
+        self._text_dirty = False
+        self._selected_dirty = False
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
@@ -176,30 +187,38 @@ class _PropTransform(wx.Panel):
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(3, 0)
 
-        self.x_val = wx.TextCtrl(self, size=(50, -1), value='0.000 mm')
-        self.y_val = wx.TextCtrl(self, size=(50, -1), value='0.000 mm')
-        self.z_val = wx.TextCtrl(self, size=(50, -1), value='0.000 mm')
-        self.p_val = wx.TextCtrl(self, size=(50, -1), value='0.000 dd')
-        self.t_val = wx.TextCtrl(self, size=(50, -1), value='0.000 dd')
-        self.more_btn = wx.Button(self, label='More...', size=(50, -1))
-        self.more_btn.Bind(wx.EVT_BUTTON, self.on_show_button)
+        self.x_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='x')
+        self.y_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='y')
+        self.z_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='z')
+        self.p_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='p')
+        self.t_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='t')
+        more_btn = wx.Button(self, label='More...', size=(50, -1))
 
         grid.AddMany([
             (_text(self, 'X:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.x_val, 0, wx.EXPAND, 0),
+            (self.x_ctrl, 0, wx.EXPAND, 0),
             (_text(self, 'Pan:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.p_val, 0, wx.EXPAND, 0),
+            (self.p_ctrl, 0, wx.EXPAND, 0),
 
             (_text(self, 'Y:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.y_val, 0, wx.EXPAND, 0),
+            (self.y_ctrl, 0, wx.EXPAND, 0),
             (_text(self, 'Tilt:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.t_val, 0, wx.EXPAND, 0),
+            (self.t_ctrl, 0, wx.EXPAND, 0),
 
             (_text(self, 'Z:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.z_val, 0, wx.EXPAND, 0),
+            (self.z_ctrl, 0, wx.EXPAND, 0),
             (0, 0),
-            (self.more_btn, 0, wx.ALIGN_RIGHT, 0)
+            (more_btn, 0, wx.ALIGN_RIGHT, 0)
         ])
+
+        for ctrl in (self.x_ctrl, self.y_ctrl, self.z_ctrl, self.p_ctrl, self.t_ctrl):
+            ctrl.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+            ctrl.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
+            ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
+            ctrl.Bind(wx.EVT_TEXT, self.on_text_change)
+            ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+
+        more_btn.Bind(wx.EVT_BUTTON, self.on_show_button)
 
         box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 4)
 
@@ -217,8 +236,8 @@ class _PropTransform(wx.Panel):
         pan_right_btn = wx.Button(self, label='P+', size=(20, -1))
         pan_left_btn = wx.Button(self, label='P-', size=(20, -1))
 
-        self.xyzpt_grid = wx.GridBagSizer()
-        self.xyzpt_grid.AddMany([
+        self._xyzpt_grid = wx.GridBagSizer()
+        self._xyzpt_grid.AddMany([
             (0, 0, wx.GBPosition(0, 0)),    # vertical spacer
 
             (x_neg_btn, wx.GBPosition(0, 1), wx.GBSpan(2, 1), wx.EXPAND, 0),
@@ -240,13 +259,13 @@ class _PropTransform(wx.Panel):
         ])
 
         for col in (1, 3, 7, 9):
-            self.xyzpt_grid.AddGrowableCol(col, 1)
+            self._xyzpt_grid.AddGrowableCol(col, 1)
         for col in (2, 5, 8):
-            self.xyzpt_grid.AddGrowableCol(col, 3)
+            self._xyzpt_grid.AddGrowableCol(col, 3)
 
         # start hidden
-        self.xyzpt_grid.ShowItems(False)
-        box_sizer.Add(self.xyzpt_grid, 0, wx.ALL|wx.EXPAND, 4)
+        self._xyzpt_grid.ShowItems(False)
+        box_sizer.Add(self._xyzpt_grid, 0, wx.ALL|wx.EXPAND, 4)
 
         self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
         self.Layout()
@@ -254,21 +273,148 @@ class _PropTransform(wx.Panel):
     def on_show_button(self, event: wx.CommandEvent) -> None:
         """Show or hide extra controls."""
         if event.EventObject.Label == 'More...':
-            self.xyzpt_grid.ShowItems(True)
+            self._xyzpt_grid.ShowItems(True)
             event.EventObject.Label = 'Less...'
         else: # event.EventObject.Label == 'Less...':
-            self.xyzpt_grid.ShowItems(False)
+            self._xyzpt_grid.ShowItems(False)
             event.EventObject.Label = 'More...'
         self.parent.Layout()
         w, h = self.parent.Sizer.GetMinSize()
         self.parent.SetVirtualSize((w, h))
 
+    def on_left_up(self, event: wx.MouseEvent) -> None:
+        """On EVT_LEFT_UP, if not already focused, select digits."""
+        ctrl = event.EventObject
+        if not self._selected_dirty:
+            self._selected_dirty = True
+            ctrl.SetSelection(0, ctrl.Value.find(' '))
+        event.Skip()
+
+    def on_set_focus(self, event: wx.FocusEvent) -> None:
+        """On EVT_SET_FOCUS, select digits."""
+        ctrl = event.EventObject
+        ctrl.SetSelection(0, ctrl.Value.find(' '))
+        event.Skip()
+
+    def on_kill_focus(self, event: wx.FocusEvent) -> None:
+        """On EVT_KILL_FOCUS, process the updated value."""
+        if self._text_dirty:
+            event.EventObject.Undo()
+            self._text_dirty = False
+        self._selected_dirty = False
+        event.Skip()
+
+    def on_text_change(self, event: wx.CommandEvent) -> None:
+        """On EVT_TEXT, set dirty flag true."""
+        self._text_dirty = True
+
+    def on_text_enter(self, event: wx.CommandEvent) -> None:
+        """On EVT_TEXT_ENTER, process the updated value."""
+        self._process_value(event.EventObject)
+
+    def _process_value(self, ctrl: wx.TextCtrl) -> None:
+        """Process updated text control and convert units accordingly."""
+        if not self._text_dirty:
+            return
+
+        value = 0
+        if ctrl.Name in ('x', 'y', 'z'):
+            regex = re.findall(r'(\d*\.?\d+)\s*(mm|cm|in|inch)?', ctrl.Value)
+            if len(regex) == 0:
+                ctrl.Undo()
+                return
+            else:
+                value, unit = regex[0]
+                value = float(value) * utils.xyz_units.get(unit, 1)
+
+        else: # ctrl.Name in ('p', 't')
+            regex = re.findall(r'(\d*\.?\d+)\s*(dd|rad)?', ctrl.Value)
+            if len(regex) == 0:
+                ctrl.Undo()
+                return
+            else:
+                value, unit = regex[0]
+                value = float(value) * utils.pt_units.get(unit, 1)
+
+        self._text_dirty = False
+        self.set_value(ctrl.Name, value)
+
+        # update actual point
+        wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
+
     def set_point(self, point: Point5) -> None:
-        self.x_val.Label = f'{point.x:.3f} mm'
-        self.y_val.Label = f'{point.y:.3f} mm'
-        self.z_val.Label = f'{point.z:.3f} mm'
-        self.p_val.Label = f'{point.p*57.295779513:.3f} dd'
-        self.t_val.Label = f'{point.t*57.295779513:.3f} dd'
+        """Set text controls given a Point5.
+
+        Args:
+            point: A Point5 representing the new point to set.
+        """
+        self.x, self.y, self.z, self.p, self.t = point
+
+    def set_value(self, name: str, value: float) -> None:
+        """Set value in text control and append units accordingly.
+
+        Args:
+            name: A string representing the name of the text control
+                (x, y, z, p, t) to be updated.
+            value: A float representing the new value to set.
+        """
+        if name == 'x':
+            self.x = value
+        elif name == 'y':
+            self.y = value
+        elif name == 'z':
+            self.z = value
+        elif name == 'p':
+            self.p = value
+        elif name == 't':
+            self.t = value
+        else:
+            return
+
+    @property
+    def x(self) -> float:
+        return self._x
+
+    @x.setter
+    def x(self, value: float) -> None:
+        self._x = value
+        self.x_ctrl.ChangeValue(f'{value:.3f} mm')
+
+    @property
+    def y(self) -> float:
+        return self._y
+
+    @y.setter
+    def y(self, value: float) -> None:
+        self._y = value
+        self.y_ctrl.ChangeValue(f'{value:.3f} mm')
+
+    @property
+    def z(self) -> float:
+        return self._z
+
+    @z.setter
+    def z(self, value: float) -> None:
+        self._z = value
+        self.z_ctrl.ChangeValue(f'{value:.3f} mm')
+
+    @property
+    def p(self) -> float:
+        return self._p
+
+    @p.setter
+    def p(self, value: float) -> None:
+        self._p = value
+        self.p_ctrl.ChangeValue(f'{value:.3f} dd')
+
+    @property
+    def t(self) -> float:
+        return self._t
+
+    @t.setter
+    def t(self, value: float) -> None:
+        self._t = value
+        self.t_ctrl.ChangeValue(f'{value:.3f} dd')
 
 
 class _PropCameraInfo(wx.Panel):
@@ -284,8 +430,6 @@ class _PropCameraInfo(wx.Panel):
         """Inits _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.text_style = parent.text_style
-        self.text_size = parent.text_size
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Camera Info'), wx.VERTICAL)
@@ -434,3 +578,42 @@ class _PropCameraConfig(wx.Panel):
             self.parent.add_evf_pane()
         else:
             set_dialog('Please select the camera to start live view.')
+
+
+class _PropQuickActions(wx.Panel):
+    """[summary]
+
+    Args:
+        device_id:
+        device_name:
+        device_type:
+    """
+
+    def __init__(self, parent) -> None:
+        """Inits _PropCameraInfo with constructors."""
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
+        self.parent = parent
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Quick Actions'), wx.VERTICAL)
+
+        # ---
+
+        grid = wx.FlexGridSizer(1, 3, 4, 8)
+        grid.AddGrowableCol(0, 0)
+        grid.AddGrowableCol(1, 0)
+        grid.AddGrowableCol(2, 0)
+
+        self.button1 = wx.Button(self, label='Thing 1', size=(50, -1))
+        self.button2 = wx.Button(self, label='Thing 2', size=(50, -1))
+        self.button3 = wx.Button(self, label='Thing 3', size=(50, -1))
+
+        grid.AddMany([
+            (self.button1, 0, wx.EXPAND, 0),
+            (self.button2, 0, wx.EXPAND, 0),
+            (self.button3, 0, wx.EXPAND, 0),
+        ])
+
+        box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 4)
+        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
+        self.Layout()

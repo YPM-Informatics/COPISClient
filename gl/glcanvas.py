@@ -76,34 +76,15 @@ class GLCanvas3D(glcanvas.GLCanvas):
                          size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
+        self._build_dimensions = build_dimensions
 
+        # shader programs
         self._default_shader = None
         self._color_shader = None
         self._instanced_color_shader = None
         self._instanced_picking_shader = None
 
-        self._build_dimensions = build_dimensions
-        self._dist = 0.5 * (self._build_dimensions[1] + \
-                            max(self._build_dimensions[0], self._build_dimensions[2]))
-
-        self._bed = GLBed(self, build_dimensions, every, subdivisions)
-        self._viewcube = GLViewCube(self)
-        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
-
-        # screen is only refreshed from the OnIdle handler if it is dirty
-        self._dirty = False
-        self._gl_initialized = False
-        self._scale_factor = None
-        self._mouse_pos = None
-
-        self._zoom = 1
-        self._hover_id = -1
-        self._inside = False
-        self._rot_quat = glm.quat()
-        self._rot_lock = Lock()
-        self._object_scale = 7.5
-
-        # temporary
+        # gl things TODO comment/regroup
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
@@ -112,9 +93,30 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._point_count = None
         self._id_offset = len(wx.GetApp().core.devices)
 
+        # screen is only refreshed from the OnIdle handler if it is dirty
+        self._dirty = False
+        self._gl_initialized = False
+        self._scale_factor = None
+        self._mouse_pos = None
+
+        # other objects
+        self._dist = 0.5 * (self._build_dimensions[1] + \
+                            max(self._build_dimensions[0], self._build_dimensions[2]))
+        self._bed = GLBed(self, build_dimensions, every, subdivisions)
+        self._viewcube = GLViewCube(self)
+        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
+
+        # other values
+        self._zoom = 1
+        self._hover_id = -1
+        self._inside = False
+        self._rot_quat = glm.quat()
+        self._rot_lock = Lock()
+        self._object_scale = 7.5
+
         # bind copiscore listeners
-        dispatcher.connect(self.update_volumes, signal='core_point_list_changed')
-        dispatcher.connect(self.update_id_offset, signal='core_device_list_changed')
+        dispatcher.connect(self.update_volumes, signal='core_p_list_changed')
+        dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -246,7 +248,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def update_volumes(self) -> None:
         """When points are modified, recalculate volumes for rendering.
 
-        Handles core_point_list_changed signal sent by wx.GetApp().core.
+        Handles core_p_list_changed signal sent by wx.GetApp().core.
         """
         points = wx.GetApp().core.points
         self._point_count = len(points)
@@ -305,7 +307,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def update_id_offset(self) -> None:
         self._id_offset = len(wx.GetApp().core.devices)
 
-    @timing
+    # @timing
     def render(self):
         """Render frame.
 
@@ -524,6 +526,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._render_objects_for_picking()
 
         glEnable(GL_MULTISAMPLE)
+        glEnable(GL_BLEND)
 
         id_ = -1
 
@@ -592,13 +595,28 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_points_and_paths(self) -> None:
         """Render points and paths."""
-        glUseProgram(self._instanced_color_shader)
         proj = self.projection_matrix
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         view = self.modelview_matrix
+        model = glm.mat4()
+
+        glUseProgram(self._color_shader)
+        color = glm.vec4(70, 70, 70, 255) / 255.0
+        glUniform4fv(3, 1, glm.value_ptr(color))
+
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+        glBindVertexArray(self._vao_paths)
+        glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
+
+        # ---
+
+        glUseProgram(self._instanced_color_shader)
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        color = glm.vec4(200, 200, 200, 200) / 255.0
+        color = glm.vec4(210, 210, 210, 180) / 255.0
         glBindVertexArray(self._vao_box)
         glUniform4fv(2, 1, glm.value_ptr(color))
         glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
@@ -614,19 +632,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
 
         glBindVertexArray(0)
-
-        # ---
-
-        glUseProgram(self._color_shader)
-        color = glm.vec4(180, 180, 180, 255) / 255.0
-        glUniform4fv(3, 1, glm.value_ptr(color))
-        model = glm.mat4()
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        glBindVertexArray(self._vao_paths)
-        glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
 
         # ---
 
