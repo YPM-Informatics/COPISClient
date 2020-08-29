@@ -27,6 +27,8 @@ class ConsolePanel(wx.Panel):
         # bind copiscore listeners
         dispatcher.connect(self.on_notification, signal='core_point_list_changed')
         dispatcher.connect(self.on_notification, signal='core_device_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_point_selected')
+        dispatcher.connect(self.on_notification, signal='core_point_deselected')
         dispatcher.connect(self.on_notification, signal='core_device_selected')
         dispatcher.connect(self.on_notification, signal='core_device_deselected')
         dispatcher.connect(self.on_notification, signal='core_error')
@@ -56,7 +58,7 @@ class ConsolePanel(wx.Panel):
         self.console.AppendText(f'\n$ {event.String}')
         self.console_writer.ChangeValue('')
 
-        wx.GetApp().core.selected_device_id = int(event.String)
+        wx.GetApp().core.select_point(int(event.String))
 
     def on_command_cleared(self, event: wx.CommandEvent) -> None:
         self.console_writer.ChangeValue('')

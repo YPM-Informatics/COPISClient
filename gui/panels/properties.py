@@ -1,12 +1,13 @@
 """TODO"""
 
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import wx
 import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 from gui.wxutils import create_scaled_bitmap
+from utils import Point3, Point5
 
 
 def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
@@ -19,8 +20,9 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """
     config = {
         'Default': ('visualizer', 'quick_actions'),
-        'Camera': ('camera_info', 'camera_controls', 'quick_actions'),
+        'Camera': ('camera_info', 'camera_config', 'quick_actions'),
         'Point': ('transform', 'quick_actions'),
+        'Group': ('transform', 'quick_actions'),
     }
 
 
@@ -52,19 +54,20 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_device_selected')
         dispatcher.connect(self.on_deselected, signal='core_device_deselected')
+        dispatcher.connect(self.on_points_selected, signal='core_point_selected')
 
     def init_all_property_panels(self) -> None:
-        """TODO"""
+        """Inits all property panels."""
         self._property_panels['visualizer'] = _PropVisualizer(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
-        self._property_panels['camera_controls'] = _PropCamera(self)
+        self._property_panels['camera_config'] = _PropCameraConfig(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
 
     def update_to_selected(self, selected: str) -> None:
-        """TODO"""
+        """Update property panels to reflect current selection."""
         if selected not in self.config:
             return
         for _, panel in self._property_panels.items():
@@ -90,7 +93,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.current_text.Label = value
 
     def on_device_selected(self, device) -> None:
-        """TODO"""
+        """On on_device_selected, set to camera view."""
         self.current = 'Camera'
         self._property_panels['camera_info'].device_id = device.device_id
         self._property_panels['camera_info'].device_name = device.device_name
@@ -98,9 +101,17 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.update_to_selected('Camera')
 
     def on_deselected(self) -> None:
-        """TODO"""
+        """On core_device_deselected, reset to default view."""
         self.current = None
         self.update_to_selected('Default')
+
+    def on_points_selected(self, points: List[int]) -> None:
+        """On core_points_selected, set to point view."""
+        if len(points) == 1:
+            self.current = 'Point'
+            point = wx.GetApp().core.points[points[0]]
+            self._property_panels['transform'].set_point(point[1])
+            self.update_to_selected('Point')
 
 
 class _PropVisualizer(wx.Panel):
@@ -252,6 +263,13 @@ class _PropTransform(wx.Panel):
         w, h = self.parent.Sizer.GetMinSize()
         self.parent.SetVirtualSize((w, h))
 
+    def set_point(self, point: Point5) -> None:
+        self.x_val.Label = f'{point.x:.3f} mm'
+        self.y_val.Label = f'{point.y:.3f} mm'
+        self.z_val.Label = f'{point.z:.3f} mm'
+        self.p_val.Label = f'{point.p*57.295779513:.3f} dd'
+        self.t_val.Label = f'{point.t*57.295779513:.3f} dd'
+
 
 class _PropCameraInfo(wx.Panel):
     """[summary]
@@ -321,7 +339,7 @@ class _PropCameraInfo(wx.Panel):
         self.type_text.Label = value
 
 
-class _PropCamera(wx.Panel):
+class _PropCameraConfig(wx.Panel):
 
     def __init__(self, parent) -> None:
         """Inits _PropCamera with constructors."""
@@ -329,7 +347,7 @@ class _PropCamera(wx.Panel):
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self.box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Camera Control'), wx.VERTICAL)
+        self.box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Camera Config'), wx.VERTICAL)
 
         # ---
 

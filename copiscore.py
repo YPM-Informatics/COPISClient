@@ -88,6 +88,8 @@ class COPISCore:
     Emits:
         core_point_list_changed:
         core_device_list_changed:
+        core_point_selected:
+        core_point_deselected:
         core_device_selected:
         core_device_deselected:
         core_error:
@@ -97,9 +99,9 @@ class COPISCore:
         """Inits a CopisCore instance.
         """
 
-        path, count = get_helix(glm.vec3(0, -100, 0),
+        path, count = get_helix(glm.vec3(0, -120, 0),
                                 glm.vec3(0, 1, 0),
-                                185, 20, 10, 48)
+                                185, 30, 8, 48)
         self._points: List[Tuple[int, Point5]] = MonitoredList([
             (0, Point5(
                 path[i * 3],
@@ -107,8 +109,7 @@ class COPISCore:
                 path[i * 3 + 2],
                 math.atan2(path[i*3+2], path[i*3]) + math.pi,
                 math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2)))
-            )
-            for i in range(count)
+            ) for i in range(count)
         ], 'core_point_list_changed')
 
         self._devices = MonitoredList([
@@ -119,6 +120,7 @@ class COPISCore:
             Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
         ], 'core_device_list_changed')
 
+        self._selected_points: List[int] = []
         self._selected_device: Optional[Device] = None
 
     def connect(self):
@@ -147,19 +149,49 @@ class COPISCore:
     def selected_device(self) -> Optional[Device]:
         return self._selected_device
 
-    @property
-    def selected_device_id(self) -> int:
-        if self._selected_device is None:
-            return -1
-        return self._selected_device.device_id
-
-    @selected_device_id.setter
-    def selected_device_id(self, device_id: int) -> None:
+    def select_device_by_id(self, device_id: int) -> None:
+        """Select device given device_id."""
         device = next((x for x in self._devices if x.device_id == device_id), None)
         if device_id == -1 or device is None:
-            dispatcher.send('core_device_deselected', device=self.selected_device)
-            self._selected_device = None
-            # dispatcher.send('core_error', message=f'invalid device id {device_id}')
+            if self._selected_device is not None:
+                dispatcher.send('core_device_deselected', device=self.selected_device)
+                self._selected_device = None
             return
         self._selected_device = device
         dispatcher.send('core_device_selected', device=device)
+
+    def select_device_by_index(self, index: int) -> None:
+        """Select device given index in devices list."""
+        try:
+            self._selected_device = self._devices[index]
+            dispatcher.send('core_device_selected', device=self._selected_device)
+        except IndexError:
+            dispatcher.send('core_error', message=f'invalid device index {index}')
+
+    @property
+    def selected_points(self) -> List[int]:
+        return self._selected_points
+
+    def select_point(self, index: int, clear: bool = True) -> None:
+        """TODO"""
+        if index == -1:
+            self._selected_points.clear()
+            dispatcher.send('core_point_deselected')
+            return
+
+        if index >= len(self._points):
+            return
+
+        if clear:
+            self._selected_points.clear()
+        if index not in self._selected_points:
+            self._selected_points.append(index)
+            dispatcher.send('core_point_selected', points=self._selected_points)
+
+    def deselect_point(self, index: int) -> None:
+        """TODO"""
+        try:
+            self._selected_points.remove(index)
+            dispatcher.send('core_point_deselected')
+        except ValueError:
+            return
