@@ -80,6 +80,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._default_shader = None
         self._color_shader = None
         self._instanced_color_shader = None
+        self._instanced_picking_shader = None
 
         self._build_dimensions = build_dimensions
         self._dist = 0.5 * (self._build_dimensions[1] + \
@@ -106,11 +107,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
+        self._vao_paths = None
         self._point_lines = None
         self._point_count = None
+        self._id_offset = len(wx.GetApp().core.devices)
 
         # bind copiscore listeners
         dispatcher.connect(self.update_volumes, signal='core_point_list_changed')
+        dispatcher.connect(self.update_id_offset, signal='core_device_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -119,6 +123,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
         self._canvas.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
         self._canvas.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
+        self._canvas.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
         self._canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
         self._canvas.Bind(wx.EVT_PAINT, self.on_paint)
         self._canvas.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
@@ -160,6 +165,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._default_shader = shaderlib.compile_shader(*shaderlib.default)
         self._color_shader = shaderlib.compile_shader(*shaderlib.single_color)
         self._instanced_color_shader = shaderlib.compile_shader(*shaderlib.single_color_instanced)
+        self._instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
 
         self._gl_initialized = True
         return True
@@ -238,7 +244,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glDeleteBuffers(4, vbo)
 
     def update_volumes(self) -> None:
-        """When points are is modified, recalculate volumes for rendering.
+        """When points are modified, recalculate volumes for rendering.
 
         Handles core_point_list_changed signal sent by wx.GetApp().core.
         """
@@ -285,7 +291,19 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
             glBindVertexArray(0)
 
+        self._vao_paths = glGenVertexArrays(1)
+        glBindVertexArray(self._vao_paths)
+
+        vbo = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo)
+        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
         self._dirty = True
+
+    def update_id_offset(self) -> None:
+        self._id_offset = len(wx.GetApp().core.devices)
 
     @timing
     def render(self):
@@ -315,7 +333,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_bed()
-        self._render_objects()
+        self._render_cameras()
+        self._render_points_and_paths()
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -370,7 +389,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if not self._gl_initialized or not self._set_current():
             return
 
-        id_ = self._hover_id
         scale = self.get_scale_factor()
         event.x = int(event.x * scale)
         event.y = int(event.y * scale)
@@ -380,36 +398,53 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 self.rotate_camera(event, orbit=self.orbit_controls)
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
+
         elif event.LeftUp() or event.MiddleUp() or event.RightUp():
             pass
+
         elif event.Entering():
             self._inside = True
+
         elif event.Leaving():
             self._inside = False
-        elif event.LeftDClick() and id_ != -1:
-            if self._viewcube.hovered:
-                if id_ == 0:    # front
-                    self._rot_quat = glm.quat()
-                elif id_ == 1:  # top
-                    self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
-                elif id_ == 2:  # right
-                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, -90, 0)))
-                elif id_ == 3:  # bottom
-                    self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
-                elif id_ == 4:  # left
-                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 90, 0)))
-                elif id_ == 5:  # back
-                    self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
-                else:
-                    pass
-            elif id_ < len(self._camera3d_list):
-                wx.GetApp().mainframe.selected_camera = id_
+
         elif event.Moving():
             self._mouse_pos = event.Position
+
         else:
             event.Skip()
 
         self._dirty = True
+
+    def on_left_dclick(self, event: wx.MouseEvent) -> None:
+        id_ = self._hover_id
+        if id_ == -1:
+            return
+
+        if self._viewcube.hovered:
+            if id_ == 0:    # front
+                self._rot_quat = glm.quat()
+            elif id_ == 1:  # top
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
+            elif id_ == 2:  # right
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, -90, 0)))
+            elif id_ == 3:  # bottom
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
+            elif id_ == 4:  # left
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 90, 0)))
+            elif id_ == 5:  # back
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
+            else:
+                pass
+
+        else:
+            # id_ belongs to cameras or objects
+            offset = len(wx.GetApp().core.devices)
+            if id_ < offset:
+                wx.GetApp().core.select_device_by_index(id_)
+            else:
+                wx.GetApp().core.select_device_by_id(-1)
+                wx.GetApp().core.select_point(id_ - offset, True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -510,32 +545,32 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if viewcube_area[0] <= mouse[0] <= viewcube_area[0] + viewcube_area[2] and \
            viewcube_area[1] <= mouse[1] <= viewcube_area[1] + viewcube_area[3]:
             self._viewcube.hover_id = id_
-            # for camera in self._camera3d_list:
-                # camera.hovered = False
         else:
             self._viewcube.hover_id = -1
-            # for camera in self._camera3d_list:
-                # camera.hovered = camera.cam_id == id_
 
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking.
 
-        TODO: needs changing"""
-        # for camera in self._camera3d_list:
-        #     id_ = camera.cam_id
-        #     r = (id_ & (0x0000000FF << 0))  >> 0
-        #     g = (id_ & (0x0000000FF << 8))  >> 8
-        #     b = (id_ & (0x0000000FF << 16)) >> 16
-        #     a = 1.0
+        """
+        glUseProgram(self._instanced_picking_shader)
+        proj = self.projection_matrix
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        view = self.modelview_matrix
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniform1i(2, self._id_offset)
 
-        #     glUseProgram(self.get_shader_program('color'))
+        glBindVertexArray(self._vao_box)
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
 
-        #     glUniform4f(glGetUniformLocation(
-        #         self.get_shader_program('color'), 'pickingColor'),
-        #         r / 255.0, g / 255.0, b / 255.0, a)
-        #     camera.render_for_picking()
+        glBindVertexArray(self._vao_side)
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, self._point_count)
+
+        glBindVertexArray(self._vao_top)
+        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
+
+        glBindVertexArray(0)
 
         self._viewcube.render_for_picking()
 
@@ -551,22 +586,16 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._bed is not None:
             self._bed.render()
 
-    def _render_objects(self) -> None:
-        """Render objects, such as cameras and paths."""
-
-        self._render_cameras()
-        self._render_paths()
-
     def _render_cameras(self) -> None:
-        """Render TODO."""
+        """Render cameras."""
         pass
 
-    def _render_paths(self) -> None:
-        """Render TODO."""
+    def _render_points_and_paths(self) -> None:
+        """Render points and paths."""
         glUseProgram(self._instanced_color_shader)
         proj = self.projection_matrix
-        view = self.modelview_matrix
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        view = self.modelview_matrix
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         color = glm.vec4(200, 200, 200, 200) / 255.0
@@ -582,21 +611,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         color -= 0.05
         glUniform4fv(2, 1, glm.value_ptr(color))
         glBindVertexArray(self._vao_top)
-        glDrawElements(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
         glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
 
         glBindVertexArray(0)
 
         # ---
-
-        vao = glGenVertexArrays(1)
-        glBindVertexArray(vao)
-
-        vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
 
         glUseProgram(self._color_shader)
         color = glm.vec4(180, 180, 180, 255) / 255.0
@@ -606,8 +625,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
-        glBindVertexArray(vao)
+        glBindVertexArray(self._vao_paths)
         glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
+
+        # ---
 
         glBindVertexArray(0)
         glUseProgram(0)
@@ -719,8 +740,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         p2x = cur.x * 2.0 / canvas_size.width - 1.0
         p2y = 1 - cur.y * 2.0 / canvas_size.height
 
-        if p1x == p2x and p1y == p2y:
-            self._rot_quat = glm.quat()
+        # if p1x == p2x and p1y == p2y:
+            # self._rot_quat = glm.quat()
 
         with self._rot_lock:
             if orbit:
