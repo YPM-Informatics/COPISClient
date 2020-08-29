@@ -319,7 +319,7 @@ class _PropTransform(wx.Panel):
 
         value = 0
         if ctrl.Name in ('x', 'y', 'z'):
-            regex = re.findall(r'(\d*\.?\d+)\s*(mm|cm|in|inch)?', ctrl.Value)
+            regex = re.findall(r'(-?\d*\.?\d+)\s*(mm|cm|inch|in)?', ctrl.Value)
             if len(regex) == 0:
                 ctrl.Undo()
                 return
@@ -328,7 +328,7 @@ class _PropTransform(wx.Panel):
                 value = float(value) * utils.xyz_units.get(unit, 1)
 
         else: # ctrl.Name in ('p', 't')
-            regex = re.findall(r'(\d*\.?\d+)\s*(dd|rad)?', ctrl.Value)
+            regex = re.findall(r'(-?\d*\.?\d+)\s*(dd|rad)?', ctrl.Value)
             if len(regex) == 0:
                 ctrl.Undo()
                 return

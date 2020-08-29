@@ -115,7 +115,7 @@ class COPISCore:
 
         heights = (-90, -60, -30, 0, 30, 60, 90)
         radius = 170
-        every = 30
+        every = 50
         for i in heights:
             r = math.sqrt(radius * radius - i * i)
             num = int(2 * math.pi * r / every)
