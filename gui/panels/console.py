@@ -8,7 +8,11 @@ from utils import Point5
 
 
 class ConsolePanel(wx.Panel):
-    """TODO"""
+    """Console panel.
+
+    Args:
+        parent: Pointer to a parent wx.Frame.
+    """
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ConsolePanel with constructors."""
@@ -34,6 +38,7 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_error')
 
     def init_gui(self) -> None:
+        """Initialize gui elements."""
         self._console = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_CHARWRAP)
         self.Sizer.Add(self._console, 1, wx.EXPAND)
 
@@ -62,10 +67,13 @@ class ConsolePanel(wx.Panel):
         wx.GetApp().core.select_device_by_id(int(event.String))
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
+        """When the clear button is pressed, clear the console writer."""
         self._console_writer.ChangeValue('')
 
     def print(self, msg: str) -> None:
+        """Add message to console."""
         self._console.AppendText(f'{msg}\n')
 
     def on_notification(self, signal: str, message: str = '') -> None:
+        """Print any pydispatch signals."""
         self.print(f'notification: {signal} {message}')

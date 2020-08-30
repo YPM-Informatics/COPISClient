@@ -36,15 +36,15 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
+        dispatcher.connect(self.on_device_deselected, signal='core_d_deselected')
 
     def on_device_selected(self, device) -> None:
-        """TODO"""
+        """On core_d_selected, update and enable controls."""
         self.update_machine_pos(device.position)
         self.Enable()
 
-    def on_deselected(self) -> None:
-        """TODO"""
+    def on_device_deselected(self) -> None:
+        """On core_d_deselected, clear and disable controls."""
         self.update_machine_pos(Point5())
         self.Disable()
 
