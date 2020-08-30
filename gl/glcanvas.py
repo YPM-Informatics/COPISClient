@@ -279,7 +279,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # bind instanced model mat buffer
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, point_mats, GL_STATIC_DRAW)
-        # glBufferData(GL_ARRAY_BUFFER, self._point_count * glm.sizeof(glm.mat4), point_mats, GL_STATIC_DRAW)
 
         for vao in (self._vao_box, self._vao_side, self._vao_top):
             glBindVertexArray(vao)
@@ -298,6 +297,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             glVertexAttribDivisor(4, 1)
             glVertexAttribDivisor(5, 1)
             glVertexAttribDivisor(6, 1)
+            glEnableVertexAttribArray(0)
 
         # ---
 

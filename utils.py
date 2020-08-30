@@ -7,9 +7,9 @@ from time import time
 from typing import Callable, NamedTuple
 
 xyz_steps = [10, 1, 0.1, 0.01]
-xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4), ('inch', 25.4)])
+xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
-pt_units = OrderedDict([('dd', 1), ('rad', 180 / math.pi)])
+pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
 
 
 def timing(f: Callable) -> Callable:

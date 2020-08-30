@@ -1,5 +1,6 @@
 """TODO"""
 
+import math
 import re
 from typing import Any, List, Optional, Union
 
@@ -119,12 +120,6 @@ class _PropVisualizer(wx.Panel):
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
-        self._x: float = 0.0
-        self._y: float = 0.0
-        self._z: float = 0.0
-        self._p: float = 0.0
-        self._t: float = 0.0
-
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Visualizer'), wx.VERTICAL)
 
@@ -164,11 +159,11 @@ class _PropTransform(wx.Panel):
     """[summary]
 
     Attributes:
-        x: A float representing x value.
-        y: A float representing y value.
-        z: A float representing z value.
-        p: A float representing p value.
-        t: A float representing t value.
+        x: A float representing x value in mm.
+        y: A float representing y value in mm.
+        z: A float representing z value in mm.
+        p: A float representing p value in radians.
+        t: A float representing t value in radians.
     """
 
     def __init__(self, parent) -> None:
@@ -178,20 +173,38 @@ class _PropTransform(wx.Panel):
         self._text_dirty = False
         self._selected_dirty = False
 
-        self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
+        self._x: float = 0.0
+        self._y: float = 0.0
+        self._z: float = 0.0
+        self._p: float = 0.0
+        self._t: float = 0.0
+        self._xyz_step: float = 1.0
+        self._pt_step: float = math.pi/180
 
-        # ---
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.init_gui()
+
+        # bind events
+        for ctrl in (self.x_ctrl, self.y_ctrl, self.z_ctrl, self.p_ctrl, self.t_ctrl,
+                     self.xyz_step_ctrl, self.pt_step_ctrl):
+            ctrl.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+            ctrl.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
+            ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
+            ctrl.Bind(wx.EVT_TEXT, self.on_text_change)
+            ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+
+    def init_gui(self) -> None:
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
 
         grid = wx.FlexGridSizer(3, 4, 4, 8)
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(3, 0)
 
-        self.x_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='x')
-        self.y_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='y')
-        self.z_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='z')
-        self.p_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='p')
-        self.t_ctrl = wx.TextCtrl(self, size=(50, -1), style=wx.TE_PROCESS_ENTER, name='t')
+        self.x_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x')
+        self.y_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y')
+        self.z_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z')
+        self.p_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p')
+        self.t_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t')
         more_btn = wx.Button(self, label='More...', size=(50, -1))
 
         grid.AddMany([
@@ -211,61 +224,79 @@ class _PropTransform(wx.Panel):
             (more_btn, 0, wx.ALIGN_RIGHT, 0)
         ])
 
-        for ctrl in (self.x_ctrl, self.y_ctrl, self.z_ctrl, self.p_ctrl, self.t_ctrl):
-            ctrl.Bind(wx.EVT_LEFT_UP, self.on_left_up)
-            ctrl.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
-            ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
-            ctrl.Bind(wx.EVT_TEXT, self.on_text_change)
-            ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-
         more_btn.Bind(wx.EVT_BUTTON, self.on_show_button)
-
         box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 4)
 
         # ---
 
-        x_pos_btn = wx.Button(self, label='X+', size=(20, -1))
-        x_neg_btn = wx.Button(self, label='X-', size=(20, -1))
-        y_pos_btn = wx.Button(self, label='Y+', size=(20, -1))
-        y_neg_btn = wx.Button(self, label='Y-', size=(20, -1))
-        z_pos_btn = wx.Button(self, label='Z+', size=(20, -1))
-        z_neg_btn = wx.Button(self, label='Z-', size=(20, -1))
+        self._step_sizer = wx.BoxSizer(wx.VERTICAL)
+        self._step_sizer.AddSpacer(8)
+        self._step_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
+        self._step_sizer.AddSpacer(8)
 
-        tilt_up_btn = wx.Button(self, label='T+', size=(20, -1))
-        tilt_down_btn = wx.Button(self, label='T-', size=(20, -1))
-        pan_right_btn = wx.Button(self, label='P+', size=(20, -1))
-        pan_left_btn = wx.Button(self, label='P-', size=(20, -1))
+        self.xyz_step_ctrl = wx.TextCtrl(self, value='1 mm', size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step')
+        self.pt_step_ctrl = wx.TextCtrl(self, value='1 dd', size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step')
 
-        self._xyzpt_grid = wx.GridBagSizer()
-        self._xyzpt_grid.AddMany([
+        step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
+        step_size_grid.AddGrowableCol(1, 0)
+        step_size_grid.AddGrowableCol(3, 0)
+
+        step_size_grid.AddMany([
+            (_text(self, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
+            (_text(self, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.pt_step_ctrl, 0, wx.EXPAND, 0),
+        ])
+
+        self._step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
+        self._step_sizer.AddSpacer(8)
+
+        x_pos_btn = wx.Button(self, label='X+', size=(20, -1), name='x+')
+        x_neg_btn = wx.Button(self, label='X-', size=(20, -1), name='x-')
+        y_pos_btn = wx.Button(self, label='Y+', size=(20, -1), name='y+')
+        y_neg_btn = wx.Button(self, label='Y-', size=(20, -1), name='y-')
+        z_pos_btn = wx.Button(self, label='Z+', size=(20, -1), name='z+')
+        z_neg_btn = wx.Button(self, label='Z-', size=(20, -1), name='z-')
+        p_pos_btn = wx.Button(self, label='P+', size=(20, -1), name='p+')
+        p_neg_btn = wx.Button(self, label='P-', size=(20, -1), name='p-')
+        t_pos_btn = wx.Button(self, label='T+', size=(20, -1), name='t+')
+        t_neg_btn = wx.Button(self, label='T-', size=(20, -1), name='t-')
+        for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
+                    t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn):
+            btn.Bind(wx.EVT_BUTTON, self.on_step_button)
+
+        step_xyzab_grid = wx.GridBagSizer()
+        step_xyzab_grid.AddMany([
             (0, 0, wx.GBPosition(0, 0)),    # vertical spacer
 
             (x_neg_btn, wx.GBPosition(0, 1), wx.GBSpan(2, 1), wx.EXPAND, 0),
-            (y_pos_btn, wx.GBPosition(0, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (y_neg_btn, wx.GBPosition(1, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (z_pos_btn, wx.GBPosition(0, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (z_neg_btn, wx.GBPosition(1, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
             (x_pos_btn, wx.GBPosition(0, 3), wx.GBSpan(2, 1), wx.EXPAND, 0),
 
-            (4, 0, wx.GBPosition(0, 4)),    # vertical spacer
+            (0, 0, wx.GBPosition(0, 4)),    # vertical spacer
 
-            (z_pos_btn, wx.GBPosition(0, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (z_neg_btn, wx.GBPosition(1, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (y_pos_btn, wx.GBPosition(0, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (y_neg_btn, wx.GBPosition(1, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
 
             (4, 0, wx.GBPosition(0, 6)),    # vertical spacer
 
-            (pan_left_btn, wx.GBPosition(0, 7), wx.GBSpan(2, 1), wx.EXPAND, 0),
-            (tilt_up_btn, wx.GBPosition(0, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (tilt_down_btn, wx.GBPosition(1, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (pan_right_btn, wx.GBPosition(0, 9), wx.GBSpan(2, 1), wx.EXPAND, 0),
+            (p_neg_btn, wx.GBPosition(0, 7), wx.GBSpan(2, 1), wx.EXPAND, 0),
+            (t_pos_btn, wx.GBPosition(0, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (t_neg_btn, wx.GBPosition(1, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (p_pos_btn, wx.GBPosition(0, 9), wx.GBSpan(2, 1), wx.EXPAND, 0),
         ])
 
         for col in (1, 3, 7, 9):
-            self._xyzpt_grid.AddGrowableCol(col, 1)
+            step_xyzab_grid.AddGrowableCol(col, 1)
         for col in (2, 5, 8):
-            self._xyzpt_grid.AddGrowableCol(col, 3)
+            step_xyzab_grid.AddGrowableCol(col, 3)
+
+        self._step_sizer.Add(step_xyzab_grid, 0, wx.EXPAND, 0)
 
         # start hidden
-        self._xyzpt_grid.ShowItems(False)
-        box_sizer.Add(self._xyzpt_grid, 0, wx.ALL|wx.EXPAND, 4)
+        self._step_sizer.ShowItems(False)
+        box_sizer.Add(self._step_sizer, 0, wx.ALL|wx.EXPAND, 4)
 
         self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
         self.Layout()
@@ -273,14 +304,27 @@ class _PropTransform(wx.Panel):
     def on_show_button(self, event: wx.CommandEvent) -> None:
         """Show or hide extra controls."""
         if event.EventObject.Label == 'More...':
-            self._xyzpt_grid.ShowItems(True)
+            self._step_sizer.ShowItems(True)
             event.EventObject.Label = 'Less...'
         else: # event.EventObject.Label == 'Less...':
-            self._xyzpt_grid.ShowItems(False)
+            self._step_sizer.ShowItems(False)
             event.EventObject.Label = 'More...'
         self.parent.Layout()
         w, h = self.parent.Sizer.GetMinSize()
         self.parent.SetVirtualSize((w, h))
+
+    def on_step_button(self, event: wx.CommandEvent) -> None:
+        """On EVT_BUTTONs, step value accordingly."""
+        button = event.EventObject
+        if button.Name[0] in 'xyz':
+            step = self.xyz_step
+        else: # button.Name in 'pt':
+            step = self.pt_step
+        if button.Name[1] == '-':
+            step *= -1
+
+        self.step_value(button.Name[0], step)
+        wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
 
     def on_left_up(self, event: wx.MouseEvent) -> None:
         """On EVT_LEFT_UP, if not already focused, select digits."""
@@ -313,34 +357,35 @@ class _PropTransform(wx.Panel):
         self._process_value(event.EventObject)
 
     def _process_value(self, ctrl: wx.TextCtrl) -> None:
-        """Process updated text control and convert units accordingly."""
+        """Process updated text controls and convert units accordingly."""
         if not self._text_dirty:
             return
 
         value = 0
-        if ctrl.Name in ('x', 'y', 'z'):
+        if ctrl.Name in ('x', 'y', 'z', 'xyz_step'):
             regex = re.findall(r'(-?\d*\.?\d+)\s*(mm|cm|inch|in)?', ctrl.Value)
             if len(regex) == 0:
                 ctrl.Undo()
                 return
-            else:
-                value, unit = regex[0]
-                value = float(value) * utils.xyz_units.get(unit, 1)
+            value, unit = regex[0]
+            unit = 'mm' if unit == '' else unit
+            value = float(value) * utils.xyz_units[unit]
 
-        else: # ctrl.Name in ('p', 't')
+        else: # ctrl.Name in ('p', 't', 'pt_step')
             regex = re.findall(r'(-?\d*\.?\d+)\s*(dd|rad)?', ctrl.Value)
             if len(regex) == 0:
                 ctrl.Undo()
                 return
-            else:
-                value, unit = regex[0]
-                value = float(value) * utils.pt_units.get(unit, 1)
+            value, unit = regex[0]
+            unit = 'dd' if unit == '' else unit
+            value = float(value) * utils.pt_units[unit]
 
         self._text_dirty = False
         self.set_value(ctrl.Name, value)
 
-        # update actual point
-        wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
+        if ctrl.Name in 'xyzpt':
+            # update point
+            wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
 
     def set_point(self, point: Point5) -> None:
         """Set text controls given a Point5.
@@ -351,7 +396,7 @@ class _PropTransform(wx.Panel):
         self.x, self.y, self.z, self.p, self.t = point
 
     def set_value(self, name: str, value: float) -> None:
-        """Set value in text control and append units accordingly.
+        """Step value indicated by name.
 
         Args:
             name: A string representing the name of the text control
@@ -368,6 +413,31 @@ class _PropTransform(wx.Panel):
             self.p = value
         elif name == 't':
             self.t = value
+        elif name == 'xyz_step':
+            self.xyz_step = value
+        elif name == 'pt_step':
+            self.pt_step = value
+        else:
+            return
+
+    def step_value(self, name: str, value: float) -> None:
+        """Step value indicated by name.
+
+        Args:
+            name: A string representing the name of the text control
+                (x, y, z, p, t) to be updated.
+            value: A float representing the new value to step by.
+        """
+        if name == 'x':
+            self.x += value
+        elif name == 'y':
+            self.y += value
+        elif name == 'z':
+            self.z += value
+        elif name == 'p':
+            self.p += value
+        elif name == 't':
+            self.t += value
         else:
             return
 
@@ -405,7 +475,7 @@ class _PropTransform(wx.Panel):
     @p.setter
     def p(self, value: float) -> None:
         self._p = value
-        self.p_ctrl.ChangeValue(f'{value:.3f} dd')
+        self.p_ctrl.ChangeValue(f'{value*180/math.pi:.3f} dd')
 
     @property
     def t(self) -> float:
@@ -414,7 +484,25 @@ class _PropTransform(wx.Panel):
     @t.setter
     def t(self, value: float) -> None:
         self._t = value
-        self.t_ctrl.ChangeValue(f'{value:.3f} dd')
+        self.t_ctrl.ChangeValue(f'{value*180/math.pi:.3f} dd')
+
+    @property
+    def xyz_step(self) -> float:
+        return self._xyz_step
+
+    @xyz_step.setter
+    def xyz_step(self, value: float) -> None:
+        self._xyz_step = value
+        self.xyz_step_ctrl.ChangeValue(f'{value:.3g} mm')
+
+    @property
+    def pt_step(self) -> float:
+        return self._pt_step
+
+    @pt_step.setter
+    def pt_step(self, value: float) -> None:
+        self._pt_step = value
+        self.pt_step_ctrl.ChangeValue(f'{value*180/math.pi:.3g} dd')
 
 
 class _PropCameraInfo(wx.Panel):
