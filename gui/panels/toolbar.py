@@ -47,11 +47,11 @@ class ToolbarPanel(aui.AuiToolBar):
         self.AddControl(self.port_cb, label='Port combobox')
         self.refresh_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('refresh', 20), size=(-1, -1))
         self.Bind(wx.EVT_BUTTON, self.on_refresh_port, self.AddControl(self.refresh_btn, label='Refresh port'))
-        self.AddSpacer(10)
+        self.AddSpacer(8)
         self.AddControl(wx.StaticText(self, label='Baud', style=wx.ALIGN_LEFT))
         self.baud_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.Bind(wx.EVT_COMBOBOX, self.on_select_baud, self.AddControl(self.baud_cb, label='Baud combobox'))
-        self.AddSpacer(10)
+        self.AddSpacer(8)
         self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))))
 
         self.AddSeparator()

@@ -114,8 +114,8 @@ class COPISCore:
         ], 'core_p_list_changed')
 
         heights = (-90, -60, -30, 0, 30, 60, 90)
-        radius = 170
-        every = 50
+        radius = 150
+        every = 70
         for i in heights:
             r = math.sqrt(radius * radius - i * i)
             num = int(2 * math.pi * r / every)
