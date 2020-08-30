@@ -18,8 +18,14 @@ def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
-    """TODO
+    """Properties panel. Shows settings and controls in the context of the
+    current selection.
 
+    Args:
+        parent: Pointer to a parent wx.Frame.
+
+    Attributes:
+        current: A string which sets the current selection text label.
     """
 
     config = {
@@ -38,9 +44,9 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._current = 'No Selection'
-        self.current_text = wx.StaticText(self, label=self._current)
+        self._current_text = wx.StaticText(self, label=self._current)
         self.Sizer.AddSpacer(16)
-        self.Sizer.Add(self.current_text, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 16)
+        self.Sizer.Add(self._current_text, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 16)
         self.Sizer.AddSpacer(4)
 
         self._property_panels = {}
@@ -53,8 +59,9 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
         dispatcher.connect(self.on_points_selected, signal='core_p_selected')
+        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
+        dispatcher.connect(self.on_deselected, signal='core_p_deselected')
 
     def init_all_property_panels(self) -> None:
         """Inits all property panels."""
@@ -68,7 +75,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
 
     def update_to_selected(self, selected: str) -> None:
-        """Update property panels to reflect current selection."""
+        """Update panels to reflect the given selection."""
         if selected not in self.config:
             return
 
@@ -89,7 +96,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         if not value:
             value = 'No Selection'
         self._current = value
-        self.current_text.Label = value
+        self._current_text.Label = value
 
     def on_device_selected(self, device) -> None:
         """On core_d_selected, set to camera view."""
@@ -100,7 +107,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.update_to_selected('Camera')
 
     def on_deselected(self) -> None:
-        """On core_d_deselected, reset to default view."""
+        """On core_*_deselected, reset to default view."""
         self.current = None
         self.update_to_selected('Default')
 
@@ -194,6 +201,7 @@ class _PropTransform(wx.Panel):
             ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
 
     def init_gui(self) -> None:
+        """Initialize gui elements."""
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
 
         grid = wx.FlexGridSizer(3, 4, 4, 8)

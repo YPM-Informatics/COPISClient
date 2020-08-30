@@ -7,7 +7,10 @@ from gui.wxutils import set_dialog
 
 
 class TimelinePanel(wx.Panel):
-    """
+    """Timeline panel.
+
+    Args:
+        parent: Pointer to a parent wx.Frame.
 
     TODO: Improve timeline panel
     """
@@ -31,6 +34,7 @@ class TimelinePanel(wx.Panel):
         self.Layout()
 
     def init_gui(self) -> None:
+        """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.timeline = wx.ListBox(self, style=wx.LB_SINGLE)

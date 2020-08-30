@@ -41,7 +41,7 @@ class VisualizerPanel(wx.Panel):
         self.Layout()
 
     def init_gui(self) -> None:
-        """Initialize panel."""
+        """Initialize gui elements."""
         navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 23), style=wx.BORDER_DEFAULT)
         navbar.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 

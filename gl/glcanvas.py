@@ -301,7 +301,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # ---
 
-        # generate vao for point paths
+        # generate vao for path lines
         self._vao_paths = glGenVertexArrays(1)
         glBindVertexArray(self._vao_paths)
 
@@ -324,19 +324,17 @@ class GLCanvas3D(glcanvas.GLCanvas):
         selected_points = wx.GetApp().core.selected_points
 
         # TODO: have this color stored somewhere else
-        color = [0.3, 0.75, 0.95, 1.0]
+        selected_color = [0.3, 0.75, 0.95, 1.0]
 
-        self._point_colors = np.tile(np.array([0.85, 0.85, 0.85, 0.9], dtype=np.float32), self._point_count)
+        self._point_colors = np.tile(np.array([0.85, 0.85, 0.85, 1.0], dtype=np.float32), self._point_count)
         for index in selected_points:
-            self._point_colors[index*4:index*4+4] = color
+            self._point_colors[index*4:index*4+4] = selected_color
 
-        vbo = glGenBuffers(1)
+        vbo = glGenBuffers(3)
 
-        # TODO: have this color stored somewhere else
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, self._point_colors.nbytes, self._point_colors, GL_STATIC_DRAW)
-
-        for vao in (self._vao_box, self._vao_side, self._vao_top):
+        for i, vao in enumerate((self._vao_box, self._vao_side, self._vao_top)):
+            glBindBuffer(GL_ARRAY_BUFFER, vbo[i])
+            glBufferData(GL_ARRAY_BUFFER, self._point_colors.nbytes, self._point_colors-0.05*i, GL_STATIC_DRAW)
             glBindVertexArray(vao)
 
             # set attribute pointers for vec4
@@ -468,8 +466,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def on_left_dclick(self, event: wx.MouseEvent) -> None:
         id_ = self._hover_id
-        if id_ == -1:
-            return
 
         if self._viewcube.hovered:
             if id_ == 0:    # front
@@ -490,7 +486,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         else:
             # id_ belongs to cameras or objects
             offset = len(wx.GetApp().core.devices)
-            if id_ < offset:
+            if id_ == -1:
+                wx.GetApp().core.select_device_by_id(-1)
+                wx.GetApp().core.select_point(-1, clear=True)
+            elif -1 < id_ < offset:
                 wx.GetApp().core.select_device_by_index(id_)
             else:
                 wx.GetApp().core.select_device_by_id(-1)
@@ -648,7 +647,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         model = glm.mat4()
 
         glUseProgram(self._color_shader)
-        color = glm.vec4(70, 70, 70, 255) / 255.0
+        color = glm.vec4(90, 90, 90, 255) / 255.0
         glUniform4fv(3, 1, glm.value_ptr(color))
 
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
