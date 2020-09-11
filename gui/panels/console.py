@@ -1,4 +1,4 @@
-"""TODO"""
+"""ConsolePanel class."""
 
 import wx
 from pydispatch import dispatcher

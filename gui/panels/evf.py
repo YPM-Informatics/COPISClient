@@ -1,4 +1,4 @@
-"""TODO"""
+"""EvfPanel class."""
 
 import io
 import wx
@@ -6,7 +6,14 @@ from PIL import Image
 
 
 class EvfPanel(wx.Panel):
+    """Electronic viewfinder panel. Shows live feed of connected camera.
+
+    Args:
+        parent: Pointer to a parent wx.Frame.
+    """
+
     def __init__(self, parent, *args, **kwargs):
+        """Inits EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
         self.timer = wx.CallLater(15, self.update)

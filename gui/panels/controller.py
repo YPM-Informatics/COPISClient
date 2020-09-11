@@ -1,5 +1,4 @@
-"""TODO"""
-
+"""ControllerPanel class."""
 
 import math
 from collections import OrderedDict
@@ -14,8 +13,10 @@ from utils import Point3, Point5
 
 
 class ControllerPanel(scrolled.ScrolledPanel):
-    """TODO
+    """Controller panel. When camera selected, jogs movement.
 
+    Args:
+        parent: Pointer to a parent wx.Frame.
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -236,7 +237,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def update_machine_pos(self, pos: Point5) -> None:
-        """TODO"""
+        """Update machine position values given point."""
         self.x_m_text.ChangeValue(f'{pos.x:.3f}')
         self.y_m_text.ChangeValue(f'{pos.y:.3f}')
         self.z_m_text.ChangeValue(f'{pos.z:.3f}')
@@ -244,7 +245,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.t_m_text.ChangeValue(f'{pos.t:.3f}')
 
     def update_world_pos(self, pos: Point5) -> None:
-        """TODO"""
+        """Update world position values given point."""
         self.x_w_text.ChangeValue(f'{pos.x:.3f}')
         self.y_w_text.ChangeValue(f'{pos.y:.3f}')
         self.z_w_text.ChangeValue(f'{pos.z:.3f}')

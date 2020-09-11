@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""TODO: Fill in module docstring"""
+"""Main COPIS App (GUI)."""
 
 import wx
 import wx.lib.inspection

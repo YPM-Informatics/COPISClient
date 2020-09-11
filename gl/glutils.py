@@ -1,5 +1,6 @@
 """Helper functions for quaternion math, arcball rotation, and paths.
-TODO: Give attribution to Printrun
+
+TODO: move path creation functions to separate module
 """
 
 from math import acos, asin, cos, sin, sqrt, tan

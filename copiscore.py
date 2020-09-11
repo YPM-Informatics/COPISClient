@@ -1,5 +1,4 @@
 """
-
 TODO: add license boilerplate
 """
 
@@ -9,7 +8,7 @@ import platform
 import sys
 import time
 from dataclasses import dataclass
-from gl.glutils import get_helix, get_circle
+from gl.glutils import get_circle, get_helix
 from typing import List, Optional, Tuple
 
 from pydispatch import dispatcher
@@ -23,6 +22,9 @@ if sys.version_info.major < 3:
 
 
 class MonitoredList(list):
+    """Monitored list. Just a regular list, but sends notificiations when
+    changed or modified.
+    """
     def __init__(self, iterable, signal: str) -> None:
         super().__init__(iterable)
         self.signal = signal
@@ -82,40 +84,32 @@ class COPISCore:
     """COPISCore. Connects and interacts with devices in system.
 
     Attributes:
-        points:
-        devices:
-        selected_device:
+        points: A list of points representing a path.
+        devices: A list of devices (cameras).
+        selected_device: Current selected device. None if not selected.
+        selected_points: A list of integers representing the index of selected
+            points.
 
     Emits:
-        core_p_list_changed:
-        core_p_selected:
-        core_p_deselected:
-        core_d_list_changed:
-        core_d_selected:
-        core_d_deselected:
-        core_error:
+        core_p_list_changed: When the point list has changed.
+        core_p_selected: When a new point has been selected.
+        core_p_deselected: When a point has been deselected.
+        core_d_list_changed: When the device list has changed.
+        core_d_selected: When a new device has been selected.
+        core_d_deselected: When the current device has been deselected.
+        core_error: Any copiscore access errors.
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        """Inits a CopisCore instance.
-        """
+        """Inits a CopisCore instance."""
 
-        path, count = get_helix(glm.vec3(0, -100, 0),
-                                glm.vec3(0, 1, 0),
-                                185, 20, 10, 36)
-        self._points: List[Tuple[int, Point5]] = MonitoredList([
-            # (0, Point5(
-            #     path[i * 3],
-            #     path[i * 3 + 1],
-            #     path[i * 3 + 2],
-            #     math.atan2(path[i*3+2], path[i*3]) + math.pi,
-            #     math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2)))
-            # ) for i in range(count)
-        ], 'core_p_list_changed')
+        self._points: List[Tuple[int, Point5]] = MonitoredList([], 'core_p_list_changed')
 
         heights = (-90, -60, -30, 0, 30, 60, 90)
         radius = 150
         every = 70
+
+        # generate a sphere (for testing)
         for i in heights:
             r = math.sqrt(radius * radius - i * i)
             num = int(2 * math.pi * r / every)
@@ -158,6 +152,7 @@ class COPISCore:
         return self._devices
 
     def check_point(self, point: Tuple[int, Point5]) -> bool:
+        """Return if a given point contains a valid device id or not."""
         if point[0] not in (c.device_id for c in self._devices):
             dispatcher.send('core_error', message=f'invalid point {point}')
             return False
@@ -168,7 +163,7 @@ class COPISCore:
         return self._selected_device
 
     def select_device_by_id(self, device_id: int) -> None:
-        """Select device given device_id."""
+        """Select device given device id."""
         device = next((x for x in self._devices if x.device_id == device_id), None)
         if device_id == -1 or device is None:
             if self._selected_device is not None:
@@ -191,7 +186,13 @@ class COPISCore:
         return self._selected_points
 
     def select_point(self, index: int, clear: bool = True) -> None:
-        """TODO"""
+        """Add point to points list given index in points list.
+
+        Args:
+            index: An integer representing index of point to be selected.
+            clear: A boolean representing whether to clear the list before
+                selecting the new point or not.
+        """
         if index == -1:
             self._selected_points.clear()
             dispatcher.send('core_p_deselected')
@@ -207,7 +208,7 @@ class COPISCore:
             dispatcher.send('core_p_selected', points=self._selected_points)
 
     def deselect_point(self, index: int) -> None:
-        """TODO"""
+        """Remove point from selected points given index in points list."""
         try:
             self._selected_points.remove(index)
             dispatcher.send('core_p_deselected')

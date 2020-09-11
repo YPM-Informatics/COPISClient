@@ -1,4 +1,4 @@
-"""TODO"""
+"""Shader program object and util functions."""
 
 from inspect import cleandoc
 from typing import NamedTuple

@@ -1,4 +1,4 @@
-"""TODO"""
+"""PreferenceFrame class."""
 
 import wx
 

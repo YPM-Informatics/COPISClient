@@ -1,4 +1,4 @@
-"""TODO"""
+"""PropertiesPanel class."""
 
 import math
 import re
@@ -130,9 +130,9 @@ class _PropVisualizer(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Visualizer'), wx.VERTICAL)
 
-        grid_check = wx.CheckBox(self, label='Show &grid', name='grid')
+        grid_check = wx.CheckBox(self, label='Show chamber &grid', name='grid')
         grid_check.Value = True
-        axes_check = wx.CheckBox(self, label='Show &axes', name='axes')
+        axes_check = wx.CheckBox(self, label='Show chamber &axes', name='axes')
         axes_check.Value = True
         bbox_check = wx.CheckBox(self, label='Show chamber &boundaries', name='bbox')
         bbox_check.Value = True
@@ -163,7 +163,7 @@ class _PropVisualizer(wx.Panel):
 
 
 class _PropTransform(wx.Panel):
-    """[summary]
+    """Transform panel. Default display units are mm and dd.
 
     Attributes:
         x: A float representing x value in mm.
@@ -700,9 +700,9 @@ class _PropQuickActions(wx.Panel):
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(2, 0)
 
-        self.button1 = wx.Button(self, label='Thing 1', size=(50, -1))
-        self.button2 = wx.Button(self, label='Thing 2', size=(50, -1))
-        self.button3 = wx.Button(self, label='Thing 3', size=(50, -1))
+        self.button1 = wx.Button(self, label='Action 1', size=(50, -1))
+        self.button2 = wx.Button(self, label='Action 2', size=(50, -1))
+        self.button3 = wx.Button(self, label='Action 3', size=(50, -1))
 
         grid.AddMany([
             (self.button1, 0, wx.EXPAND, 0),
