@@ -1,6 +1,5 @@
-"""GLBed and associated classes.
+"""GLChamber and associated classes.
 
-TODO: rename to GLChamber?
 """
 
 from typing import List, Tuple
@@ -13,10 +12,10 @@ import glm
 
 
 class _Axes():
-    """Manage and render origin axes in a GLBed.
+    """Manage and render origin axes in a GLChamber.
 
     Args:
-        parent: Pointer to a parent GLBed.
+        parent: Pointer to a parent GLChamber.
     """
 
     origin = (0.0, 0.0, 0.0)
@@ -165,8 +164,8 @@ class _Axes():
         return vertices, colors
 
 
-class GLBed:
-    """Manage build dimensions and bed surface in a GLCanvas.
+class GLChamber:
+    """Manage build dimensions and chamber bed surface in a GLCanvas.
 
     Args:
         parent: Pointer to a parent GLCanvas.
@@ -181,7 +180,7 @@ class GLBed:
 
     Attributes:
         build_dimensions: See Args section.
-        grid_shown: A boolean indicating if bed gridlines should be rendered
+        grid_shown: A boolean indicating if chamber gridlines should be rendered
             or not. Defaults to True.
         axes_shown: A boolean indicating if origin axes should be rendered
             or not. Defaults to True.
@@ -196,7 +195,7 @@ class GLBed:
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits GLBed with constructors.
+        """Inits GLChamber with constructors.
 
         Raises:
             ValueError: If provided build dimension is invalid.
@@ -280,7 +279,7 @@ class GLBed:
         return True
 
     def render(self) -> None:
-        """Render bed to canvas."""
+        """Render chamber to canvas."""
         if not self.init():
             return
 

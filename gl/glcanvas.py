@@ -3,7 +3,7 @@
 import gl.shaders as shaderlib
 import math
 import platform as pf
-from gl.bed import GLBed
+from gl.chamber import GLChamber
 from gl.glutils import arcball
 from gl.proxy3d import Proxy3D
 from gl.viewcube import GLViewCube
@@ -34,11 +34,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     Args:
         parent: Pointer to a parent wx.Window.
-        build_dimensions: Optional; See GLBed.
-        axes: Optional; See GLBed.
-        bounding_box: Optional; See GLBed.
-        every: Optional; See GLBed.
-        subdivisions: Optional; See GLBed.
+        build_dimensions: Optional; See GLChamber.
+        axes: Optional; See GLChamber.
+        bounding_box: Optional; See GLChamber.
+        every: Optional; See GLChamber.
+        subdivisions: Optional; See GLChamber.
 
     Attributes:
         dirty: A boolean indicating if the canvas needs updating or not.
@@ -46,7 +46,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             See https://gameprogrammingpatterns.com/dirty-flag.html.
         rot_quat: Read ony; A glm quaternion representing current rotation.
             To convert to a transformation matrix, use glm.mat4_cast(rot_quat).
-        bed: Read only; A GLBed object.
+        chamber: Read only; A GLChamber object.
         proxy3d: Read only; A Proxy3D object.
         zoom: A float representing zoom level (higher is more zoomed in).
             Zoom is achieved in projection_matrix by modifying the fov.
@@ -56,7 +56,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         modelview_matrix: Read only; A glm.mat4 representing the current
             modelview matrix.
 
-    TODO: Add more documentation regarding OpenGL.
+    TODO: Add more documentation about OpenGL.
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls
@@ -84,7 +84,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._instanced_color_shader = None
         self._instanced_picking_shader = None
 
-        # gl things TODO comment/regroup
+        # gl related variables TODO comment/regroup
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
@@ -94,7 +94,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._point_colors = None
         self._id_offset = len(wx.GetApp().core.devices)
 
-        # screen is only refreshed from the OnIdle handler if it is dirty
         self._dirty = False
         self._gl_initialized = False
         self._scale_factor = None
@@ -103,7 +102,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # other objects
         self._dist = 0.5 * (self._build_dimensions[1] + \
                             max(self._build_dimensions[0], self._build_dimensions[2]))
-        self._bed = GLBed(self, build_dimensions, every, subdivisions)
+        self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
 
@@ -380,7 +379,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # clear buffers and render everything
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
-        self._render_bed()
+        self._render_chamber()
         self._render_cameras()
         self._render_paths()
         self._render_viewcube()
@@ -631,10 +630,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Clear the background color."""
         glClearColor(*self.color_background)
 
-    def _render_bed(self) -> None:
-        """Render bed."""
-        if self._bed is not None:
-            self._bed.render()
+    def _render_chamber(self) -> None:
+        """Render chamber."""
+        if self._chamber is not None:
+            self._chamber.render()
 
     def _render_cameras(self) -> None:
         """Render cameras."""
@@ -708,8 +707,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         return self._rot_quat
 
     @property
-    def bed(self) -> GLBed:
-        return self._bed
+    def chamber(self) -> GLChamber:
+        return self._chamber
 
     @property
     def proxy3d(self) -> Proxy3D:
@@ -731,7 +730,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     @build_dimensions.setter
     def build_dimensions(self, value: List[int]) -> None:
         self._build_dimensions = value
-        self._bed.build_dimensions = value
+        self._chamber.build_dimensions = value
         self._dirty = True
 
     @property

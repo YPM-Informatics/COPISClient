@@ -15,13 +15,13 @@ class VisualizerPanel(wx.Panel):
     Attributes:
         dirty: A boolean indicating if the OpenGL canvas needs updating or not.
         glcanvas: Read only; A GLCanvas3D object.
-        bbox_shown: A boolean indicating if the canvas bed bounding box is shown
-            or not.
-        axes_shown: A boolean indicating if the canvas axes is shown or not
+        bbox_shown: A boolean indicating if the canvas chamber bounding box is
+            shown or not.
+        axes_shown: A boolean indicating if the canvas axes is shown or not.
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize VisualizerPanel with constructors."""
+        """Inits VisualizerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent
 
@@ -71,42 +71,42 @@ class VisualizerPanel(wx.Panel):
         if self._glcanvas is None:
             return False
 
-        return self._glcanvas.bed.grid_shown
+        return self._glcanvas.chamber.grid_shown
 
     @grid_shown.setter
     def grid_shown(self, value: bool) -> None:
         if self._glcanvas is None:
             return
 
-        self._glcanvas.bed.grid_shown = value
+        self._glcanvas.chamber.grid_shown = value
 
     @property
     def axes_shown(self) -> bool:
         if self._glcanvas is None:
             return False
 
-        return self._glcanvas.bed.axes_shown
+        return self._glcanvas.chamber.axes_shown
 
     @axes_shown.setter
     def axes_shown(self, value: bool) -> None:
         if self._glcanvas is None:
             return
 
-        self._glcanvas.bed.axes_shown = value
+        self._glcanvas.chamber.axes_shown = value
 
     @property
     def bbox_shown(self) -> bool:
         if self._glcanvas is None:
             return False
 
-        return self._glcanvas.bed.bbox_shown
+        return self._glcanvas.chamber.bbox_shown
 
     @bbox_shown.setter
     def bbox_shown(self, value: bool) -> None:
         if self._glcanvas is None:
             return
 
-        self._glcanvas.bed.bbox_shown = value
+        self._glcanvas.chamber.bbox_shown = value
 
     @property
     def dirty(self) -> bool:

@@ -1,6 +1,4 @@
-"""TODO
-
-"""
+"""wxPython util functions."""
 
 import wx
 import wx.svg as svg

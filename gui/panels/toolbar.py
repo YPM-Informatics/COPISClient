@@ -1,4 +1,4 @@
-"""TODO"""
+"""ToolbarPanel class."""
 
 import wx
 import wx.lib.agw.aui as aui
@@ -10,7 +10,7 @@ from gui.wxutils import create_scaled_bitmap, set_dialog
 
 
 class ToolbarPanel(aui.AuiToolBar):
-    """TODO"""
+    """Aui toolbar panel."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ToolbarPanel with constructors."""
@@ -71,6 +71,7 @@ class ToolbarPanel(aui.AuiToolBar):
         self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
     def on_refresh_port(self, event: wx.CommandEvent) -> None:
+        """On refresh button pressed, update baud combobox."""
         port = self.port_cb.StringSelection
         if not port:
             return
@@ -84,6 +85,8 @@ class ToolbarPanel(aui.AuiToolBar):
         self.serial_controller.selected_serial.baudrate = int(event.String)
 
     def on_connect(self, event: wx.CommandEvent) -> None:
+        """On connect button pressed, update serial connection and button text.
+        """
         connect_btn = self.FindControl(event.Id)
         if self.serial_controller.selected_serial:
             if self.serial_controller.selected_serial.is_open:
@@ -96,13 +99,16 @@ class ToolbarPanel(aui.AuiToolBar):
             set_dialog('Please select a port to connect to.')
 
     def update_ports(self) -> None:
+        """Set port combobox to serial ports list."""
         self.port_cb.Items = self.serial_controller.ports
 
     def update_bauds(self) -> None:
+        """If possible, set baud combobox to serial bauds list."""
         if self.serial_controller.bauds is not None:
             self.baud_cb.Items = [str(i) for i in self.serial_controller.bauds]
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
+        """On toolbar tool selected, check which and process accordingly."""
         if event.Id == ToolIds.SETTINGS.value:
             settings_frame = SettingsFrame(self)
             settings_frame.Show()

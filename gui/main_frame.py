@@ -1,4 +1,4 @@
-"""TODO"""
+"""MainFrame class."""
 
 from ctypes import *
 from pathlib import Path
@@ -539,11 +539,8 @@ class MainFrame(wx.Frame):
 
     @selected_camera.setter
     def selected_camera(self, id_: int) -> None:
-        self._core.selected_device = id_
-
-        # TODO: improve the inter-panel calling stuff
-        self.visualizer_panel.dirty = True
-        self.controller_panel.main_combo.Selection = id_
+        # TODO: remove this when edsdk calling is sorted
+        self._core.selected_camera = id_
 
     def get_camera_list(self) -> Dict[int, Any]:
         return self._core.cameras

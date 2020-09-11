@@ -1,4 +1,4 @@
-"""TODO"""
+"""TimelinePanel class."""
 
 import wx
 from pydispatch import dispatcher
