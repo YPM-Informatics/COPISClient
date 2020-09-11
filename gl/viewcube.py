@@ -239,7 +239,7 @@ class GLViewCube:
             corner = (0, 0)
         else: # self._position == ViewCubePos.BOTTOM_LEFT:
             corner = (width - self._size, 0)
-        return *corner, self._size, self._size
+        return corner[0], corner[1], self._size, self._size
 
     @property
     def hover_id(self) -> int:
