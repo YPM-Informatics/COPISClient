@@ -1,31 +1,15 @@
 """Util functions."""
 
+import math
+from collections import OrderedDict
 from functools import wraps
 from time import time
-from typing import Callable
+from typing import Callable, NamedTuple
 
-import wx
-import wx.svg as svg
-
-
-def set_dialog(msg: str) -> None:
-    """Show a wx.MessageDialog with msg as the message."""
-    dialog = wx.MessageDialog(None, msg, 'Confirm Exit', wx.OK)
-    dialog.ShowModal()
-    dialog.Destroy()
-
-
-def create_scaled_bitmap(bmp_name: str,
-                         px_cnt: int = 16) -> wx.Bitmap:
-    """Return scaled wx.Bitmap from svg file name.
-
-    Args:
-        bmp_name: A string representing the svg image to convert.
-        px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
-    """
-    image = svg.SVGimage.CreateFromFile(
-        'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
-    return image
+xyz_steps = [10, 1, 0.1, 0.01]
+xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
+pt_steps = [10, 5, 1, 0.1, 0.01]
+pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
 
 
 def timing(f: Callable) -> Callable:
@@ -39,3 +23,17 @@ def timing(f: Callable) -> Callable:
             f'func:{f.__name__} args:[{args}, {kw}] took: {(te-ts)*1000:.4f}ms')
         return result
     return wrap
+
+
+class Point5(NamedTuple):
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    p: float = 0.0
+    t: float = 0.0
+
+
+class Point3(NamedTuple):
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0

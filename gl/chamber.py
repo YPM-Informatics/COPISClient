@@ -1,4 +1,6 @@
-"""GLBed and associated classes."""
+"""GLChamber and associated classes.
+
+"""
 
 from typing import List, Tuple
 
@@ -10,10 +12,10 @@ import glm
 
 
 class _Axes():
-    """Manage and render origin axes in a GLBed.
+    """Manage and render origin axes in a GLChamber.
 
     Args:
-        parent: Pointer to a parent GLBed.
+        parent: Pointer to a parent GLChamber.
     """
 
     origin = (0.0, 0.0, 0.0)
@@ -80,9 +82,9 @@ class _Axes():
 
         # ---
 
-        vertices[0] = x[1]
-        vertices[17*3+1] = y[1]
-        vertices[17*6+2] = z[1]
+        vertices[0] = x[0]
+        vertices[17*3+1] = y[0]
+        vertices[17*6+2] = z[0]
         glBindVertexArray(self._vao_arrows[1])
         # colored axes arrows, base
 
@@ -126,7 +128,10 @@ class _Axes():
         Returns:
             An np.ndarray for vertices, and an np.ndarray for color values.
         """
-        x, y, z = self._canvas.build_dimensions[3:]
+        x = self._canvas.build_dimensions[0] - self._canvas.build_dimensions[3]
+        y = self._canvas.build_dimensions[1] - self._canvas.build_dimensions[4]
+        z = self._canvas.build_dimensions[2] - self._canvas.build_dimensions[5]
+
         thetas = np.linspace(0, 2 * np.pi, 16, endpoint=True)
         cos = np.cos(thetas) * self._arrow_base_radius
         sin = np.sin(thetas) * self._arrow_base_radius
@@ -159,8 +164,8 @@ class _Axes():
         return vertices, colors
 
 
-class GLBed:
-    """Manage build dimensions and bed surface in a GLCanvas.
+class GLChamber:
+    """Manage build dimensions and chamber bed surface in a GLCanvas.
 
     Args:
         parent: Pointer to a parent GLCanvas.
@@ -168,10 +173,6 @@ class GLBed:
             First three values specify xyz build dimensions, and last three
             values specificy xyz origin position. Defaults to
             [400, 400, 400, 200, 200, 200] = 400x400x400mm, (200,200,200).
-        axes: Optional; A boolean indicating if origin axes should be rendered
-            or not. Defaults to True.
-        bounding_box: Optional; A boolean indicating if a bounding box should be
-            rendered or not. Defaults to True.
         every: Optional; An integer representing units between every major
             gridline (displayed darker). Defaults to 100.
         subdivisions: Optional; An integer representing subdivisions between
@@ -179,20 +180,22 @@ class GLBed:
 
     Attributes:
         build_dimensions: See Args section.
-        show_axes: See Args section for axes.
-        show_bounding_box: See Args section for bounding_box.
+        grid_shown: A boolean indicating if chamber gridlines should be rendered
+            or not. Defaults to True.
+        axes_shown: A boolean indicating if origin axes should be rendered
+            or not. Defaults to True.
+        bbox_shown: A boolean indicating if a bounding box should be rendered
+            or not. Defaults to True.
     """
-    col_light = 0.91
-    col_dark = 0.72
-    col_border = 0.40
+    col_light = 0.96
+    col_dark = 0.80
+    col_border = 0.50
 
     def __init__(self, parent,
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
-                 axes: bool = True,
-                 bounding_box: bool = True,
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits GLBed with constructors.
+        """Inits GLChamber with constructors.
 
         Raises:
             ValueError: If provided build dimension is invalid.
@@ -200,17 +203,18 @@ class GLBed:
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
         self._canvas = parent
+        self._build_dimensions = build_dimensions
+        self._every = every
+        self._subdivisions = subdivisions
 
         self._vao_gridlines = None
         self._vao_bounding_box = None
         self._count_gridlines = None
         self._count_bounding_box = None
 
-        self._build_dimensions = build_dimensions
-        self._show_axes = axes
-        self._show_bounding_box = bounding_box
-        self._every = every
-        self._subdivisions = subdivisions
+        self._grid_shown = True
+        self._axes_shown = True
+        self._bbox_shown = True
         self._axes = _Axes(self)
 
         self._initialized = False
@@ -275,7 +279,7 @@ class GLBed:
         return True
 
     def render(self) -> None:
-        """Render bed to canvas."""
+        """Render chamber to canvas."""
         if not self.init():
             return
 
@@ -288,12 +292,13 @@ class GLBed:
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
-        self._render_gridlines()
+        if self._grid_shown:
+            self._render_gridlines()
 
-        if self._show_axes:
+        if self._axes_shown:
             self._render_axes()
 
-        if self._show_bounding_box:
+        if self._bbox_shown:
             self._render_bounding_box()
 
         glBindVertexArray(0)
@@ -315,7 +320,7 @@ class GLBed:
             a[-1] = self.col_border
             return a
 
-        if self._show_axes:
+        if self._axes_shown:
             axes_verts = np.array([])
             axes_colors = np.array([])
         else:
@@ -416,20 +421,29 @@ class GLBed:
         self._initialized = False
 
     @property
-    def show_axes(self) -> bool:
-        return self._show_axes
+    def grid_shown(self) -> bool:
+        return self._grid_shown
 
-    @show_axes.setter
-    def show_axes(self, value: bool) -> None:
-        self._show_axes = value
+    @grid_shown.setter
+    def grid_shown(self, value: bool) -> None:
+        self._grid_shown = value
+        self._canvas.dirty = True
+
+    @property
+    def axes_shown(self) -> bool:
+        return self._axes_shown
+
+    @axes_shown.setter
+    def axes_shown(self, value: bool) -> None:
+        self._axes_shown = value
         self.create_vao()
         self._canvas.dirty = True
 
     @property
-    def show_bounding_box(self) -> bool:
-        return self._show_bounding_box
+    def bbox_shown(self) -> bool:
+        return self._bbox_shown
 
-    @show_bounding_box.setter
-    def show_bounding_box(self, value: bool) -> None:
-        self._show_bounding_box = value
+    @bbox_shown.setter
+    def bbox_shown(self, value: bool) -> None:
+        self._bbox_shown = value
         self._canvas.dirty = True

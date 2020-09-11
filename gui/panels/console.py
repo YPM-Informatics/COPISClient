@@ -1,26 +1,79 @@
-"""TODO"""
+"""ConsolePanel class."""
 
 import wx
+from pydispatch import dispatcher
+
+from gui.wxutils import create_scaled_bitmap
+from utils import Point5
 
 
 class ConsolePanel(wx.Panel):
-    def __init__(self, parent, *args, **kwargs):
+    """Console panel.
+
+    Args:
+        parent: Pointer to a parent wx.Frame.
+    """
+
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Inits ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.init_ui()
+        self.parent = parent
 
-    def init_ui(self):
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        self.console = wx.TextCtrl(self, style=wx.TE_MULTILINE | wx.TE_READONLY)
-        vbox.Add(self.console, 1, wx.EXPAND)
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.writer = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER)
-        self.writer.Bind(wx.EVT_TEXT_ENTER, self.onPublishCmd)
-        vbox.Add(self.writer, 0.5, wx.EXPAND)
-        self.SetSizerAndFit(vbox)
+        self._console = None
+        self._console_writer = None
 
-    def onPublishCmd(self, event):
-        self.console.AppendText('>>' + event.String + '\n')
-        self.writer.SetValue('')
+        self.init_gui()
 
-    def print(self, msg):
-        self.console.AppendText(msg + '\n')
+        self.Layout()
+
+        # bind copiscore listeners
+        dispatcher.connect(self.on_notification, signal='core_p_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_d_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_p_selected')
+        dispatcher.connect(self.on_notification, signal='core_p_deselected')
+        dispatcher.connect(self.on_notification, signal='core_d_selected')
+        dispatcher.connect(self.on_notification, signal='core_d_deselected')
+        dispatcher.connect(self.on_notification, signal='core_error')
+
+    def init_gui(self) -> None:
+        """Initialize gui elements."""
+        self._console = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.TE_CHARWRAP)
+        self.Sizer.Add(self._console, 1, wx.EXPAND)
+
+        command_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._console_writer = wx.TextCtrl(self, size=(-1, 22), style=wx.TE_PROCESS_ENTER)
+        self._console_writer.Hint = 'Enter a command...'
+        self._console_writer.Bind(wx.EVT_TEXT_ENTER, self.on_command_entered)
+        clear_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('clear'), size=(-1, -1))
+        clear_btn.Bind(wx.EVT_BUTTON, self.on_command_cleared)
+
+        command_sizer.AddMany([
+            (self._console_writer, 1, 0, 0),
+            (clear_btn, 0, wx.ALL, -1),
+        ])
+
+        self.Sizer.Add(command_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
+
+    def on_command_entered(self, event: wx.CommandEvent) -> None:
+        """On EVT_TEXT_ENTER, process entered console command."""
+        if not event.String:
+            return
+
+        self.print(f'$ {event.String}')
+        self.on_command_cleared()
+
+        wx.GetApp().core.select_device_by_id(int(event.String))
+
+    def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
+        """When the clear button is pressed, clear the console writer."""
+        self._console_writer.ChangeValue('')
+
+    def print(self, msg: str) -> None:
+        """Add message to console."""
+        self._console.AppendText(f'{msg}\n')
+
+    def on_notification(self, signal: str, message: str = '') -> None:
+        """Print any pydispatch signals."""
+        self.print(f'notification: {signal} {message}')

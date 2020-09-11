@@ -1,107 +1,158 @@
-"""TODO"""
+"""TimelinePanel class."""
 
 import wx
+from pydispatch import dispatcher
 
-from utils import set_dialog
+from gui.wxutils import set_dialog
 
 
 class TimelinePanel(wx.Panel):
-    """
+    """Timeline panel.
+
+    Args:
+        parent: Pointer to a parent wx.Frame.
 
     TODO: Improve timeline panel
     """
-    def __init__(self, parent, *args, **kwargs):
+
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Inits TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.init_ui()
+        self.parent = parent
 
-    def init_ui(self):
-        hboxBottom = wx.BoxSizer()
-        vboxCmd = wx.BoxSizer(wx.VERTICAL)
-        self.cmd = wx.ListBox(self, style=wx.LB_SINGLE)
-        vboxCmd.Add(self.cmd, 1, wx.EXPAND)
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        hboxAddCmd = wx.BoxSizer()
-        self.cmdWriter = wx.TextCtrl(self)
-        hboxAddCmd.Add(self.cmdWriter, 1, wx.EXPAND)
-        self.addBtn = wx.Button(self, wx.ID_ANY, label='Add')
-        self.addBtn.Bind(wx.EVT_BUTTON, self.on_add_command)
-        hboxAddCmd.Add(self.addBtn)
-        vboxCmd.Add(hboxAddCmd, 0.5, wx.EXPAND)
-        hboxBottom.Add(vboxCmd, 2, wx.EXPAND)
+        self.timeline = None
+        self.timeline_writer = None
 
-        vboxBtns = wx.BoxSizer(wx.VERTICAL)
-        self.up_btn = wx.Button(self, wx.ID_ANY, label='Up')
-        self.up_btn.direction = 'up'
-        self.up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
-        vboxBtns.Add(self.up_btn)
-        self.down_btn = wx.Button(self, wx.ID_ANY, label='Down')
-        self.down_btn.direction = 'down'
-        self.down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
-        vboxBtns.Add(self.down_btn)
-        self.replace_btn = wx.Button(self, wx.ID_ANY, label='Replace')
-        self.replace_btn.Bind(wx.EVT_BUTTON, self.on_replace_command)
-        vboxBtns.Add(self.replace_btn)
-        self.delete_btn = wx.Button(self, wx.ID_ANY, label='Delete')
-        self.delete_btn.size = 'single'
-        self.delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
-        vboxBtns.Add(self.delete_btn)
-        self.delall_button = wx.Button(self, wx.ID_ANY, label='Delete All')
-        self.delall_button.size = 'all'
-        self.delall_button.Bind(wx.EVT_BUTTON, self.on_delete_command)
-        vboxBtns.Add(self.delall_button)
-        self.savetofile_btn = wx.Button(self, wx.ID_ANY, label='Save To File')
-        vboxBtns.Add(self.savetofile_btn)
-        self.sendall_btn = wx.Button(self, wx.ID_ANY, label='Send All')
-        vboxBtns.Add(self.sendall_btn)
-        self.sendsel_button = wx.Button(self, wx.ID_ANY, label='Send Sel')
-        vboxBtns.Add(self.sendsel_button)
-        hboxBottom.Add(vboxBtns)
+        self.init_gui()
+        self.update_timeline()
 
-        self.SetSizer(hboxBottom)
+        # bind copiscore listeners
+        dispatcher.connect(self.update_timeline, signal='core_p_list_changed')
+
         self.Layout()
 
-    def on_add_command(self, event):
-        cmd = self.cmdWriter.GetValue()
-        if cmd != '':
-            self.cmd.Append(cmd)
-            self.cmdWriter.SetValue('')
+    def init_gui(self) -> None:
+        """Initialize gui elements."""
+        timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
-    def on_move_command(self, event):
-        selected = self.cmd.GetStringSelection()
+        self.timeline = wx.ListBox(self, style=wx.LB_SINGLE)
+        timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
+
+        cmd_sizer = wx.BoxSizer()
+        self.timeline_writer = wx.TextCtrl(self, size=(-1, 22))
+        add_btn = wx.Button(self, label='Add', size=(50, -1))
+        add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
+
+        cmd_sizer.AddMany([
+            (self.timeline_writer, 1, 0, 0),
+            (add_btn, 0, wx.ALL, -1),
+        ])
+
+        timeline_sizer.Add(cmd_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
+
+        self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
+
+        # ---
+
+        btn_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        up_btn = wx.Button(self, label='Up')
+        up_btn.direction = 'up'
+        up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+
+        down_btn = wx.Button(self, label='Down')
+        down_btn.direction = 'down'
+        down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+
+        replace_btn = wx.Button(self, label='Replace')
+        replace_btn.Bind(wx.EVT_BUTTON, self.on_replace_command)
+
+        delete_btn = wx.Button(self, label='Delete')
+        delete_btn.size = 'single'
+        delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
+
+        delall_btn = wx.Button(self, label='Delete All')
+        delall_btn.size = 'all'
+        delall_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
+
+        savetofile_btn = wx.Button(self, label='Save')
+        sendall_btn = wx.Button(self, label='Send All')
+        sendsel_btn = wx.Button(self, label='Send Sel')
+
+        btn_sizer.AddMany([
+            (up_btn, 0, 0, 0),
+            (down_btn, 0, 0, 0),
+            (replace_btn, 0, 0, 0),
+            (delete_btn, 0, 0, 0),
+            (delall_btn, 0, 0, 0),
+            (savetofile_btn, 0, 0, 0),
+            (sendall_btn, 0, 0, 0),
+            (sendsel_btn, 0, 0, 0),
+        ])
+        self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
+
+    def on_add_command(self, event: wx.CommandEvent) -> None:
+        """TODO"""
+        cmd = self.timeline_writer.Value
+        self.add_command(cmd)
+        # wx.GetApp().core.append_point(0, tuple(map(float, cmd.split(', '))))
+        self.parent.visualizer_panel.dirty = True
+        self.timeline_writer.Value = ''
+
+    def add_command(self, cmd: str) -> None:
+        if cmd != '':
+            self.timeline.Append(cmd)
+
+    def on_move_command(self, event: wx.CommandEvent) -> None:
+        """TODO"""
+        selected = self.timeline.StringSelection
 
         if selected != '':
-            direction = event.GetEventObject().direction
-            index = self.cmd.GetSelection()
-            self.cmd.Delete(index)
+            direction = event.EventObject.direction
+            index = self.timeline.Selection
+            self.timeline.Delete(index)
 
             if direction == 'up':
                 index -= 1
             else:
                 index += 1
 
-            self.cmd.InsertItems([selected], index)
+            self.timeline.InsertItems([selected], index)
 
-    def on_replace_command(self, event):
-        selected = self.cmd.GetSelection()
+    def on_replace_command(self, event: wx.CommandEvent) -> None:
+        """TODO"""
+        selected = self.timeline.Selection
 
         if selected != -1:
-            replacement = self.cmdWriter.GetValue()
+            replacement = self.timeline_writer.Value
 
             if replacement != '':
-                self.cmd.SetString(selected, replacement)
-                self.cmdWriter.SetValue('')
+                self.timeline.SetString(selected, replacement)
+                self.timeline_writer.Value = ''
             else:
                 set_dialog('Please type command to replace.')
         else:
             set_dialog('Please select the command to replace.')
 
-    def on_delete_command(self, event):
-        size = event.GetEventObject().size
+    def on_delete_command(self, event: wx.CommandEvent) -> None:
+        """TODO"""
+        size = event.EventObject.size
         if size == 'single':
-            index = self.cmd.GetSelection()
+            index = self.timeline.Selection
             if index != -1:
-                self.cmd.Delete(index)
+                self.timeline.Delete(index)
             else:
                 set_dialog('Please select the command to delete.')
         else:
-            self.cmd.Clear()
+            self.timeline.Clear()
+
+    def update_timeline(self) -> None:
+        """When points are modified, redisplay timeline commands.
+
+        Handles core_p_list_changed signal sent by wx.GetApp().core.
+        """
+        self.timeline.Clear()
+        for device_id, point in wx.GetApp().core.points:
+            self.add_command(f'{str(device_id)}: {str(point)}')
