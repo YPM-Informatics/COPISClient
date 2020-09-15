@@ -7,7 +7,13 @@
 *.user
 *.userosscache
 *.sln.docstates
+.mypy_cache/
+.test/
 
+# Canon edsdk files
+util/Canon/*.dll
+util/Canon/*.lib
+util/Canon/*.h
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
