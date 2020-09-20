@@ -11,6 +11,7 @@ from threading import Lock
 from typing import List, NamedTuple, Optional
 
 import numpy as np
+import pywavefront
 import wx
 from OpenGL.GL import *
 from OpenGL.GL import shaders
@@ -83,12 +84,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._color_shader = None
         self._instanced_color_shader = None
         self._instanced_picking_shader = None
+        self._test_shader = None
 
         # gl related variables TODO comment/regroup
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
         self._vao_paths = None
+        self._vao_test = None
         self._point_lines = None
         self._point_count = None
         self._point_colors = None
@@ -171,13 +174,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._color_shader = shaderlib.compile_shader(*shaderlib.single_color)
         self._instanced_color_shader = shaderlib.compile_shader(*shaderlib.instanced_model_color)
         self._instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
+        self._test_shader = shaderlib.compile_shader(*shaderlib.test)
 
         self._gl_initialized = True
         return True
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        self._vao_box, self._vao_side, self._vao_top = glGenVertexArrays(3)
+        self._vao_box, self._vao_side, self._vao_top, self._vao_test = glGenVertexArrays(4)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -244,6 +248,27 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
         # ---
+
+        glBindVertexArray(self._vao_test)
+        test_vbo = glGenBuffers(1)
+
+        bulldog = pywavefront.Wavefront('model/handsome_dan.obj', create_materials=True)
+        for name, material in bulldog.materials.items():
+            print(material.vertex_format)
+            vertices = np.array(material.vertices)
+            vertices = np.float32(vertices)
+
+            glBindBuffer(GL_ARRAY_BUFFER, test_vbo)
+            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 2))
+            glEnableVertexAttribArray(1)
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
+            glEnableVertexAttribArray(2)
+
+        # glDeleteBuffers(1, test_vbo)
 
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
@@ -380,6 +405,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_chamber()
+        self._render_objects()
         self._render_cameras()
         self._render_paths()
         self._render_viewcube()
@@ -634,6 +660,21 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Render chamber."""
         if self._chamber is not None:
             self._chamber.render()
+
+    def _render_objects(self) -> None:
+        """Render objects."""
+        glUseProgram(self._test_shader)
+        proj = self.projection_matrix
+        view = self.modelview_matrix
+        model = glm.mat4()
+
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        model = glm.scale(glm.mat4(), glm.vec3(50, 50, 50))
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+        glBindVertexArray(self._vao_test)
+        glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
 
     def _render_cameras(self) -> None:
         """Render cameras."""
