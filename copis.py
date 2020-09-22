@@ -11,7 +11,10 @@ from gui.main_frame import MainFrame
 
 
 class COPISApp(wx.App):
-    """Main wxPython app."""
+    """Main wxPython app.
+
+    Initializes COPISCore and main frame.
+    """
 
     mainframe = None
 
