@@ -45,7 +45,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
-        rot_quat: Read ony; A glm quaternion representing current rotation.
+        rot_quat: Read only; A glm quaternion representing current rotation.
             To convert to a transformation matrix, use glm.mat4_cast(rot_quat).
         chamber: Read only; A GLChamber object.
         proxy3d: Read only; A Proxy3D object.
@@ -124,7 +124,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
 
         # bind events
-        self._canvas.Bind(wx.EVT_SIZE, self.on_size)
+        self._canvas.Bind(wx.EVT_SIZE, self.on_size)<
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
         self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key)
         self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
@@ -670,7 +670,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        model = glm.scale(glm.mat4(), glm.vec3(50, 50, 50))
+        model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         glBindVertexArray(self._vao_test)
