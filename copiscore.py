@@ -8,12 +8,13 @@ import platform
 import sys
 import time
 from dataclasses import dataclass
-from gl.glutils import get_circle, get_helix
-from typing import List, Optional, Tuple
-
-from pydispatch import dispatcher
+from typing import Any, List, Optional, Tuple
 
 import glm
+from pydispatch import dispatcher
+
+from enums import ActionType
+from gl.glutils import get_circle, get_helix
 from utils import Point3, Point5
 
 if sys.version_info.major < 3:
@@ -80,6 +81,13 @@ class Device:
     collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
 
 
+@dataclass
+class Action:
+    atype: ActionType = ActionType.NONE
+    argc: int = 0
+    args: Optional[List[Any]] = None
+
+
 class COPISCore:
     """COPISCore. Connects and interacts with devices in system.
 
@@ -102,6 +110,8 @@ class COPISCore:
 
     def __init__(self, *args, **kwargs) -> None:
         """Inits a CopisCore instance."""
+
+        self._actions: List[Action] = []
 
         self._points: List[Tuple[int, Point5]] = MonitoredList([], 'core_p_list_changed')
 
@@ -134,6 +144,18 @@ class COPISCore:
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[Device] = None
+
+    def add_action(self, atype: ActionType, *args) -> bool:
+        """TODO: check args with atype"""
+        new = Action(atype, len(args), list(args))
+
+        self._actions.append(new)
+
+        # if certain type, broadcast that positions are modified
+        if atype in (ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3):
+            dispatcher.send('core_a_list_changed')
+
+        return True
 
     def connect(self):
         """TODO"""

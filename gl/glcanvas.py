@@ -118,13 +118,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._object_scale = 7.5
 
         # bind copiscore listeners
-        dispatcher.connect(self.update_volumes, signal='core_p_list_changed')
+        dispatcher.connect(self.update_volumes_old, signal='core_p_list_changed')
+        dispatcher.connect(self.update_volumes, signal='core_a_list_changed')
         dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
         dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
         dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
 
         # bind events
-        self._canvas.Bind(wx.EVT_SIZE, self.on_size)<
+        self._canvas.Bind(wx.EVT_SIZE, self.on_size)
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
         self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key)
         self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
@@ -166,7 +167,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         self.create_vaos()
-        self.update_volumes()
+        self.update_volumes_old()
         self.update_volume_colors()
 
         # compile shader programs
@@ -273,11 +274,76 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
-    def update_volumes(self) -> None:
+    def update_volumes_old(self) -> None:
         """When points are modified, recalculate volumes for instanced
         rendering.
 
         Also handles core_p_list_changed signal.
+        """
+        points = wx.GetApp().core.points
+        self._point_count = len(points)
+
+        self._point_lines = np.array([], dtype=np.float32)
+        point_mats = np.array([], dtype=np.float32)
+        for id_, point in points:
+            p, t = point.p, point.t
+            model =  \
+                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
+                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
+                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
+                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
+                         -math.sin(p), 0.0, math.cos(p), 0.0,
+                         0.0, 0.0, 0.0, 1.0)
+            # http://planning.cs.uiuc.edu/node102.html
+
+            self._point_lines = np.append(self._point_lines, np.array([point.x, point.y, point.z], dtype=np.float32))
+            point_mats = np.append(point_mats, np.array(model, dtype=np.float32))
+
+        vbo = glGenBuffers(2)
+
+        # bind instanced model mat buffer
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, point_mats, GL_STATIC_DRAW)
+
+        for vao in (self._vao_box, self._vao_side, self._vao_top):
+            glBindVertexArray(vao)
+
+            # set attribute pointers for matrix (4 times vec4)
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(3)
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+            glEnableVertexAttribArray(4)
+            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(5)
+            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+            glEnableVertexAttribArray(6)
+
+            glVertexAttribDivisor(3, 1)
+            glVertexAttribDivisor(4, 1)
+            glVertexAttribDivisor(5, 1)
+            glVertexAttribDivisor(6, 1)
+            glEnableVertexAttribArray(0)
+
+        # ---
+
+        # generate vao for path lines
+        self._vao_paths = glGenVertexArrays(1)
+        glBindVertexArray(self._vao_paths)
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
+        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+        # ---
+
+        glBindVertexArray(0)
+        self._dirty = True
+
+    def update_volumes(self) -> None:
+        """When action list is modified, calculate point positions.
+
+        Handles core_a_list_changed signal.
         """
         points = wx.GetApp().core.points
         self._point_count = len(points)
