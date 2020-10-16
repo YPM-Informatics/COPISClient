@@ -5,8 +5,11 @@ TODO: add license boilerplate
 import math
 import os
 import platform
+import queue
 import sys
+import threading
 import time
+import random
 from dataclasses import dataclass
 from typing import Any, List, Optional, Tuple
 
@@ -84,6 +87,7 @@ class Device:
 @dataclass
 class Action:
     atype: ActionType = ActionType.NONE
+    device: int = -1
     argc: int = 0
     args: Optional[List[Any]] = None
 
@@ -112,9 +116,17 @@ class COPISCore:
         """Inits a CopisCore instance."""
 
         self._actions: List[Action] = []
+        self._action_queue = queue.Queue()
 
         self._points: List[Tuple[int, Point5]] = MonitoredList([], 'core_p_list_changed')
+        self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
 
+        self._update_test()
+
+        self._selected_points: List[int] = []
+        self._selected_device: Optional[Device] = None
+
+    def _update_test(self) -> None:
         heights = (-90, -60, -30, 0, 30, 60, 90)
         radius = 150
         every = 70
@@ -124,30 +136,29 @@ class COPISCore:
             r = math.sqrt(radius * radius - i * i)
             num = int(2 * math.pi * r / every)
             path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
-            self._points.extend(
-                (0, Point5(
-                path[i * 3],
-                path[i * 3 + 1],
-                path[i * 3 + 2],
-                math.atan2(path[i*3+2], path[i*3]) + math.pi,
-                math.atan(path[i*3+1]/math.sqrt(path[i*3]**2+path[i*3+2]**2)))
-                ) for i in range(count-1)
-            )
 
-        self._devices = MonitoredList([
+            for j in range(count - 1):
+                point5 = [
+                    path[j * 3],
+                    path[j * 3 + 1],
+                    path[j * 3 + 2],
+                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
+                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
+
+                self._points.append((0, Point5(*point5)))
+                self._actions.append(Action(ActionType.G0, random.randint(0, 5), 5, point5))
+
+        self._devices.extend([
             Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
             Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
             Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
             Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
             Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
-        ], 'core_d_list_changed')
+        ])
 
-        self._selected_points: List[int] = []
-        self._selected_device: Optional[Device] = None
-
-    def add_action(self, atype: ActionType, *args) -> bool:
+    def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: check args with atype"""
-        new = Action(atype, len(args), list(args))
+        new = Action(atype, device, len(args), list(args))
 
         self._actions.append(new)
 
@@ -157,13 +168,22 @@ class COPISCore:
 
         return True
 
-    def connect(self):
-        """TODO"""
-        pass
+    def remove_action(self, index: int) -> Action:
+        """Remove an action given action list index."""
+        action = self._actions.pop(index)
+        return action
 
-    def disconnect(self):
+    def connect(self) -> bool:
         """TODO"""
-        pass
+        return False
+
+    def disconnect(self) -> bool:
+        """TODO"""
+        return False
+
+    @property
+    def actions(self) -> List[Action]:
+        return self._actions
 
     @property
     def points(self) -> List[Tuple[int, Point5]]:

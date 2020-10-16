@@ -71,6 +71,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                  subdivisions: int = 10) -> None:
         """Inits GLCanvas3D with constructors."""
         self.parent = parent
+        self._core = wx.GetApp().core
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
@@ -95,7 +96,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._point_lines = None
         self._point_count = None
         self._point_colors = None
-        self._id_offset = len(wx.GetApp().core.devices)
+        self._id_offset = len(self._core.devices)
 
         self._dirty = False
         self._gl_initialized = False
@@ -115,7 +116,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
-        self._object_scale = 7.5
+        self._object_scale = 3
 
         # bind copiscore listeners
         dispatcher.connect(self.update_volumes_old, signal='core_p_list_changed')
@@ -275,6 +276,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glDeleteBuffers(4, vbo)
 
     def update_volumes_old(self) -> None:
+        # return
         """When points are modified, recalculate volumes for instanced
         rendering.
 
@@ -345,7 +347,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles core_a_list_changed signal.
         """
-        points = wx.GetApp().core.points
+        actions = wx.GetApp().core.actions
         self._point_count = len(points)
 
         self._point_lines = np.array([], dtype=np.float32)
