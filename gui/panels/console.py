@@ -30,6 +30,7 @@ class ConsolePanel(wx.Panel):
 
         # bind copiscore listeners
         dispatcher.connect(self.on_notification, signal='core_p_list_changed')
+        dispatcher.connect(self.on_notification, signal='core_a_list_changed')
         dispatcher.connect(self.on_notification, signal='core_d_list_changed')
         dispatcher.connect(self.on_notification, signal='core_p_selected')
         dispatcher.connect(self.on_notification, signal='core_p_deselected')

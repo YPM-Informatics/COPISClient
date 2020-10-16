@@ -1,15 +1,11 @@
 """GLCanvas3D and associated classes."""
 
-import gl.shaders as shaderlib
 import math
 import platform as pf
-from gl.chamber import GLChamber
-from gl.glutils import arcball
-from gl.proxy3d import Proxy3D
-from gl.viewcube import GLViewCube
 from threading import Lock
 from typing import List, NamedTuple, Optional
 
+import glm
 import numpy as np
 import pywavefront
 import wx
@@ -17,10 +13,15 @@ from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
+from utils import timing
 from wx import glcanvas
 
-import glm
-from utils import timing
+import gl.shaders as shaderlib
+from gl.actionvis import GLActionVis
+from gl.chamber import GLChamber
+from gl.glutils import arcball
+from gl.proxy3d import Proxy3D
+from gl.viewcube import GLViewCube
 
 
 class _Size(NamedTuple):
@@ -109,6 +110,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
+        self._actionvis = GLActionVis(self)
 
         # other values
         self._zoom = 1
@@ -347,65 +349,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles core_a_list_changed signal.
         """
-        actions = wx.GetApp().core.actions
-        self._point_count = len(points)
-
-        self._point_lines = np.array([], dtype=np.float32)
-        point_mats = np.array([], dtype=np.float32)
-        for id_, point in points:
-            p, t = point.p, point.t
-            model =  \
-                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
-                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
-                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
-                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
-                         -math.sin(p), 0.0, math.cos(p), 0.0,
-                         0.0, 0.0, 0.0, 1.0)
-            # http://planning.cs.uiuc.edu/node102.html
-
-            self._point_lines = np.append(self._point_lines, np.array([point.x, point.y, point.z], dtype=np.float32))
-            point_mats = np.append(point_mats, np.array(model, dtype=np.float32))
-
-        vbo = glGenBuffers(2)
-
-        # bind instanced model mat buffer
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, point_mats, GL_STATIC_DRAW)
-
-        for vao in (self._vao_box, self._vao_side, self._vao_top):
-            glBindVertexArray(vao)
-
-            # set attribute pointers for matrix (4 times vec4)
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(3)
-            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
-            glEnableVertexAttribArray(4)
-            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(5)
-            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(6)
-
-            glVertexAttribDivisor(3, 1)
-            glVertexAttribDivisor(4, 1)
-            glVertexAttribDivisor(5, 1)
-            glVertexAttribDivisor(6, 1)
-            glEnableVertexAttribArray(0)
-
-        # ---
-
-        # generate vao for path lines
-        self._vao_paths = glGenVertexArrays(1)
-        glBindVertexArray(self._vao_paths)
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-
-        # ---
-
-        glBindVertexArray(0)
-        self._dirty = True
+        self._actionvis.update_arrays()
 
     def update_volume_colors(self) -> None:
         """When selected points are modified, recalculate volum colors for
@@ -476,6 +420,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._render_objects()
         self._render_cameras()
         self._render_paths()
+
+
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -738,11 +684,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
         model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         glBindVertexArray(self._vao_test)
-        glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
+        # glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
 
     def _render_cameras(self) -> None:
         """Render cameras."""
@@ -750,40 +697,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_paths(self) -> None:
         """Render paths."""
-        proj = self.projection_matrix
-        view = self.modelview_matrix
-        model = glm.mat4()
-
-        glUseProgram(self._color_shader)
-        color = glm.vec4(90, 90, 90, 255) / 255.0
-        glUniform4fv(3, 1, glm.value_ptr(color))
-
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        glBindVertexArray(self._vao_paths)
-        glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
-
-        # ---
-
-        glUseProgram(self._instanced_color_shader)
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        glBindVertexArray(self._vao_box)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
-        glBindVertexArray(self._vao_side)
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, self._point_count)
-        glBindVertexArray(self._vao_top)
-        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
-
-        glBindVertexArray(0)
-
-        # ---
-
-        glBindVertexArray(0)
-        glUseProgram(0)
+        if self._actionvis is not None:
+            self._actionvis.render()
 
     def _render_viewcube(self) -> None:
         """Render ViewCube."""

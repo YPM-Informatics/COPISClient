@@ -129,7 +129,7 @@ class COPISCore:
     def _update_test(self) -> None:
         heights = (-90, -60, -30, 0, 30, 60, 90)
         radius = 150
-        every = 70
+        every = 50
 
         # generate a sphere (for testing)
         for i in heights:
@@ -146,7 +146,23 @@ class COPISCore:
                     math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
 
                 self._points.append((0, Point5(*point5)))
-                self._actions.append(Action(ActionType.G0, random.randint(0, 5), 5, point5))
+
+                # dumb way to divvy ids
+                rand_device = 0
+                if path[j * 3 + 1] < 0:
+                    rand_device += 3
+                if path[j * 3] > 50:
+                    rand_device += 1
+                elif path[j * 3] > -50:
+                    rand_device += 2
+
+                rand_device -= 1
+                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
+                self._actions.append(Action(ActionType.C0, rand_device))
+
+
+
+        print(self._actions)
 
         self._devices.extend([
             Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
