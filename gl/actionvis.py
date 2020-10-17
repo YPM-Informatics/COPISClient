@@ -152,7 +152,6 @@ class GLActionVis:
         glVertexAttribDivisor(7, 1)
 
         glEnableVertexAttribArray(0)
-
         glBindVertexArray(0)
 
     def update_arrays(self) -> None:
@@ -176,6 +175,7 @@ class GLActionVis:
                 else:
                     self._points[action.device].append(self._points[action.device][0])
             else:
+                # TODO: process other action ids
                 pass
 
         self.create_vaos()

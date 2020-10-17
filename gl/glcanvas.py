@@ -96,7 +96,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vao_test = None
         self._point_lines = None
         self._point_count = None
-        self._point_colors = None
         self._id_offset = len(self._core.devices)
 
         self._dirty = False
@@ -124,8 +123,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self.update_volumes_old, signal='core_p_list_changed')
         dispatcher.connect(self.update_volumes, signal='core_a_list_changed')
         dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
+        # dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
+        # dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -171,7 +170,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self.create_vaos()
         self.update_volumes_old()
-        self.update_volume_colors()
 
         # compile shader programs
         self._default_shader = shaderlib.compile_shader(*shaderlib.default)
@@ -350,36 +348,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         Handles core_a_list_changed signal.
         """
         self._actionvis.update_arrays()
-
-    def update_volume_colors(self) -> None:
-        """When selected points are modified, recalculate volum colors for
-        instanced rendering.
-
-        Also handles core_p_selected and core_p_deselected signal.
-        """
-        selected_points = wx.GetApp().core.selected_points
-
-        # TODO: have this color stored somewhere else
-        selected_color = [0.3, 0.75, 0.95, 1.0]
-
-        self._point_colors = np.tile(np.array([0.85, 0.85, 0.85, 1.0], dtype=np.float32), self._point_count)
-        for index in selected_points:
-            self._point_colors[index*4:index*4+4] = selected_color
-
-        vbo = glGenBuffers(3)
-
-        for i, vao in enumerate((self._vao_box, self._vao_side, self._vao_top)):
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[i])
-            glBufferData(GL_ARRAY_BUFFER, self._point_colors.nbytes, self._point_colors-0.05*i, GL_STATIC_DRAW)
-            glBindVertexArray(vao)
-
-            # set attribute pointers for vec4
-            glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(7)
-            glVertexAttribDivisor(7, 1)
-
-        glBindVertexArray(0)
-        self._dirty = True
 
     def update_id_offset(self) -> None:
         """When the camera list has changed, update _id_offset to be used in
