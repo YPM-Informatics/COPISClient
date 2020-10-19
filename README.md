@@ -4,7 +4,7 @@ COPIS (Computer-Operated Photogrammetric Imaging System) is a desktop applicatio
 
 For more information, see the project page at [copis3d.org](http://copis3d.org/).
 
-![Screenshot](img/screenshot_copis.jpg)
+![Screenshot](img/screenshot.jpg)
 
 ## Getting Started
 
