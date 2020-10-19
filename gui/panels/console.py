@@ -29,7 +29,6 @@ class ConsolePanel(wx.Panel):
         self.Layout()
 
         # bind copiscore listeners
-        dispatcher.connect(self.on_notification, signal='core_p_list_changed')
         dispatcher.connect(self.on_notification, signal='core_a_list_changed')
         dispatcher.connect(self.on_notification, signal='core_d_list_changed')
         dispatcher.connect(self.on_notification, signal='core_p_selected')
@@ -65,7 +64,7 @@ class ConsolePanel(wx.Panel):
         self.print(f'$ {event.String}')
         self.on_command_cleared()
 
-        wx.GetApp().core.select_device_by_id(int(event.String))
+        wx.GetApp().core.select_device(int(event.String))
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""

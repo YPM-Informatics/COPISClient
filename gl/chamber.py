@@ -34,7 +34,7 @@ class _Axes():
         self._quadric = gluNewQuadric()
         gluQuadricDrawStyle(self._quadric, GLU_FILL)
 
-    def create_vao(self) -> None:
+    def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao_axes, *self._vao_arrows = glGenVertexArrays(3)
         vbo = glGenBuffers(5)
@@ -219,7 +219,7 @@ class GLChamber:
 
         self._initialized = False
 
-    def create_vao(self) -> None:
+    def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao_gridlines, self._vao_bounding_box = glGenVertexArrays(2)
         vbo = glGenBuffers(5)
@@ -259,7 +259,7 @@ class GLChamber:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[4])
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
-        self._axes.create_vao()
+        self._axes.create_vaos()
 
         glBindVertexArray(0)
         glDeleteBuffers(5, vbo)
@@ -273,7 +273,7 @@ class GLChamber:
         if self._initialized:
             return True
 
-        self.create_vao()
+        self.create_vaos()
 
         self._initialized = True
         return True
@@ -436,7 +436,7 @@ class GLChamber:
     @axes_shown.setter
     def axes_shown(self, value: bool) -> None:
         self._axes_shown = value
-        self.create_vao()
+        self.create_vaos()
         self._canvas.dirty = True
 
     @property

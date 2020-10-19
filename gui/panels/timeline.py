@@ -154,5 +154,5 @@ class TimelinePanel(wx.Panel):
         Handles core_p_list_changed signal sent by wx.GetApp().core.
         """
         self.timeline.Clear()
-        for device_id, point in wx.GetApp().core.points:
-            self.add_command(f'{str(device_id)}: {str(point)}')
+        for action in wx.GetApp().core.actions:
+            self.add_command(f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')

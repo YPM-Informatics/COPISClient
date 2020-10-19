@@ -120,16 +120,17 @@ instanced_picking = _Shader(
 
     layout (location = 0) in vec3 positions;
     layout (location = 3) in mat4 instance_model;
+    layout (location = 8) in int id;
 
     out vec3 new_color;
 
     layout (location = 0) uniform mat4 projection;
     layout (location = 1) uniform mat4 view;
-    layout (location = 2) uniform int id_offset;
+    // layout (location = 2) uniform int id_offset;
 
     void main() {
         gl_Position = projection * view * instance_model * vec4(positions, 1.0);
-        int id = gl_InstanceID + id_offset;
+        // int id = gl_InstanceID + id_offset;
         int r = (id & (0x000000FF << 0)) << 0;
         int g = (id & (0x000000FF << 8)) >> 8;
         int b = (id & (0x000000FF << 16)) >> 16;

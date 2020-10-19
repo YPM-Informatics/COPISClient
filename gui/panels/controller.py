@@ -155,9 +155,9 @@ class ControllerPanel(scrolled.ScrolledPanel):
         """Initialize jog controller sizer and setup child elements."""
         jog_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jogging'), wx.VERTICAL)
 
-        xyzab_grid = wx.FlexGridSizer(6, 6, 0, 0)
+        xyzpt_grid = wx.FlexGridSizer(6, 6, 0, 0)
         for col in (0, 1, 2, 3):
-            xyzab_grid.AddGrowableCol(col)
+            xyzpt_grid.AddGrowableCol(col)
 
         arrow_nw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_nw', 20), size=(24, 24))
         arrow_ne_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_ne', 20), size=(24, 24))
@@ -194,7 +194,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.pt_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.pt_units.keys()), style=wx.TE_CENTRE)
         self.pt_unit_choice.Selection = 0
 
-        xyzab_grid.AddMany([
+        xyzpt_grid.AddMany([
             (arrow_nw_btn, 0, wx.EXPAND, 0),
             (y_pos_btn, 0, wx.EXPAND, 0),
             (arrow_ne_btn, 0, wx.EXPAND, 0),
@@ -233,7 +233,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (self.pt_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
         ])
 
-        jog_sizer.Add(xyzab_grid, 1, wx.ALL|wx.EXPAND, 4)
+        jog_sizer.Add(xyzpt_grid, 1, wx.ALL|wx.EXPAND, 4)
         self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def update_machine_pos(self, pos: Point5) -> None:

@@ -103,9 +103,9 @@ class COPISCore:
             points.
 
     Emits:
-        core_p_list_changed: When the point list has changed.
-        core_p_selected: When a new point has been selected.
-        core_p_deselected: When a point has been deselected.
+        core_a_list_changed: When the action list has changed.
+        core_p_selected: When a new point (action) has been selected.
+        core_p_deselected: When a point (action) has been deselected.
         core_d_list_changed: When the device list has changed.
         core_d_selected: When a new device has been selected.
         core_d_deselected: When the current device has been deselected.
@@ -118,13 +118,12 @@ class COPISCore:
         self._actions: List[Action] = []
         self._action_queue = queue.Queue()
 
-        self._points: List[Tuple[int, Point5]] = MonitoredList([], 'core_p_list_changed')
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
 
         self._update_test()
 
         self._selected_points: List[int] = []
-        self._selected_device: Optional[Device] = None
+        self._selected_device: Optional[int] = -1
 
     def _update_test(self) -> None:
         heights = (-90, -60, -30, 0, 30, 60, 90)
@@ -145,9 +144,7 @@ class COPISCore:
                     math.atan2(path[j*3+2], path[j*3]) + math.pi,
                     math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
 
-                self._points.append((0, Point5(*point5)))
-
-                # dumb way to divvy ids
+                # temporary hack to divvy ids
                 rand_device = 0
                 if path[j * 3 + 1] < 0:
                     rand_device += 3
@@ -159,10 +156,6 @@ class COPISCore:
                 rand_device -= 1
                 self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
                 self._actions.append(Action(ActionType.C0, rand_device))
-
-
-
-        print(self._actions)
 
         self._devices.extend([
             Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
@@ -202,10 +195,6 @@ class COPISCore:
         return self._actions
 
     @property
-    def points(self) -> List[Tuple[int, Point5]]:
-        return self._points
-
-    @property
     def devices(self) -> List[Device]:
         return self._devices
 
@@ -217,26 +206,18 @@ class COPISCore:
         return True
 
     @property
-    def selected_device(self) -> Optional[Device]:
+    def selected_device(self) -> Optional[int]:
         return self._selected_device
 
-    def select_device_by_id(self, device_id: int) -> None:
-        """Select device given device id."""
-        device = next((x for x in self._devices if x.device_id == device_id), None)
-        if device_id == -1 or device is None:
-            if self._selected_device is not None:
-                dispatcher.send('core_d_deselected', device=self.selected_device)
-                self._selected_device = None
-            return
-        self._selected_device = device
-        dispatcher.send('core_d_selected', device=device)
-
-    def select_device_by_index(self, index: int) -> None:
+    def select_device(self, index: int) -> None:
         """Select device given index in devices list."""
-        try:
-            self._selected_device = self._devices[index]
-            dispatcher.send('core_d_selected', device=self._selected_device)
-        except IndexError:
+        if index < 0:
+            self._selected_device = -1
+            dispatcher.send('core_d_deselected', index=index)
+        elif index < len(self._devices):
+            self._selected_device = index
+            dispatcher.send('core_d_selected', index=index)
+        else:
             dispatcher.send('core_error', message=f'invalid device index {index}')
 
     @property
@@ -244,10 +225,10 @@ class COPISCore:
         return self._selected_points
 
     def select_point(self, index: int, clear: bool = True) -> None:
-        """Add point to points list given index in points list.
+        """Add point to points list given index in actions list.
 
         Args:
-            index: An integer representing index of point to be selected.
+            index: An integer representing index of action to be selected.
             clear: A boolean representing whether to clear the list before
                 selecting the new point or not.
         """
@@ -256,7 +237,7 @@ class COPISCore:
             dispatcher.send('core_p_deselected')
             return
 
-        if index >= len(self._points):
+        if index >= len(self._actions):
             return
 
         if clear:
@@ -266,19 +247,17 @@ class COPISCore:
             dispatcher.send('core_p_selected', points=self._selected_points)
 
     def deselect_point(self, index: int) -> None:
-        """Remove point from selected points given index in points list."""
+        """Remove point from selected points given index in actions list."""
         try:
             self._selected_points.remove(index)
             dispatcher.send('core_p_deselected')
         except ValueError:
             return
 
-    def update_selected_points_by_pos(self, point: Point5) -> None:
+    def update_selected_points(self, argc, args) -> None:
         """Update position of points in selected points list."""
         for p in self.selected_points:
-            self._points[p] = (self._points[p][0], point)
+            self._actions[p].argc = argc
+            self._actions[p].args = args
 
-    def update_selected_point_by_id(self, device_id: int) -> None:
-        """Update device id of points in selected points list."""
-        for p in self.selected_points:
-            self._points[p] = (device_id, self._points[p][1])
+        dispatcher.send('core_a_list_changed')

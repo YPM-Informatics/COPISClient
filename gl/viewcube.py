@@ -49,7 +49,7 @@ class GLViewCube:
         self._selected = False
         self._initialized = False
 
-    def create_vao(self) -> None:
+    def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao, self._vao_picking, self._vao_outline = glGenVertexArrays(3)
         vbo = glGenBuffers(6)
@@ -165,7 +165,7 @@ class GLViewCube:
         if self._initialized:
             return True
 
-        self.create_vao()
+        self.create_vaos()
 
         self._initialized = True
         return True
