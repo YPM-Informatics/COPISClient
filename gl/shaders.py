@@ -120,20 +120,54 @@ instanced_picking = _Shader(
 
     layout (location = 0) in vec3 positions;
     layout (location = 3) in mat4 instance_model;
+    layout (location = 8) in int id;
 
     out vec3 new_color;
 
     layout (location = 0) uniform mat4 projection;
     layout (location = 1) uniform mat4 view;
-    layout (location = 2) uniform int id_offset;
+    // layout (location = 2) uniform int id_offset;
 
     void main() {
         gl_Position = projection * view * instance_model * vec4(positions, 1.0);
-        int id = gl_InstanceID + id_offset;
+        // int id = gl_InstanceID + id_offset;
         int r = (id & (0x000000FF << 0)) << 0;
         int g = (id & (0x000000FF << 8)) >> 8;
         int b = (id & (0x000000FF << 16)) >> 16;
         new_color = vec3(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0);
+    }
+    """),
+
+    fs=cleandoc("""
+    #version 450 core
+
+    in vec3 new_color;
+
+    out vec4 color;
+
+    void main() {
+        color = vec4(new_color, 1.0);
+    }
+    """)
+)
+
+test = _Shader(
+    vs=cleandoc("""
+    #version 450 core
+
+    layout (location = 0) in vec2 TexCoord;
+    layout (location = 1) in vec3 Normal;
+    layout (location = 2) in vec3 Vertex;
+
+    out vec3 new_color;
+
+    layout (location = 0) uniform mat4 projection;
+    layout (location = 1) uniform mat4 modelview;
+    layout (location = 2) uniform mat4 model;
+
+    void main() {
+        gl_Position = projection * modelview * model * vec4(Vertex, 1.0);
+        new_color = Normal;
     }
     """),
 

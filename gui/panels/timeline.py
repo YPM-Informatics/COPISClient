@@ -142,10 +142,12 @@ class TimelinePanel(wx.Panel):
         if size == 'single':
             index = self.timeline.Selection
             if index != -1:
+                wx.GetApp().core.remove_action(index)
                 self.timeline.Delete(index)
             else:
                 set_dialog('Please select the command to delete.')
         else:
+            wx.GetApp().core.clear_action()
             self.timeline.Clear()
 
     def update_timeline(self) -> None:
@@ -154,5 +156,5 @@ class TimelinePanel(wx.Panel):
         Handles core_p_list_changed signal sent by wx.GetApp().core.
         """
         self.timeline.Clear()
-        for device_id, point in wx.GetApp().core.points:
-            self.add_command(f'{str(device_id)}: {str(point)}')
+        for action in wx.GetApp().core.actions:
+            self.add_command(f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')

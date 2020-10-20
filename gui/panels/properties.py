@@ -10,11 +10,15 @@ from pydispatch import dispatcher
 
 import utils
 from gui.wxutils import create_scaled_bitmap
-from utils import Point3, Point5
 
 
 def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
-    return wx.StaticText(parent, label=label, size=(width, -1), style=wx.ALIGN_RIGHT)
+    return wx.StaticText(
+        parent,
+        label=label,
+        size=(width, -1),
+        style=wx.ALIGN_RIGHT
+    )
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -92,7 +96,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         return self._current
 
     @current.setter
-    def current(self, value: Optional[str]) -> None:
+    def current(self, value: str) -> None:
         if not value:
             value = 'No Selection'
         self._current = value
@@ -108,16 +112,18 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_deselected(self) -> None:
         """On core_*_deselected, reset to default view."""
-        self.current = None
+        self.current = 'No Selection'
         self.update_to_selected('Default')
 
     def on_points_selected(self, points: List[int]) -> None:
         """On core_p_selected, set to point view."""
+
         if len(points) == 1:
-            self.current = 'Point'
-            point = wx.GetApp().core.points[points[0]]
-            self._property_panels['transform'].set_point(point[1])
-            self.update_to_selected('Point')
+            action = wx.GetApp().core.actions[points[0]]
+            if action.argc == 5:
+                self.current = 'Point'
+                self._property_panels['transform'].set_point(*action.args)
+                self.update_to_selected('Point')
 
 
 class _PropVisualizer(wx.Panel):
@@ -273,8 +279,8 @@ class _PropTransform(wx.Panel):
                     t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn):
             btn.Bind(wx.EVT_BUTTON, self.on_step_button)
 
-        step_xyzab_grid = wx.GridBagSizer()
-        step_xyzab_grid.AddMany([
+        step_xyzpt_grid = wx.GridBagSizer()
+        step_xyzpt_grid.AddMany([
             (0, 0, wx.GBPosition(0, 0)),    # vertical spacer
 
             (x_neg_btn, wx.GBPosition(0, 1), wx.GBSpan(2, 1), wx.EXPAND, 0),
@@ -296,11 +302,11 @@ class _PropTransform(wx.Panel):
         ])
 
         for col in (1, 3, 7, 9):
-            step_xyzab_grid.AddGrowableCol(col, 1)
+            step_xyzpt_grid.AddGrowableCol(col, 1)
         for col in (2, 5, 8):
-            step_xyzab_grid.AddGrowableCol(col, 3)
+            step_xyzpt_grid.AddGrowableCol(col, 3)
 
-        self._step_sizer.Add(step_xyzab_grid, 0, wx.EXPAND, 0)
+        self._step_sizer.Add(step_xyzpt_grid, 0, wx.EXPAND, 0)
 
         # start hidden
         self._step_sizer.ShowItems(False)
@@ -332,7 +338,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
+        wx.GetApp().core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def on_left_up(self, event: wx.MouseEvent) -> None:
         """On EVT_LEFT_UP, if not already focused, select digits."""
@@ -393,15 +399,11 @@ class _PropTransform(wx.Panel):
 
         if ctrl.Name in 'xyzpt':
             # update point
-            wx.GetApp().core.update_selected_points_by_pos(Point5(self.x, self.y, self.z, self.p, self.t))
+            wx.GetApp().core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
-    def set_point(self, point: Point5) -> None:
-        """Set text controls given a Point5.
-
-        Args:
-            point: A Point5 representing the new point to set.
-        """
-        self.x, self.y, self.z, self.p, self.t = point
+    def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
+        """Set text controls given a x, y, z, p, t."""
+        self.x, self.y, self.z, self.p, self.t = x, y, z, p, t
 
     def set_value(self, name: str, value: float) -> None:
         """Step value indicated by name.
@@ -700,9 +702,9 @@ class _PropQuickActions(wx.Panel):
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(2, 0)
 
-        self.button1 = wx.Button(self, label='Action 1', size=(50, -1))
-        self.button2 = wx.Button(self, label='Action 2', size=(50, -1))
-        self.button3 = wx.Button(self, label='Action 3', size=(50, -1))
+        self.button1 = wx.Button(self, label='Thing 1', size=(50, -1))
+        self.button2 = wx.Button(self, label='Thing 2', size=(50, -1))
+        self.button3 = wx.Button(self, label='Thing 3', size=(50, -1))
 
         grid.AddMany([
             (self.button1, 0, wx.EXPAND, 0),

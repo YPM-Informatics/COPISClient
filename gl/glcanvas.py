@@ -1,25 +1,27 @@
 """GLCanvas3D and associated classes."""
 
-import gl.shaders as shaderlib
 import math
 import platform as pf
-from gl.chamber import GLChamber
-from gl.glutils import arcball
-from gl.proxy3d import Proxy3D
-from gl.viewcube import GLViewCube
 from threading import Lock
 from typing import List, NamedTuple, Optional
 
+import glm
 import numpy as np
+import pywavefront
 import wx
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
+from utils import timing
 from wx import glcanvas
 
-import glm
-from utils import timing
+import gl.shaders as shaderlib
+from gl.actionvis import GLActionVis
+from gl.chamber import GLChamber
+from gl.glutils import arcball
+from gl.proxy3d import Proxy3D
+from gl.viewcube import GLViewCube
 
 
 class _Size(NamedTuple):
@@ -44,7 +46,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
-        rot_quat: Read ony; A glm quaternion representing current rotation.
+        rot_quat: Read only; A glm quaternion representing current rotation.
             To convert to a transformation matrix, use glm.mat4_cast(rot_quat).
         chamber: Read only; A GLChamber object.
         proxy3d: Read only; A Proxy3D object.
@@ -70,6 +72,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                  subdivisions: int = 10) -> None:
         """Inits GLCanvas3D with constructors."""
         self.parent = parent
+        self._core = wx.GetApp().core
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
@@ -79,20 +82,21 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._build_dimensions = build_dimensions
 
         # shader programs
-        self._default_shader = None
-        self._color_shader = None
-        self._instanced_color_shader = None
-        self._instanced_picking_shader = None
+        self.default_shader = None
+        self.color_shader = None
+        self.instanced_color_shader = None
+        self.instanced_picking_shader = None
+        self.test_shader = None
 
         # gl related variables TODO comment/regroup
         self._vao_box = None
         self._vao_side = None
         self._vao_top = None
         self._vao_paths = None
+        self._vao_model = None
         self._point_lines = None
         self._point_count = None
-        self._point_colors = None
-        self._id_offset = len(wx.GetApp().core.devices)
+        self._id_offset = len(self._core.devices)
 
         self._dirty = False
         self._gl_initialized = False
@@ -104,7 +108,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
                             max(self._build_dimensions[0], self._build_dimensions[2]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
-        self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
+        self._actionvis = GLActionVis(self)
+        # self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
 
         # other values
         self._zoom = 1
@@ -112,10 +117,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = glm.quat()
         self._rot_lock = Lock()
-        self._object_scale = 7.5
+        self._object_scale = 3
 
         # bind copiscore listeners
-        dispatcher.connect(self.update_volumes, signal='core_p_list_changed')
+        dispatcher.connect(self.update_volumes, signal='core_a_list_changed')
         dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
         dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
         dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
@@ -163,21 +168,20 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         self.create_vaos()
-        self.update_volumes()
-        self.update_volume_colors()
 
         # compile shader programs
-        self._default_shader = shaderlib.compile_shader(*shaderlib.default)
-        self._color_shader = shaderlib.compile_shader(*shaderlib.single_color)
-        self._instanced_color_shader = shaderlib.compile_shader(*shaderlib.instanced_model_color)
-        self._instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
+        self.default_shader = shaderlib.compile_shader(*shaderlib.default)
+        self.color_shader = shaderlib.compile_shader(*shaderlib.single_color)
+        self.instanced_color_shader = shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self.instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
+        self.test_shader = shaderlib.compile_shader(*shaderlib.test)
 
         self._gl_initialized = True
         return True
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        self._vao_box, self._vao_side, self._vao_top = glGenVertexArrays(3)
+        self._vao_box, self._vao_side, self._vao_top, self._vao_model = glGenVertexArrays(4)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -245,104 +249,43 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # ---
 
+        glBindVertexArray(self._vao_model)
+        test_vbo = glGenBuffers(1)
+
+        bulldog = pywavefront.Wavefront('model/handsome_dan.obj', create_materials=True)
+        for name, material in bulldog.materials.items():
+            # print(material.vertex_format)
+            vertices = np.array(material.vertices)
+            vertices = np.float32(vertices)
+
+            glBindBuffer(GL_ARRAY_BUFFER, test_vbo)
+            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 2))
+            glEnableVertexAttribArray(1)
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
+            glEnableVertexAttribArray(2)
+
+        # glDeleteBuffers(1, test_vbo)
+
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
     def update_volumes(self) -> None:
-        """When points are modified, recalculate volumes for instanced
-        rendering.
+        """When action list is modified, calculate point positions.
 
-        Also handles core_p_list_changed signal.
+        Handles core_a_list_changed signal.
         """
-        points = wx.GetApp().core.points
-        self._point_count = len(points)
+        self._actionvis.update_arrays()
 
-        self._point_lines = np.array([], dtype=np.float32)
-        point_mats = np.array([], dtype=np.float32)
-        for id_, point in points:
-            p, t = point.p, point.t
-            model =  \
-                glm.translate(glm.mat4(), glm.vec3(point.x, point.y, point.z)) * \
-                glm.scale(glm.mat4(), glm.vec3(self._object_scale, self._object_scale, self._object_scale)) * \
-                glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
-                         math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
-                         -math.sin(p), 0.0, math.cos(p), 0.0,
-                         0.0, 0.0, 0.0, 1.0)
-            # http://planning.cs.uiuc.edu/node102.html
-
-            self._point_lines = np.append(self._point_lines, np.array([point.x, point.y, point.z], dtype=np.float32))
-            point_mats = np.append(point_mats, np.array(model, dtype=np.float32))
-
-        vbo = glGenBuffers(2)
-
-        # bind instanced model mat buffer
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, point_mats, GL_STATIC_DRAW)
-
-        for vao in (self._vao_box, self._vao_side, self._vao_top):
-            glBindVertexArray(vao)
-
-            # set attribute pointers for matrix (4 times vec4)
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(3)
-            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
-            glEnableVertexAttribArray(4)
-            glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(5)
-            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
-            glEnableVertexAttribArray(6)
-
-            glVertexAttribDivisor(3, 1)
-            glVertexAttribDivisor(4, 1)
-            glVertexAttribDivisor(5, 1)
-            glVertexAttribDivisor(6, 1)
-            glEnableVertexAttribArray(0)
-
-        # ---
-
-        # generate vao for path lines
-        self._vao_paths = glGenVertexArrays(1)
-        glBindVertexArray(self._vao_paths)
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, self._point_lines.nbytes, self._point_lines, GL_STATIC_DRAW)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
-
-        # ---
+        self._dirty = True
 
         glBindVertexArray(0)
-        self._dirty = True
 
     def update_volume_colors(self) -> None:
-        """When selected points are modified, recalculate volum colors for
-        instanced rendering.
-
-        Also handles core_p_selected and core_p_deselected signal.
-        """
-        selected_points = wx.GetApp().core.selected_points
-
-        # TODO: have this color stored somewhere else
-        selected_color = [0.3, 0.75, 0.95, 1.0]
-
-        self._point_colors = np.tile(np.array([0.85, 0.85, 0.85, 1.0], dtype=np.float32), self._point_count)
-        for index in selected_points:
-            self._point_colors[index*4:index*4+4] = selected_color
-
-        vbo = glGenBuffers(3)
-
-        for i, vao in enumerate((self._vao_box, self._vao_side, self._vao_top)):
-            glBindBuffer(GL_ARRAY_BUFFER, vbo[i])
-            glBufferData(GL_ARRAY_BUFFER, self._point_colors.nbytes, self._point_colors-0.05*i, GL_STATIC_DRAW)
-            glBindVertexArray(vao)
-
-            # set attribute pointers for vec4
-            glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(7)
-            glVertexAttribDivisor(7, 1)
-
-        glBindVertexArray(0)
-        self._dirty = True
+        self._actionvis.update_colors()
 
     def update_id_offset(self) -> None:
         """When the camera list has changed, update _id_offset to be used in
@@ -380,8 +323,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
         self._render_chamber()
+        self._render_objects()
         self._render_cameras()
         self._render_paths()
+
+
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -484,15 +430,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         else:
             # id_ belongs to cameras or objects
-            offset = len(wx.GetApp().core.devices)
             if id_ == -1:
-                wx.GetApp().core.select_device_by_id(-1)
+                wx.GetApp().core.select_device(-1)
                 wx.GetApp().core.select_point(-1, clear=True)
-            elif -1 < id_ < offset:
-                wx.GetApp().core.select_device_by_index(id_)
+            elif -1 < id_ < self._id_offset:
+                wx.GetApp().core.select_device(id_)
             else:
-                wx.GetApp().core.select_device_by_id(-1)
-                wx.GetApp().core.select_point(id_ - offset, clear=True)
+                wx.GetApp().core.select_device(-1)
+                wx.GetApp().core.select_point(id_ - self._id_offset, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -511,10 +456,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def get_canvas_size(self) -> _Size:
         """Return canvas size as _Size based on scaling factor."""
-        w, h = self._canvas.Size
+        s = self._canvas.Size
         factor = self.get_scale_factor()
-        w = int(w * factor)
-        h = int(h * factor)
+        w = int(s.width * factor)
+        h = int(s.height * factor)
         return _Size(w, h, factor)
 
     # --------------------------------------------------------------------------
@@ -597,30 +542,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         else:
             self._viewcube.hover_id = -1
 
+        # print(id_)
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking.
 
         """
-        glUseProgram(self._instanced_picking_shader)
-        proj = self.projection_matrix
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        view = self.modelview_matrix
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glUniform1i(2, self._id_offset)
-
-        glBindVertexArray(self._vao_box)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
-
-        glBindVertexArray(self._vao_side)
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, self._point_count)
-
-        glBindVertexArray(self._vao_top)
-        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
-
-        glBindVertexArray(0)
-
+        self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
         glBindVertexArray(0)
@@ -635,46 +564,31 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._chamber is not None:
             self._chamber.render()
 
+    def _render_objects(self) -> None:
+        """Render objects."""
+
+        proj = self.projection_matrix
+        view = self.modelview_matrix
+        model = glm.mat4()
+
+        glUseProgram(self.test_shader)
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+        glBindVertexArray(self._vao_model)
+        glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
+
     def _render_cameras(self) -> None:
         """Render cameras."""
         pass
 
     def _render_paths(self) -> None:
         """Render paths."""
-        proj = self.projection_matrix
-        view = self.modelview_matrix
-        model = glm.mat4()
-
-        glUseProgram(self._color_shader)
-        color = glm.vec4(90, 90, 90, 255) / 255.0
-        glUniform4fv(3, 1, glm.value_ptr(color))
-
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        glBindVertexArray(self._vao_paths)
-        glDrawArrays(GL_LINE_STRIP, 0, self._point_lines.size // 3)
-
-        # ---
-
-        glUseProgram(self._instanced_color_shader)
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        glBindVertexArray(self._vao_box)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
-        glBindVertexArray(self._vao_side)
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 48, self._point_count)
-        glBindVertexArray(self._vao_top)
-        glDrawElementsInstanced(GL_TRIANGLE_FAN, 25, GL_UNSIGNED_SHORT, ctypes.c_void_p(0), self._point_count)
-
-        glBindVertexArray(0)
-
-        # ---
-
-        glBindVertexArray(0)
-        glUseProgram(0)
+        if self._actionvis is not None:
+            self._actionvis.render()
 
     def _render_viewcube(self) -> None:
         """Render ViewCube."""
@@ -686,8 +600,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # --------------------------------------------------------------------------
 
     def get_shader_program(
-        self, program: Optional[str] = 'default'
-    ) -> Optional[shaders.ShaderProgram]:
+            self, program: Optional[str] = 'default'
+        ) -> Optional[shaders.ShaderProgram]:
         """Return specified shader program.
 
         Args:
@@ -699,8 +613,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
             for more info.
         """
         if program == 'color':
-            return self._color_shader
-        return self._default_shader # 'default'
+            return self.color_shader
+        return self.default_shader # 'default'
 
     @property
     def rot_quat(self) -> glm.quat:

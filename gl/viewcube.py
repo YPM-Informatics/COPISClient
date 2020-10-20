@@ -49,7 +49,7 @@ class GLViewCube:
         self._selected = False
         self._initialized = False
 
-    def create_vao(self) -> None:
+    def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vao, self._vao_picking, self._vao_outline = glGenVertexArrays(3)
         vbo = glGenBuffers(6)
@@ -138,7 +138,7 @@ class GLViewCube:
 
         # ---
 
-        colors_border = np.tile(np.array([0.220, 0.388, 0.759], dtype=np.float32), 24)
+        colors_border = np.tile(np.array([0.0000, 0.4088, 0.9486], dtype=np.float32), 24)
         glBindVertexArray(self._vao_outline)
         # outlined face of viewcube
 
@@ -165,7 +165,7 @@ class GLViewCube:
         if self._initialized:
             return True
 
-        self.create_vao()
+        self.create_vaos()
 
         self._initialized = True
         return True
