@@ -150,11 +150,10 @@ class COPISCore:
                 if path[j * 3 + 1] < 0:
                     rand_device += 3
                 if path[j * 3] > 60:
-                    rand_device += 1
-                elif path[j * 3] > -60:
                     rand_device += 2
+                elif path[j * 3] > -60:
+                    rand_device += 1
 
-                rand_device -= 1
                 self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
                 self._actions.append(Action(ActionType.C0, rand_device))
 

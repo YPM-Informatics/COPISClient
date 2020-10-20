@@ -20,15 +20,14 @@ class GLActionVis:
 
     # colors to differentiate devices
     colors = [
-        (0.0000, 0.4588, 0.9686, 1.000),    # blueish
+        (0.0000, 0.4088, 0.9486, 1.000),    # blueish
         (0.4863, 0.0549, 0.3725, 1.000),    # purpleish
         (0.9255, 0.0588, 0.2784, 1.000),    # reddish
         (0.9333, 0.4196, 0.2314, 1.000),    # orangeish
-        (0.9804, 0.7216, 0.3216, 1.000),    # yellowish
-        (0.2510, 0.7843, 0.4980, 1.000),    # limeish
-        (0.0706, 0.6824, 0.4745, 1.000),    # lighttealish
-        (0.0314, 0.4510, 0.3255, 1.000),    # greenish
-        (0.0157, 0.3294, 0.3490, 1.000),    # tealish
+        (0.9804, 0.7016, 0.3216, 1.000),    # yellowish
+        (0.2706, 0.6824, 0.4345, 1.000),    # lightgreenish
+        (0.0314, 0.5310, 0.3255, 1.000),    # greenish
+        (0.0157, 0.3494, 0.3890, 1.000),    # tealish
     ]
 
     def __init__(self, parent):
@@ -113,7 +112,7 @@ class GLActionVis:
         for key, value in self._points.items():
             if len(value) > 1:
                 new_mats = glm.array([p[1] * scale for p in value[1:]])
-                color = shade_color(glm.vec4(self.colors[key]), -0.3)
+                color = shade_color(glm.vec4(self.colors[key % len(self.colors)]), -0.3)
                 new_colors = glm.array([color] * (len(value) - 1))
                 print(value)
                 new_ids = [p[0] for p in value[1:]]
@@ -126,11 +125,12 @@ class GLActionVis:
                     point_colors += new_colors
                     point_ids += new_ids
 
-        point_ids = np.array(point_ids, dtype=np.intc) # 32 bit signed integer
         self._point_count = 0 if not point_mats else len(point_mats)
 
         if not point_mats:
             return
+
+        point_ids = np.array(point_ids, dtype=np.intc) # 32 bit signed integer
 
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
@@ -234,7 +234,7 @@ class GLActionVis:
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         for key, value in self._vao_lines.items():
-            color = glm.vec4(self.colors[key])
+            color = glm.vec4(self.colors[key % len(self.colors)])
             glUniform4fv(3, 1, glm.value_ptr(color))
             glBindVertexArray(value)
             glDrawArrays(GL_LINE_STRIP, 0, len(self._lines[key]))

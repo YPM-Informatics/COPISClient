@@ -566,11 +566,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects(self) -> None:
         """Render objects."""
-        glUseProgram(self.test_shader)
+
         proj = self.projection_matrix
         view = self.modelview_matrix
         model = glm.mat4()
 
+        glUseProgram(self.test_shader)
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
