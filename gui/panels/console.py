@@ -35,6 +35,7 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_p_deselected')
         dispatcher.connect(self.on_notification, signal='core_d_selected')
         dispatcher.connect(self.on_notification, signal='core_d_deselected')
+        dispatcher.connect(self.on_action_export, signal='core_a_exported')
         dispatcher.connect(self.on_notification, signal='core_error')
 
     def init_gui(self) -> None:
@@ -77,3 +78,6 @@ class ConsolePanel(wx.Panel):
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
         self.print(f'notification: {signal} {message}')
+
+    def on_action_export(self, filename: str) -> None:
+        self.print(f'Exported actions to file {filename}')

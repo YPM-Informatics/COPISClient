@@ -8,6 +8,7 @@ class ToolIds(Enum):
     PAUSE = 2
     STOP = 3
     SETTINGS = 4
+    EXPORT = 5
 
 
 class CamAxis(Enum):

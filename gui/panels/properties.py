@@ -102,9 +102,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._current = value
         self._current_text.Label = value
 
-    def on_device_selected(self, index: int) -> None:
+    def on_device_selected(self, device) -> None:
         """On core_d_selected, set to camera view."""
-        device = wx.GetApp().core.devices[index]
         self.current = 'Camera'
         self._property_panels['camera_info'].device_id = device.device_id
         self._property_panels['camera_info'].device_name = device.device_name

@@ -114,7 +114,6 @@ class GLActionVis:
                 new_mats = glm.array([p[1] * scale for p in value[1:]])
                 color = shade_color(glm.vec4(self.colors[key % len(self.colors)]), -0.3)
                 new_colors = glm.array([color] * (len(value) - 1))
-                print(value)
                 new_ids = [p[0] for p in value[1:]]
                 if not point_mats:
                     point_mats = new_mats

@@ -142,10 +142,12 @@ class TimelinePanel(wx.Panel):
         if size == 'single':
             index = self.timeline.Selection
             if index != -1:
+                wx.GetApp().core.remove_action(index)
                 self.timeline.Delete(index)
             else:
                 set_dialog('Please select the command to delete.')
         else:
+            wx.GetApp().core.clear_action()
             self.timeline.Clear()
 
     def update_timeline(self) -> None:

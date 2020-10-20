@@ -163,6 +163,7 @@ class COPISCore:
             Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
             Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
             Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
+            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
         ])
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
@@ -180,7 +181,12 @@ class COPISCore:
     def remove_action(self, index: int) -> Action:
         """Remove an action given action list index."""
         action = self._actions.pop(index)
+        dispatcher.send('core_a_list_changed')
         return action
+
+    def clear_action(self) -> None:
+        self._actions.clear()
+        dispatcher.send('core_a_list_changed')
 
     def connect(self) -> bool:
         """TODO"""
@@ -213,10 +219,10 @@ class COPISCore:
         """Select device given index in devices list."""
         if index < 0:
             self._selected_device = -1
-            dispatcher.send('core_d_deselected', index=index)
+            dispatcher.send('core_d_deselected', device=self._devices[index])
         elif index < len(self._devices):
             self._selected_device = index
-            dispatcher.send('core_d_selected', index=index)
+            dispatcher.send('core_d_selected', device=self._devices[index])
         else:
             dispatcher.send('core_error', message=f'invalid device index {index}')
 
@@ -261,3 +267,22 @@ class COPISCore:
             self._actions[p].args = args
 
         dispatcher.send('core_a_list_changed')
+
+    def export_actions(self, filename: str) -> None:
+        """Serialize action list and write to file."""
+        with open(filename, 'w') as file:
+            for action in self._actions:
+                file.write('>' + str(action.device))
+
+                if action.atype == ActionType.G0:
+                    file.write(f'G0X{action.args[0]:.3f}'
+                               f'Y{action.args[1]:.3f}'
+                               f'Z{action.args[2]:.3f}'
+                               f'P{action.args[3]:.3f}'
+                               f'T{action.args[4]:.3f}')
+                elif action.atype == ActionType.C0:
+                    file.write(f'C0')
+                else:
+                    pass
+                file.write('\n')
+        dispatcher.send('core_a_exported', filename=filename)

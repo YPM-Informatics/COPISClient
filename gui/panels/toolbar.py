@@ -63,6 +63,8 @@ class ToolbarPanel(aui.AuiToolBar):
         self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
         _bmp = create_scaled_bitmap('stop', 24)
         self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
+        _bmp = create_scaled_bitmap('get_app', 24)
+        self.AddTool(ToolIds.EXPORT.value, 'Export', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Export actions as text')
 
         self.AddSeparator()
 
@@ -109,14 +111,16 @@ class ToolbarPanel(aui.AuiToolBar):
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, check which and process accordingly."""
-        if event.Id == ToolIds.SETTINGS.value:
-            settings_frame = SettingsFrame(self)
-            settings_frame.Show()
-        elif event.Id == ToolIds.PLAY.value:
+        if event.Id == ToolIds.PLAY.value:
             camera = self.parent.controller_panel.main_combo.Selection
             set_dialog(f'DEBUG: selected camera "{camera}".')
         elif event.Id == ToolIds.PAUSE.value:
             pass
+        elif event.Id == ToolIds.SETTINGS.value:
+            settings_frame = SettingsFrame(self)
+            settings_frame.Show()
+        elif event.Id == ToolIds.EXPORT.value:
+            wx.GetApp().core.export_actions('actions.txt')
         else:
             pass
 
