@@ -456,10 +456,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def get_canvas_size(self) -> _Size:
         """Return canvas size as _Size based on scaling factor."""
-        w, h = self._canvas.Size
+        s = self._canvas.Size
         factor = self.get_scale_factor()
-        w = int(w * factor)
-        h = int(h * factor)
+        w = int(s.width * factor)
+        h = int(s.height * factor)
         return _Size(w, h, factor)
 
     # --------------------------------------------------------------------------

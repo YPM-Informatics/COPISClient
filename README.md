@@ -24,7 +24,7 @@ python3 -m pip install -r requirements.txt
 
 ### Usage
 
-Run `python3 copis.py` to start the application.
+Run `./copis.py` to start the application.
 
 ### Configuration File
 

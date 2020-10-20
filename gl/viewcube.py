@@ -138,7 +138,7 @@ class GLViewCube:
 
         # ---
 
-        colors_border = np.tile(np.array([0.220, 0.388, 0.759], dtype=np.float32), 24)
+        colors_border = np.tile(np.array([0.0000, 0.4588, 0.9686], dtype=np.float32), 24)
         glBindVertexArray(self._vao_outline)
         # outlined face of viewcube
 

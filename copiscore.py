@@ -126,9 +126,10 @@ class COPISCore:
         self._selected_device: Optional[int] = -1
 
     def _update_test(self) -> None:
-        heights = (-90, -60, -30, 0, 30, 60, 90)
-        radius = 150
-        every = 50
+        # heights = (-90, -60, -30, 0, 30, 60, 90)
+        heights = (-80, -60, -40, -20, 0, 20, 40, 60, 80)
+        radius = 180
+        every = 40
 
         # generate a sphere (for testing)
         for i in heights:
@@ -148,9 +149,9 @@ class COPISCore:
                 rand_device = 0
                 if path[j * 3 + 1] < 0:
                     rand_device += 3
-                if path[j * 3] > 50:
+                if path[j * 3] > 60:
                     rand_device += 1
-                elif path[j * 3] > -50:
+                elif path[j * 3] > -60:
                     rand_device += 2
 
                 rand_device -= 1
