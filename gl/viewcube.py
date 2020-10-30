@@ -245,6 +245,10 @@ class GLViewCube:
             corner = (width - self._size, 0)
         return corner[0], corner[1], self._size, self._size
 
+    # --------------------------------------------------------------------------
+    # Accessor methods
+    # --------------------------------------------------------------------------
+
     @property
     def hover_id(self) -> int:
         """Return int corresponding to hovered face. -1 if not hovered.

@@ -1,4 +1,8 @@
-"""TimelinePanel class."""
+"""TimelinePanel class.
+
+TODO: Get timeline buttons to actually modify the action list
+TODO: Overhaul timeline panel, visually
+"""
 
 import wx
 from pydispatch import dispatcher
@@ -11,8 +15,6 @@ class TimelinePanel(wx.Panel):
 
     Args:
         parent: Pointer to a parent wx.Frame.
-
-    TODO: Improve timeline panel
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:

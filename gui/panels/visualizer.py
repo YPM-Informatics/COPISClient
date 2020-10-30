@@ -66,6 +66,10 @@ class VisualizerPanel(wx.Panel):
         """Update slider value."""
         self.zoom_slider.Value = value * 10
 
+    # --------------------------------------------------------------------------
+    # Accessor methods
+    # --------------------------------------------------------------------------
+
     @property
     def grid_shown(self) -> bool:
         if self._glcanvas is None:

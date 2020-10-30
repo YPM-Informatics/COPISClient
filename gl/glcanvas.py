@@ -1,6 +1,6 @@
 """GLCanvas3D and associated classes.
 
-TODO: Object collisions via general 3d object class
+TODO: Object collisions via general 3D object class.
 """
 
 import math
@@ -592,7 +592,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._viewcube.render()
 
     # --------------------------------------------------------------------------
-    # Accessor functions
+    # Accessor methods
     # --------------------------------------------------------------------------
 
     def get_shader_program(

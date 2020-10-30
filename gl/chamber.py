@@ -12,6 +12,8 @@ import glm
 class _Axes():
     """Manage and render origin axes in a GLChamber.
 
+    Subclass of GLChamber.
+
     Args:
         parent: Pointer to a parent GLChamber.
     """
@@ -50,8 +52,8 @@ class _Axes():
             0.0, 0.0, -z[1], 0.0, 0.0, 1.0,
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
-        # colored axes lines
 
+        # colored axes lines
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
@@ -66,8 +68,8 @@ class _Axes():
 
         vertices, colors = self._get_cones()
         glBindVertexArray(self._vao_arrows[0])
-        # colored axes arrows, cone
 
+        # colored axes arrows, cone
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -84,8 +86,8 @@ class _Axes():
         vertices[17*3+1] = y[0]
         vertices[17*6+2] = z[0]
         glBindVertexArray(self._vao_arrows[1])
-        # colored axes arrows, base
 
+        # colored axes arrows, base
         glBindBuffer(GL_ARRAY_BUFFER, vbo[4])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -225,8 +227,8 @@ class GLChamber:
         vertices, colors = self._get_gridlines()
         self._count_gridlines = vertices.size // 3
         glBindVertexArray(self._vao_gridlines)
-        # gridlines
 
+        # gridlines
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -242,8 +244,8 @@ class GLChamber:
         points, indices = self._get_bounding_box()
         self._count_bounding_box = indices.size
         glBindVertexArray(self._vao_bounding_box)
-        # bounding box
 
+        # bounding box
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, points.nbytes, points, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
@@ -313,10 +315,10 @@ class GLChamber:
         z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
         step = self._every / self._subdivisions
 
-        def darken(a):
-            a[self._subdivisions-1::self._subdivisions] = self.col_dark
-            a[-1] = self.col_border
-            return a
+        def darken(arr):
+            arr[self._subdivisions-1::self._subdivisions] = self.col_dark
+            arr[-1] = self.col_border
+            return arr
 
         if self._axes_shown:
             axes_verts = np.array([])
@@ -408,6 +410,10 @@ class GLChamber:
             return
 
         self._axes.render()
+
+    # --------------------------------------------------------------------------
+    # Accessor methods
+    # --------------------------------------------------------------------------
 
     @property
     def build_dimensions(self) -> List[int]:

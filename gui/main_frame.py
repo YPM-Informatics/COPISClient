@@ -488,7 +488,7 @@ class MainFrame(wx.Frame):
         #     pane.window.Destroy()
 
     # --------------------------------------------------------------------------
-    # Attribute and accessor methods
+    # Accessor methods
     # --------------------------------------------------------------------------
 
     @property

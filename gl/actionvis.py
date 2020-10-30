@@ -176,6 +176,8 @@ class GLActionVis:
         """Update lines and points when action list changes.
 
         Called from GLCanvas upon core_a_list_changed signal.
+
+        # TODO: process other action ids
         """
         core = wx.GetApp().core
         self._lines.clear()
@@ -197,7 +199,6 @@ class GLActionVis:
                 else:
                     self._points[action.device].append(self._points[action.device][0])
             else:
-                # TODO: process other action ids
                 pass
 
         self._update_vaos()
