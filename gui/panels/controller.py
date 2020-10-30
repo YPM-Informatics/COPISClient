@@ -1,14 +1,16 @@
-"""ControllerPanel class."""
+"""ControllerPanel class.
+
+TODO: Currently nonfunctional - needs to be connected to copiscore when
+serial connections are implemented.
+"""
 
 import math
-from collections import OrderedDict
-
-import wx
-import wx.lib.scrolledpanel as scrolled
-from pydispatch import dispatcher
 
 import utils
+import wx
+import wx.lib.scrolledpanel as scrolled
 from gui.wxutils import create_scaled_bitmap
+from pydispatch import dispatcher
 from utils import Point3, Point5
 
 

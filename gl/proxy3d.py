@@ -1,4 +1,7 @@
-"""Proxy3D class."""
+"""Proxy3D class.
+
+TODO: Decide whether or not to axe this
+"""
 
 from OpenGL.GL import *
 from OpenGL.GLU import *

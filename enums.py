@@ -1,4 +1,4 @@
-"""Enums."""
+"""Store all enums."""
 
 from enum import Enum, IntEnum, auto
 

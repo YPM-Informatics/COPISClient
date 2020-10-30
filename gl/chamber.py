@@ -1,6 +1,4 @@
-"""GLChamber and associated classes.
-
-"""
+"""GLChamber and associated classes."""
 
 from typing import List, Tuple
 

@@ -1,4 +1,8 @@
-"""ViewCube class."""
+"""ViewCube class.
+
+TODO: Start animation when snapping to view rather than instant
+TODO: Add text labels to viewcube sides
+"""
 
 from typing import Tuple, Union
 

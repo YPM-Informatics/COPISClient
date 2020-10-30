@@ -1,6 +1,7 @@
 """Helper functions for quaternion math, arcball rotation, and paths.
 
 TODO: move path creation functions to separate module
+    - Or expand into fully fledged scripting system
 """
 
 from math import acos, asin, cos, sin, sqrt, tan
@@ -117,7 +118,8 @@ def get_helix(p: glm.vec3,
               pitch: int = 1,
               turns: float = 1.0,
               sides: int = 36) -> Tuple[np.ndarray, int]:
-    """Create helix vertices given point, normal vector, radius, pitch, # turns, and # sides.
+    """Create helix vertices given point, normal vector, radius, pitch, # turns,
+    and # sides.
 
     Uses an approximation method rather than trig functions.
     """

@@ -1,8 +1,10 @@
-"""ActionVis class."""
+"""ActionVis class.
 
+TODO: Add rendering functionality to more than just G0 and C0 actions.
+TODO: Signify via color or border when action is selected
+"""
 
 from collections import defaultdict
-from typing import Tuple, Union
 
 import glm
 import numpy as np
@@ -14,9 +16,7 @@ from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:
-    """Manage action list visualization in a GLCanvas.
-
-    """
+    """Manage action list visualization in a GLCanvas."""
 
     # colors to differentiate devices
     colors = [
@@ -227,7 +227,7 @@ class GLActionVis:
         model = glm.mat4()
 
         # render path lines
-        glUseProgram(self.parent.color_shader) # TODO: improve this
+        glUseProgram(self.parent.color_shader)
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))

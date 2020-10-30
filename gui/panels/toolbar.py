@@ -10,7 +10,7 @@ from gui.wxutils import create_scaled_bitmap, set_dialog
 
 
 class ToolbarPanel(aui.AuiToolBar):
-    """Aui toolbar panel."""
+    """Manage AUI toolbar panel."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ToolbarPanel with constructors."""
@@ -110,7 +110,10 @@ class ToolbarPanel(aui.AuiToolBar):
             self.baud_cb.Items = [str(i) for i in self.serial_controller.bauds]
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
-        """On toolbar tool selected, check which and process accordingly."""
+        """On toolbar tool selected, check which and process accordingly.
+
+        TODO: Link with copiscore when implemented.
+        """
         if event.Id == ToolIds.PLAY.value:
             camera = self.parent.controller_panel.main_combo.Selection
             set_dialog(f'DEBUG: selected camera "{camera}".')

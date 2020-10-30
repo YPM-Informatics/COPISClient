@@ -82,7 +82,8 @@ class AppConfig():
         self._dirty = value
 
     def update_config_dir(self, dir: Path) -> None:
-        """Update config file directory given the dir Path."""
+        """Update config file directory given the dir Path. TODO
+        """
         self._dirty = True
 
     def exists(self) -> bool:

@@ -1,4 +1,7 @@
-"""GLCanvas3D and associated classes."""
+"""GLCanvas3D and associated classes.
+
+TODO: Object collisions via general 3d object class
+"""
 
 import math
 import platform as pf
@@ -20,7 +23,6 @@ import gl.shaders as shaderlib
 from gl.actionvis import GLActionVis
 from gl.chamber import GLChamber
 from gl.glutils import arcball
-from gl.proxy3d import Proxy3D
 from gl.viewcube import GLViewCube
 
 
@@ -49,7 +51,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         rot_quat: Read only; A glm quaternion representing current rotation.
             To convert to a transformation matrix, use glm.mat4_cast(rot_quat).
         chamber: Read only; A GLChamber object.
-        proxy3d: Read only; A Proxy3D object.
         zoom: A float representing zoom level (higher is more zoomed in).
             Zoom is achieved in projection_matrix by modifying the fov.
         build_dimensions: See Args section.
@@ -57,8 +58,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
             projection matrix.
         modelview_matrix: Read only; A glm.mat4 representing the current
             modelview matrix.
-
-    TODO: Add more documentation about OpenGL.
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls
@@ -109,7 +108,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
-        # self._proxy3d = Proxy3D('Sphere', [1], (0, 53, 107))
 
         # other values
         self._zoom = 1
@@ -326,8 +324,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._render_objects()
         self._render_cameras()
         self._render_paths()
-
-
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -623,10 +619,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
     @property
     def chamber(self) -> GLChamber:
         return self._chamber
-
-    @property
-    def proxy3d(self) -> Proxy3D:
-        return self._proxy3d
 
     @property
     def zoom(self) -> float:

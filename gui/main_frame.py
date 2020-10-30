@@ -17,7 +17,6 @@ from gui.about import *
 from gui.panels.console import ConsolePanel
 from gui.panels.controller import ControllerPanel
 from gui.panels.evf import EvfPanel
-from gui.panels.paths import PathPanel
 from gui.panels.properties import PropertiesPanel
 from gui.panels.timeline import TimelinePanel
 from gui.panels.toolbar import ToolbarPanel
@@ -37,7 +36,6 @@ class MainFrame(wx.Frame):
         console_panel: A pointer to the console panel.
         controller_panel: A pointer to the controller panel.
         evf_panel: A pointer to the electronic viewfinder panel.
-        path_panel: A pointer to the path panel.
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
         toolbar_panel: A pointer to the toolbar panel.
@@ -119,7 +117,6 @@ class MainFrame(wx.Frame):
                 - [ ] Camera EVF
                 - [x] Console
                 - [x] Controller
-                - [x] Paths
                 - [x] Properties
                 - [x] Timeline
                 - [x] Visualizer
@@ -197,9 +194,6 @@ class MainFrame(wx.Frame):
         self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller', 'Show/hide controller window', wx.ITEM_CHECK)
         self.menuitems['controller'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
-        self.menuitems['path'] = window_menu.Append(wx.ID_ANY, 'Paths', 'Show/hide paths window', wx.ITEM_CHECK)
-        self.menuitems['path'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_path_panel, self.menuitems['path'])
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Show/hide camera properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
@@ -238,10 +232,15 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self._menubar)
 
     def on_new_project(self, event: wx.CommandEvent) -> None:
+        """TODO: Implement project file/directory creation
+        """
         pass
 
     def on_open(self, event: wx.CommandEvent) -> None:
-        """Open 'open' dialog."""
+        """Open 'open' dialog.
+
+        TODO: Implement reading file/directory
+        """
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
@@ -262,10 +261,16 @@ class MainFrame(wx.Frame):
                 wx.LogError(f'Could not open file "{path}".')
 
     def on_save(self, event: wx.CommandEvent) -> None:
-        """Open 'save' dialog."""
+        """Open 'save' dialog.
+
+        TODO: Implement saving file/directory to disk
+        """
 
     def on_save_as(self, event: wx.CommandEvent) -> None:
-        """Open 'save as' dialog."""
+        """Open 'save as' dialog.
+
+         TODO: Implement saving as file/directory to disk
+        """
         with wx.FileDialog(
             self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
@@ -282,12 +287,12 @@ class MainFrame(wx.Frame):
                 wx.LogError(f'Could not save in file "{path}".')
 
     def do_save_project(self, file: Path) -> None:
-        """Save project to file Path."""
+        """Save project to file Path. TODO: Implement"""
         self.project_dirty = False
         print(file)
 
     def do_load_project(self, file: Path) -> None:
-        """Load project from file Path."""
+        """Load project from file Path. TODO: Implement"""
         print(file)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
@@ -379,7 +384,6 @@ class MainFrame(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
-        self.panels['path'] = PathPanel(self)
         self.panels['toolbar'] = ToolbarPanel(self)
 
         # add visualizer panel
@@ -402,18 +406,12 @@ class MainFrame(wx.Frame):
             MinSize(280, 180).Show(True),
             target=self._mgr.GetPane('console'))
 
-        # add controller, properties, path panel
+        # add properties and controller panel
         self._mgr.AddPane(
             self.panels['properties'], aui.AuiPaneInfo(). \
             Name('properties').Caption('Properties'). \
             Dock().Right().Position(0).Layer(1). \
             MinSize(280, 200).Show(True))
-        self._mgr.AddPane(
-            self.panels['path'], aui.AuiPaneInfo(). \
-            Name('path').Caption('Paths'). \
-            Dock().Right().Position(2).Layer(1). \
-            MinSize(280, 200).Show(True),
-            target=self._mgr.GetPane('properties'))
         self._mgr.AddPane(
             self.panels['controller'], aui.AuiPaneInfo(). \
             Name('controller').Caption('Controller'). \
@@ -454,10 +452,6 @@ class MainFrame(wx.Frame):
     def update_evf_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide evf panel."""
         self._mgr.ShowPane(self.evf_panel, event.IsChecked())
-
-    def update_path_panel(self, event: wx.CommandEvent) -> None:
-        """Show or hide path panel."""
-        self._mgr.ShowPane(self.path_panel, event.IsChecked())
 
     def update_properties_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide properties panel."""
@@ -510,10 +504,6 @@ class MainFrame(wx.Frame):
         return self.panels['evf']
 
     @property
-    def path_panel(self) -> PathPanel:
-        return self.panels['path']
-
-    @property
     def properties_panel(self) -> PropertiesPanel:
         return self.panels['properties']
 
@@ -550,6 +540,7 @@ class MainFrame(wx.Frame):
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
+        """TODO: Move camera api/connection logic to copiscore."""
         if self.is_edsdk_on:
             return
 
@@ -562,7 +553,7 @@ class MainFrame(wx.Frame):
 
 
     def get_edsdk_camera_list(self) -> Any:
-        """TODO: improve"""
+        """TODO: Move camera api/connection logic to copiscore."""
         return self.edsdk_object.CameraList()
         self.cam_list = self.edsdk_object.CameraList()
         cam_count = self.cam_list.get_count()
@@ -584,12 +575,13 @@ class MainFrame(wx.Frame):
             self.controller_panel.main_combo.Append('camera ' + cam_id)
 
     def get_selected_camera(self) -> Optional[Any]:
-        """TODO: improve"""
+        """TODO: Move camera api/connection logic to copiscore."""
         if self.selected_cam:
             return self.selected_cam
         return None
 
     def terminate_edsdk(self) -> None:
+        """TODO: Move camera api/connection logic to copiscore."""
         if not self.is_edsdk_on:
             return
 

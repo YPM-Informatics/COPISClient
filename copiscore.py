@@ -126,6 +126,10 @@ class COPISCore:
         self._selected_device: Optional[int] = -1
 
     def _update_test(self) -> None:
+        """Populates action list manually as a test.
+
+        TODO: Get rid of this when auto path generation is implemented.
+        """
         # heights = (-90, -60, -30, 0, 30, 60, 90)
         heights = (-80, -60, -40, -20, 0, 20, 40, 60, 80)
         radius = 180
@@ -167,7 +171,7 @@ class COPISCore:
         ])
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
-        """TODO: check args with atype"""
+        """TODO: validate args given atype"""
         new = Action(atype, device, len(args), list(args))
 
         self._actions.append(new)
@@ -189,11 +193,11 @@ class COPISCore:
         dispatcher.send('core_a_list_changed')
 
     def connect(self) -> bool:
-        """TODO"""
+        """TODO: implement camera connect."""
         return False
 
     def disconnect(self) -> bool:
-        """TODO"""
+        """TODO: implement camera disconnect."""
         return False
 
     @property
@@ -269,7 +273,10 @@ class COPISCore:
         dispatcher.send('core_a_list_changed')
 
     def export_actions(self, filename: str) -> None:
-        """Serialize action list and write to file."""
+        """Serialize action list and write to file.
+
+        TODO: Expand to include not just G0 and C0 actions
+        """
         with open(filename, 'w') as file:
             for action in self._actions:
                 file.write('>' + str(action.device))

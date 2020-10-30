@@ -58,7 +58,11 @@ class ConsolePanel(wx.Panel):
         self.Sizer.Add(command_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
 
     def on_command_entered(self, event: wx.CommandEvent) -> None:
-        """On EVT_TEXT_ENTER, process entered console command."""
+        """On EVT_TEXT_ENTER, process entered console command.
+
+        Currently only selects camera if entered a valid id.
+        TODO: When implemented, connect to actual console or some parser.
+        """
         if not event.String:
             return
 
