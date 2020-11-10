@@ -58,7 +58,7 @@ class MainFrame(wx.Frame):
         self.menuitems = {}
 
         self._selected_camera: Optional[int] = None
-        self.cam_list = []
+        self.cam_list = None
         self.selected_cam = None
         self.is_edsdk_on = False
         self.edsdk_object = None
@@ -70,6 +70,10 @@ class MainFrame(wx.Frame):
 
         # initialize aui manager
         self.init_mgr()
+
+        # initialize edsdk
+        self.init_edsdk()
+        self.add_evf_pane()
 
         self.Centre()
 
@@ -532,9 +536,6 @@ class MainFrame(wx.Frame):
         # TODO: remove this when edsdk calling is sorted
         self._core.selected_camera = id_
 
-    def get_camera_list(self) -> Dict[int, Any]:
-        return self._core.cameras
-
     # --------------------------------------------------------------------------
     # EDSDK methods
     # --------------------------------------------------------------------------
@@ -549,36 +550,11 @@ class MainFrame(wx.Frame):
         self.edsdk_object = util.edsdk_object
         self.edsdk_object.initialize(self.console_panel)
         self.is_edsdk_on = True
-        self.get_camera_list()
-
-
-    def get_edsdk_camera_list(self) -> Any:
-        """TODO: Move camera api/connection logic to copiscore."""
-        return self.edsdk_object.CameraList()
         self.cam_list = self.edsdk_object.CameraList()
-        cam_count = self.cam_list.get_count()
-
-        message = str(cam_count)
-        if cam_count == 0:
-            message = 'There is no camera '
-
-        elif cam_count == 1:
-            message += ' camera is '
-        else:
-            message += ' cameras are '
-        message += 'connected.'
-
-        self.console_panel.print(message)
-
-        for i in range(cam_count):
-            cam_id = self.visualizer_panel.add_camera(id_=i)
-            self.controller_panel.main_combo.Append('camera ' + cam_id)
 
     def get_selected_camera(self) -> Optional[Any]:
         """TODO: Move camera api/connection logic to copiscore."""
-        if self.selected_cam:
-            return self.selected_cam
-        return None
+        return self.cam_list.get_camera_by_index(0)
 
     def terminate_edsdk(self) -> None:
         """TODO: Move camera api/connection logic to copiscore."""

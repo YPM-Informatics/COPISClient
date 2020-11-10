@@ -17,9 +17,14 @@ class EvfPanel(wx.Panel):
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
         self.timer = wx.CallLater(15, self.update)
-        self.cam = self.parent.get_selected_camera()
+
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
         self.Bind(wx.EVT_PAINT, self.on_paint)
+
+        self.cam = self.parent.get_selected_camera()
+        self.cam.connect()
+        self.cam.startEvf()
+
         self.update()
 
     def update(self):
@@ -29,7 +34,8 @@ class EvfPanel(wx.Panel):
         self.timer.Start()
 
     def get_bitmap(self):
-        if  self.cam.img_byte_data:
+        # self.cam.download_evf()
+        if self.cam.img_byte_data:
             img = (Image.open(io.BytesIO(self.cam.img_byte_data)))
             img.resize(self.Size)
             width, height = img.size
