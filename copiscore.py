@@ -1,16 +1,20 @@
 """
 TODO: add license boilerplate
+TODO: implement disconnect, connect, reset, _listen, start_imaging,
+    cancel_imaging, pause, resume, _image, _send
 """
 
 import math
 import os
 import platform
 import queue
+import random
 import sys
 import threading
 import time
-import random
 from dataclasses import dataclass
+from queue import Empty as QueueEmpty
+from queue import Queue
 from typing import Any, List, Optional, Tuple
 
 import glm
@@ -114,16 +118,185 @@ class COPISCore:
 
     def __init__(self, *args, **kwargs) -> None:
         """Inits a CopisCore instance."""
+        self._baud = None
+        self._port = None
 
+        # serial instance connected to the machine, None when disconnected
+        self._machine = None
+        # clear to send, enabled after responses
+        self._clear = False
+        # printer responded to initial command and is active
+        self._online = False
+        # True if sending actions, false if paused
+        self._imaging = False
+        self._paused = False
+
+        # logging
+        self.sentlines = {}
+        self.sent = []
+
+        self.read_thread = None
+        self.stop_read_thread = False
+        self.send_thread = None
+        self.stop_send_thread = False
+        self.imaging_thread = None
+
+        self._actionqueue = Queue(0)
         self._actions: List[Action] = []
-        self._action_queue = queue.Queue()
-
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
-
         self._update_test()
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
+
+    def disconnect(self) -> bool:
+        """TODO: implement camera disconnect."""
+        if self._machine:
+            return True
+        return False
+
+    def connect(self) -> bool:
+        """TODO: implement camera connect."""
+
+        return False
+
+    def reset(self) -> None:
+        """Reset the machine."""
+        return
+
+    def _listen(self) -> None:
+        return
+
+    def _start_sender(self) -> None:
+        self.stop_send_thread = False
+        self.send_thread = threading.Thread(
+            target=self._sender,
+            name='send thread')
+        self.send_thread.start()
+
+    def _stop_sender(self) -> None:
+        if self.send_thread:
+            self.stop_send_thread = True
+            self.send_thread.join()
+            self.send_thread = None
+
+    def _sender(self) -> None:
+        while not self.stop_send_thread:
+            try:
+                command = self._actionqueue.get(True, 0.1)
+            except QueueEmpty:
+                continue
+
+            while self._machine and self._imaging and not self._clear:
+                time.sleep(0.001)
+
+            self._send(command)
+
+            while self._machine and self._imaging and not self._clear:
+                time.sleep(0.001)
+
+    def start_imaging(self, startindex=0) -> bool:
+        """TODO"""
+
+        if self._imaging or not self._online or not self._machine:
+            return False
+
+        # TODO: setup machine before starting
+
+        self._printing = True
+
+        self._clear = False
+        self.imaging_thread = threading.Thread(
+            target=self._image,
+            name='imaging thread',
+            kwargs={"resuming": True}
+        )
+        self.imaging_thread.start()
+        return True
+
+    def cancel_imaging(self) -> None:
+        """TODO"""
+
+        self.pause()
+        self._paused = False
+        self._actionqueue = None
+        self._clear = True
+
+    def pause(self) -> bool:
+        """Pauses the current run, saving the current positions."""
+
+        if not self._imaging:
+            return False
+
+        self._paused = True
+        self._imaging = False
+
+        # try joining the print thread: enclose it in try/except because we
+        # might be calling it from the thread itself
+        try:
+            self.imaging_thread.join()
+        except RuntimeError as e:
+            pass
+
+        self.imaging_thread = None
+        return True
+
+    def resume(self) -> bool:
+        """Resumes the current run."""
+
+        if not self._paused:
+            return False
+
+        # send commands to resume printing
+
+        self._paused = False
+        self._printing = True
+        self.imaging_thread = threading.Thread(
+            target=self._image,
+            name='imaging thread',
+            kwargs={"resuming": True}
+        )
+        self.imaging_thread.start()
+        return True
+
+    def send_now(self, command):
+        """Send a command to machine ahead of the command queue."""
+        if self._online:
+            self._actionqueue.put_nowait(command)
+        else:
+            # TODO: log error
+            pass
+
+    def _image(self) -> None:
+        """TODO"""
+        self._stop_sender()
+
+        # TODO: more
+        self.sentlines = {}
+        self.sent = []
+
+        self.imaging_thread = None
+        self._start_sender()
+
+    def _send(self, command):
+        """Send command to machine.
+
+        TODO This one's the big one.
+        """
+
+        if not self._machine:
+            return
+
+        # log sent command
+        self.sent.append(command)
+
+        # try writing to printer
+
+
+    # --------------------------------------------------------------------------
+    # Action and device data methods
+    # --------------------------------------------------------------------------
+
 
     def _update_test(self) -> None:
         """Populates action list manually as a test.
@@ -191,14 +364,6 @@ class COPISCore:
     def clear_action(self) -> None:
         self._actions.clear()
         dispatcher.send('core_a_list_changed')
-
-    def connect(self) -> bool:
-        """TODO: implement camera connect."""
-        return False
-
-    def disconnect(self) -> bool:
-        """TODO: implement camera disconnect."""
-        return False
 
     @property
     def actions(self) -> List[Action]:
