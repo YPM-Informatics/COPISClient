@@ -1,4 +1,4 @@
-"""MainFrame class."""
+"""MainWindow class."""
 
 from ctypes import *
 from pathlib import Path
@@ -27,8 +27,8 @@ from gui.wxutils import create_scaled_bitmap, set_dialog
 from utils import Point3, Point5
 
 
-class MainFrame(wx.Frame):
-    """Main frame.
+class MainWindow(wx.Frame):
+    """Main window.
 
     Manages menubar, statusbar, and aui manager.
 
@@ -43,8 +43,8 @@ class MainFrame(wx.Frame):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        """Inits MainFrame with constructors."""
-        super(MainFrame, self).__init__(*args, **kwargs)
+        """Inits MainWindow with constructors."""
+        super(MainWindow, self).__init__(*args, **kwargs)
         self._core = wx.GetApp().core
 
         # set minimum size to show whole interface properly
@@ -57,11 +57,7 @@ class MainFrame(wx.Frame):
         self.panels = {}
         self.menuitems = {}
 
-        self._selected_camera: Optional[int] = None
-        self.cam_list = None
-        self.selected_cam = None
-        self.is_edsdk_on = False
-        self.edsdk_object = None
+        # project saving
         self.project_dirty = False
 
         # initialize statusbar and menubar
@@ -72,7 +68,6 @@ class MainFrame(wx.Frame):
         self.init_mgr()
 
         # initialize edsdk
-        self.init_edsdk()
         self.add_evf_pane()
 
         self.Centre()
@@ -437,13 +432,22 @@ class MainFrame(wx.Frame):
         self._mgr.Update()
 
     def add_evf_pane(self) -> None:
-        self.panels['evf'] = EvfPanel(self)
-        self._mgr.AddPane(
-            self.panels['evf'], aui.AuiPaneInfo(). \
-            Name('Evf').Caption('Live View'). \
-            Float().Right().Position(1).Layer(0). \
-            MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
-        self.Update()
+        """Initialize camera liveview panel.
+
+        TODO!
+        """
+        try:
+            wx.GetApp().core.init_edsdk()
+
+            self.panels['evf'] = EvfPanel(self)
+            self._mgr.AddPane(
+                self.panels['evf'], aui.AuiPaneInfo(). \
+                Name('Evf').Caption('Live View'). \
+                Float().Right().Position(1).Layer(0). \
+                MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
+            self.Update()
+        except:
+            pass
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""
@@ -526,46 +530,6 @@ class MainFrame(wx.Frame):
     @property
     def points(self) -> List[Tuple[int, Point5]]:
         return self._core.points
-
-    @property
-    def selected_camera(self) -> Optional[int]:
-        return self._core.selected_camera
-
-    @selected_camera.setter
-    def selected_camera(self, id_: int) -> None:
-        # TODO: remove this when edsdk calling is sorted
-        self._core.selected_camera = id_
-
-    # --------------------------------------------------------------------------
-    # EDSDK methods
-    # --------------------------------------------------------------------------
-
-    def init_edsdk(self) -> None:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if self.is_edsdk_on:
-            return
-
-        import util.edsdk_object
-
-        self.edsdk_object = util.edsdk_object
-        self.edsdk_object.initialize(self.console_panel)
-        self.is_edsdk_on = True
-        self.cam_list = self.edsdk_object.CameraList()
-
-    def get_selected_camera(self) -> Optional[Any]:
-        """TODO: Move camera api/connection logic to copiscore."""
-        return self.cam_list.get_camera_by_index(0)
-
-    def terminate_edsdk(self) -> None:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if not self.is_edsdk_on:
-            return
-
-        self.is_edsdk_on = False
-
-        if self.cam_list:
-            self.cam_list.terminate()
-            self.cam_list = []
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""

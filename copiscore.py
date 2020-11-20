@@ -4,15 +4,23 @@ TODO: implement disconnect, connect, reset, _listen, start_imaging,
     cancel_imaging, pause, resume, _image, _send
 """
 
+__version__ = ""
+
+import sys
+
+if sys.version_info.major < 3:
+    print("You need to run this on Python 3")
+    sys.exit(-1)
+
 import math
 import os
 import platform
 import queue
 import random
-import sys
 import threading
 import time
 from dataclasses import dataclass
+from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import Any, List, Optional, Tuple
@@ -24,10 +32,14 @@ from enums import ActionType
 from gl.glutils import get_circle, get_helix
 from utils import Point3, Point5
 
-if sys.version_info.major < 3:
-    print("You need to run this on Python 3")
-    sys.exit(-1)
 
+def locked(f):
+    @wraps(f)
+    def inner(*args, **kw):
+        with inner.lock:
+            return f(*args, **kw)
+    inner.lock = threading.Lock()
+    return inner
 
 class MonitoredList(list):
     """Monitored list. Just a regular list, but sends notificiations when
@@ -141,6 +153,11 @@ class COPISCore:
         self.stop_send_thread = False
         self.imaging_thread = None
 
+        self.edsdk_object = None
+        self.edsdk_enabled = False
+        self.evf_thread = None
+        self.camera_list = []
+
         self._actionqueue = Queue(0)
         self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
@@ -149,12 +166,14 @@ class COPISCore:
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
 
+    @locked
     def disconnect(self) -> bool:
         """TODO: implement camera disconnect."""
         if self._machine:
             return True
         return False
 
+    @locked
     def connect(self) -> bool:
         """TODO: implement camera connect."""
 
@@ -458,3 +477,44 @@ class COPISCore:
                     pass
                 file.write('\n')
         dispatcher.send('core_a_exported', filename=filename)
+
+    # --------------------------------------------------------------------------
+    # Canon edsdk methods
+    # --------------------------------------------------------------------------
+
+    def init_edsdk(self) -> None:
+        """TODO: Move camera api/connection logic to copiscore."""
+        if self.edsdk_enabled:
+            return
+
+        import util.edsdk_object
+
+        self.edsdk_object = util.edsdk_object
+        self.edsdk_object.initialize(ConsoleOutput())
+        self.edsdk_enabled = True
+        self.cam_list = self.edsdk_object.CameraList()
+
+    def get_selected_camera(self) -> Optional[Any]:
+        """TODO: Move camera api/connection logic to copiscore."""
+        return self.cam_list.get_camera_by_index(0)
+
+    def terminate_edsdk(self) -> bool:
+        """TODO: Move camera api/connection logic to copiscore."""
+        if not self.edsdk_enabled:
+            return False
+
+        self.edsdk_enabled = False
+        self.edsdk_object = None
+
+        if self.cam_list:
+            self.cam_list.terminate()
+            self.cam_list = []
+        return True
+
+class ConsoleOutput:
+
+    def __init__(self):
+        pass
+
+    def print(self, msg: str) -> None:
+        dispatcher.send('core_message', message=str)

@@ -35,8 +35,9 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_p_deselected')
         dispatcher.connect(self.on_notification, signal='core_d_selected')
         dispatcher.connect(self.on_notification, signal='core_d_deselected')
-        dispatcher.connect(self.on_action_export, signal='core_a_exported')
         dispatcher.connect(self.on_notification, signal='core_error')
+        dispatcher.connect(self.on_notification, signal='core_message')
+        dispatcher.connect(self.on_action_export, signal='core_a_exported')
 
     def init_gui(self) -> None:
         """Initialize gui elements."""

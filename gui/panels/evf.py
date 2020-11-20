@@ -21,7 +21,7 @@ class EvfPanel(wx.Panel):
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
-        self.cam = self.parent.get_selected_camera()
+        self.cam = wx.GetApp().core.get_selected_camera()
         self.cam.connect()
         self.cam.startEvf()
 

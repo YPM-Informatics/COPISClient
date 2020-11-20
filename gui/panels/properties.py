@@ -665,14 +665,14 @@ class _PropCameraConfig(wx.Panel):
 
     def on_take_picture(self, event: wx.CommandEvent) -> None:
         camera = self.main_combo.Selection
-        if self.parent.get_selected_camera() is not None:
-            self.parent.get_selected_camera().shoot()
+        if wx.GetApp().core.get_selected_camera() is not None:
+            wx.GetApp().core.get_selected_camera().shoot()
         else:
             set_dialog('Please select the camera to take a picture.')
 
     def on_start_evf(self, event: wx.CommandEvent) -> None:
-        if self.parent.get_selected_camera() is not None:
-            self.parent.get_selected_camera().startEvf()
+        if wx.GetApp().core.get_selected_camera() is not None:
+            wx.GetApp().core.get_selected_camera().startEvf()
             self.parent.add_evf_pane()
         else:
             set_dialog('Please select the camera to start live view.')
