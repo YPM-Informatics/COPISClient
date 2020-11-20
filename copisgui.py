@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+
 """Main COPIS App (GUI)."""
 
 import wx
@@ -55,13 +70,11 @@ class COPISApp(wx.App):
 if __name__ == '__main__':
     app = COPISApp()
     try:
-        # debug window:
-        # wx.lib.inspection.InspectionTool().Show()
+        # wx.lib.inspection.InspectionTool().Show() # debug
         app.MainLoop()
     except KeyboardInterrupt:
         pass
 
     if app.c.edsdk_enabled:
         app.c.terminate_edsdk()
-
     del app
