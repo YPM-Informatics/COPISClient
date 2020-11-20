@@ -1,6 +1,8 @@
 """
 Console command processor. Headless.
 
+Ignore; currently unused.
+
 TODO: The entire thing is a todo
 """
 
