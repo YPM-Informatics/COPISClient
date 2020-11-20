@@ -18,6 +18,7 @@ class ConsolePanel(wx.Panel):
         """Inits ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
+        self.c = self.parent.c
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -70,7 +71,7 @@ class ConsolePanel(wx.Panel):
         self.print(f'$ {event.String}')
         self.on_command_cleared()
 
-        wx.GetApp().core.select_device(int(event.String))
+        self.c.select_device(int(event.String))
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""

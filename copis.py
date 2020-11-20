@@ -12,11 +12,10 @@ from gui.main_frame import MainWindow
 import copisconsole
 import copiscore
 
-
-class COPISWindow(MainWindow, copisconsole.copisconsole):
-
-    def __init__(self):
-        copisconsole.copisconsole.__init__(self)
+# class COPISWindow(MainWindow, copisconsole.COPISConsole):
+#     def __init__(self, *args, **kwargs):
+#         copisconsole.COPISConsole.__init__(self)
+#         MainWindow.__init__(self, *args, **kwargs)
 
 class COPISApp(wx.App):
     """Main wxPython app.
@@ -28,8 +27,7 @@ class COPISApp(wx.App):
 
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
-
-        self.core = COPISCore()
+        self.c = COPISCore()
 
         self.appconfig = None
         self.appconfig_exists = False
@@ -64,7 +62,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
 
-    if app.mainwindow.is_edsdk_on:
-        app.mainwindow.terminate_edsdk()
+    if app.c.edsdk_enabled:
+        app.c.terminate_edsdk()
 
     del app

@@ -45,33 +45,28 @@ class MainWindow(wx.Frame):
     def __init__(self, *args, **kwargs) -> None:
         """Inits MainWindow with constructors."""
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._core = wx.GetApp().core
+        self.c = wx.GetApp().c
 
         # set minimum size to show whole interface properly
         self.MinSize = wx.Size(800, 575)
 
         self._menubar = None
         self._mgr = None
-
         # dictionary of panels and menu items
         self.panels = {}
         self.menuitems = {}
-
         # project saving
         self.project_dirty = False
 
         # initialize statusbar and menubar
         self.init_statusbar()
         self.init_menubar()
-
         # initialize aui manager
         self.init_mgr()
-
         # initialize edsdk
         self.add_evf_pane()
 
         self.Centre()
-
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -436,18 +431,18 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        try:
-            wx.GetApp().core.init_edsdk()
+        self.c.init_edsdk()
 
-            self.panels['evf'] = EvfPanel(self)
-            self._mgr.AddPane(
-                self.panels['evf'], aui.AuiPaneInfo(). \
-                Name('Evf').Caption('Live View'). \
-                Float().Right().Position(1).Layer(0). \
-                MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
-            self.Update()
-        except:
-            pass
+        if self.c.cam_list.get_count() == 0:
+            return
+
+        self.panels['evf'] = EvfPanel(self)
+        self._mgr.AddPane(
+            self.panels['evf'], aui.AuiPaneInfo(). \
+            Name('Evf').Caption('Live View'). \
+            Float().Right().Position(1).Layer(0). \
+            MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
+        self.Update()
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""
@@ -526,10 +521,6 @@ class MainWindow(wx.Frame):
     @property
     def visualizer_panel(self) -> VisualizerPanel:
         return self.panels['visualizer']
-
-    @property
-    def points(self) -> List[Tuple[int, Point5]]:
-        return self._core.points
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""

@@ -71,7 +71,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                  subdivisions: int = 10) -> None:
         """Inits GLCanvas3D with constructors."""
         self.parent = parent
-        self._core = wx.GetApp().core
+        self.c = self.parent.c
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
@@ -95,7 +95,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vao_model = None
         self._point_lines = None
         self._point_count = None
-        self._id_offset = len(self._core.devices)
+        self._id_offset = len(self.c.devices)
 
         self._dirty = False
         self._gl_initialized = False
@@ -291,7 +291,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles core_d_list_changed signal.
         """
-        self._id_offset = len(wx.GetApp().core.devices)
+        self._id_offset = len(self.c.devices)
 
     # @timing
     def render(self):
@@ -427,13 +427,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         else:
             # id_ belongs to cameras or objects
             if id_ == -1:
-                wx.GetApp().core.select_device(-1)
-                wx.GetApp().core.select_point(-1, clear=True)
+                self.c.select_device(-1)
+                self.c.select_point(-1, clear=True)
             elif -1 < id_ < self._id_offset:
-                wx.GetApp().core.select_device(id_)
+                self.c.select_device(id_)
             else:
-                wx.GetApp().core.select_device(-1)
-                wx.GetApp().core.select_point(id_ - self._id_offset, clear=True)
+                self.c.select_device(-1)
+                self.c.select_point(id_ - self._id_offset, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""

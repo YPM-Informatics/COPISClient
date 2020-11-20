@@ -17,6 +17,7 @@ class ToolbarPanel(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
+        self.c = self.parent.c
 
         self.serial_controller = None
 
@@ -123,7 +124,7 @@ class ToolbarPanel(aui.AuiToolBar):
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.Id == ToolIds.EXPORT.value:
-            wx.GetApp().core.export_actions('actions.txt')
+            self.c.export_actions('actions.txt')
         else:
             pass
 

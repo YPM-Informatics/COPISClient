@@ -33,6 +33,7 @@ class GLActionVis:
     def __init__(self, parent):
         """Inits GLActionVis with constructors."""
         self.parent = parent
+        self.c = self.parent.c
         self._initialized = False
         self.device_len = None
 
@@ -179,17 +180,16 @@ class GLActionVis:
 
         # TODO: process other action ids
         """
-        core = wx.GetApp().core
         self._lines.clear()
         self._points.clear()
 
-        self.device_len = len(core.devices)
+        self.device_len = len(self.c.devices)
 
         # add initial points
-        for i, device in enumerate(core.devices):
+        for i, device in enumerate(self.c.devices):
             self._points[device.device_id].append((i, point5_to_mat4(device.position)))
 
-        for i, action in enumerate(core.actions):
+        for i, action in enumerate(self.c.actions):
             if action.atype == ActionType.G0 or action.atype == ActionType.G1:
                 if action.argc == 5:
                     self._lines[action.device].append((self.device_len + i, xyzpt_to_mat4(*action.args)))

@@ -16,19 +16,19 @@ class EvfPanel(wx.Panel):
         """Inits EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
+        self.c = self.parent.c
         self.timer = wx.CallLater(10, self.update)
 
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
-        self.cam = wx.GetApp().core.get_selected_camera()
+        self.cam = self.c.get_selected_camera()
         self.cam.connect()
         self.cam.startEvf()
 
         self.update()
 
     def update(self):
-        # self.cam.download_evf()
         self.Refresh()
         self.Update()
         self.timer.Start()

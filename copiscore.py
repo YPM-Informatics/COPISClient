@@ -153,8 +153,8 @@ class COPISCore:
         self.stop_send_thread = False
         self.imaging_thread = None
 
-        self.edsdk_object = None
-        self.edsdk_enabled = False
+        self._edsdk_object = None
+        self._edsdk_enabled = False
         self.evf_thread = None
         self.camera_list = []
 
@@ -311,11 +311,9 @@ class COPISCore:
 
         # try writing to printer
 
-
     # --------------------------------------------------------------------------
     # Action and device data methods
     # --------------------------------------------------------------------------
-
 
     def _update_test(self) -> None:
         """Populates action list manually as a test.
@@ -479,42 +477,53 @@ class COPISCore:
         dispatcher.send('core_a_exported', filename=filename)
 
     # --------------------------------------------------------------------------
-    # Canon edsdk methods
+    # Canon EDSDK methods
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if self.edsdk_enabled:
+        """Initialize Canon EDSDK connection."""
+        if self._edsdk_enabled:
             return
 
         import util.edsdk_object
 
-        self.edsdk_object = util.edsdk_object
-        self.edsdk_object.initialize(ConsoleOutput())
-        self.edsdk_enabled = True
-        self.cam_list = self.edsdk_object.CameraList()
+        self._edsdk_object = util.edsdk_object
+        self._edsdk_object.initialize(ConsoleOutput())
+        self._edsdk_enabled = True
+        self.cam_list = self._edsdk_object.CameraList()
 
     def get_selected_camera(self) -> Optional[Any]:
-        """TODO: Move camera api/connection logic to copiscore."""
+        """Return first selected camera.
+
+        TODO: update to interface with multiple cameras
+        """
         return self.cam_list.get_camera_by_index(0)
 
     def terminate_edsdk(self) -> bool:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if not self.edsdk_enabled:
+        """Stop Canon EDSDK connection."""
+        if not self._edsdk_enabled:
             return False
 
-        self.edsdk_enabled = False
-        self.edsdk_object = None
+        self._edsdk_enabled = False
+        self._edsdk_object = None
 
         if self.cam_list:
             self.cam_list.terminate()
-            self.cam_list = []
         return True
+
+    @property
+    def edsdk_enabled(self) -> bool:
+        return self._edsdk_enabled
+
+    @edsdk_enabled.setter
+    def edsdk_enabled(self, value: bool) -> None:
+        self._edsdk_enabled = value
+
 
 class ConsoleOutput:
 
     def __init__(self):
-        pass
+        return
 
     def print(self, msg: str) -> None:
         dispatcher.send('core_message', message=str)

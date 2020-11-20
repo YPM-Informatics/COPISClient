@@ -1,14 +1,17 @@
+"""
+Console command processor. Headless.
+
+TODO: The entire thing is a todo
+"""
+
 
 import cmd
-import os
-import sys
-import threading
-import time
 
 import copiscore
 
 
-class copisconsole(cmd.Cmd):
+class COPISConsole(cmd.Cmd):
+    """COPISConsole."""
 
     def __init__(self):
         cmd.Cmd.__init__(self)

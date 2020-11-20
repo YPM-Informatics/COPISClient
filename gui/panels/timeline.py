@@ -21,6 +21,7 @@ class TimelinePanel(wx.Panel):
         """Inits TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
+        self.c = self.parent.c
 
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -99,7 +100,7 @@ class TimelinePanel(wx.Panel):
         """TODO"""
         cmd = self.timeline_writer.Value
         self.add_command(cmd)
-        # wx.GetApp().core.append_point(0, tuple(map(float, cmd.split(', '))))
+        # self.c.append_point(0, tuple(map(float, cmd.split(', '))))
         self.parent.visualizer_panel.dirty = True
         self.timeline_writer.Value = ''
 
@@ -144,19 +145,19 @@ class TimelinePanel(wx.Panel):
         if size == 'single':
             index = self.timeline.Selection
             if index != -1:
-                wx.GetApp().core.remove_action(index)
+                self.c.remove_action(index)
                 self.timeline.Delete(index)
             else:
                 set_dialog('Please select the command to delete.')
         else:
-            wx.GetApp().core.clear_action()
+            self.c.clear_action()
             self.timeline.Clear()
 
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
 
-        Handles core_p_list_changed signal sent by wx.GetApp().core.
+        Handles core_p_list_changed signal sent by self.c.
         """
         self.timeline.Clear()
-        for action in wx.GetApp().core.actions:
+        for action in self.c.actions:
             self.add_command(f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')
