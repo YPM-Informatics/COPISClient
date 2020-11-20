@@ -5,12 +5,11 @@
 import wx
 import wx.lib.inspection
 
+import copisconsole
+import copiscore
 from appconfig import AppConfig
 from copiscore import COPISCore
 from gui.main_frame import MainWindow
-
-import copisconsole
-import copiscore
 
 # class COPISWindow(MainWindow, copisconsole.COPISConsole):
 #     def __init__(self, *args, **kwargs):
@@ -28,7 +27,6 @@ class COPISApp(wx.App):
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
         self.c = COPISCore()
-
         self.appconfig = None
         self.appconfig_exists = False
         self.init_appconfig()
@@ -40,7 +38,8 @@ class COPISApp(wx.App):
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
             size=(self.appconfig.config.getint('General', 'windowwidth'),
-                  self.appconfig.config.getint('General', 'windowheight')))
+                  self.appconfig.config.getint('General', 'windowheight'))
+        )
         self.mainwindow.Show()
 
     def init_appconfig(self) -> None:

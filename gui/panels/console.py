@@ -26,7 +26,6 @@ class ConsolePanel(wx.Panel):
         self._console_writer = None
 
         self.init_gui()
-
         self.Layout()
 
         # bind copiscore listeners

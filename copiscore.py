@@ -308,7 +308,6 @@ class COPISCore:
 
         # log sent command
         self.sent.append(command)
-
         # try writing to printer
 
     # --------------------------------------------------------------------------

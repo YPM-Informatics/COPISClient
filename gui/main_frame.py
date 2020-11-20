@@ -46,23 +46,23 @@ class MainWindow(wx.Frame):
         """Inits MainWindow with constructors."""
         super(MainWindow, self).__init__(*args, **kwargs)
         self.c = wx.GetApp().c
-
         # set minimum size to show whole interface properly
         self.MinSize = wx.Size(800, 575)
 
+        # project saving
+        self.project_dirty = False
         self._menubar = None
         self._mgr = None
+
         # dictionary of panels and menu items
         self.panels = {}
         self.menuitems = {}
-        # project saving
-        self.project_dirty = False
 
-        # initialize statusbar and menubar
+        # initialize gui
         self.init_statusbar()
         self.init_menubar()
-        # initialize aui manager
         self.init_mgr()
+
         # initialize edsdk
         self.add_evf_pane()
 
@@ -483,12 +483,14 @@ class MainWindow(wx.Frame):
             self._mgr.ShowPane(self.panels[pane.name], False)
             self.menuitems[pane.name].Check(False)
 
-        print('hidden', pane.name)
         # if pane.name == 'Evf':
         #     pane.window.timer.Stop()
         #     pane.window.on_destroy()
         #     self.DetachPane(pane.window)
         #     pane.window.Destroy()
+
+        print('hidden', pane.name)
+
 
     # --------------------------------------------------------------------------
     # Accessor methods
