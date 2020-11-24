@@ -1,3 +1,18 @@
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+
 """ActionVis class.
 
 TODO: Add rendering functionality to more than just G0 and C0 actions.
@@ -33,6 +48,7 @@ class GLActionVis:
     def __init__(self, parent):
         """Inits GLActionVis with constructors."""
         self.parent = parent
+        self.c = self.parent.c
         self._initialized = False
         self.device_len = None
 
@@ -179,17 +195,16 @@ class GLActionVis:
 
         # TODO: process other action ids
         """
-        core = wx.GetApp().core
         self._lines.clear()
         self._points.clear()
 
-        self.device_len = len(core.devices)
+        self.device_len = len(self.c.devices)
 
         # add initial points
-        for i, device in enumerate(core.devices):
+        for i, device in enumerate(self.c.devices):
             self._points[device.device_id].append((i, point5_to_mat4(device.position)))
 
-        for i, action in enumerate(core.actions):
+        for i, action in enumerate(self.c.actions):
             if action.atype == ActionType.G0 or action.atype == ActionType.G1:
                 if action.argc == 5:
                     self._lines[action.device].append((self.device_len + i, xyzpt_to_mat4(*action.args)))

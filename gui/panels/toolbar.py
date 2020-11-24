@@ -1,3 +1,18 @@
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+
 """ToolbarPanel class."""
 
 import wx
@@ -17,6 +32,7 @@ class ToolbarPanel(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
+        self.c = self.parent.c
 
         self.serial_controller = None
 
@@ -123,7 +139,7 @@ class ToolbarPanel(aui.AuiToolBar):
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
         elif event.Id == ToolIds.EXPORT.value:
-            wx.GetApp().core.export_actions('actions.txt')
+            self.c.export_actions('actions.txt')
         else:
             pass
 

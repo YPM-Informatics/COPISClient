@@ -1,3 +1,18 @@
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+
 """ConsolePanel class."""
 
 import wx
@@ -18,6 +33,7 @@ class ConsolePanel(wx.Panel):
         """Inits ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
+        self.c = self.parent.c
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -25,7 +41,6 @@ class ConsolePanel(wx.Panel):
         self._console_writer = None
 
         self.init_gui()
-
         self.Layout()
 
         # bind copiscore listeners
@@ -35,8 +50,9 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_p_deselected')
         dispatcher.connect(self.on_notification, signal='core_d_selected')
         dispatcher.connect(self.on_notification, signal='core_d_deselected')
-        dispatcher.connect(self.on_action_export, signal='core_a_exported')
         dispatcher.connect(self.on_notification, signal='core_error')
+        dispatcher.connect(self.on_notification, signal='core_message')
+        dispatcher.connect(self.on_action_export, signal='core_a_exported')
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -69,7 +85,7 @@ class ConsolePanel(wx.Panel):
         self.print(f'$ {event.String}')
         self.on_command_cleared()
 
-        wx.GetApp().core.select_device(int(event.String))
+        self.c.select_device(int(event.String))
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""

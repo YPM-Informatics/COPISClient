@@ -1,4 +1,19 @@
-"""MainFrame class."""
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+
+"""MainWindow class."""
 
 from ctypes import *
 from pathlib import Path
@@ -27,8 +42,8 @@ from gui.wxutils import create_scaled_bitmap, set_dialog
 from utils import Point3, Point5
 
 
-class MainFrame(wx.Frame):
-    """Main frame.
+class MainWindow(wx.Frame):
+    """Main window.
 
     Manages menubar, statusbar, and aui manager.
 
@@ -43,13 +58,14 @@ class MainFrame(wx.Frame):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        """Inits MainFrame with constructors."""
-        super(MainFrame, self).__init__(*args, **kwargs)
-        self._core = wx.GetApp().core
-
+        """Inits MainWindow with constructors."""
+        super(MainWindow, self).__init__(*args, **kwargs)
+        self.c = wx.GetApp().c
         # set minimum size to show whole interface properly
         self.MinSize = wx.Size(800, 575)
 
+        # project saving
+        self.project_dirty = False
         self._menubar = None
         self._mgr = None
 
@@ -57,22 +73,15 @@ class MainFrame(wx.Frame):
         self.panels = {}
         self.menuitems = {}
 
-        self._selected_camera: Optional[int] = None
-        self.cam_list = []
-        self.selected_cam = None
-        self.is_edsdk_on = False
-        self.edsdk_object = None
-        self.project_dirty = False
-
-        # initialize statusbar and menubar
+        # initialize gui
         self.init_statusbar()
         self.init_menubar()
-
-        # initialize aui manager
         self.init_mgr()
 
-        self.Centre()
+        # initialize edsdk
+        self.add_evf_pane()
 
+        self.Centre()
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -433,6 +442,15 @@ class MainFrame(wx.Frame):
         self._mgr.Update()
 
     def add_evf_pane(self) -> None:
+        """Initialize camera liveview panel.
+
+        TODO!
+        """
+        self.c.init_edsdk()
+
+        if self.c.cam_list.get_count() == 0:
+            return
+
         self.panels['evf'] = EvfPanel(self)
         self._mgr.AddPane(
             self.panels['evf'], aui.AuiPaneInfo(). \
@@ -480,12 +498,14 @@ class MainFrame(wx.Frame):
             self._mgr.ShowPane(self.panels[pane.name], False)
             self.menuitems[pane.name].Check(False)
 
-        print('hidden', pane.name)
         # if pane.name == 'Evf':
         #     pane.window.timer.Stop()
         #     pane.window.on_destroy()
         #     self.DetachPane(pane.window)
         #     pane.window.Destroy()
+
+        print('hidden', pane.name)
+
 
     # --------------------------------------------------------------------------
     # Accessor methods
@@ -518,78 +538,6 @@ class MainFrame(wx.Frame):
     @property
     def visualizer_panel(self) -> VisualizerPanel:
         return self.panels['visualizer']
-
-    @property
-    def points(self) -> List[Tuple[int, Point5]]:
-        return self._core.points
-
-    @property
-    def selected_camera(self) -> Optional[int]:
-        return self._core.selected_camera
-
-    @selected_camera.setter
-    def selected_camera(self, id_: int) -> None:
-        # TODO: remove this when edsdk calling is sorted
-        self._core.selected_camera = id_
-
-    def get_camera_list(self) -> Dict[int, Any]:
-        return self._core.cameras
-
-    # --------------------------------------------------------------------------
-    # EDSDK methods
-    # --------------------------------------------------------------------------
-
-    def init_edsdk(self) -> None:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if self.is_edsdk_on:
-            return
-
-        import util.edsdk_object
-
-        self.edsdk_object = util.edsdk_object
-        self.edsdk_object.initialize(self.console_panel)
-        self.is_edsdk_on = True
-        self.get_camera_list()
-
-
-    def get_edsdk_camera_list(self) -> Any:
-        """TODO: Move camera api/connection logic to copiscore."""
-        return self.edsdk_object.CameraList()
-        self.cam_list = self.edsdk_object.CameraList()
-        cam_count = self.cam_list.get_count()
-
-        message = str(cam_count)
-        if cam_count == 0:
-            message = 'There is no camera '
-
-        elif cam_count == 1:
-            message += ' camera is '
-        else:
-            message += ' cameras are '
-        message += 'connected.'
-
-        self.console_panel.print(message)
-
-        for i in range(cam_count):
-            cam_id = self.visualizer_panel.add_camera(id_=i)
-            self.controller_panel.main_combo.Append('camera ' + cam_id)
-
-    def get_selected_camera(self) -> Optional[Any]:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if self.selected_cam:
-            return self.selected_cam
-        return None
-
-    def terminate_edsdk(self) -> None:
-        """TODO: Move camera api/connection logic to copiscore."""
-        if not self.is_edsdk_on:
-            return
-
-        self.is_edsdk_on = False
-
-        if self.cam_list:
-            self.cam_list.terminate()
-            self.cam_list = []
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""
