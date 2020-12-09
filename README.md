@@ -1,4 +1,4 @@
-# COPIS
+# COPIS Client
 
 COPIS (Computer-Operated Photogrammetric Imaging System) is a desktop application which captures large numbers of overlapping images from multiple viewpoints around an object for photogrammetric 3D reconstruction.
 
