@@ -274,6 +274,9 @@ class CameraList:
             _console.print('An exception occurred while getting the camera list: ' + e.args[0])
 
     def get_count(self):
+        if self.count is None:
+            return 0
+
         return self.count
 
     def get_camera_by_index(self, index):

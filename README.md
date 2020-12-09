@@ -32,6 +32,6 @@ The configuration file `copis.ini` contains settings for initialization.
 
 ## License
 
-COPISCore as a whole is licensed under the GNU General Public License, Version 3. Please note that files where it is difficult to state this license note (such as images) are distributed under the same terms.
+COPISClient as a whole is licensed under the GNU General Public License, Version 3. Please note that files where it is difficult to state this license note (such as images) are distributed under the same terms.
 
 Credit to some parts of the source code go to [Printrun](https://github.com/kliment/Printrun) and [PrusaSlicer](https://github.com/prusa3d/PrusaSlicer).
