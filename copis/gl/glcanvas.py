@@ -23,22 +23,23 @@ import platform as pf
 from threading import Lock
 from typing import List, NamedTuple, Optional
 
+import copis.gl.shaders as shaderlib
 import glm
 import numpy as np
 import pywavefront
 import wx
+
+from copis.gl.actionvis import GLActionVis
+from copis.gl.chamber import GLChamber
+from copis.gl.glutils import arcball
+from copis.gl.viewcube import GLViewCube
+from copis.helpers import find_path, timing
+
 from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from helpers import timing, find_path
 from wx import glcanvas
-
-import gl.shaders as shaderlib
-from gl.actionvis import GLActionVis
-from gl.chamber import GLChamber
-from gl.glutils import arcball
-from gl.viewcube import GLViewCube
 
 
 class _Size(NamedTuple):

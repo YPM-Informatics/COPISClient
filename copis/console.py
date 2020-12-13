@@ -25,7 +25,7 @@ TODO: The entire thing is a todo
 
 import cmd
 
-from core import COPISCore
+from copis.core import COPISCore
 
 
 class COPISConsole(cmd.Cmd):

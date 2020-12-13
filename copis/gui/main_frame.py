@@ -28,19 +28,19 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
                                           IndentPressedBitmap, StepColour,
                                           TakeScreenShot)
 
-from gui.about import *
-from gui.panels.console import ConsolePanel
-from gui.panels.controller import ControllerPanel
-from gui.panels.evf import EvfPanel
-from gui.panels.properties import PropertiesPanel
-from gui.panels.timeline import TimelinePanel
-from gui.panels.toolbar import ToolbarPanel
-from gui.panels.visualizer import VisualizerPanel
-from gui.pathgen_frame import *
-from gui.pref_frame import *
-from gui.wxutils import create_scaled_bitmap, set_dialog
-from helpers import Point3, Point5
-from store import Store
+from copis.gui.about import *
+from copis.gui.panels.console import ConsolePanel
+from copis.gui.panels.controller import ControllerPanel
+from copis.gui.panels.evf import EvfPanel
+from copis.gui.panels.properties import PropertiesPanel
+from copis.gui.panels.timeline import TimelinePanel
+from copis.gui.panels.toolbar import ToolbarPanel
+from copis.gui.panels.visualizer import VisualizerPanel
+from copis.gui.pathgen_frame import *
+from copis.gui.pref_frame import *
+from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.helpers import Point3, Point5
+from copis.store import Store
 
 
 class MainWindow(wx.Frame):

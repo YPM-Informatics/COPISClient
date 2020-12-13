@@ -23,10 +23,12 @@ from collections import defaultdict
 
 import glm
 import numpy as np
-from enums import ActionType
+
+from copis.enums import ActionType
+from copis.helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:

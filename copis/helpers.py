@@ -16,15 +16,14 @@
 """Util functions."""
 
 import math
+import os
 from collections import OrderedDict
 from functools import wraps
+from pathlib import Path
 from time import time
 from typing import Callable, NamedTuple
 
 import glm
-
-import os
-from pathlib import Path
 
 # --------------------------------------------------------------------------
 # Path finding global logic
@@ -39,10 +38,12 @@ _root_segments = _segments[1:_index]
 _root = '/' + Path(os.path.join(*_root_segments)).as_posix()
 # --------------------------------------------------------------------------
 
+
 xyz_steps = [10, 1, 0.1, 0.01]
 xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
+
 
 def timing(f: Callable) -> Callable:
     """Time a function."""

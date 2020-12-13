@@ -42,9 +42,10 @@ from typing import Any, List, Optional, Tuple
 
 from pydispatch import dispatcher
 
-from enums import ActionType
-from helpers import Point3, Point5
-from store import Store
+from copis.enums import ActionType
+from copis.helpers import Point3, Point5
+from copis.store import Store
+
 
 def locked(func):
     """TODO"""
@@ -55,6 +56,7 @@ def locked(func):
             return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
+
 
 class MonitoredList(list):
     """Monitored list. Just a regular list, but sends notifications when
@@ -197,7 +199,6 @@ class COPISCore:
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
-
 
     @locked
     def disconnect(self):
@@ -636,7 +637,7 @@ class COPISCore:
             return
 
         try:
-            self._edsdk = import_module('coms.edsdk_object')
+            self._edsdk = import_module('copis.coms.edsdk_object')
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 

@@ -22,7 +22,7 @@ import wx
 import wx.lib.newevent
 import wx.svg as svg
 
-from helpers import find_path
+from copis.helpers import find_path
 
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 

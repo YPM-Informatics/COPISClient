@@ -21,9 +21,9 @@ import logging
 import wx
 import wx.lib.inspection
 
-from config import Config
-from core import COPISCore
-from gui.main_frame import MainWindow
+from copis.config import Config
+from copis.core import COPISCore
+from copis.gui.main_frame import MainWindow
 
 
 class COPISApp(wx.App):
@@ -39,7 +39,6 @@ class COPISApp(wx.App):
 
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
-        self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
         self.mainwindow = MainWindow(
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
@@ -49,8 +48,8 @@ class COPISApp(wx.App):
         self.mainwindow.Show()
 
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 
