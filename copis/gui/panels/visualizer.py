@@ -35,7 +35,7 @@ class VisualizerPanel(wx.Panel):
         axes_shown: A boolean indicating if the canvas axes is shown or not.
     """
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent, chamberdims, *args, **kwargs) -> None:
         """Inits VisualizerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent
@@ -44,7 +44,7 @@ class VisualizerPanel(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._selected_cam = None
-        self._build_dimensions = [400, 400, 400, 200, 200, 200]
+        self._build_dimensions = chamberdims
         self.zoom_slider = None
 
         self._glcanvas = GLCanvas3D(

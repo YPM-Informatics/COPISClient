@@ -13,25 +13,20 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS Application Core functions"""
 
 __version__ = ""
 
-import os
 import sys
 
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
 
-root = os.path.dirname(os.path.dirname(__file__))
-if root not in sys.path:
-    sys.path.insert(0, root)
-
-# pylint: disable=wrong-import-position
-from importlib import import_module
 import logging
-
+import math
+import os
+import platform
+import queue
 import threading
 import time
 from dataclasses import dataclass
@@ -40,20 +35,20 @@ from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import Any, List, Optional, Tuple
 
+import glm
 from pydispatch import dispatcher
 
 from copis.enums import ActionType
+from copis.gl.glutils import get_circle, get_helix
 from copis.helpers import Point3, Point5
 from copis.store import Store
 
 
-def locked(func):
-    """TODO"""
-
-    @wraps(func)
+def locked(f):
+    @wraps(f)
     def inner(*args, **kw):
         with inner.lock:
-            return func(*args, **kw)
+            return f(*args, **kw)
     inner.lock = threading.Lock()
     return inner
 
@@ -112,13 +107,11 @@ class MonitoredList(list):
         dispatch if there's no registered signal."""
 
         if 'signal' in self.__dict__:
-            dispatcher.send(self.signal)
 
 
 @dataclass
 class Device:
-    """Device data structure"""
-
+    """Device dataclass"""
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''
@@ -132,12 +125,21 @@ class Device:
 
 @dataclass
 class Action:
-    """Device data structure"""
-
+    """Action dataclass"""
     atype: ActionType = ActionType.NONE
     device: int = -1
     argc: int = 0
     args: Optional[List[Any]] = None
+
+
+@dataclass
+class Proxy:
+    """Proxy dataclass"""
+    proxy_type: int = 0
+    proxy_name: str = ''
+    position: Optional[List[Any]] = None
+    length: int = 10
+    height: int = 10
 
 
 class COPISCore:
@@ -160,7 +162,7 @@ class COPISCore:
         core_error: Any copiscore access errors.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Inits a CopisCore instance."""
         self._baud = None
         self._port = None
@@ -192,9 +194,12 @@ class COPISCore:
 
         self._mainqueue = None
         self._sidequeue = Queue(0)
-        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
+
+        # self._proxies: List[Proxy] = []
+        self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
         self._store = Store()
+        self._update_devices()
         self._update_test()
 
         self._selected_points: List[int] = []
@@ -273,7 +278,7 @@ class COPISCore:
             while self._machine and self.imaging and not self._clear:
                 time.sleep(0.001)
 
-    def start_imaging(self) -> bool:
+    def start_imaging(self, startindex=0) -> bool:
         """TODO"""
 
         ##### Workaround because we don't have serial implemented yet
@@ -321,7 +326,7 @@ class COPISCore:
         # might be calling it from the thread itself
         try:
             self.imaging_thread.join()
-        except RuntimeError:
+        except RuntimeError as e:
             pass
 
         self.imaging_thread = None
@@ -353,7 +358,7 @@ class COPISCore:
         else:
             logging.error("Not connected to device.")
 
-    def _image(self) -> None:
+    def _image(self, resuming=False) -> None:
         """TODO"""
         self._stop_sender()
 
@@ -385,8 +390,8 @@ class COPISCore:
             return
 
         if self.imaging and self._mainqueue:
-            current = self._mainqueue.pop(0)
-            self._send(current)
+            curr = self._mainqueue.pop(0)
+            self._send(curr)
             self._clear = False
 
         else:
@@ -434,75 +439,69 @@ class COPISCore:
     # Action and device data methods
     # --------------------------------------------------------------------------
 
+    def _update_devices(self) -> None:
+        self._devices.clear()
+        self._devices.extend([
+            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
+            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
+            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
+            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
+            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
+            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
+        ])
+
     def _update_test(self) -> None:
         """Populates action list manually as a test.
 
         TODO: Get rid of this when auto path generation is implemented.
         """
 
-        # logging.debug('Populating test action list')
-        # self._actions.extend([
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        # ])
+        heights = (-90, -45, 0, 45, 90)
+        radius = 180
+        every = 80
 
-        # self._devices.extend([
-        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
-        # ])
+        # generate a sphere (for testing)
+        for i in heights:
+            r = math.sqrt(radius * radius - i * i)
+            num = int(2 * math.pi * r / every)
+            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
 
-        # heights = (-90, -45, 0, 45, 90)
-        # radius = 180
-        # every = 80
+            for j in range(count - 1):
+                point5 = [
+                    path[j * 3],
+                    path[j * 3 + 1],
+                    path[j * 3 + 2],
+                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
+                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
 
-        # # generate a sphere (for testing)
-        # for i in heights:
-        #     r = math.sqrt(radius * radius - i * i)
-        #     num = int(2 * math.pi * r / every)
-        #     path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
+                # temporary hack to divvy ids
+                rand_device = 0
+                if path[j * 3 + 1] < 0:
+                    rand_device += 3
+                if path[j * 3] > 60:
+                    rand_device += 2
+                elif path[j * 3] > -60:
+                    rand_device += 1
 
-        #     for j in range(count - 1):
-        #         point5 = [
-        #             path[j * 3],
-        #             path[j * 3 + 1],
-        #             path[j * 3 + 2],
-        #             math.atan2(path[j*3+2], path[j*3]) + math.pi,
-        #             math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
+                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
+                self._actions.append(Action(ActionType.C0, rand_device))
 
-        #         # temporary hack to divvy ids
-        #         rand_device = 0
-        #         if path[j * 3 + 1] < 0:
-        #             rand_device += 3
-        #         if path[j * 3] > 60:
-        #             rand_device += 2
-        #         elif path[j * 3] > -60:
-        #             rand_device += 1
+    # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
+    #     new = Proxy(proxy_type, proxy_name, position, length, height)
+    #     self._proxies.append(new)
+    #     dispatcher.send('core_proxy_list_changed')
+    #     return True
 
-        #         self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-        #         self._actions.append(Action(ActionType.C0, rand_device))
+    # def remove_proxy(self, index: int) -> Proxy:
+    #     """Remove a proxy object given its index in the proxy list"""
+    #     proxy = self._proxies.pop(index)
+    #     dispatcher.send('core_proxy_list_changed')
+    #     return proxy
 
-        # self._store.save('actionScript.copis', self._actions)
+    # def clear_proxy(self) -> None:
+    #     self._proxies.clear()
+    #     dispatcher.send('core_proxy_list_changed')
 
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
-            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
-            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X',
-            ['USBHost-PTP'], Point5(-100, 100, 100)),
-            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'],
-            Point5(100, -100, 100)),
-            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'],
-            Point5(100, 100, -100)),
-            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'],
-            Point5(0, 100, -100)),
-        ])
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""
@@ -523,18 +522,15 @@ class COPISCore:
         return action
 
     def clear_action(self) -> None:
-        """Remove all actions"""
         self._actions.clear()
         dispatcher.send('core_a_list_changed')
 
     @property
     def actions(self) -> List[Action]:
-        """Get monitored actions list"""
         return self._actions
 
     @property
     def devices(self) -> List[Device]:
-        """Get monitored devices list"""
         return self._devices
 
     def check_point(self, point: Tuple[int, Point5]) -> bool:
@@ -546,7 +542,6 @@ class COPISCore:
 
     @property
     def selected_device(self) -> Optional[int]:
-        """Get selected device"""
         return self._selected_device
 
     def select_device(self, index: int) -> None:
@@ -563,7 +558,6 @@ class COPISCore:
 
     @property
     def selected_points(self) -> List[int]:
-        """Get selected points"""
         return self._selected_points
 
     def select_point(self, index: int, clear: bool = True) -> None:
@@ -599,9 +593,9 @@ class COPISCore:
 
     def update_selected_points(self, argc, args) -> None:
         """Update position of points in selected points list."""
-        for point in self.selected_points:
-            self.actions[point - len(self.devices)].argc = argc
-            self.actions[point - len(self.devices)].args = args
+        for p in self.selected_points:
+            self.actions[p - len(self.devices)].argc = argc
+            self.actions[p - len(self.devices)].args = args
 
         dispatcher.send('core_a_list_changed')
 
@@ -611,6 +605,7 @@ class COPISCore:
         TODO: Expand to include not just G0 and C0 actions
         """
         with open(filename, 'w') as file:
+            # pickle.dump(self._actions, file)
             for action in self._actions:
                 file.write('>' + str(action.device))
 
@@ -621,7 +616,7 @@ class COPISCore:
                                f'P{action.args[3]:.3f}'
                                f'T{action.args[4]:.3f}')
                 elif action.atype == ActionType.C0:
-                    file.write('C0')
+                    file.write(f'C0')
                 else:
                     pass
                 file.write('\n')
@@ -641,8 +636,7 @@ class COPISCore:
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
-            # TODO: Handle this better?
-        except AttributeError as err:
+        except: # TODO: add better exception perhaps
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
@@ -652,7 +646,6 @@ class COPISCore:
 
     @property
     def edsdk(self):
-        """get edsdk"""
         return self._edsdk
 
 

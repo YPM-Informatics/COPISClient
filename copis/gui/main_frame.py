@@ -17,16 +17,14 @@
 
 from ctypes import *
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 
 import wx
 import wx.lib.agw.aui as aui
-import wx.svg as svg
-from pydispatch import dispatcher
 from wx.lib.agw.aui.aui_constants import *
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
                                           IndentPressedBitmap, StepColour,
                                           TakeScreenShot)
+
 
 from copis.gui.about import *
 from copis.gui.panels.console import ConsolePanel
@@ -79,7 +77,7 @@ class MainWindow(wx.Frame):
         # initialize gui
         self.init_statusbar()
         self.init_menubar()
-        self.init_mgr()
+        self.init_mgr(chamberdims)
 
         self._store = Store()
 
@@ -89,6 +87,8 @@ class MainWindow(wx.Frame):
         self.Centre()
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
+
+        self.numpoints = None
 
     def init_statusbar(self) -> None:
         """Initialize statusbar."""
@@ -170,7 +170,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
         _item.Bitmap = create_scaled_bitmap('publish', 16)
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_export, file_menu.Append(_item))
         file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
@@ -196,6 +196,8 @@ class MainWindow(wx.Frame):
         # Tools menu
         tools_menu = wx.Menu()
         self.Bind(wx.EVT_MENU, self.open_pathgen_frame, tools_menu.Append(wx.ID_ANY, '&Generate Path...', 'Open path generator window'))
+        tools_menu.AppendSeparator()
+        self.Bind(wx.EVT_MENU, self.open_proxyconfig_frame, tools_menu.Append(wx.ID_ANY, '&Configure Proxy...', 'Open proxy object configuration window'))
 
         # Window menu
         window_menu = wx.Menu()
@@ -248,6 +250,7 @@ class MainWindow(wx.Frame):
     def on_new_project(self, event: wx.CommandEvent) -> None:
         """TODO: Implement project file/directory creation
         """
+        wx.GetApp().c.clear_action()
         pass
 
     def on_open(self, event: wx.CommandEvent) -> None:
@@ -294,17 +297,23 @@ class MainWindow(wx.Frame):
             # save the current contents in the file
             path = file_dialog.Path
             try:
-                with open(path, 'w') as file:
-                    self.do_save_project(file)
+                with open(path, 'x') as file:
+                    self.do_save_project(path)
             except IOError:
                 wx.LogError(f'Could not save in file "{path}".')
 
-    def do_save_project(self, file: Path) -> None:
+    def on_export(self, event: wx.CommandEvent) -> None:
+        """Export action list as series of gcode commands
+        """
+        wx.GetApp().c.export_actions("./test.copis")
+
+    def do_save_project(self, path) -> None:
         """Save project to file Path. TODO: Implement"""
         self.project_dirty = False
-        print(file)
+        wx.GetApp().c.export_actions(path)
+        #print(file)
 
-    def do_load_project(self, file: Path) -> None:
+    def do_load_project(self, path) -> None:
         """Load project from file Path. TODO: Implement"""
         actions = self._store.load(file, [])
 
@@ -330,6 +339,10 @@ class MainWindow(wx.Frame):
         pathgen_frame = PathgenFrame(self)
         pathgen_frame.Show()
 
+    def open_proxyconfig_frame(self, _) -> None:
+        proxyconfig_frame = ProxyConfigFrame(self)
+        proxyconfig_frame.Show()
+
     def open_copis_website(self, _) -> None:
         wx.LaunchDefaultBrowser('http://www.copis3d.org/')
 
@@ -345,7 +358,7 @@ class MainWindow(wx.Frame):
     # AUI related methods
     # --------------------------------------------------------------------------
 
-    def init_mgr(self) -> None:
+    def init_mgr(self, chamberdims) -> None:
         """Initialize AuiManager and attach panes.
 
         NOTE: We are NOT USING wx.aui, but wx.lib.agw.aui, a pure Python
@@ -395,7 +408,7 @@ class MainWindow(wx.Frame):
         self._mgr.SetAutoNotebookTabArt(tabart)
 
         # initialize relevant panels
-        self.panels['visualizer'] = VisualizerPanel(self)
+        self.panels['visualizer'] = VisualizerPanel(self, chamberdims)
         self.panels['console'] = ConsolePanel(self)
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
