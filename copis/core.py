@@ -789,7 +789,6 @@ class Proxy:
     length: int = 10
     height: int = 10
 
-
 class COPISCore:
     """COPISCore. Connects and interacts with devices in system.
 
@@ -846,7 +845,6 @@ class COPISCore:
         # self._proxies: List[Proxy] = []
         self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
-
         self._update_devices()
         self._update_test()
 
@@ -1068,6 +1066,7 @@ class COPISCore:
         elif command.atype == ActionType.C0:
             if self.edsdk.connect(command.device):
                 self.edsdk.take_picture()
+
         elif command.atype == ActionType.C1:
             pass
 
@@ -1096,14 +1095,10 @@ class COPISCore:
         ])
 
     def _update_test(self) -> None:
-<<<<<<< HEAD:copis/core.py
         """Populates action list manually as a test.
 
         TODO: Get rid of this when auto path generation is implemented.
         """
-
-=======
->>>>>>> 21077c9... Simplify glcanvas naming:copiscore.py
         heights = (-90, -45, 0, 45, 90)
         radius = 180
         every = 80
@@ -1255,8 +1250,12 @@ class COPISCore:
 
         TODO: Expand to include not just G0 and C0 actions
         """
+
+        # with open(filename, 'wb') as file:
+        #     pickle.dump(self._actions, file)
+        # file.close()
+
         with open(filename, 'w') as file:
-            # pickle.dump(self._actions, file)
             for action in self._actions:
                 file.write('>' + str(action.device))
 
@@ -1271,6 +1270,7 @@ class COPISCore:
                 else:
                     pass
                 file.write('\n')
+
         dispatcher.send('core_a_exported', filename=filename)
 
     # --------------------------------------------------------------------------

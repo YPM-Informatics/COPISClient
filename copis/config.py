@@ -70,7 +70,6 @@ class Config():
 
         return Settings(debug_env, app_window_width, app_window_height, devices)
 
-
     @property
     def settings(self) -> Settings:
         """Settings getter"""
