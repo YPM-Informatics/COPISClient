@@ -26,7 +26,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
                                           TakeScreenShot)
 
 
-from copis.gui.about import *
+from copis.gui.about import AboutDialog
 from copis.gui.panels.console import ConsolePanel
 from copis.gui.panels.controller import ControllerPanel
 from copis.gui.panels.evf import EvfPanel
@@ -34,8 +34,9 @@ from copis.gui.panels.properties import PropertiesPanel
 from copis.gui.panels.timeline import TimelinePanel
 from copis.gui.panels.toolbar import ToolbarPanel
 from copis.gui.panels.visualizer import VisualizerPanel
-from copis.gui.pathgen_frame import *
-from copis.gui.pref_frame import *
+from copis.gui.proxyconfig_frame import ProxyConfigFrame
+from copis.gui.pathgen_frame import PathgenFrame
+from copis.gui.pref_frame import PreferenceFrame
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 from copis.helpers import Point3, Point5
 from copis.store import Store
@@ -77,7 +78,7 @@ class MainWindow(wx.Frame):
         # initialize gui
         self.init_statusbar()
         self.init_menubar()
-        self.init_mgr(chamberdims)
+        self.init_mgr()
 
         self._store = Store()
 
@@ -358,7 +359,7 @@ class MainWindow(wx.Frame):
     # AUI related methods
     # --------------------------------------------------------------------------
 
-    def init_mgr(self, chamberdims) -> None:
+    def init_mgr(self) -> None:
         """Initialize AuiManager and attach panes.
 
         NOTE: We are NOT USING wx.aui, but wx.lib.agw.aui, a pure Python
@@ -408,7 +409,7 @@ class MainWindow(wx.Frame):
         self._mgr.SetAutoNotebookTabArt(tabart)
 
         # initialize relevant panels
-        self.panels['visualizer'] = VisualizerPanel(self, chamberdims)
+        self.panels['visualizer'] = VisualizerPanel(self)
         self.panels['console'] = ConsolePanel(self)
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
