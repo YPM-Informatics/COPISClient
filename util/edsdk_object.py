@@ -38,40 +38,23 @@ def initialize(console):
         _edsdk = EDSDK()
         _edsdk.EdsInitializeSDK()
     except Exception as e:
-        _console.print('An exception occurred while initializing Canon API: ' + e.args[0])
+        _console.print(f'An exception occurred while initializing Canon API: {e.args[0]}')
 
 
-##############################################################################
-#  Function:   _generate_file_name
-#
-#  Description:
-#      Generates the image file name consists of date and file extension
-#
-#  Parameters:
-#       In:    None
-#
-#  Returns:    file_name - image file name
-##############################################################################
-def _generate_file_name():
+def _generate_file_name() -> str:
+    """Returns a filename for an image with date and file extension."""
     now = datetime.datetime.now()
     file_name = 'IMG_' + now.isoformat()[:-7].replace(':', '-') + '.jpg'
     return file_name
 
 
-##############################################################################
-#  Function:   _download_image
-#
-#  Description:
-#      Using EDSDK, get the location of the image in camera, create the file
-#      stream that processes transfer image from camera to PC, and download
-#      the image
-#
-#  Parameters:
-#       In:    image - the image reference
-#
-#  Returns:    None
-##############################################################################
-def _download_image(image):
+def _download_image(image) -> None:
+    """Using EDSDK, get the location of the image in camera, create the file
+    stream that processes transfer image from camera to PC, and download image.
+
+    Args:
+        image: Pointer to the image.
+    """
     try:
         dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
         file_name = _generate_file_name()
@@ -81,77 +64,64 @@ def _download_image(image):
         _edsdk.EdsRelease(stream)
         _console.print('Image is saved as ' + file_name + '.')
     except Exception as e:
-        _console.print('An exception occurred while downloading an image: ' + e.args[0])
+        _console.print(f'An exception occurred while downloading an image: {e.args[0]}')
 
 
-ObjectHandlerType = WINFUNCTYPE(c_int,c_int,c_void_p,c_void_p)
-##############################################################################
-#  Function:   _handle_object
-#
-#  Description:
-#      Handles the group of events where request notifications are issued to
-#      create, delete or transfer image data stored in a camera or image files
-#      on the memory card
-#
-#  Parameters:
-#       In:    event - EdsObjectEvent event type supplemented
-#              object - EdsBaseRef reference to object created by the event
-#              context - EdsVoid any data needed for the application
-#
-#  Returns:    None
-##############################################################################
+ObjectHandlerType = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
+
+
 def _handle_object(event, object, context):
+    """Handles the group of events where request notifications are issued to
+    create, delete or transfer image data stored in a camera or image files on
+    the memory card.
+
+    Args:
+        event: EdsObjectEvent event type supplemented
+        object: EdsBaseRef reference to object created by the event
+        context: EdsVoid any data needed for the application
+    """
     if event == _edsdk.ObjectEvent_DirItemRequestTransfer:
         _download_image(object)
     return 0
 object_handler = ObjectHandlerType(_handle_object)
 
 
-StateHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_void_p)
-##############################################################################
-#  Function:   _handle_state
-#
-#  Description:
-#      Handles the group of events where notifications are issued regarding
-#      changes in the state of a camera, such as activation of a shut-down
-#      timer
-#
-#  Parameters:
-#       In:    event - EdsStateEvent event type supplemented
-#              state - EdsUInt32 pointer to the event data
-#              context - EdsVoid any data needed for the application
-#
-#  Returns:    None
-##############################################################################
+StateHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
+
+
 def _handle_state(event, state, context):
+    """Handles the group of events where notifications are issued regarding
+    changes in the state of a camera, such as activation of a shut-down timer.
+
+    Args:
+        event: EdsStateEvent event type supplemented
+        state: EdsUInt32 pointer to the event data
+        context: EdsVoid any data needed for the application
+    """
     if event == _edsdk.StateEvent_WillSoonShutDown:
         try:
             _edsdk.EdsSendCommand(context, 1, 0)
         except Exception as e:
-            _console.print('An exception occurred while handling the state change event: ' + e.args[0])
+            _console.print(f'An exception occurred while handling the state change event: {e.args[0]}')
     return 0
 state_handler = StateHandlerType(_handle_state)
 
 
-PropertyHandlerType = WINFUNCTYPE(c_int,c_int,c_int,c_int,c_void_p)
-##############################################################################
-#  Function:   _handle_property
-#
-#  Description:
-#      Handles the group of events where notifications are issued regarding
-#      changes in the properties of a camera
-#
-#  Parameters:
-#       In:    event - EdsPropertyEvent event type supplemented
-#              property - EdsPropertyID property ID created by the event
-#              param - EdsUInt32 used to identify information created by the
-#                      event for custom function properties or other
-#                      properties that have multiple items of information
-#              context - EdsVoid any data needed for the application
-#
-#  Returns:    None
-##############################################################################
+PropertyHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
+
+
 def _handle_property(event, property, param, context):
+    """Handles the group of events where notifications are issued regarding
+    changes in the properties of a camera.
+
+    Args:
+        event: EdsPropertyEvent event type supplemented
+        property: EdsPropertyID property ID created by the event
+        param: EdsUInt32 used to identify information created by the event for
+            custom function properties or other properties that have multiple
+            items of information
+        context: EdsVoid any data needed for the application
+    """
     return 0
 property_handler = PropertyHandlerType(_handle_property)
 
@@ -319,8 +289,10 @@ class CameraList:
 
 
 class EvfDataSet(Structure):
-    _fields_ = [('stream', c_void_p),
-               ('zoom', c_uint),
-               ('zoomRect', EdsRect),
-               ('imagePosition', EdsPoint),
-               ('sizeJpgLarge', EdsSize)]
+    _fields_ = [
+        ('stream', c_void_p),
+        ('zoom', c_uint),
+        ('zoomRect', EdsRect),
+        ('imagePosition', EdsPoint),
+        ('sizeJpgLarge', EdsSize),
+    ]
