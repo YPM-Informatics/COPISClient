@@ -168,10 +168,10 @@ class COPISCore:
         self.stop_send_thread = False
         self.imaging_thread = None
 
-        self._edsdk_object = None
-        self._edsdk_enabled = False
+        self._edsdk_enabled = True
+        self._edsdk = None
         self.evf_thread = None
-        self.camera_list = []
+        self.init_edsdk()
 
         self._actionqueue = Queue(0)
         self._actions: List[Action] = []
@@ -496,42 +496,60 @@ class COPISCore:
 
     def init_edsdk(self) -> None:
         """Initialize Canon EDSDK connection."""
-        if self._edsdk_enabled:
+        if not self._edsdk_enabled:
             return
 
-        import util.edsdk_object
+        try:
+            import util.edsdk_object
+            self._edsdk = util.edsdk_object
+            self._edsdk.initialize(ConsoleOutput())
 
-        self._edsdk_object = util.edsdk_object
-        self._edsdk_object.initialize(ConsoleOutput())
-        self._edsdk_enabled = True
-        self.cam_list = self._edsdk_object.CameraList()
+        except: # TODO: add better exception
+            self._edsdk_enabled = False
 
-    def get_selected_camera(self) -> Optional[Any]:
-        """Return first selected camera.
+        # import util.edsdk_object
 
-        TODO: update to interface with multiple cameras
-        """
-        return self.cam_list.get_camera_by_index(0)
+        # self._edsdk_object = util.edsdk_object
+        # self._edsdk_object.initialize(ConsoleOutput())
+        # self._edsdk_enabled = True
+        # self._edsdk_camlist = self._edsdk_object.CameraList()
 
-    def terminate_edsdk(self) -> bool:
-        """Stop Canon EDSDK connection."""
-        if not self._edsdk_enabled:
-            return False
+    # def get_selected_camera(self) -> Optional[Any]:
+    #     """Return first selected camera.
 
-        self._edsdk_enabled = False
-        self._edsdk_object = None
+    #     TODO: update to interface with multiple cameras
+    #     """
+    #     return self._edsdk_camlist.get_camera_by_index(0)
 
-        if self.cam_list:
-            self.cam_list.terminate()
-        return True
+    # def terminate_edsdk(self) -> bool:
+    #     """Stop Canon EDSDK connection."""
+    #     if not self._edsdk_enabled:
+    #         return False
+
+    #     self._edsdk_enabled = False
+    #     self._edsdk_object = None
+
+    #     if self._edsdk_camlist:
+    #         self._edsdk_camlist.terminate()
+    #     return True
+
+    # @property
+    # def edsdk_enabled(self) -> bool:
+    #     return self._edsdk_enabled
+
+    # @edsdk_enabled.setter
+    # def edsdk_enabled(self, value: bool) -> None:
+    #     self._edsdk_enabled = value
+
+    def terminate_edsdk(self):
+        if self._edsdk_enabled and self._edsdk is not None:
+            self._edsdk.terminate()
 
     @property
-    def edsdk_enabled(self) -> bool:
-        return self._edsdk_enabled
+    def edsdk(self):
+        # return self._edsdk_object
+        return self._edsdk
 
-    @edsdk_enabled.setter
-    def edsdk_enabled(self, value: bool) -> None:
-        self._edsdk_enabled = value
 
 
 class ConsoleOutput:

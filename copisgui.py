@@ -75,6 +75,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
 
-    if app.c.edsdk_enabled:
-        app.c.terminate_edsdk()
+    app.c.terminate_edsdk()
     del app

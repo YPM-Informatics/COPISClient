@@ -13,70 +13,125 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import time
 from ctypes import *
-
-import utils
-import wx
 
 from util.Canon.EDSDKLib import *
 
 _edsdk = None
 _console = None
-_running = False
-_cam_list = None
-_num_cams = 0
+_camlist = None
+_camref = None
+running = False
+num_cams = 0
+
+waiting_for_image = False
+image_filename = ''
+image_folder = ''
+image_prefix = ''
+image_index = None
 
 
 def initialize(console):
-    global _running, _edsdk, _console, _cam_list, _num_cams
+    global running
 
-    if _running:
+    if running:
         return
+
+    global _edsdk, _console, _camlist, num_cams
 
     _console = console
 
     try:
         _edsdk = EDSDK()
         _edsdk.EdsInitializeSDK()
-        _cam_list = _edsdk.EdsGetCameraList()
-        _num_cams = _edsdk.EdsGetChildCount(_cam_list)
-
+        _camlist = _edsdk.EdsGetCameraList()
+        num_cams = _edsdk.EdsGetChildCount(_camlist)
 
     except Exception as e:
         _console.print(f'An exception occurred while initializing Canon API: {e.args[0]}')
 
 
 def connect(index: int = 0):
-    global _running, _edsdk, _num_cams
+    global running, num_cams
 
-    if _running or _num_cams == 0:
+    # add thing to turn evf off
+
+    if running or num_cams == 0:
         return
 
-    _running = True
+    global _edsdk, _camlist, _camref
 
-    camref = _edsdk.EdsGetChildAtIndex(_cam_list, index)
-    _edsdk.EdsRelease(_cam_list)
-    _edsdk.EdsOpenSession(camref)
+    running = True
 
-    # connect
-    _edsdk.EdsOpenSession(camref)
-    _edsdk.EdsSetPropertyData(camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-    _edsdk.EdsSetCapacity(camref, EdsCapacity(10000000,512,1))
+    _camref = _edsdk.EdsGetChildAtIndex(_camlist, index)
+    _edsdk.EdsRelease(_camlist)
+    _edsdk.EdsOpenSession(_camref)
+    _edsdk.EdsSetPropertyData(_camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+    _edsdk.EdsSetCapacity(_camref, EdsCapacity(10000000, 512, 1))
 
     # set handlers
-    _edsdk.EdsSetObjectEventHandler(camref, _edsdk.ObjectEvent_All, object_handler, None)
-    _edsdk.EdsSetPropertyEventHandler(camref, _edsdk.PropertyEvent_All, property_handler, camref)
-    _edsdk.EdsSetCameraStateEventHandler(camref, _edsdk.StateEvent_All, state_handler, camref)
+    _edsdk.EdsSetObjectEventHandler(_camref, _edsdk.ObjectEvent_All, object_handler, None)
+    _edsdk.EdsSetPropertyEventHandler(_camref, _edsdk.PropertyEvent_All, property_handler, _camref)
+    _edsdk.EdsSetCameraStateEventHandler(_camref, _edsdk.StateEvent_All, state_handler, _camref)
 
-    _edsdk.EdsSetPropertyData(camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), _edsdk.EvfOutputDevice_TFT)
+    _edsdk.EdsSetPropertyData(_camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), _edsdk.EvfOutputDevice_TFT)
 
 
-def _generate_file_name() -> str:
-    """Returns a filename for an image with date and file extension."""
-    now = datetime.datetime.now()
-    file_name = 'IMG_' + now.isoformat()[:-7].replace(':', '-') + '.jpg'
-    return file_name
+def disconnect():
+    global _edsdk, _camref, running
+
+    _edsdk.EdsCloseSession(_camref)
+    _edsdk.EdsRelease(_camref)
+    _edsdk.EdsTerminateSDK()
+
+    running = False
+
+
+def snap_photo():
+    global _camref
+
+    try:
+        _edsdk.EdsSendCommand(_camref, 0, 0)
+
+    except Exception as e:
+        _console.print(f'An exception occurred while taking a photo with camera {str(_camref)}: {e.args[0]}')
+
+
+def step_focus():
+    return
+
+
+def start_evf():
+    return
+
+
+def download_evf():
+    return
+
+
+def end_evf():
+    return
+
+
+def terminate():
+    try:
+        global _edsdk, running
+        _edsdk.EdsTerminateSDK()
+        running = False
+    except Exception as e:
+        global _console
+        _console.print(f'An exception occurred while terminating Canon API: {e.args[0]}')
+
+
+def _generate_file_name():
+    """Sets filename for an image with date and file extension."""
+    global image_filename, image_folder, image_prefix
+
+    now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
+    image_filename = os.path(f'./IMG_{now}.jpg')
+    # return file_name
 
 
 def _download_image(image) -> None:
@@ -88,12 +143,19 @@ def _download_image(image) -> None:
     """
     try:
         dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
-        file_name = _generate_file_name()
-        stream = _edsdk.EdsCreateFileStream(file_name, 1, 2)
+        _generate_file_name()
+
+        global image_filename
+        stream = _edsdk.EdsCreateFileStream(image_filename, 1, 2)
+
         _edsdk.EdsDownload(image, dir_info.size, stream)
         _edsdk.EdsDownloadComplete(image)
         _edsdk.EdsRelease(stream)
-        _console.print(f'Image is saved as {file_name}.')
+
+        global waiting_for_image
+        waiting_for_image = False
+
+        _console.print(f'Image is saved as {image_filename}.')
     except Exception as e:
         _console.print(f'An exception occurred while downloading an image: {e.args[0]}')
 
@@ -149,169 +211,6 @@ def _handle_property(event, property, param, context):
     """
     return 0
 property_handler = PropertyHandlerType(_handle_property)
-
-
-class Camera:
-    def __init__(self, cam_id, camref):
-        self.camref = camref
-        self.cam_id = cam_id
-        self.device = c_void_p()
-        self.is_evf_on = False
-        self.running = False
-
-    def connect(self):
-        if self.running:
-            return
-
-        self.running = True
-
-        try:
-            # set the handlers
-            _edsdk.EdsSetObjectEventHandler(self.camref, _edsdk.ObjectEvent_All, object_handler, None)
-            _edsdk.EdsSetPropertyEventHandler(self.camref, _edsdk.PropertyEvent_All, property_handler, self.camref)
-            _edsdk.EdsSetCameraStateEventHandler(self.camref, _edsdk.StateEvent_All, state_handler, self.camref)
-
-            # connect to the camera
-            _edsdk.EdsOpenSession(self.camref)
-            _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-            _edsdk.EdsSetCapacity(self.camref, EdsCapacity(10000000, 512, 1))
-        except Exception as e:
-            _console.print(f'An exception occurred while connecting to a camera {self.cam_id + 1}: {e.args[0]}')
-
-    def __del__(self):
-        if self.camref is not None:
-            try:
-                _edsdk.EdsCloseSession(self.camref)
-                _edsdk.EdsRelease(self.camref)
-                _running = False
-            except Exception as e:
-                _console.print(f'An exception occurred while disconnecting a camera {str(self.cam_id + 1)}: {e.args[0]}')
-
-    def shoot(self):
-        try:
-            _edsdk.EdsSendCommand(self.camref, 0, 0)
-        except Exception as e:
-            _console.print(f'An exception occurred while taking a photo with camera {str(self.cam_id + 1)}: {e.args[0]}')
-
-    def startEvf(self):
-        if not self.is_evf_on:
-            try:
-                # start live view
-                self.device = _edsdk.EvfOutputDevice_PC
-                self.device = _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), self.device)
-                global _keep_liveview_alive
-                _keep_liveview_alive = True
-                self.evf_frame_displayed = False
-
-                self.evfStream = _edsdk.EdsCreateMemoryStream(0)
-                self.evfImageRef = _edsdk.EdsCreateEvfImageRef(self.evfStream)
-            except Exception as e:
-                _console.print(f'An exception occurred while starting a live view with camera {str(self.cam_id + 1)}: {e.args[0]}')
-
-            time.sleep(0.5)
-            self.download_evf()
-            _console.print('Live view is on.')
-
-    def download_evf(self):
-        time.sleep(0.1)
-        try:
-            _edsdk.EdsDownloadEvfImage(self.camref, self.evfImageRef)
-
-            # dataset = EvfDataSet()
-            # dataset.zoom = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeo(c_uint), c_uint(dataset.zoom))
-            # dataset.imagePosition = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0,sizeof(EdsPoint),dataset.imagePosition)
-            # dataset.zoomRect = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeo(EdsRect), dataset.zoomRect)
-            # dataset.sizeJpgLarge = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0,sizeof(EdsSize),dataset.sizeJpgLarge)
-
-            output_length = _edsdk.EdsGetLength(self.evfStream)
-            image_data = (c_ubyte * output_length.value)()
-            image_data_pointer = _edsdk.EdsGetPointer(self.evfStream, image_data)
-            self.img_byte_data = bytearray(string_at(image_data_pointer, output_length.value))
-        except Exception as e:
-            _console.print(f'An exception occurred while downloading a live view image with camera {str(self.cam_id + 1)}: {e.args[0]}')
-
-
-    def end_evf(self):
-        try:
-            _edsdk.EdsRelease(self.evfImageRef)
-            _edsdk.EdsRelease(self.evfStream)
-            dataType_size = _edsdk.EdsGetPropertySize(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0)
-            _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_DepthOfFieldPreview, 0, dataType_size['size'], _edsdk.EvfDepthOfFieldPreview_OFF)
-            self.is_evf_on = False
-            time.sleep(1)
-
-            device = c_uint32()
-            device.value &= ~_edsdk.EvfOutputDevice_PC
-            _edsdk.EdsSetPropertyData(self.camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(device), device.value)
-            _console.print('Live view is off.')
-        except Exception as e:
-            _console.print(f'An exception occurred while closing a live view with camera + {str(self.cam_id + 1)}: {e.args[0]}')
-
-
-class CameraList:
-
-    def __init__(self):
-        self.list = c_void_p(None)
-
-        try:
-            self.list = _edsdk.EdsGetCameraList()
-            self.cam_model_list = []
-            self.selected_camera = None
-            self.count = _edsdk.EdsGetChildCount(self.list)
-
-            if self.count != 0:
-                # transfer EDSDK camera object to custom camera object
-                for i in range(self.count):
-                    self.cam_model_list.append(Camera(i, _edsdk.EdsGetChildAtIndex(self.list, i)))
-
-            _edsdk.EdsRelease(self.list)
-        except Exception as e:
-            _console.print(f'An exception occurred while getting the camera list: {e.args[0]}')
-
-    def get_count(self):
-        if self.count is None:
-            return 0
-
-        return self.count
-
-    def get_camera_by_index(self, index):
-        return self.cam_model_list[index]
-
-    def get_camera_by_id(self, id):
-        if id not in range(len(self.cam_model_list)):
-            for model in self.cam_model_list:
-                if model.id == id:
-                    return model
-        else:
-            index = id
-            while index in range(len(self.cam_model_list)):
-                model_index = self.cam_model_list[index]
-                if model_index.id == id:
-                    return model_index
-                elif model_index.id > id:
-                    index -= 1
-                else:
-                    index += 1
-        return None
-
-    def set_selected_cam_by_id(self, id_):
-        self.selected_camera = self.get_camera_by_id(id_)
-        self.selected_camera.connect()
-
-        global _camera
-        _camera = self.selected_camera
-
-    def terminate(self):
-        for cam in self.cam_model_list:
-            del cam
-
-        try:
-            _edsdk.EdsTerminateSDK()
-            global _running
-            _running = False
-        except Exception as e:
-            _console.print(f'An exception occurred while terminating Canon API: {e.args[0]}')
-
 
 class EvfDataSet(Structure):
     _fields_ = [
