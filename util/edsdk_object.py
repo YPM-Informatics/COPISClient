@@ -16,29 +16,60 @@
 import time
 from ctypes import *
 
+import utils
 import wx
 
-import utils
 from util.Canon.EDSDKLib import *
 
 _edsdk = None
 _console = None
 _running = False
+_cam_list = None
+_num_cams = 0
 
 
 def initialize(console):
+    global _running, _edsdk, _console, _cam_list, _num_cams
+
     if _running:
         return
 
-    global _edsdk
-    global _console
     _console = console
 
     try:
         _edsdk = EDSDK()
         _edsdk.EdsInitializeSDK()
+        _cam_list = _edsdk.EdsGetCameraList()
+        _num_cams = _edsdk.EdsGetChildCount(_cam_list)
+
+
     except Exception as e:
         _console.print(f'An exception occurred while initializing Canon API: {e.args[0]}')
+
+
+def connect(index: int = 0):
+    global _running, _edsdk, _num_cams
+
+    if _running or _num_cams == 0:
+        return
+
+    _running = True
+
+    camref = _edsdk.EdsGetChildAtIndex(_cam_list, index)
+    _edsdk.EdsRelease(_cam_list)
+    _edsdk.EdsOpenSession(camref)
+
+    # connect
+    _edsdk.EdsOpenSession(camref)
+    _edsdk.EdsSetPropertyData(camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+    _edsdk.EdsSetCapacity(camref, EdsCapacity(10000000,512,1))
+
+    # set handlers
+    _edsdk.EdsSetObjectEventHandler(camref, _edsdk.ObjectEvent_All, object_handler, None)
+    _edsdk.EdsSetPropertyEventHandler(camref, _edsdk.PropertyEvent_All, property_handler, camref)
+    _edsdk.EdsSetCameraStateEventHandler(camref, _edsdk.StateEvent_All, state_handler, camref)
+
+    _edsdk.EdsSetPropertyData(camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), _edsdk.EvfOutputDevice_TFT)
 
 
 def _generate_file_name() -> str:
@@ -62,14 +93,12 @@ def _download_image(image) -> None:
         _edsdk.EdsDownload(image, dir_info.size, stream)
         _edsdk.EdsDownloadComplete(image)
         _edsdk.EdsRelease(stream)
-        _console.print('Image is saved as ' + file_name + '.')
+        _console.print(f'Image is saved as {file_name}.')
     except Exception as e:
         _console.print(f'An exception occurred while downloading an image: {e.args[0]}')
 
 
 ObjectHandlerType = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
-
-
 def _handle_object(event, object, context):
     """Handles the group of events where request notifications are issued to
     create, delete or transfer image data stored in a camera or image files on
@@ -87,8 +116,6 @@ object_handler = ObjectHandlerType(_handle_object)
 
 
 StateHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
-
-
 def _handle_state(event, state, context):
     """Handles the group of events where notifications are issued regarding
     changes in the state of a camera, such as activation of a shut-down timer.
@@ -108,8 +135,6 @@ state_handler = StateHandlerType(_handle_state)
 
 
 PropertyHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
-
-
 def _handle_property(event, property, param, context):
     """Handles the group of events where notifications are issued regarding
     changes in the properties of a camera.
@@ -190,13 +215,13 @@ class Camera:
     def download_evf(self):
         time.sleep(0.1)
         try:
-            _edsdk.EdsDownloadEvfImage(self.camref,self.evfImageRef)
+            _edsdk.EdsDownloadEvfImage(self.camref, self.evfImageRef)
 
-            #dataset = EvfDataSet()
-            #dataset.zoom = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeo(c_uint), c_uint(dataset.zoom))
-            #dataset.imagePosition = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0,sizeof(EdsPoint),dataset.imagePosition)
-            #dataset.zoomRect = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeo(EdsRect), dataset.zoomRect)
-            #dataset.sizeJpgLarge = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0,sizeof(EdsSize),dataset.sizeJpgLarge)
+            # dataset = EvfDataSet()
+            # dataset.zoom = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_Zoom, 0, sizeo(c_uint), c_uint(dataset.zoom))
+            # dataset.imagePosition = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ImagePosition, 0,sizeof(EdsPoint),dataset.imagePosition)
+            # dataset.zoomRect = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_ZoomRect, 0, sizeo(EdsRect), dataset.zoomRect)
+            # dataset.sizeJpgLarge = _edsdk.EdsGetPropertyDat(evfImageRef,_edsdk.PropID_Evf_CoordinateSystem, 0,sizeof(EdsSize),dataset.sizeJpgLarge)
 
             output_length = _edsdk.EdsGetLength(self.evfStream)
             image_data = (c_ubyte * output_length.value)()
