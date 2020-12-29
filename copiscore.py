@@ -503,19 +503,19 @@ class COPISCore:
             import util.edsdk_object
             self._edsdk = util.edsdk_object
             self._edsdk.initialize(ConsoleOutput())
+            self._edsdk.connect()
 
-        except: # TODO: add better exception
+        except: # TODO: add better exception perhaps
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
+        """Terminate Canon EDSDK connection."""
         if self._edsdk_enabled and self._edsdk is not None:
             self._edsdk.terminate()
 
     @property
     def edsdk(self):
-        # return self._edsdk_object
         return self._edsdk
-
 
 
 class ConsoleOutput:

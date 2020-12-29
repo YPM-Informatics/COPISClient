@@ -62,7 +62,18 @@ def connect(index: int = 0):
 
     _update_camera_list()
 
-    if index >= num_cams:
+    if num_cams == 0:
+        _console.print('No cameras detected.')
+        return
+
+    # invalid index
+    if index < 0 or index >= num_cams:
+        _console.print(f'Invalid camera index: {index}.')
+        return
+
+    # already connected
+    if running and index == _camindex:
+        _console.print(f'Already connected to camera {_camindex}.')
         return
 
     # disconnect from previously connected camera
@@ -73,6 +84,8 @@ def connect(index: int = 0):
 
     _camindex = index
     _camref = _edsdk.EdsGetChildAtIndex(_camlist, _camindex)
+    _console.print(f'Connected to camera {_camindex}.')
+
     _edsdk.EdsOpenSession(_camref)
     _edsdk.EdsSetPropertyData(_camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
     _edsdk.EdsSetCapacity(_camref, EdsCapacity(10000000, 512, 1))
@@ -90,9 +103,11 @@ def disconnect():
     global running, _camref, _camindex
 
     if not running:
+        _console.print('No cameras currently connected.')
         return
 
     _edsdk.EdsCloseSession(_camref)
+    _console.print(f'Disconnected from camera {_camindex}.')
 
     running = False
     _camref = None
@@ -102,42 +117,45 @@ def disconnect():
 def take_picture():
     """Take picture on connected camera."""
     if not running:
+        _console.print('No cameras currently connected.')
         return
 
     try:
         global waiting_for_image
         waiting_for_image = True
-        _edsdk.EdsSendCommand(_camref, 0, 0)
+
+        _edsdk.EdsSendCommand(_camref, _edsdk.CameraCommand_PressShutterButton,
+            EdsShutterButton.CameraCommand_ShutterButton_Completely.value)
+
+        _edsdk.EdsSendCommand(_camref, _edsdk.CameraCommand_PressShutterButton,
+            EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
         # while waiting_for_image:
         #     pythoncom.PumpWaitingMessages()
 
     except Exception as e:
-        _console.print(f'An exception occurred while taking a photo with camera {str(_camref)}: {e.args[0]}')
+        _console.print(f'An exception occurred while taking a photo with camera {_camindex}: {e.args[0]}')
 
 
 def step_focus():
     return
 
 
-def start_evf():
+def start_liveview():
     return
 
 
-def download_evf():
+def download_evf_data():
     return
 
 
-def end_evf():
+def end_liveview():
     return
-
-
-def get_camera_count():
-    return num_cams
 
 
 def _update_camera_list():
     global _camlist, num_cams
+
     _camlist = _edsdk.EdsGetCameraList()
     num_cams = _edsdk.EdsGetChildCount(_camlist)
 
@@ -191,11 +209,6 @@ def _handle_object(event, object, context):
     """Handles the group of events where request notifications are issued to
     create, delete or transfer image data stored in a camera or image files on
     the memory card.
-
-    Args:
-        event: EdsObjectEvent event type supplemented
-        object: EdsBaseRef reference to object created by the event
-        context: EdsVoid any data needed for the application
     """
     if event == _edsdk.ObjectEvent_DirItemRequestTransfer:
         _download_image(object)
@@ -207,14 +220,6 @@ PropertyHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
 def _handle_property(event, property, param, context):
     """Handles the group of events where notifications are issued regarding
     changes in the properties of a camera.
-
-    Args:
-        event: EdsPropertyEvent event type supplemented
-        property: EdsPropertyID property ID created by the event
-        param: EdsUInt32 used to identify information created by the event for
-            custom function properties or other properties that have multiple
-            items of information
-        context: EdsVoid any data needed for the application
     """
     return 0
 property_handler = PropertyHandlerType(_handle_property)
@@ -224,11 +229,6 @@ StateHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
 def _handle_state(event, state, context):
     """Handles the group of events where notifications are issued regarding
     changes in the state of a camera, such as activation of a shut-down timer.
-
-    Args:
-        event: EdsStateEvent event type supplemented
-        state: EdsUInt32 pointer to the event data
-        context: EdsVoid any data needed for the application
     """
     if event == _edsdk.StateEvent_WillSoonShutDown:
         try:

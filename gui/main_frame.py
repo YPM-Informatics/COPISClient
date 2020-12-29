@@ -78,8 +78,8 @@ class MainWindow(wx.Frame):
         self.init_menubar()
         self.init_mgr()
 
-        # initialize edsdk
-        self.add_evf_pane()
+        # TODO: re-enable liveview
+        # self.add_evf_pane()
 
         self.Centre()
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
@@ -446,8 +446,6 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        # self.c.init_edsdk()
-
         if self.c.edsdk.num_cams == 0:
             return
 
