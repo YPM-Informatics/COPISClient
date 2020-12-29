@@ -138,22 +138,27 @@ def take_picture():
 
 
 def step_focus():
+    """TODO"""
     return
 
 
 def start_liveview():
+    """TODO"""
     return
 
 
 def download_evf_data():
+    """TODO"""
     return
 
 
 def end_liveview():
+    """TODO"""
     return
 
 
 def _update_camera_list():
+    """Update camera list and camera count."""
     global _camlist, num_cams
 
     _camlist = _edsdk.EdsGetCameraList()
@@ -161,6 +166,7 @@ def _update_camera_list():
 
 
 def terminate():
+    """Terminate EDSDK library."""
     try:
         global running
 
