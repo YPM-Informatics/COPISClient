@@ -23,50 +23,55 @@ _edsdk = None
 _console = None
 _camlist = None
 _camref = None
+_camindex = -1
 running = False
+
 num_cams = 0
 
 waiting_for_image = False
-image_filename = ''
+image_filename = None
 image_folder = ''
-image_prefix = ''
+image_prefix = 'COPIS'
 image_index = None
 
 
 def initialize(console):
-    global running
-
     if running:
         return
 
-    global _edsdk, _console, _camlist, num_cams
+    global _edsdk, _console
 
     _console = console
 
     try:
         _edsdk = EDSDK()
         _edsdk.EdsInitializeSDK()
-        _camlist = _edsdk.EdsGetCameraList()
-        num_cams = _edsdk.EdsGetChildCount(_camlist)
+        _update_camera_list()
 
     except Exception as e:
         _console.print(f'An exception occurred while initializing Canon API: {e.args[0]}')
 
 
 def connect(index: int = 0):
-    global running, num_cams
+    """Connect to camera at index, and init it for capturing images.
 
-    # add thing to turn evf off
+    Args:
+        index: Defaults to 0.
+    """
+    global running, _camref, _camindex
 
-    if running or num_cams == 0:
+    _update_camera_list()
+
+    if index >= num_cams:
         return
 
-    global _edsdk, _camlist, _camref
+    if running:
+        disconnect()
 
     running = True
 
-    _camref = _edsdk.EdsGetChildAtIndex(_camlist, index)
-    _edsdk.EdsRelease(_camlist)
+    _camindex = index
+    _camref = _edsdk.EdsGetChildAtIndex(_camlist, _camindex)
     _edsdk.EdsOpenSession(_camref)
     _edsdk.EdsSetPropertyData(_camref, _edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
     _edsdk.EdsSetCapacity(_camref, EdsCapacity(10000000, 512, 1))
@@ -80,20 +85,29 @@ def connect(index: int = 0):
 
 
 def disconnect():
-    global _edsdk, _camref, running
+    global running, _camref, _camindex
+
+    if not running:
+        return
 
     _edsdk.EdsCloseSession(_camref)
-    _edsdk.EdsRelease(_camref)
-    _edsdk.EdsTerminateSDK()
 
     running = False
+    _camref = None
+    _camindex = -1
 
 
-def snap_photo():
-    global _camref
+def take_picture():
+    if not running:
+        return
 
     try:
+        global waiting_for_image
+        waiting_for_image = True
         _edsdk.EdsSendCommand(_camref, 0, 0)
+
+        # while waiting_for_image:
+        #     pythoncom.PumpWaitingMessages()
 
     except Exception as e:
         _console.print(f'An exception occurred while taking a photo with camera {str(_camref)}: {e.args[0]}')
@@ -115,13 +129,24 @@ def end_evf():
     return
 
 
+def get_camera_count():
+    return num_cams
+
+
+def _update_camera_list():
+    global _camlist, num_cams
+    _camlist = _edsdk.EdsGetCameraList()
+    num_cams = _edsdk.EdsGetChildCount(_camlist)
+
+
 def terminate():
     try:
-        global _edsdk, running
+        global running
+
         _edsdk.EdsTerminateSDK()
         running = False
+
     except Exception as e:
-        global _console
         _console.print(f'An exception occurred while terminating Canon API: {e.args[0]}')
 
 
@@ -130,22 +155,20 @@ def _generate_file_name():
     global image_filename, image_folder, image_prefix
 
     now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
-    image_filename = os.path(f'./IMG_{now}.jpg')
-    # return file_name
+    image_filename = os.path.abspath(f'./{image_prefix}_{now}.jpg')
 
 
 def _download_image(image) -> None:
-    """Using EDSDK, get the location of the image in camera, create the file
+    """Using EDSDK, get the location of the image in camera, create the -file
     stream that processes transfer image from camera to PC, and download image.
 
     Args:
         image: Pointer to the image.
     """
     try:
-        dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
         _generate_file_name()
 
-        global image_filename
+        dir_info = _edsdk.EdsGetDirectoryItemInfo(image)
         stream = _edsdk.EdsCreateFileStream(image_filename, 1, 2)
 
         _edsdk.EdsDownload(image, dir_info.size, stream)
@@ -155,7 +178,8 @@ def _download_image(image) -> None:
         global waiting_for_image
         waiting_for_image = False
 
-        _console.print(f'Image is saved as {image_filename}.')
+        _console.print(f'Image saved at {image_filename}.')
+
     except Exception as e:
         _console.print(f'An exception occurred while downloading an image: {e.args[0]}')
 
@@ -177,6 +201,23 @@ def _handle_object(event, object, context):
 object_handler = ObjectHandlerType(_handle_object)
 
 
+PropertyHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
+def _handle_property(event, property, param, context):
+    """Handles the group of events where notifications are issued regarding
+    changes in the properties of a camera.
+
+    Args:
+        event: EdsPropertyEvent event type supplemented
+        property: EdsPropertyID property ID created by the event
+        param: EdsUInt32 used to identify information created by the event for
+            custom function properties or other properties that have multiple
+            items of information
+        context: EdsVoid any data needed for the application
+    """
+    return 0
+property_handler = PropertyHandlerType(_handle_property)
+
+
 StateHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
 def _handle_state(event, state, context):
     """Handles the group of events where notifications are issued regarding
@@ -194,23 +235,6 @@ def _handle_state(event, state, context):
             _console.print(f'An exception occurred while handling the state change event: {e.args[0]}')
     return 0
 state_handler = StateHandlerType(_handle_state)
-
-
-PropertyHandlerType = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
-def _handle_property(event, property, param, context):
-    """Handles the group of events where notifications are issued regarding
-    changes in the properties of a camera.
-
-    Args:
-        event: EdsPropertyEvent event type supplemented
-        property: EdsPropertyID property ID created by the event
-        param: EdsUInt32 used to identify information created by the event for
-            custom function properties or other properties that have multiple
-            items of information
-        context: EdsVoid any data needed for the application
-    """
-    return 0
-property_handler = PropertyHandlerType(_handle_property)
 
 class EvfDataSet(Structure):
     _fields_ = [

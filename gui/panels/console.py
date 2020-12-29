@@ -79,13 +79,20 @@ class ConsolePanel(wx.Panel):
         Currently only selects camera if entered a valid id.
         TODO: When implemented, connect to actual console or some parser.
         """
-        if not event.String:
+        cmd = event.String
+        if not cmd:
             return
 
-        self.print(f'$ {event.String}')
+        self.print(f'$ {cmd}')
         self.on_command_cleared()
 
-        self.c.select_device(int(event.String))
+        if cmd.isdigit():
+            self.c.edsdk.connect(int(cmd))
+            # self.c.select_device(int(cmd))
+        elif cmd == 'disconnect':
+            self.c.edsdk.disconnect()
+        elif cmd == 'shoot':
+            self.c.edsdk.take_picture()
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""

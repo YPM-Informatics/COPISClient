@@ -507,39 +507,6 @@ class COPISCore:
         except: # TODO: add better exception
             self._edsdk_enabled = False
 
-        # import util.edsdk_object
-
-        # self._edsdk_object = util.edsdk_object
-        # self._edsdk_object.initialize(ConsoleOutput())
-        # self._edsdk_enabled = True
-        # self._edsdk_camlist = self._edsdk_object.CameraList()
-
-    # def get_selected_camera(self) -> Optional[Any]:
-    #     """Return first selected camera.
-
-    #     TODO: update to interface with multiple cameras
-    #     """
-    #     return self._edsdk_camlist.get_camera_by_index(0)
-
-    # def terminate_edsdk(self) -> bool:
-    #     """Stop Canon EDSDK connection."""
-    #     if not self._edsdk_enabled:
-    #         return False
-
-    #     self._edsdk_enabled = False
-    #     self._edsdk_object = None
-
-    #     if self._edsdk_camlist:
-    #         self._edsdk_camlist.terminate()
-    #     return True
-
-    # @property
-    # def edsdk_enabled(self) -> bool:
-    #     return self._edsdk_enabled
-
-    # @edsdk_enabled.setter
-    # def edsdk_enabled(self, value: bool) -> None:
-    #     self._edsdk_enabled = value
 
     def terminate_edsdk(self):
         if self._edsdk_enabled and self._edsdk is not None:
@@ -558,4 +525,4 @@ class ConsoleOutput:
         return
 
     def print(self, msg: str) -> None:
-        dispatcher.send('core_message', message=str)
+        dispatcher.send('core_message', message=msg)
