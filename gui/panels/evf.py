@@ -6,7 +6,7 @@
 # (at your option) any later version.
 #
 # COPISClient is distributed in the hope that it will be useful,
-# but WITHOUT ANY WAR]RANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -38,13 +38,6 @@ class EvfPanel(wx.Panel):
         # self.Bind(wx.EVT_PAINT, self.on_paint)
 
         self.c.edsdk.connect(0)
-        # self.c.edsdk.disconnect()
-        # self.c.edsdk.connect(0)
-
-        # self.c.edsdk.get_selected_camera()
-        # self.c.edsdk.connect()
-        # self.c.edsdk.start_evf()
-        # self.cam.startEvf()
 
         # self.update()
 

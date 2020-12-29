@@ -507,7 +507,6 @@ class COPISCore:
         except: # TODO: add better exception
             self._edsdk_enabled = False
 
-
     def terminate_edsdk(self):
         if self._edsdk_enabled and self._edsdk is not None:
             self._edsdk.terminate()

@@ -17,6 +17,8 @@
 
 """Main COPIS App (GUI)."""
 
+import signal
+
 import wx
 import wx.lib.inspection
 
@@ -26,10 +28,12 @@ from appconfig import AppConfig
 from copiscore import COPISCore
 from gui.main_frame import MainWindow
 
+
 # class COPISWindow(MainWindow, copisconsole.COPISConsole):
 #     def __init__(self, *args, **kwargs):
 #         copisconsole.COPISConsole.__init__(self)
 #         MainWindow.__init__(self, *args, **kwargs)
+
 
 class COPISApp(wx.App):
     """Main wxPython app.
@@ -73,6 +77,7 @@ if __name__ == '__main__':
         # wx.lib.inspection.InspectionTool().Show() # debug
         app.MainLoop()
     except KeyboardInterrupt:
+        print("helo")
         pass
 
     app.c.terminate_edsdk()

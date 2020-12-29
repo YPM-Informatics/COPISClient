@@ -65,6 +65,7 @@ def connect(index: int = 0):
     if index >= num_cams:
         return
 
+    # disconnect from previously connected camera
     if running:
         disconnect()
 
@@ -85,6 +86,7 @@ def connect(index: int = 0):
 
 
 def disconnect():
+    """Disconnect from camera."""
     global running, _camref, _camindex
 
     if not running:
@@ -98,6 +100,7 @@ def disconnect():
 
 
 def take_picture():
+    """Take picture on connected camera."""
     if not running:
         return
 
@@ -151,7 +154,7 @@ def terminate():
 
 
 def _generate_file_name():
-    """Sets filename for an image with date and file extension."""
+    """Sets the filename for an image."""
     global image_filename, image_folder, image_prefix
 
     now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
@@ -159,8 +162,7 @@ def _generate_file_name():
 
 
 def _download_image(image) -> None:
-    """Using EDSDK, get the location of the image in camera, create the -file
-    stream that processes transfer image from camera to PC, and download image.
+    """Download image from camera buffer to host computer.
 
     Args:
         image: Pointer to the image.
