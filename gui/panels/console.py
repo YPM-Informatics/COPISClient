@@ -15,10 +15,11 @@
 
 """ConsolePanel class."""
 
-import wx
-from pydispatch import dispatcher
+import shlex
 
+import wx
 from gui.wxutils import create_scaled_bitmap
+from pydispatch import dispatcher
 from utils import Point5
 
 
@@ -74,18 +75,51 @@ class ConsolePanel(wx.Panel):
         self.Sizer.Add(command_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
 
     def on_command_entered(self, event: wx.CommandEvent) -> None:
-        """On EVT_TEXT_ENTER, process entered console command.
+        """Parse and process entered console command.
 
-        Currently only selects camera if entered a valid id.
-        TODO: When implemented, connect to actual console or some parser.
+        Can connect, disconnect, and take pictures from cameras.
         """
-        if not event.String:
+        cmd = event.String
+
+        if not cmd:
             return
 
-        self.print(f'$ {event.String}')
+        self.print(f'$ {cmd}')
         self.on_command_cleared()
 
-        self.c.select_device(int(event.String))
+        try:
+            # try parsing command
+            argv = shlex.split(cmd)
+            argc = len(argv)
+        except Exception as e:
+            self.print(f'invalid command: {e}')
+            return
+
+        if argv[0] == 'connect':
+            if argc == 2 and argv[1].isdigit():
+                self.c.edsdk.connect(int(argv[1]))
+            elif argc == 1:
+                self.c.edsdk.connect()
+            else:
+                self.print('usage: connect [INDEX]')
+
+        elif argv[0] == 'disconnect':
+            if argc == 1:
+                self.c.edsdk.disconnect()
+            else:
+                self.print('usage: disconnect')
+
+        elif argv[0] == 'shoot':
+            if argc == 2 and argv[1].isdigit():
+                self.c.edsdk.connect(int(argv[1]))
+                self.c.edsdk.take_picture()
+            elif argc == 1:
+                self.c.edsdk.take_picture()
+            else:
+                self.print('usage: shoot [INDEX]')
+
+        else:
+            self.print(f'invalid command: {argv[0]}')
 
     def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""
@@ -97,7 +131,7 @@ class ConsolePanel(wx.Panel):
 
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
-        self.print(f'notification: {signal} {message}')
+        self.print(f'{signal}: {message}')
 
     def on_action_export(self, filename: str) -> None:
         self.print(f'Exported actions to file {filename}')

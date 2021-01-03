@@ -32,16 +32,14 @@ class EvfPanel(wx.Panel):
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
         self.c = self.parent.c
-        self.timer = wx.CallLater(10, self.update)
+        # self.timer = wx.CallLater(10, self.update)
 
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
-        self.Bind(wx.EVT_PAINT, self.on_paint)
+        # self.Bind(wx.EVT_PAINT, self.on_paint)
 
-        self.cam = self.c.get_selected_camera()
-        self.cam.connect()
-        self.cam.startEvf()
+        self.c.edsdk.connect(0)
 
-        self.update()
+        # self.update()
 
     def update(self):
         self.Refresh()
@@ -64,6 +62,7 @@ class EvfPanel(wx.Panel):
         dc = wx.AutoBufferedPaintDC(self)
         dc.DrawBitmap(bitmap, 0, 0)
 
-    def on_destroy(self):
-        self.cam.end_evf()
+    def on_close(self):
+        # self.cam.end_evf()
+        self.c.edsdk.end_evf()
         self.timer.Stop()
