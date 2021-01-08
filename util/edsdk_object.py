@@ -52,7 +52,7 @@ def initialize(console):
         _console.print(f'An exception occurred while initializing Canon API: {e.args[0]}')
 
 
-def connect(index: int = 0):
+def connect(index: int = 0) -> bool:
     """Connect to camera at index, and init it for capturing images.
 
     Args:
@@ -64,17 +64,17 @@ def connect(index: int = 0):
 
     if num_cams == 0:
         _console.print('No cameras detected.')
-        return
+        return False
 
     # invalid index
     if index < 0 or index >= num_cams:
         _console.print(f'Invalid camera index: {index}.')
-        return
+        return False
 
     # already connected
     if running and index == _camindex:
         _console.print(f'Already connected to camera {_camindex}.')
-        return
+        return True
 
     # disconnect from previously connected camera
     if running:
@@ -96,15 +96,16 @@ def connect(index: int = 0):
     _edsdk.EdsSetCameraStateEventHandler(_camref, _edsdk.StateEvent_All, state_handler, _camref)
 
     _edsdk.EdsSetPropertyData(_camref, _edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), _edsdk.EvfOutputDevice_TFT)
+    return True
 
 
-def disconnect():
+def disconnect() -> bool:
     """Disconnect from camera."""
     global running, _camref, _camindex
 
     if not running:
         _console.print('No cameras currently connected.')
-        return
+        return False
 
     _edsdk.EdsCloseSession(_camref)
     _console.print(f'Disconnected from camera {_camindex}.')
@@ -112,6 +113,8 @@ def disconnect():
     running = False
     _camref = None
     _camindex = -1
+
+    return True
 
 
 def take_picture():
