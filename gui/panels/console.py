@@ -95,6 +95,7 @@ class ConsolePanel(wx.Panel):
             self.print(f'invalid command: {e}')
             return
 
+        # NOTE: this is temporary, just a way to test edsdk functions.
         if argv[0] == 'connect':
             if argc == 2 and argv[1].isdigit():
                 self.c.edsdk.connect(int(argv[1]))
@@ -111,8 +112,8 @@ class ConsolePanel(wx.Panel):
 
         elif argv[0] == 'shoot':
             if argc == 2 and argv[1].isdigit():
-                self.c.edsdk.connect(int(argv[1]))
-                self.c.edsdk.take_picture()
+                if self.c.edsdk.connect(int(argv[1])):
+                    self.c.edsdk.take_picture()
             elif argc == 1:
                 self.c.edsdk.take_picture()
             else:
