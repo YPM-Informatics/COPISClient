@@ -57,6 +57,9 @@ def connect(index: int = 0) -> bool:
 
     Args:
         index: Defaults to 0.
+
+    Returns:
+        True if successful, False otherwise.
     """
     global running, _camref, _camindex
 
@@ -100,7 +103,11 @@ def connect(index: int = 0) -> bool:
 
 
 def disconnect() -> bool:
-    """Disconnect from camera."""
+    """Disconnect from camera.
+
+    Returns:
+        True if successful, False otherwise.
+    """
     global running, _camref, _camindex
 
     if not running:
@@ -117,11 +124,15 @@ def disconnect() -> bool:
     return True
 
 
-def take_picture():
-    """Take picture on connected camera."""
+def take_picture() -> bool:
+    """Take picture on connected camera.
+
+    Returns:
+        True if successful, False otherwise.
+    """
     if not running:
         _console.print('No cameras currently connected.')
-        return
+        return False
 
     try:
         global waiting_for_image
@@ -136,13 +147,20 @@ def take_picture():
         # while waiting_for_image:
         #     pythoncom.PumpWaitingMessages()
 
+        return True
+
     except Exception as e:
         _console.print(f'An exception occurred while taking a photo with camera {_camindex}: {e.args[0]}')
+        return False
 
 
-def step_focus():
-    """TODO"""
-    return
+def step_focus() -> bool:
+    """TODO
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    return False
 
 
 def start_liveview():
