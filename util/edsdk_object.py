@@ -65,6 +65,15 @@ def connect(index: int = 0) -> bool:
 
     _update_camera_list()
 
+    # already connected
+    if running and index == _camindex:
+        _console.print(f'Already connected to camera {_camindex}.')
+        return True
+
+    # disconnect from previously connected camera
+    if running:
+        disconnect()
+
     if num_cams == 0:
         _console.print('No cameras detected.')
         return False
@@ -74,14 +83,6 @@ def connect(index: int = 0) -> bool:
         _console.print(f'Invalid camera index: {index}.')
         return False
 
-    # already connected
-    if running and index == _camindex:
-        _console.print(f'Already connected to camera {_camindex}.')
-        return True
-
-    # disconnect from previously connected camera
-    if running:
-        disconnect()
 
     running = True
 
