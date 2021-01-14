@@ -5,24 +5,24 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
 ## **Command Codes**
 
 **Multi-controller communications**
-* *Pass [CMD] onto to target controller [DeviceID] via I2C*
+* *Pass [CMD] onto the target controller [DeviceID] via I2C*
   * Command: >
   * Format: >[DeviceID][CMD]
   * Examples: >1G0X100
-  * Notes: If omitted, command will be executed by master controller. [CMD} sent to traget device.
+  * Notes: If omitted, command will be executed by master controller. [CMD] sent to target device.
 * *Request Data from target Controller via I2C*
   * Command: <
   * Format: <[DeviceID]*[DataType]
   * Examples: <1*0
   * Data Types Definitions:
   * 0 -> System Data (current state & position)
-  * 1 -> Settings Data (list if settings)
+  * 1 -> Settings Data (list of settings)
 
 **Positioning Cameras**
 * *Rapid positioning at Max Feed Rate for each Axis*
   * Command: G0
   * Format:	G0X[##]Y[##]Z[##]P[##]T[##]
-  * Examples: G1X100Y50T25
+  * Examples: G0X100Y50T25
 * *Linear movement at feed rate (F) in distance mm/minute*
   * Command: G1
   * Format:	G1X[##]Y[##]Z[##]P[##]T[##]F[##]
@@ -77,7 +77,7 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
 * *Pause/Resume Processing*
   * Pause Command: M0
   * Resume Command: M24
-  * Notes: M0 & M24 are used for syncing positions of cameras allowing the master or the PC to insert pauses until other commands complete. Also useful when EDSDK is being used from a PC to control camera therefore allowing the controller to wait until PC has finished downloading imagery (or some other process) before proceeding on to next action in the buffer. Alternatively, the PC could hold back on sending commands until transfer is finished, theby not needing to issue a Pause command.
+  * Notes: M0 & M24 are used for syncing positions of cameras allowing the master or the PC to insert pauses until other commands complete. Also useful when EDSDK is being used from a PC to control camera therefore allowing the controller to wait until PC has finished downloading imagery (or some other process) before proceeding on to next action in the buffer. Alternatively, the PC could hold back on sending commands until transfer is finished, thereby not needing to issue a Pause command.
 * *Enable All Motors*
   * Command: M17
   * Example: M17
