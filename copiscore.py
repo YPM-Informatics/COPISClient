@@ -27,6 +27,7 @@ if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
 
+import logging
 import math
 import os
 import platform
@@ -155,8 +156,8 @@ class COPISCore:
         # printer responded to initial command and is active
         self._online = False
         # True if sending actions, false if paused
-        self._imaging = False
-        self._paused = False
+        self.imaging = False
+        self.paused = False
 
         # logging
         self.sentlines = {}
@@ -173,7 +174,8 @@ class COPISCore:
         self.evf_thread = None
         self.init_edsdk()
 
-        self._actionqueue = Queue(0)
+        self._mainqueue = None
+        self._sidequeue = Queue(0)
         self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
         self._update_test()
@@ -182,24 +184,46 @@ class COPISCore:
         self._selected_device: Optional[int] = -1
 
     @locked
-    def disconnect(self) -> bool:
+    def disconnect(self):
         """TODO: implement camera disconnect."""
         if self._machine:
-            return True
-        return False
+            if self.read_thread:
+                self.stop_read_thread = True
+                if threading.current_thread() != self.read_thread:
+                    self.read_thread.join()
+                self.read_thread = None
+            if self.imaging_thread:
+                self.imaging = False
+                self.imaging_thread.join()
+            self._stop_sender()
+
+        self._machine = None
+        self._online = False
+        self.imaging = False
+
+        dispatcher.send('core_message', message='Disconnected from device')
 
     @locked
-    def connect(self) -> bool:
+    def connect(self):
         """TODO: implement camera connect."""
 
-        return False
+        self.stop_read_thread = False
+        self.read_thread = threading.Thread(
+            target=self._listen,
+            name='read thread')
+        self.read_thread.start()
+        self._start_sender()
+
+        dispatcher.send('core_message', message='Connected to device')
 
     def reset(self) -> None:
         """Reset the machine."""
         return
 
     def _listen(self) -> None:
-        return
+        while True:
+            self._clear = True
+            time.sleep(1)
 
     def _start_sender(self) -> None:
         self.stop_send_thread = False
@@ -217,27 +241,33 @@ class COPISCore:
     def _sender(self) -> None:
         while not self.stop_send_thread:
             try:
-                command = self._actionqueue.get(True, 0.1)
+                command = self._sidequeue.get(True, 0.1)
             except QueueEmpty:
                 continue
 
-            while self._machine and self._imaging and not self._clear:
+            while self._machine and self.imaging and not self._clear:
                 time.sleep(0.001)
 
             self._send(command)
 
-            while self._machine and self._imaging and not self._clear:
+            while self._machine and self.imaging and not self._clear:
                 time.sleep(0.001)
 
     def start_imaging(self, startindex=0) -> bool:
         """TODO"""
 
-        if self._imaging or not self._online or not self._machine:
+        ##### DEBUG
+        self._machine = True
+        self._online = True
+        #####
+
+        if self.imaging or not self._online or not self._machine:
             return False
 
         # TODO: setup machine before starting
 
-        self._printing = True
+        self._mainqueue = self._actions.copy()
+        self.imaging = True
 
         self._clear = False
         self.imaging_thread = threading.Thread(
@@ -246,24 +276,26 @@ class COPISCore:
             kwargs={"resuming": True}
         )
         self.imaging_thread.start()
+        dispatcher.send('core_message', message='Imaging started')
         return True
 
     def cancel_imaging(self) -> None:
         """TODO"""
 
         self.pause()
-        self._paused = False
-        self._actionqueue = None
+        self.paused = False
+        self._mainqueue = None
         self._clear = True
+        dispatcher.send('core_message', message='Imaging stopped')
 
     def pause(self) -> bool:
-        """Pauses the current run, saving the current positions."""
+        """Pauses the current run, saving the current position."""
 
-        if not self._imaging:
+        if not self.imaging:
             return False
 
-        self._paused = True
-        self._imaging = False
+        self.paused = True
+        self.imaging = False
 
         # try joining the print thread: enclose it in try/except because we
         # might be calling it from the thread itself
@@ -278,52 +310,75 @@ class COPISCore:
     def resume(self) -> bool:
         """Resumes the current run."""
 
-        if not self._paused:
+        if not self.paused:
             return False
 
         # send commands to resume printing
 
-        self._paused = False
-        self._printing = True
+        self.paused = False
+        self.imaging = True
         self.imaging_thread = threading.Thread(
             target=self._image,
             name='imaging thread',
             kwargs={"resuming": True}
         )
         self.imaging_thread.start()
+        dispatcher.send('core_message', message='Imaging resumed')
         return True
 
-    def send_now(self, command):
-        """Send a command to machine ahead of the command queue."""
-        if self._online:
-            self._actionqueue.put_nowait(command)
-        else:
-            # TODO: log error
-            pass
+    # def send_now(self, command):
+    #     """Send a command to machine ahead of the command queue."""
+    #     if self._online:
+    #         self._mainqueue.put_nowait(command)
+    #     else:
+    #         # TODO: log error
+    #         pass
 
-    def _image(self) -> None:
+    def _image(self, resuming=False) -> None:
         """TODO"""
         self._stop_sender()
 
-        # TODO: more
-        self.sentlines = {}
-        self.sent = []
+        try:
+            while self.imaging and self._machine and self._online:
+                self._send_next()
 
-        self.imaging_thread = None
-        self._start_sender()
+            self.sentlines = {}
+            self.sent = []
+
+        except:
+            logging.error("Print thread died")
+
+        finally:
+            self.imaging_thread = None
+            self._start_sender()
+
+    def _send_next(self):
+        if not self._machine:
+            return
+
+        # wait until we get the ok from listener
+        while self._machine and self.imaging and not self._clear:
+            time.sleep(0.001)
+
+        if self.imaging and self._mainqueue:
+            curr = self._mainqueue.pop(0)
+            self._send(curr)
+            self._clear = False
 
     def _send(self, command):
-        """Send command to machine.
-
-        TODO This one's the big one.
-        """
+        """Send command to machine."""
 
         if not self._machine:
             return
 
         # log sent command
         self.sent.append(command)
+
         # try writing to printer
+        # ser.write(command.encode())
+        logging.debug(command)
+
+
 
     # --------------------------------------------------------------------------
     # Action and device data methods
@@ -334,10 +389,9 @@ class COPISCore:
 
         TODO: Get rid of this when auto path generation is implemented.
         """
-        # heights = (-90, -60, -30, 0, 30, 60, 90)
-        heights = (-80, -60, -40, -20, 0, 20, 40, 60, 80)
+        heights = (-90, -45, 0, 45, 90)
         radius = 180
-        every = 40
+        every = 80
 
         # generate a sphere (for testing)
         for i in heights:
