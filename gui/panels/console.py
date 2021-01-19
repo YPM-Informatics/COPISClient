@@ -20,7 +20,6 @@ import shlex
 import wx
 from gui.wxutils import create_scaled_bitmap
 from pydispatch import dispatcher
-from utils import Point5
 
 
 class ConsolePanel(wx.Panel):
