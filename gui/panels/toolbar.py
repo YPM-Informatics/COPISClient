@@ -154,7 +154,8 @@ class ToolbarPanel(aui.AuiToolBar):
             settings_frame.Show()
 
         elif event.Id == ToolIds.EXPORT.value:
-            self.c.export_actions('actions.txt')
+            self.c._clear = True
+            # self.c.export_actions('actions.txt')
 
     def __del__(self) -> None:
         pass

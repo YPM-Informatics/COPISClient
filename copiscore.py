@@ -221,9 +221,14 @@ class COPISCore:
         return
 
     def _listen(self) -> None:
-        while True:
-            self._clear = True
-            time.sleep(1)
+        # return
+        # if not self.imaging:
+        #     while not self._online:
+        #         pass
+        while not self.stop_read_thread:
+            time.sleep(0.001)
+            if not self.edsdk.waiting_for_image:
+                self._clear = True
 
     def _start_sender(self) -> None:
         self.stop_send_thread = False
@@ -326,13 +331,12 @@ class COPISCore:
         dispatcher.send('core_message', message='Imaging resumed')
         return True
 
-    # def send_now(self, command):
-    #     """Send a command to machine ahead of the command queue."""
-    #     if self._online:
-    #         self._mainqueue.put_nowait(command)
-    #     else:
-    #         # TODO: log error
-    #         pass
+    def send_now(self, command):
+        """Send a command to machine ahead of the command queue."""
+        if self._online:
+            self._sidequeue.put_nowait(command)
+        else:
+            logging.error("Not connected to device.")
 
     def _image(self, resuming=False) -> None:
         """TODO"""
@@ -360,10 +364,19 @@ class COPISCore:
         while self._machine and self.imaging and not self._clear:
             time.sleep(0.001)
 
+        if not self._sidequeue.empty():
+            self._send(self._sidequeue.get_nowait())
+            self._sidequeue.task_done()
+            return
+
         if self.imaging and self._mainqueue:
             curr = self._mainqueue.pop(0)
             self._send(curr)
             self._clear = False
+
+        else:
+            self.imaging = False
+            self._clear = True
 
     def _send(self, command):
         """Send command to machine."""
@@ -374,11 +387,33 @@ class COPISCore:
         # log sent command
         self.sent.append(command)
 
-        # try writing to printer
-        # ser.write(command.encode())
+        # debug command
         logging.debug(command)
 
+        if command.atype in (
+            ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
+            ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
+            ActionType.G90, ActionType.G91, ActionType.G92):
 
+            # try writing to printer
+            # ser.write(command.encode())
+            pass
+
+        elif command.atype == ActionType.C0:
+            if self.edsdk.connect(command.device):
+                self.edsdk.take_picture()
+
+        elif command.atype == ActionType.C1:
+            pass
+
+        elif command.atype == ActionType.M24:
+            pass
+
+        elif command.atype == ActionType.M17:
+            pass
+
+        elif command.atype == ActionType.M18:
+            pass
 
     # --------------------------------------------------------------------------
     # Action and device data methods
@@ -389,6 +424,39 @@ class COPISCore:
 
         TODO: Get rid of this when auto path generation is implemented.
         """
+
+        self._actions.extend([
+            Action(ActionType.C0, 0),
+            Action(ActionType.C0, 0),
+            Action(ActionType.C0, 0),
+            Action(ActionType.C0, 0),
+        ])
+
+        self._devices.extend([
+            Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
+        ])
+
+        # logging.debug('Populating test action list')
+        # self._actions.extend([
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 1),
+        #     Action(ActionType.C0, 1),
+        #     Action(ActionType.C0, 1),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 1),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 1),
+        # ])
+
+        # self._devices.extend([
+        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
+        #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
+        # ])
+
+        return
+
         heights = (-90, -45, 0, 45, 90)
         radius = 180
         every = 80
