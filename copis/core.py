@@ -1061,7 +1061,6 @@ class COPISCore:
             ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
             ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
             ActionType.G90, ActionType.G91, ActionType.G92):
-
             # try writing to printer
             # ser.write(command.encode())
             pass
@@ -1069,7 +1068,6 @@ class COPISCore:
         elif command.atype == ActionType.C0:
             if self.edsdk.connect(command.device):
                 self.edsdk.take_picture()
-
         elif command.atype == ActionType.C1:
             pass
 

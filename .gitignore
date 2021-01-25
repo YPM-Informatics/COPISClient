@@ -8,7 +8,8 @@
 *.userosscache
 *.sln.docstates
 .mypy_cache/
-.test/
+.test
+.test/*
 
 # Canon edsdk files
 [Cc]anon/*.dll

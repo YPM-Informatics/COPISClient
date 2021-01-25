@@ -19,10 +19,10 @@ import logging
 
 import wx
 import wx.lib.agw.aui as aui
-from enums import ToolIds
-from gui.settings_frame import SettingsFrame
-from gui.wxutils import create_scaled_bitmap, set_dialog
-from coms.serial_controller import SerialController
+from copis.enums import ToolIds
+from copis.gui.settings_frame import SettingsFrame
+from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.coms.serial_controller import SerialController
 
 
 class ToolbarPanel(aui.AuiToolBar):
