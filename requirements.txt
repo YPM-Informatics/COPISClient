@@ -1,5 +1,5 @@
 numpy==1.18.5
-Pillow==7.0.0
+Pillow==7.1.0
 PyOpenGL==3.1.5
 PyGLM==1.99.3
 pyserial==3.4
