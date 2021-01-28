@@ -255,7 +255,7 @@ class COPISCore:
     def start_imaging(self, startindex=0) -> bool:
         """TODO"""
 
-        ##### Workaround because we don't have serial implemented yet
+        ##### DEBUG
         self._machine = True
         self._online = True
         #####
