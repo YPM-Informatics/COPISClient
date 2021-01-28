@@ -13,6 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+TODO: add license boilerplate
+TODO: implement disconnect, connect, reset, _listen, start_imaging,
+    cancel_imaging, pause, resume, _image, _send
+"""
 
 __version__ = ""
 
@@ -22,7 +27,6 @@ if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
 
-import logging
 import math
 import os
 import platform
@@ -151,8 +155,8 @@ class COPISCore:
         # printer responded to initial command and is active
         self._online = False
         # True if sending actions, false if paused
-        self.imaging = False
-        self.paused = False
+        self._imaging = False
+        self._paused = False
 
         # logging
         self.sentlines = {}
@@ -169,8 +173,7 @@ class COPISCore:
         self.evf_thread = None
         self.init_edsdk()
 
-        self._mainqueue = None
-        self._sidequeue = Queue(0)
+        self._actionqueue = Queue(0)
         self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
         self._update_test()
@@ -179,50 +182,24 @@ class COPISCore:
         self._selected_device: Optional[int] = -1
 
     @locked
-    def disconnect(self):
+    def disconnect(self) -> bool:
         """TODO: implement camera disconnect."""
         if self._machine:
-            if self.read_thread:
-                self.stop_read_thread = True
-                if threading.current_thread() != self.read_thread:
-                    self.read_thread.join()
-                self.read_thread = None
-            if self.imaging_thread:
-                self.imaging = False
-                self.imaging_thread.join()
-            self._stop_sender()
-
-        self._machine = None
-        self._online = False
-        self.imaging = False
-
-        dispatcher.send('core_message', message='Disconnected from device')
+            return True
+        return False
 
     @locked
-    def connect(self):
-        """TODO: implement serial connection."""
+    def connect(self) -> bool:
+        """TODO: implement camera connect."""
 
-        self.stop_read_thread = False
-        self.read_thread = threading.Thread(
-            target=self._listen,
-            name='read thread')
-        self.read_thread.start()
-        self._start_sender()
-
-        dispatcher.send('core_message', message='Connected to device')
+        return False
 
     def reset(self) -> None:
         """Reset the machine."""
         return
 
-    def _listen_can_continue(self):
-        return not self.stop_read_thread
-
     def _listen(self) -> None:
-        while self._listen_can_continue():
-            time.sleep(0.001)
-            if not self.edsdk.waiting_for_image:
-                self._clear = True
+        return
 
     def _start_sender(self) -> None:
         self.stop_send_thread = False
@@ -240,33 +217,27 @@ class COPISCore:
     def _sender(self) -> None:
         while not self.stop_send_thread:
             try:
-                command = self._sidequeue.get(True, 0.1)
+                command = self._actionqueue.get(True, 0.1)
             except QueueEmpty:
                 continue
 
-            while self._machine and self.imaging and not self._clear:
+            while self._machine and self._imaging and not self._clear:
                 time.sleep(0.001)
 
             self._send(command)
 
-            while self._machine and self.imaging and not self._clear:
+            while self._machine and self._imaging and not self._clear:
                 time.sleep(0.001)
 
     def start_imaging(self, startindex=0) -> bool:
         """TODO"""
 
-        ##### Workaround because we don't have serial implemented yet
-        self._machine = True
-        self._online = True
-        #####
-
-        if self.imaging or not self._online or not self._machine:
+        if self._imaging or not self._online or not self._machine:
             return False
 
         # TODO: setup machine before starting
 
-        self._mainqueue = self._actions.copy()
-        self.imaging = True
+        self._printing = True
 
         self._clear = False
         self.imaging_thread = threading.Thread(
@@ -275,26 +246,24 @@ class COPISCore:
             kwargs={"resuming": True}
         )
         self.imaging_thread.start()
-        dispatcher.send('core_message', message='Imaging started')
         return True
 
     def cancel_imaging(self) -> None:
         """TODO"""
 
         self.pause()
-        self.paused = False
-        self._mainqueue = None
+        self._paused = False
+        self._actionqueue = None
         self._clear = True
-        dispatcher.send('core_message', message='Imaging stopped')
 
     def pause(self) -> bool:
-        """Pauses the current run, saving the current position."""
+        """Pauses the current run, saving the current positions."""
 
-        if not self.imaging:
+        if not self._imaging:
             return False
 
-        self.paused = True
-        self.imaging = False
+        self._paused = True
+        self._imaging = False
 
         # try joining the print thread: enclose it in try/except because we
         # might be calling it from the thread itself
@@ -309,105 +278,52 @@ class COPISCore:
     def resume(self) -> bool:
         """Resumes the current run."""
 
-        if not self.paused:
+        if not self._paused:
             return False
 
         # send commands to resume printing
 
-        self.paused = False
-        self.imaging = True
+        self._paused = False
+        self._printing = True
         self.imaging_thread = threading.Thread(
             target=self._image,
             name='imaging thread',
             kwargs={"resuming": True}
         )
         self.imaging_thread.start()
-        dispatcher.send('core_message', message='Imaging resumed')
         return True
 
     def send_now(self, command):
         """Send a command to machine ahead of the command queue."""
         if self._online:
-            self._sidequeue.put_nowait(command)
+            self._actionqueue.put_nowait(command)
         else:
-            logging.error("Not connected to device.")
+            # TODO: log error
+            pass
 
-    def _image(self, resuming=False) -> None:
+    def _image(self) -> None:
         """TODO"""
         self._stop_sender()
 
-        try:
-            while self.imaging and self._machine and self._online:
-                self._send_next()
+        # TODO: more
+        self.sentlines = {}
+        self.sent = []
 
-            self.sentlines = {}
-            self.sent = []
-
-        except:
-            logging.error("Print thread died")
-
-        finally:
-            self.imaging_thread = None
-            self._start_sender()
-
-    def _send_next(self):
-        if not self._machine:
-            return
-
-        # wait until we get the ok from listener
-        while self._machine and self.imaging and not self._clear:
-            time.sleep(0.001)
-
-        if not self._sidequeue.empty():
-            self._send(self._sidequeue.get_nowait())
-            self._sidequeue.task_done()
-            return
-
-        if self.imaging and self._mainqueue:
-            curr = self._mainqueue.pop(0)
-            self._send(curr)
-            self._clear = False
-
-        else:
-            self.imaging = False
-            self._clear = True
+        self.imaging_thread = None
+        self._start_sender()
 
     def _send(self, command):
-        """Send command to machine."""
+        """Send command to machine.
+
+        TODO This one's the big one.
+        """
 
         if not self._machine:
             return
 
         # log sent command
         self.sent.append(command)
-
-        # debug command
-        logging.debug(command)
-
-        if command.atype in (
-            ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
-            ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
-            ActionType.G90, ActionType.G91, ActionType.G92):
-
-            # try writing to printer
-            # ser.write(command.encode())
-            pass
-
-        elif command.atype == ActionType.C0:
-            if self.edsdk.connect(command.device):
-                self.edsdk.take_picture()
-
-        elif command.atype == ActionType.C1:
-            pass
-
-        elif command.atype == ActionType.M24:
-            pass
-
-        elif command.atype == ActionType.M17:
-            pass
-
-        elif command.atype == ActionType.M18:
-            pass
+        # try writing to printer
 
     # --------------------------------------------------------------------------
     # Action and device data methods
@@ -418,42 +334,10 @@ class COPISCore:
 
         TODO: Get rid of this when auto path generation is implemented.
         """
-
-        self._actions.extend([
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-        ])
-
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        ])
-
-        # logging.debug('Populating test action list')
-        # self._actions.extend([
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        # ])
-
-        # self._devices.extend([
-        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
-        # ])
-
-        return
-
-        heights = (-90, -45, 0, 45, 90)
+        # heights = (-90, -60, -30, 0, 30, 60, 90)
+        heights = (-80, -60, -40, -20, 0, 20, 40, 60, 80)
         radius = 180
-        every = 80
+        every = 40
 
         # generate a sphere (for testing)
         for i in heights:

@@ -15,14 +15,13 @@
 
 """ToolbarPanel class."""
 
-import logging
-
 import wx
 import wx.lib.agw.aui as aui
+
 from enums import ToolIds
 from gui.settings_frame import SettingsFrame
-from gui.wxutils import create_scaled_bitmap, set_dialog
 from util.serial_controller import SerialController
+from gui.wxutils import create_scaled_bitmap, set_dialog
 
 
 class ToolbarPanel(aui.AuiToolBar):
@@ -111,15 +110,9 @@ class ToolbarPanel(aui.AuiToolBar):
             if self.serial_controller.selected_serial.is_open:
                 self.serial_controller.selected_serial.close()
                 connect_btn.Label = 'Connect'
-
-                # disconnected
-                self.c.disconnect()
             else:
                 self.serial_controller.selected_serial.open()
                 connect_btn.Label = 'Disconnect'
-
-                # connected
-                self.c.connect()
         else:
             set_dialog('Please select a port to connect to.')
 
@@ -138,23 +131,17 @@ class ToolbarPanel(aui.AuiToolBar):
         TODO: Link with copiscore when implemented.
         """
         if event.Id == ToolIds.PLAY.value:
-            if self.c.paused:
-                self.c.resume()
-            else:
-                self.c.start_imaging()
-
+            camera = self.parent.controller_panel.main_combo.Selection
+            set_dialog(f'DEBUG: selected camera "{camera}".')
         elif event.Id == ToolIds.PAUSE.value:
-            self.c.pause()
-
-        elif event.Id == ToolIds.STOP.value:
-            self.c.cancel_imaging()
-
+            pass
         elif event.Id == ToolIds.SETTINGS.value:
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
-
         elif event.Id == ToolIds.EXPORT.value:
             self.c.export_actions('actions.txt')
+        else:
+            pass
 
     def __del__(self) -> None:
         pass

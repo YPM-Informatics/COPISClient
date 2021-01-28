@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
 import time
 from ctypes import *
@@ -189,7 +188,7 @@ def _update_camera_list():
 
 
 def terminate():
-    """Terminate EDSDK."""
+    """Terminate EDSDK library."""
     try:
         global running
 
