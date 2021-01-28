@@ -1,4 +1,17 @@
-#!/usr/bin/env python3
+# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
 import wx
 
@@ -22,7 +35,7 @@ class PathgenFrame(wx.Frame):
         # add style combobox
         hboxStyle = wx.BoxSizer()
         styleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Style: ')
-        hboxStyle.Add(styleLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        hboxStyle.Add(styleLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.styleCombo = wx.ComboBox(self.panel, wx.ID_ANY, choices=['Line', 'Sphere', 'Cylinder', 'Helix', 'Cube', 'Grid'], style=wx.CB_READONLY)
         hboxStyle.Add(self.styleCombo)
         self.boxsizer.Add(hboxStyle, 1, flag=wx.LEFT, border=15)
@@ -31,7 +44,7 @@ class PathgenFrame(wx.Frame):
         # add start xyz spinctrls
         hboxStartXYZ = wx.BoxSizer()
         startXYZLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Start XYZ: ')
-        hboxStartXYZ.Add(startXYZLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        hboxStartXYZ.Add(startXYZLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.startXSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
         self.startYSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
         self.startZSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
@@ -43,7 +56,7 @@ class PathgenFrame(wx.Frame):
         # add end xyz spinctrls
         hboxEndXYZ = wx.BoxSizer()
         endXYZLabel = wx.StaticText(self.panel, wx.ID_ANY, label='End XYZ: ')
-        hboxEndXYZ.Add(endXYZLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        hboxEndXYZ.Add(endXYZLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.endXSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
         self.endYSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
         self.endZSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=-1, max=1)
@@ -55,7 +68,7 @@ class PathgenFrame(wx.Frame):
         # add radius spinctrl
         self.hboxRadius = wx.BoxSizer()
         radiusLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Radius (mm): ')
-        self.hboxRadius.Add(radiusLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        self.hboxRadius.Add(radiusLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.radiusSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=1, max=100)
         self.hboxRadius.Add(self.radiusSc)
         self.boxsizer.Add(self.hboxRadius, 1, flag=wx.LEFT, border=15)
@@ -64,7 +77,7 @@ class PathgenFrame(wx.Frame):
         # add no circles spinctrl
         self.hboxNCircle = wx.BoxSizer()
         nCircleLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Circles:  ')
-        self.hboxNCircle.Add(nCircleLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        self.hboxNCircle.Add(nCircleLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.nCircleSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=1, max=1000)
         self.hboxNCircle.Add(self.nCircleSc)
         self.boxsizer.Add(self.hboxNCircle, 1, flag=wx.LEFT, border=15)
@@ -76,13 +89,13 @@ class PathgenFrame(wx.Frame):
         self.hboxPointsCircle.Add(pointsCircleLabel, 1, flag=wx.RIGHT, border=5)
         self.pointsCircleSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1), min=1, max=1000)
         self.hboxPointsCircle.Add(self.pointsCircleSc)
-        self.boxsizer.Add(self.hboxPointsCircle, flag=wx.LEFT | wx.BOTTOM, border=25)
+        self.boxsizer.Add(self.hboxPointsCircle, flag=wx.LEFT|wx.BOTTOM, border=25)
         self.boxsizer.Hide(self.hboxPointsCircle)
 
         # add no points spinctrl
         hboxPoints = wx.BoxSizer()
         noPointsLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Points: ')
-        hboxPoints.Add(noPointsLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        hboxPoints.Add(noPointsLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.noPointsSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1))
         self.noPointsSc.SetRange(0, 100)
         hboxPoints.Add(self.noPointsSc)
@@ -91,7 +104,7 @@ class PathgenFrame(wx.Frame):
         # add no cams spinctrl
         hboxCameras = wx.BoxSizer()
         noCamsLabel = wx.StaticText(self.panel, wx.ID_ANY, label='Cams: ')
-        hboxCameras.Add(noCamsLabel, 1, flag=wx.RIGHT | wx.TOP, border=6)
+        hboxCameras.Add(noCamsLabel, 1, flag=wx.RIGHT|wx.TOP, border=6)
         self.noCamsSc = wx.SpinCtrl(self.panel, value='0', size=(60, -1))
         self.noCamsSc.SetRange(0, 100)
         hboxCameras.Add(self.noCamsSc)
@@ -103,10 +116,10 @@ class PathgenFrame(wx.Frame):
         self.generatePathBtn = wx.Button(self.panel, wx.ID_ANY, label='Generate Path')
         self.boxsizer.Add(self.generatePathBtn, 1, flag=wx.LEFT, border=15)
 
-        self.panel.SetSizer(self.boxsizer)
+        self.panel.Sizer = self.boxsizer
 
     def onStyleRadioGroup(self, event):
-        choice = self.styleCombo.GetStringSelection()
+        choice = self.styleCombo.StringSelection
 
         if choice == 'Cylinder' or choice == 'Sphere':
             self.boxsizer.Show(self.hboxRadius)
