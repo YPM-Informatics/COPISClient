@@ -13,11 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-TODO: add license boilerplate
-TODO: implement disconnect, connect, reset, _listen, start_imaging,
-    cancel_imaging, pause, resume, _image, _send
-"""
 
 __version__ = ""
 
@@ -205,7 +200,7 @@ class COPISCore:
 
     @locked
     def connect(self):
-        """TODO: implement camera connect."""
+        """TODO: implement serial connection."""
 
         self.stop_read_thread = False
         self.read_thread = threading.Thread(
@@ -220,12 +215,11 @@ class COPISCore:
         """Reset the machine."""
         return
 
+    def _listen_can_continue(self):
+        return not self.stop_read_thread
+
     def _listen(self) -> None:
-        # return
-        # if not self.imaging:
-        #     while not self._online:
-        #         pass
-        while not self.stop_read_thread:
+        while self._listen_can_continue():
             time.sleep(0.001)
             if not self.edsdk.waiting_for_image:
                 self._clear = True
