@@ -17,7 +17,6 @@
 
 """Main COPIS App (GUI)."""
 
-import logging
 import signal
 
 import wx
@@ -28,6 +27,7 @@ import copiscore
 from appconfig import AppConfig
 from copiscore import COPISCore
 from gui.main_frame import MainWindow
+
 
 # class COPISWindow(MainWindow, copisconsole.COPISConsole):
 #     def __init__(self, *args, **kwargs):
@@ -72,10 +72,6 @@ class COPISApp(wx.App):
 
 
 if __name__ == '__main__':
-
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
-
     app = COPISApp()
     try:
         # wx.lib.inspection.InspectionTool().Show() # debug
