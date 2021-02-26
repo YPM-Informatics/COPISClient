@@ -1096,11 +1096,14 @@ class COPISCore:
         ])
 
     def _update_test(self) -> None:
+<<<<<<< HEAD:copis/core.py
         """Populates action list manually as a test.
 
         TODO: Get rid of this when auto path generation is implemented.
         """
 
+=======
+>>>>>>> 21077c9... Simplify glcanvas naming:copiscore.py
         heights = (-90, -45, 0, 45, 90)
         radius = 180
         every = 80
