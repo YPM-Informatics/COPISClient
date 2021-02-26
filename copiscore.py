@@ -425,16 +425,16 @@ class COPISCore:
         TODO: Get rid of this when auto path generation is implemented.
         """
 
-        self._actions.extend([
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-            Action(ActionType.C0, 0),
-        ])
+        # self._actions.extend([
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 0),
+        #     Action(ActionType.C0, 0),
+        # ])
 
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        ])
+        # self._devices.extend([
+        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
+        # ])
 
         # logging.debug('Populating test action list')
         # self._actions.extend([
@@ -455,7 +455,7 @@ class COPISCore:
         #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
         # ])
 
-        return
+        # return
 
         heights = (-90, -45, 0, 45, 90)
         radius = 180

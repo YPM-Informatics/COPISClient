@@ -47,10 +47,14 @@ class GLActionVis:
 
     def __init__(self, parent):
         """Inits GLActionVis with constructors."""
-        self.parent = parent
-        self.c = self.parent.c
+        self.p = parent
+        self.c = self.p.c
+
         self._initialized = False
         self.device_len = None
+
+        self._items = {'line': [], 'point': [], 'camera': []}
+        self._vaos = {'line': [], 'point': [], 'camera': []}
 
         self._lines = defaultdict(list)
         self._points = defaultdict(list)
@@ -64,6 +68,9 @@ class GLActionVis:
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         vbo = glGenBuffers(1)
+
+        # initialize camera box
+        # TODO: update to stl
         vertices = glm.array(
             glm.vec3(-0.5, -1.0, -1.0),     # bottom
             glm.vec3(0.5, -1.0, -1.0),
@@ -93,12 +100,13 @@ class GLActionVis:
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
 
+
         self._vao_point_volumes = glGenVertexArrays(1)
         glBindVertexArray(self._vao_point_volumes)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-    def _update_vaos(self) -> None:
+    def update_vaos(self) -> None:
         """Update VAOs when action list changes."""
         self._vao_lines.clear()
         self._vao_points.clear()
@@ -216,7 +224,10 @@ class GLActionVis:
             else:
                 pass
 
-        self._update_vaos()
+        print(self._lines)
+        print(self._points)
+
+        self.update_vaos()
 
     def init(self) -> bool:
         """Initialize for rendering.
@@ -238,12 +249,12 @@ class GLActionVis:
         if not self.init():
             return
 
-        proj = self.parent.projection_matrix
-        view = self.parent.modelview_matrix
+        proj = self.p.projection_matrix
+        view = self.p.modelview_matrix
         model = glm.mat4()
 
         # render path lines
-        glUseProgram(self.parent.color_shader)
+        glUseProgram(self.p.shaders['single_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
@@ -258,7 +269,7 @@ class GLActionVis:
             return
 
         # render points
-        glUseProgram(self.parent.instanced_color_shader)
+        glUseProgram(self.p.shaders['instanced_model_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
@@ -273,11 +284,11 @@ class GLActionVis:
         if not self.init():
             return
 
-        proj = self.parent.projection_matrix
-        view = self.parent.modelview_matrix
+        proj = self.p.projection_matrix
+        view = self.p.modelview_matrix
 
         # render picking
-        glUseProgram(self.parent.instanced_picking_shader)
+        glUseProgram(self.p.shaders['instanced_picking'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 

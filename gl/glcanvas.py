@@ -96,18 +96,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._build_dimensions = build_dimensions
 
         # shader programs
-        self.default_shader = None
-        self.color_shader = None
-        self.instanced_color_shader = None
-        self.instanced_picking_shader = None
-        self.test_shader = None
+        self._shaders = {}
 
         # gl related variables TODO comment/regroup
-        self._vao_box = None
-        self._vao_side = None
-        self._vao_top = None
-        self._vao_paths = None
-        self._vao_model = None
+        self._vaos = {}
         self._point_lines = None
         self._point_count = None
         self._id_offset = len(self.c.devices)
@@ -183,18 +175,19 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self.create_vaos()
 
         # compile shader programs
-        self.default_shader = shaderlib.compile_shader(*shaderlib.default)
-        self.color_shader = shaderlib.compile_shader(*shaderlib.single_color)
-        self.instanced_color_shader = shaderlib.compile_shader(*shaderlib.instanced_model_color)
-        self.instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
-        self.test_shader = shaderlib.compile_shader(*shaderlib.test)
+        self._shaders['default'] = shaderlib.compile_shader(*shaderlib.default)
+        self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
+        self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
+        self._shaders['test'] = shaderlib.compile_shader(*shaderlib.test)
 
         self._gl_initialized = True
         return True
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        self._vao_box, self._vao_side, self._vao_top, self._vao_model = glGenVertexArrays(4)
+        self._vaos['box'], self._vaos['side'], \
+        self._vaos['top'], self._vaos['model'] = glGenVertexArrays(4)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -223,7 +216,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             -0.5, 1.0, 1.0,
             -0.5, 1.0, -1.0,
         ], dtype=np.float32)
-        glBindVertexArray(self._vao_box)
+        glBindVertexArray(self._vaos['box'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -239,7 +232,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         vertices[::3] = np.tile(np.array([1.0, 0.5], dtype=np.float32), 24)
         vertices[1::3] = np.repeat(y, 2)
         vertices[2::3] = np.repeat(z, 2)
-        glBindVertexArray(self._vao_side)
+        glBindVertexArray(self._vaos['side'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -250,7 +243,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         vertices = np.concatenate((np.array([1.0, 0.0, 0.0]), vertices)).astype(np.float32)
         indices = np.insert(np.arange(24) * 2 + 1, 0, 0).astype(np.uint16)
-        glBindVertexArray(self._vao_top)
+        glBindVertexArray(self._vaos['top'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -262,7 +255,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # ---
 
-        glBindVertexArray(self._vao_model)
+        glBindVertexArray(self._vaos['model'])
         test_vbo = glGenBuffers(1)
 
         bulldog = pywavefront.Wavefront('model/handsome_dan.obj', create_materials=True)
@@ -546,7 +539,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 id_ = -1
 
         # check if mouse is inside viewcube area
-        viewcube_area = self._viewcube.get_viewport()
+        viewcube_area = self._viewcube.viewport
         if viewcube_area[0] <= mouse[0] <= viewcube_area[0] + viewcube_area[2] and \
            viewcube_area[1] <= mouse[1] <= viewcube_area[1] + viewcube_area[3]:
             self._viewcube.hover_id = id_
@@ -582,14 +575,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         view = self.modelview_matrix
         model = glm.mat4()
 
-        glUseProgram(self.test_shader)
+        glUseProgram(self.shaders['test'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
-        glBindVertexArray(self._vao_model)
+        glBindVertexArray(self._vaos['model'])
         glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
 
     def _render_cameras(self) -> None:
@@ -610,22 +603,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # Accessor methods
     # --------------------------------------------------------------------------
 
-    def get_shader_program(
-            self, program: Optional[str] = 'default'
-        ) -> Optional[shaders.ShaderProgram]:
-        """Return specified shader program.
-
-        Args:
-            program: Optional; A string for selection. Defaults to 'default'.
-
-        Returns:
-            A GLuint compiled shader reference. See
-            http://pyopengl.sourceforge.net/documentation/pydoc/OpenGL.GL.shaders.html
-            for more info.
-        """
-        if program == 'color':
-            return self.color_shader
-        return self.default_shader # 'default'
+    @property
+    def shaders(self) -> shaders.ShaderProgram:
+        return self._shaders
 
     @property
     def rot_quat(self) -> glm.quat:
