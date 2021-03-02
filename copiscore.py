@@ -570,6 +570,7 @@ class COPISCore:
 
         if clear:
             self._selected_points.clear()
+
         if index not in self._selected_points:
             self._selected_points.append(index)
             dispatcher.send('core_p_selected', points=self._selected_points)

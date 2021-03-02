@@ -23,10 +23,10 @@ from collections import defaultdict
 
 import glm
 import numpy as np
-import wx
 from enums import ActionType
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from pydispatch import dispatcher
 from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
@@ -53,17 +53,18 @@ class GLActionVis:
         self._initialized = False
         self.device_len = None
 
-        self._items = {'line': [], 'point': [], 'camera': []}
-        self._vaos = {'line': [], 'point': [], 'camera': []}
+        self._items = {
+            'line': defaultdict(list),
+            'point': defaultdict(list)}
+        self._vaos = {
+            'line': {},
+            'point': {}}
 
-        self._lines = defaultdict(list)
-        self._points = defaultdict(list)
+        self._vao_box = None
+        self._num_points = 0
 
-        self._vao_point_volumes = None
-        self._point_count = 0
-
-        self._vao_lines = {}
-        self._vao_points = {}
+        dispatcher.connect(self.update_vaos, signal='core_p_selected')
+        dispatcher.connect(self.update_vaos, signal='core_p_deselected')
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
@@ -100,65 +101,78 @@ class GLActionVis:
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
 
-
-        self._vao_point_volumes = glGenVertexArrays(1)
-        glBindVertexArray(self._vao_point_volumes)
+        self._vao_box = glGenVertexArrays(1)
+        glBindVertexArray(self._vao_box)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
     def update_vaos(self) -> None:
         """Update VAOs when action list changes."""
-        self._vao_lines.clear()
-        self._vao_points.clear()
+        for vao in self._vaos.values():
+            vao.clear()
 
-        for key, value in self._lines.items():
+        # --- bind data for lines ---
+
+        for key, value in self._items['line'].items():
             # ignore if 1 or fewer points
-            if len(value) > 1:
-                points = glm.array([glm.vec3(mat[1][3]) for mat in value])
+            if len(value) <= 1:
+                continue
 
-                vbo = glGenBuffers(1)
-                glBindBuffer(GL_ARRAY_BUFFER, vbo)
-                glBufferData(GL_ARRAY_BUFFER, points.nbytes, glm.value_ptr(points), GL_STATIC_DRAW)
+            points = glm.array([glm.vec3(mat[1][3]) for mat in value])
 
-                vao = glGenVertexArrays(1)
-                glBindVertexArray(vao)
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-                glEnableVertexAttribArray(0)
-                self._vao_lines[key] = vao
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, points.nbytes, glm.value_ptr(points), GL_STATIC_DRAW)
 
-                glBindVertexArray(0)
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['line'][key] = vao
+
+            glBindVertexArray(0)
+
+        # --- bind data for points ---
 
         point_mats = None
         point_colors = None
         point_ids = None
         scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
 
-        for key, value in self._points.items():
-            if len(value) > 1:
-                new_mats = glm.array([p[1] * scale for p in value[1:]])
-                color = shade_color(glm.vec4(self.colors[key % len(self.colors)]), -0.3)
-                new_colors = glm.array([color] * (len(value) - 1))
-                new_ids = [p[0] for p in value[1:]]
-                if not point_mats:
-                    point_mats = new_mats
-                    point_colors = new_colors
-                    point_ids = new_ids
-                else:
-                    point_mats += new_mats
-                    point_colors += new_colors
-                    point_ids += new_ids
+        for key, value in self._items['point'].items():
+            new_mats = glm.array([p[1] * scale for p in value])
+            color = shade_color(glm.vec4(self.colors[key % len(self.colors)]), -0.3)
 
-        self._point_count = 0 if not point_mats else len(point_mats)
+            new_colors = glm.array([color] * len(value))
 
+            # if point is selected, darken its color
+            for i, v in enumerate(value):
+                if v[0] in self.c.selected_points:
+                    new_colors[i] = shade_color(new_colors[i], 0.6)
+
+            new_ids = [p[0] for p in value]
+
+            if not point_mats:
+                point_mats = new_mats
+                point_colors = new_colors
+                point_ids = new_ids
+            else:
+                point_mats += new_mats
+                point_colors += new_colors
+                point_ids += new_ids
+
+        self._num_points = 0 if not point_mats else len(point_mats)
+
+        # stop if no points to set
         if not point_mats:
             return
 
-        point_ids = np.array(point_ids, dtype=np.intc) # 32 bit signed integer
+        point_ids = np.array(point_ids, dtype=np.int32)
 
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, glm.value_ptr(point_mats), GL_STATIC_DRAW)
-        glBindVertexArray(self._vao_point_volumes)
+        glBindVertexArray(self._vao_box)
 
         # modelmats
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
@@ -196,36 +210,27 @@ class GLActionVis:
     def update_colors(self) -> None:
         return
 
-    def update_arrays(self) -> None:
+    def update_actions(self) -> None:
         """Update lines and points when action list changes.
 
         Called from GLCanvas upon core_a_list_changed signal.
 
         # TODO: process other action ids
         """
-        self._lines.clear()
-        self._points.clear()
-
         self.device_len = len(self.c.devices)
 
-        # add initial points
-        for i, device in enumerate(self.c.devices):
-            self._points[device.device_id].append((i, point5_to_mat4(device.position)))
-
         for i, action in enumerate(self.c.actions):
-            if action.atype == ActionType.G0 or action.atype == ActionType.G1:
-                if action.argc == 5:
-                    self._lines[action.device].append((self.device_len + i, xyzpt_to_mat4(*action.args)))
-            elif action.atype == ActionType.C0:
-                if action.device in self._lines.keys():
-                    self._points[action.device].append(self._lines[action.device][-1])
-                else:
-                    self._points[action.device].append(self._points[action.device][0])
-            else:
-                pass
+            if action.atype in (ActionType.G0, ActionType.G1):
+                self._items['line'][action.device].append((self.device_len + i, xyzpt_to_mat4(*action.args)))
 
-        print(self._lines)
-        print(self._points)
+            elif action.atype in (ActionType.C0, ActionType.C1):
+                if action.device not in self._items['line'].keys():
+                    continue
+                self._items['point'][action.device].append(self._items['line'][action.device][-1])
+
+            else:
+                # TODO!
+                pass
 
         self.update_vaos()
 
@@ -239,7 +244,7 @@ class GLActionVis:
             return True
 
         self.create_vaos()
-        self.update_arrays()
+        self.update_actions()
 
         self._initialized = True
         return True
@@ -259,13 +264,13 @@ class GLActionVis:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
-        for key, value in self._vao_lines.items():
+        for key, value in self._vaos['line'].items():
             color = glm.vec4(self.colors[key % len(self.colors)])
             glUniform4fv(3, 1, glm.value_ptr(color))
             glBindVertexArray(value)
-            glDrawArrays(GL_LINE_STRIP, 0, len(self._lines[key]))
+            glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
 
-        if self._point_count <= 0:
+        if self._num_points <= 0:
             return
 
         # render points
@@ -273,8 +278,8 @@ class GLActionVis:
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        glBindVertexArray(self._vao_point_volumes)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
+        glBindVertexArray(self._vao_box)
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
 
         glBindVertexArray(0)
         glUseProgram(0)
@@ -292,8 +297,8 @@ class GLActionVis:
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        glBindVertexArray(self._vao_point_volumes)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._point_count)
+        glBindVertexArray(self._vao_box)
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
 
         glBindVertexArray(0)
         glUseProgram(0)

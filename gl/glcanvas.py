@@ -98,7 +98,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # shader programs
         self._shaders = {}
 
-        # gl related variables TODO comment/regroup
+        # more opengl things
         self._vaos = {}
         self._point_lines = None
         self._point_count = None
@@ -284,7 +284,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles core_a_list_changed signal.
         """
-        self._actionvis.update_arrays()
+        self._actionvis.update_actions()
 
         self._dirty = True
 
@@ -441,7 +441,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 self.c.select_device(id_)
             else:
                 self.c.select_device(-1)
-                self.c.select_point(id_ - self._id_offset, clear=True)
+                self.c.select_point(id_, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""

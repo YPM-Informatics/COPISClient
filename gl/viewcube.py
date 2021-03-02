@@ -21,12 +21,11 @@ TODO: Add text labels to viewcube sides
 
 from typing import Tuple, Union
 
+import glm
 import numpy as np
+from enums import ViewCubePos, ViewCubeSize
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
-import glm
-from enums import ViewCubePos, ViewCubeSize
 
 
 class GLViewCube:
@@ -225,6 +224,7 @@ class GLViewCube:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glBindVertexArray(self._vao_picking)
         glDrawArrays(GL_QUADS, 0, 24)
+
         glBindVertexArray(0)
         glUseProgram(0)
 

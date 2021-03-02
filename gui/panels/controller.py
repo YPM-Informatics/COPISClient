@@ -203,7 +203,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
                     tilt_up_90_btn, tilt_down_90_btn, pan_right_90_btn, pan_left_90_btn):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        step_text = wx.StaticText(jog_sizer.StaticBox, label='Step sizes', style=wx.ALIGN_CENTRE_HORIZONTAL)
+        step_text = wx.StaticText(jog_sizer.StaticBox, label='Distance', style=wx.ALIGN_CENTRE_HORIZONTAL)
         self.xyz_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, utils.xyz_steps)), style=wx.TE_CENTRE)
         self.xyz_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.xyz_units.keys()), style=wx.TE_CENTRE)
         self.xyz_unit_choice.Selection = 0
