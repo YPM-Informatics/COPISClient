@@ -27,7 +27,7 @@ from enums import ActionType
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
+from utils import shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:
@@ -217,6 +217,9 @@ class GLActionVis:
 
         # TODO: process other action ids
         """
+        for item in self._items.values():
+            item.clear()
+
         self.device_len = len(self.c.devices)
 
         for i, action in enumerate(self.c.actions):

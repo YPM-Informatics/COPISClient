@@ -134,7 +134,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.c.actions[points[0]]
+            action = self.c.actions[points[0] - len(self.c.devices)]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
@@ -234,7 +234,7 @@ class _PropTransform(wx.Panel):
         self.z_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z')
         self.p_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p')
         self.t_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t')
-        more_btn = wx.Button(self, label='More...', size=(50, -1))
+        more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
             (_text(self, 'X:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),

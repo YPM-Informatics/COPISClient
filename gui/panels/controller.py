@@ -19,8 +19,6 @@ TODO: Currently nonfunctional - needs to be connected to copiscore when
 serial connections are implemented.
 """
 
-import math
-
 import utils
 import wx
 import wx.lib.scrolledpanel as scrolled
@@ -39,7 +37,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ControllerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.parent = parent
+        self.p = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -70,9 +68,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
         """Initialize controller state sizer and setup child elements."""
         info_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='State'), wx.VERTICAL)
 
-        info_grid = wx.FlexGridSizer(6, 7, 0, 0)
-        for col in (2, 5):
-            info_grid.AddGrowableCol(col)
+        info_grid = wx.FlexGridSizer(6, 4, 0, 0)
+        info_grid.AddGrowableCol(2)
 
         x_text = wx.StaticText(info_sizer.StaticBox, label='X')
         y_text = wx.StaticText(info_sizer.StaticBox, label='Y')
@@ -83,22 +80,14 @@ class ControllerPanel(scrolled.ScrolledPanel):
             text.Font = wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         mpos_text = wx.StaticText(info_sizer.StaticBox, label='Machine')
-        wpos_text = wx.StaticText(info_sizer.StaticBox, label='Work')
         mzero_text = wx.StaticText(info_sizer.StaticBox, label='Zero')
-        wzero_text = wx.StaticText(info_sizer.StaticBox, label='Zero')
 
         self.x_m_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
         self.y_m_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
         self.z_m_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
         self.p_m_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
         self.t_m_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        self.x_w_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        self.y_w_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        self.z_w_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        self.p_w_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        self.t_w_text = wx.TextCtrl(info_sizer.StaticBox, value='0.000', size=(50, 24), style=wx.TE_READONLY)
-        for text in (self.x_m_text, self.y_m_text, self.z_m_text, self.p_m_text, self.t_m_text,
-                     self.x_w_text, self.y_w_text, self.z_w_text, self.p_w_text, self.t_w_text):
+        for text in (self.x_m_text, self.y_m_text, self.z_m_text, self.p_m_text, self.t_m_text):
             text.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         x0_m_btn = wx.Button(info_sizer.StaticBox, label='X0', size=(30, -1))
@@ -106,13 +95,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         z0_m_btn = wx.Button(info_sizer.StaticBox, label='Z0', size=(30, -1))
         p0_m_btn = wx.Button(info_sizer.StaticBox, label='P0', size=(30, -1))
         t0_m_btn = wx.Button(info_sizer.StaticBox, label='T0', size=(30, -1))
-        x0_w_btn = wx.Button(info_sizer.StaticBox, label='X0', size=(30, -1))
-        y0_w_btn = wx.Button(info_sizer.StaticBox, label='Y0', size=(30, -1))
-        z0_w_btn = wx.Button(info_sizer.StaticBox, label='Z0', size=(30, -1))
-        p0_w_btn = wx.Button(info_sizer.StaticBox, label='P0', size=(30, -1))
-        t0_w_btn = wx.Button(info_sizer.StaticBox, label='T0', size=(30, -1))
-        for btn in (x0_m_btn, y0_m_btn, z0_m_btn, p0_m_btn, t0_m_btn,
-                    x0_w_btn, y0_w_btn, z0_w_btn, p0_w_btn, t0_w_btn):
+        for btn in (x0_m_btn, y0_m_btn, z0_m_btn, p0_m_btn, t0_m_btn):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         info_grid.AddMany([
@@ -120,49 +103,31 @@ class ControllerPanel(scrolled.ScrolledPanel):
             (8, 0),
             (mpos_text, 0, 0, 0),
             (mzero_text, 0, 0, 0),
-            (8, 0),
-            (wpos_text, 0, 0, 0),
-            (wzero_text, 0, 0, 0),
 
             (x_text, 0, 0, 0),
             (0, 0),
             (self.x_m_text, 0, wx.ALL|wx.EXPAND, 1),
             (x0_m_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.x_w_text, 0, wx.ALL|wx.EXPAND, 1),
-            (x0_w_btn, 0, wx.EXPAND, 0),
 
             (y_text, 0, 0, 0),
             (0, 0),
             (self.y_m_text, 0, wx.ALL|wx.EXPAND, 1),
             (y0_m_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.y_w_text, 0, wx.ALL|wx.EXPAND, 1),
-            (y0_w_btn, 0, wx.EXPAND, 0),
 
             (z_text, 0, 0, 0),
             (0, 0),
             (self.z_m_text, 0, wx.ALL|wx.EXPAND, 1),
             (z0_m_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.z_w_text, 0, wx.ALL|wx.EXPAND, 1),
-            (z0_w_btn, 0, wx.EXPAND, 0),
 
             (p_text, 0, 0, 0),
             (0, 0),
             (self.p_m_text, 0, wx.ALL|wx.EXPAND, 1),
             (p0_m_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.p_w_text, 0, wx.ALL|wx.EXPAND, 1),
-            (p0_w_btn, 0, wx.EXPAND, 0),
 
             (t_text, 0, 0, 0),
             (0, 0),
             (self.t_m_text, 0, wx.ALL|wx.EXPAND, 1),
             (t0_m_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.t_w_text, 0, wx.ALL|wx.EXPAND, 1),
-            (t0_w_btn, 0, wx.EXPAND, 0),
         ])
 
         info_sizer.Add(info_grid, 1, wx.ALL|wx.EXPAND, 4)

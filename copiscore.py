@@ -586,8 +586,8 @@ class COPISCore:
     def update_selected_points(self, argc, args) -> None:
         """Update position of points in selected points list."""
         for p in self.selected_points:
-            self._actions[p].argc = argc
-            self._actions[p].args = args
+            self.actions[p - len(self.devices)].argc = argc
+            self.actions[p - len(self.devices)].args = args
 
         dispatcher.send('core_a_list_changed')
 
