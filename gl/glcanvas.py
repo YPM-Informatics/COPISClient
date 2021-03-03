@@ -435,7 +435,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 pass
 
         else:
-            print(id_)
             # id_ belongs to cameras or objects
             if id_ == -1:
                 self.c.select_device(-1)

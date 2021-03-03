@@ -175,13 +175,14 @@ class GLActionVis:
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
+        self._num_devices = len(self.c.devices)
+
         scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
         mats = glm.array([x * scale for x in self._devices])
-        colors = glm.array([glm.vec4(self.colors[i % len(self.colors)]) for i in range(len(self._devices))])
-        ids = np.array(range(len(self._devices)), dtype=np.int32)
+        colors = glm.array([glm.vec4(self.colors[i % len(self.colors)]) for i in range(self._num_devices)])
+        ids = np.array(range(self._num_devices), dtype=np.int32)
 
         self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)
-
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -193,7 +194,6 @@ class GLActionVis:
         self._items['line'].clear()
         self._items['point'].clear()
         self._num_points = 0
-        self._num_devices = len(self.c.devices)
 
         for i, action in enumerate(self.c.actions):
             if action.atype in (ActionType.G0, ActionType.G1):
@@ -231,8 +231,8 @@ class GLActionVis:
             return True
 
         self.create_vaos()
-        self.update_actions()
         self.update_devices()
+        self.update_actions()
 
         self._initialized = True
         return True
