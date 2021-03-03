@@ -24,7 +24,7 @@ import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 import utils
-from gui.wxutils import create_scaled_bitmap
+from gui.wxutils import create_scaled_bitmap, FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT
 
 
 def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
@@ -198,8 +198,6 @@ class _PropTransform(wx.Panel):
         """Inits _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self._text_dirty = False
-        self._selected_dirty = False
 
         self._x: float = 0.0
         self._y: float = 0.0
@@ -215,11 +213,7 @@ class _PropTransform(wx.Panel):
         # bind events
         for ctrl in (self.x_ctrl, self.y_ctrl, self.z_ctrl, self.p_ctrl, self.t_ctrl,
                      self.xyz_step_ctrl, self.pt_step_ctrl):
-            ctrl.Bind(wx.EVT_LEFT_UP, self.on_left_up)
-            ctrl.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
-            ctrl.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
-            ctrl.Bind(wx.EVT_TEXT, self.on_text_change)
-            ctrl.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+            ctrl.Bind(EVT_FANCY_TEXT_UPDATED_EVENT, self.on_text_update)
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -229,11 +223,21 @@ class _PropTransform(wx.Panel):
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(3, 0)
 
-        self.x_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x')
-        self.y_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y')
-        self.z_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z')
-        self.p_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p')
-        self.t_ctrl = wx.TextCtrl(self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t')
+        self.x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x',
+            default_unit='mm', unit_conversions=utils.xyz_units)
+        self.y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y',
+            default_unit='mm', unit_conversions=utils.xyz_units)
+        self.z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z',
+            default_unit='mm', unit_conversions=utils.xyz_units)
+        self.p_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p',
+            default_unit='dd', unit_conversions=utils.pt_units)
+        self.t_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t',
+            default_unit='dd', unit_conversions=utils.pt_units)
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
@@ -263,8 +267,12 @@ class _PropTransform(wx.Panel):
         self._step_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
         self._step_sizer.AddSpacer(8)
 
-        self.xyz_step_ctrl = wx.TextCtrl(self, value='1 mm', size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step')
-        self.pt_step_ctrl = wx.TextCtrl(self, value='1 dd', size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step')
+        self.xyz_step_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
+            max_precision=0, default_unit='mm', unit_conversions=utils.xyz_units)
+        self.pt_step_ctrl = FancyTextCtrl(
+            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
+            max_precision=0, default_unit='dd', unit_conversions=utils.pt_units)
 
         step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)
@@ -355,65 +363,13 @@ class _PropTransform(wx.Panel):
         self.step_value(button.Name[0], step)
         self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
-    def on_left_up(self, event: wx.MouseEvent) -> None:
-        """On EVT_LEFT_UP, if not already focused, select digits."""
-        ctrl = event.EventObject
-        if not self._selected_dirty:
-            self._selected_dirty = True
-            ctrl.SetSelection(0, ctrl.Value.find(' '))
-        event.Skip()
+    def on_text_update(self, event: wx.Event) -> None:
+        """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
+        ctrl = event.GetEventObject()
+        self.set_value(ctrl.Name, ctrl.num_value)
 
-    def on_set_focus(self, event: wx.FocusEvent) -> None:
-        """On EVT_SET_FOCUS, select digits."""
-        ctrl = event.EventObject
-        ctrl.SetSelection(0, ctrl.Value.find(' '))
-        event.Skip()
-
-    def on_kill_focus(self, event: wx.FocusEvent) -> None:
-        """On EVT_KILL_FOCUS, process the updated value."""
-        if self._text_dirty:
-            event.EventObject.Undo()
-            self._text_dirty = False
-        self._selected_dirty = False
-        event.Skip()
-
-    def on_text_change(self, event: wx.CommandEvent) -> None:
-        """On EVT_TEXT, set dirty flag true."""
-        self._text_dirty = True
-
-    def on_text_enter(self, event: wx.CommandEvent) -> None:
-        """On EVT_TEXT_ENTER, process the updated value."""
-        self._process_value(event.EventObject)
-
-    def _process_value(self, ctrl: wx.TextCtrl) -> None:
-        """Process updated text controls and convert units accordingly."""
-        if not self._text_dirty:
-            return
-
-        value = 0
-        if ctrl.Name in ('x', 'y', 'z', 'xyz_step'):
-            regex = re.findall(r'(-?\d*\.?\d+)\s*(mm|cm|inch|in)?', ctrl.Value)
-            if len(regex) == 0:
-                ctrl.Undo()
-                return
-            value, unit = regex[0]
-            unit = 'mm' if unit == '' else unit
-            value = float(value) * utils.xyz_units[unit]
-
-        else: # ctrl.Name in ('p', 't', 'pt_step')
-            regex = re.findall(r'(-?\d*\.?\d+)\s*(dd|rad)?', ctrl.Value)
-            if len(regex) == 0:
-                ctrl.Undo()
-                return
-            value, unit = regex[0]
-            unit = 'dd' if unit == '' else unit
-            value = float(value) * utils.pt_units[unit]
-
-        self._text_dirty = False
-        self.set_value(ctrl.Name, value)
-
+        # update point
         if ctrl.Name in 'xyzpt':
-            # update point
             self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
@@ -421,7 +377,7 @@ class _PropTransform(wx.Panel):
         self.x, self.y, self.z, self.p, self.t = x, y, z, p, t
 
     def set_value(self, name: str, value: float) -> None:
-        """Step value indicated by name.
+        """Set value indicated by name.
 
         Args:
             name: A string representing the name of the text control
@@ -473,7 +429,7 @@ class _PropTransform(wx.Panel):
     @x.setter
     def x(self, value: float) -> None:
         self._x = value
-        self.x_ctrl.ChangeValue(f'{value:.3f} mm')
+        self.x_ctrl.num_value = value
 
     @property
     def y(self) -> float:
@@ -482,7 +438,7 @@ class _PropTransform(wx.Panel):
     @y.setter
     def y(self, value: float) -> None:
         self._y = value
-        self.y_ctrl.ChangeValue(f'{value:.3f} mm')
+        self.y_ctrl.num_value = value
 
     @property
     def z(self) -> float:
@@ -491,7 +447,7 @@ class _PropTransform(wx.Panel):
     @z.setter
     def z(self, value: float) -> None:
         self._z = value
-        self.z_ctrl.ChangeValue(f'{value:.3f} mm')
+        self.z_ctrl.num_value = value
 
     @property
     def p(self) -> float:
@@ -500,7 +456,7 @@ class _PropTransform(wx.Panel):
     @p.setter
     def p(self, value: float) -> None:
         self._p = value
-        self.p_ctrl.ChangeValue(f'{value*180/math.pi:.3f} dd')
+        self.p_ctrl.num_value = value*180/math.pi
 
     @property
     def t(self) -> float:
@@ -509,7 +465,7 @@ class _PropTransform(wx.Panel):
     @t.setter
     def t(self, value: float) -> None:
         self._t = value
-        self.t_ctrl.ChangeValue(f'{value*180/math.pi:.3f} dd')
+        self.t_ctrl.num_value = value*180/math.pi
 
     @property
     def xyz_step(self) -> float:
@@ -518,7 +474,7 @@ class _PropTransform(wx.Panel):
     @xyz_step.setter
     def xyz_step(self, value: float) -> None:
         self._xyz_step = value
-        self.xyz_step_ctrl.ChangeValue(f'{value:.3g} mm')
+        self.xyz_step_ctrl.num_value = value
 
     @property
     def pt_step(self) -> float:
@@ -527,7 +483,7 @@ class _PropTransform(wx.Panel):
     @pt_step.setter
     def pt_step(self, value: float) -> None:
         self._pt_step = value
-        self.pt_step_ctrl.ChangeValue(f'{value*180/math.pi:.3g} dd')
+        self.pt_step_ctrl.num_value = value*180/math.pi
 
 
 class _PropCameraInfo(wx.Panel):

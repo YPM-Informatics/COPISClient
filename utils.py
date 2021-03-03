@@ -43,17 +43,20 @@ def timing(f: Callable) -> Callable:
 
 
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4():
-    """Convert x, y, z, pan, tilt into 4x4 transformation matrix."""
+    """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
     model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
-            glm.mat4(math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
-                    math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
-                    -math.sin(p), 0.0, math.cos(p), 0.0,
-                    0.0, 0.0, 0.0, 1.0)
+            glm.mat4(
+                math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
+                math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
+                -math.sin(p), 0.0, math.cos(p), 0.0,
+                0.0, 0.0, 0.0, 1.0)
     return model
 
+
 def point5_to_mat4(point) -> glm.mat4():
-    """Convert Point5 into 4x4 transformation matrix."""
+    """Convert Point5 into a 4x4 transformation matrix."""
     return xyzpt_to_mat4(point.x, point.y, point.z, point.p, point.t)
+
 
 def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
     """Return darker or lighter shade of color by a shade factor."""
@@ -61,6 +64,7 @@ def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
+
 
 class Point5(NamedTuple):
     x: float = 0.0

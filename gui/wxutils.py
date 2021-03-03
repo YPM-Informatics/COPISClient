@@ -15,8 +15,14 @@
 
 """wxPython util functions."""
 
+import re
+from typing import Tuple
+
 import wx
+import wx.lib.newevent
 import wx.svg as svg
+
+FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
 
 def set_dialog(msg: str) -> None:
@@ -37,3 +43,99 @@ def create_scaled_bitmap(bmp_name: str,
     image = svg.SVGimage.CreateFromFile(
         'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
     return image
+
+
+class FancyTextCtrl(wx.TextCtrl):
+    """TextCtrl but a bit smarter.
+
+    Args:
+        num_value:
+        max_precision:
+        default_unit:
+        unit_conversions:
+    """
+
+    def __init__(self, *args, num_value=1, max_precision=3, default_unit, unit_conversions, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._num_value = num_value
+        self._max_precision = max_precision
+        self._units = dict(unit_conversions)
+        self._default_unit = default_unit
+        self._current_unit = default_unit
+
+        if self._default_unit not in self._units:
+            raise KeyError(f'Default unit {self._default_unit} not in unit_conversions')
+        self.Value = f'{self._num_value} {self._default_unit}'
+
+        self._selected_dirty = False
+        self._text_dirty = False
+
+        self.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        self.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
+        self.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
+        self.Bind(wx.EVT_TEXT, self.on_text_change)
+        self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+
+    def on_left_up(self, event: wx.CommandEvent) -> None:
+        """On EVT_LEFT_UP, if not already focused, select digits."""
+        if not self._selected_dirty:
+            self._selected_dirty = True
+            self.SetSelection(0, self.Value.find(' '))
+        event.Skip()
+
+    def on_set_focus(self, event: wx.CommandEvent) -> None:
+        """On EVT_SET_FOCUS, select digits."""
+        self.SetSelection(0, self.Value.find(' '))
+        event.Skip()
+
+    def on_kill_focus(self, event: wx.CommandEvent) -> None:
+        """On EVT_KILL_FOCUS, process the updated value."""
+        if self._text_dirty:
+            self.Undo()
+            self._text_dirty = False
+        self._selected_dirty = False
+        event.Skip()
+
+    def on_text_change(self, event: wx.CommandEvent) -> None:
+        """On EVT_TEXT, set dirty flag true."""
+        self._text_dirty = True
+        event.Skip()
+
+    def on_text_enter(self, event: wx.CommandEvent) -> None:
+        """On EVT_TEXT_ENTER, process the updated value."""
+        if not self._text_dirty:
+            return
+
+        regex = re.findall(rf'(-?\d*\.?\d+)\s*({"|".join(self._units.keys())})?', self.Value)
+        if len(regex) == 0:
+            self.Undo()
+            return
+        value, unit = regex[0]
+
+        if unit not in self._units:
+            unit = self._default_unit
+        self._num_value = float(value) * self._units[unit]
+        self._text_dirty = False
+        self._update_value()
+
+        evt = FancyTextUpdatedEvent()
+        # wxPython is dumb. WHY DOESN'T evt.EventObject = self WORK??????
+        evt.SetEventObject(self)
+        wx.PostEvent(self, evt)
+
+    def _update_value(self) -> None:
+        self.Value = f'{self._num_value:.{self._max_precision}f} {self._current_unit}'
+        self._text_dirty = False
+
+    @property
+    def current_unit(self) -> Tuple[str, float]:
+        return self._current_unit, self._units[self._current_unit]
+
+    @property
+    def num_value(self) -> float:
+        return self._num_value
+
+    @num_value.setter
+    def num_value(self, value) -> None:
+        self._num_value = value
+        self._update_value()

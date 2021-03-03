@@ -35,14 +35,14 @@ class GLActionVis:
 
     # colors to differentiate devices
     colors = [
-        (0.0000, 0.4088, 0.9486, 1.000),    # blueish
-        (0.4863, 0.0549, 0.3725, 1.000),    # purpleish
-        (0.9255, 0.0588, 0.2784, 1.000),    # reddish
-        (0.9333, 0.4196, 0.2314, 1.000),    # orangeish
-        (0.9804, 0.7016, 0.3216, 1.000),    # yellowish
-        (0.2706, 0.6824, 0.4345, 1.000),    # lightgreenish
-        (0.0314, 0.5310, 0.3255, 1.000),    # greenish
-        (0.0157, 0.3494, 0.3890, 1.000),    # tealish
+        (0.0000, 0.4088, 0.9486, 1.0),    # blueish
+        (0.4863, 0.0549, 0.3725, 1.0),    # purpleish
+        (0.9255, 0.0588, 0.2784, 1.0),    # reddish
+        (0.9333, 0.4196, 0.2314, 1.0),    # orangeish
+        (0.9804, 0.7016, 0.3216, 1.0),    # yellowish
+        (0.2706, 0.6824, 0.4345, 1.0),    # lightgreenish
+        (0.0314, 0.5310, 0.3255, 1.0),    # greenish
+        (0.0157, 0.3494, 0.3890, 1.0),    # tealish
     ]
 
     def __init__(self, parent):
@@ -51,7 +51,7 @@ class GLActionVis:
         self.c = self.p.c
 
         self._initialized = False
-        self.device_len = None
+        self._num_devices = None
 
         self._items = {
             'line': defaultdict(list),
@@ -134,9 +134,7 @@ class GLActionVis:
 
         # --- bind data for points ---
 
-        point_mats = None
-        point_colors = None
-        point_ids = None
+        point_mats = point_colors = point_ids = None
         scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
 
         for key, value in self._items['point'].items():
@@ -161,11 +159,11 @@ class GLActionVis:
                 point_colors += new_colors
                 point_ids += new_ids
 
-        self._num_points = 0 if not point_mats else len(point_mats)
-
-        # stop if no points to set
-        if not point_mats:
+        # we're done if no points to set
+        if not self._items['point']:
             return
+
+        self._num_points = sum(len(i) for i in self._items['point'].values())
 
         point_ids = np.array(point_ids, dtype=np.int32)
 
@@ -219,12 +217,12 @@ class GLActionVis:
         """
         for item in self._items.values():
             item.clear()
-
-        self.device_len = len(self.c.devices)
+        self._num_points = 0
+        self._num_devices = len(self.c.devices)
 
         for i, action in enumerate(self.c.actions):
             if action.atype in (ActionType.G0, ActionType.G1):
-                self._items['line'][action.device].append((self.device_len + i, xyzpt_to_mat4(*action.args)))
+                self._items['line'][action.device].append((self._num_devices + i, xyzpt_to_mat4(*action.args)))
 
             elif action.atype in (ActionType.C0, ActionType.C1):
                 if action.device not in self._items['line'].keys():

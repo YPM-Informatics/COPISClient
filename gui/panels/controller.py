@@ -135,7 +135,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
     def add_jog_controls(self) -> None:
         """Initialize jog controller sizer and setup child elements."""
-        jog_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jogging'), wx.VERTICAL)
+        jog_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jog Controller'), wx.VERTICAL)
 
         xyzpt_grid = wx.FlexGridSizer(6, 6, 0, 0)
         for col in (0, 1, 2, 3):
@@ -154,18 +154,13 @@ class ControllerPanel(scrolled.ScrolledPanel):
         z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24))
         z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24))
 
-        tilt_up_btn = wx.Button(jog_sizer.StaticBox, label='T+', size=(42, 24))
-        tilt_down_btn = wx.Button(jog_sizer.StaticBox, label='T-', size=(42, 24))
-        tilt_up_90_btn = wx.Button(jog_sizer.StaticBox, label='T+90', size=(42, 24))
-        tilt_down_90_btn = wx.Button(jog_sizer.StaticBox, label='T-90', size=(42, 24))
-        pan_right_btn = wx.Button(jog_sizer.StaticBox, label='P+', size=(42, 24))
-        pan_left_btn = wx.Button(jog_sizer.StaticBox, label='P-', size=(42, 24))
-        pan_right_90_btn = wx.Button(jog_sizer.StaticBox, label='P+90', size=(42, 24))
-        pan_left_90_btn = wx.Button(jog_sizer.StaticBox, label='P-90', size=(42, 24))
+        tilt_up_btn = wx.Button(jog_sizer.StaticBox, label='T+', size=(24, 24))
+        tilt_down_btn = wx.Button(jog_sizer.StaticBox, label='T-', size=(24, 24))
+        pan_right_btn = wx.Button(jog_sizer.StaticBox, label='P+', size=(24, 24))
+        pan_left_btn = wx.Button(jog_sizer.StaticBox, label='P-', size=(24, 24))
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
-                    tilt_up_btn, pan_left_btn, tilt_down_btn, pan_right_btn,
-                    tilt_up_90_btn, tilt_down_90_btn, pan_right_90_btn, pan_left_90_btn):
+                    tilt_up_btn, pan_left_btn, tilt_down_btn, pan_right_btn):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
         step_text = wx.StaticText(jog_sizer.StaticBox, label='Distance', style=wx.ALIGN_CENTRE_HORIZONTAL)
@@ -200,17 +195,17 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
             (0, 5), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
 
-            (pan_left_btn, 0, wx.EXPAND, 0),
-            (pan_right_btn, 0, wx.EXPAND, 0),
+            (0, 0),
             (tilt_up_btn, 0, wx.EXPAND, 0),
-            (tilt_up_90_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (0, 0),
             (0, 0),
             (self.pt_step_cb, 0, wx.ALL|wx.EXPAND, 1),
 
-            (pan_left_90_btn, 0, wx.EXPAND, 0),
-            (pan_right_90_btn, 0, wx.EXPAND, 0),
+            (pan_left_btn, 0, wx.EXPAND, 0),
             (tilt_down_btn, 0, wx.EXPAND, 0),
-            (tilt_down_90_btn, 0, wx.EXPAND, 0),
+            (pan_right_btn, 0, wx.EXPAND, 0),
+            (0, 0),
             (0, 0),
             (self.pt_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
         ])
