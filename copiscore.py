@@ -544,6 +544,7 @@ class COPISCore:
             dispatcher.send('core_d_deselected', device=self._devices[index])
         elif index < len(self._devices):
             self._selected_device = index
+            self.select_point(-1)
             dispatcher.send('core_d_selected', device=self._devices[index])
         else:
             dispatcher.send('core_error', message=f'invalid device index {index}')

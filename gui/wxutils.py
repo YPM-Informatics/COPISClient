@@ -16,7 +16,7 @@
 """wxPython util functions."""
 
 import re
-from typing import Tuple
+from typing import Any, Tuple
 
 import wx
 import wx.lib.newevent
@@ -43,6 +43,15 @@ def create_scaled_bitmap(bmp_name: str,
     image = svg.SVGimage.CreateFromFile(
         'img/' + bmp_name + '.svg').ConvertToScaledBitmap((px_cnt, px_cnt))
     return image
+
+
+def simple_statictext(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
+    return wx.StaticText(
+        parent,
+        label=label,
+        size=(width, -1),
+        style=wx.ALIGN_RIGHT
+    )
 
 
 class FancyTextCtrl(wx.TextCtrl):

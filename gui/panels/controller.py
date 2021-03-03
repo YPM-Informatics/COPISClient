@@ -22,7 +22,8 @@ serial connections are implemented.
 import utils
 import wx
 import wx.lib.scrolledpanel as scrolled
-from gui.wxutils import create_scaled_bitmap
+from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+                         create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
 from utils import Point3, Point5
 
@@ -41,8 +42,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.add_state_controls()
-        self.add_jog_controls()
+        self._add_state_controls()
+        self._add_jog_controls()
 
         self.SetupScrolling(scroll_x=False)
 
@@ -64,7 +65,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.update_machine_pos(Point5())
         self.Disable()
 
-    def add_state_controls(self) -> None:
+    def _add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
         info_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='State'), wx.VERTICAL)
 
@@ -133,11 +134,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
         info_sizer.Add(info_grid, 1, wx.ALL|wx.EXPAND, 4)
         self.Sizer.Add(info_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
-    def add_jog_controls(self) -> None:
+    def _add_jog_controls(self) -> None:
         """Initialize jog controller sizer and setup child elements."""
         jog_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Jog Controller'), wx.VERTICAL)
 
-        xyzpt_grid = wx.FlexGridSizer(6, 6, 0, 0)
+        xyzpt_grid = wx.FlexGridSizer(6, 4, 0, 0)
         for col in (0, 1, 2, 3):
             xyzpt_grid.AddGrowableCol(col)
 
@@ -163,54 +164,65 @@ class ControllerPanel(scrolled.ScrolledPanel):
                     tilt_up_btn, pan_left_btn, tilt_down_btn, pan_right_btn):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        step_text = wx.StaticText(jog_sizer.StaticBox, label='Distance', style=wx.ALIGN_CENTRE_HORIZONTAL)
-        self.xyz_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, utils.xyz_steps)), style=wx.TE_CENTRE)
-        self.xyz_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.xyz_units.keys()), style=wx.TE_CENTRE)
-        self.xyz_unit_choice.Selection = 0
-        self.pt_step_cb = wx.ComboBox(jog_sizer.StaticBox, value='1', size=(50, -1), choices=list(map(str, utils.pt_steps)), style=wx.TE_CENTRE)
-        self.pt_unit_choice = wx.Choice(jog_sizer.StaticBox, size=(50, -1), choices=list(utils.pt_units.keys()), style=wx.TE_CENTRE)
-        self.pt_unit_choice.Selection = 0
-
         xyzpt_grid.AddMany([
             (arrow_nw_btn, 0, wx.EXPAND, 0),
             (y_pos_btn, 0, wx.EXPAND, 0),
             (arrow_ne_btn, 0, wx.EXPAND, 0),
             (z_pos_btn, 0, wx.EXPAND, 0),
-            (8, 0),
-            (step_text, 0, wx.ALIGN_BOTTOM|wx.BOTTOM|wx.EXPAND, 3),
 
             (x_neg_btn, 0, wx.EXPAND, 0),
             (xy_btn, 0, wx.EXPAND, 0),
             (x_pos_btn, 0, wx.EXPAND, 0),
             (0, 0),
-            (0, 0),
-            (self.xyz_step_cb, 0, wx.ALL|wx.EXPAND, 1),
 
             (arrow_sw_btn, 0, wx.EXPAND, 0),
             (y_neg_btn, 0, wx.EXPAND, 0),
             (arrow_se_btn, 0, wx.EXPAND, 0),
             (z_neg_btn, 0, wx.EXPAND, 0),
-            (0, 0),
-            (self.xyz_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
 
-            (0, 5), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
+            (0, 5), (0, 0), (0, 0), (0, 0),
 
             (0, 0),
             (tilt_up_btn, 0, wx.EXPAND, 0),
             (0, 0),
             (0, 0),
-            (0, 0),
-            (self.pt_step_cb, 0, wx.ALL|wx.EXPAND, 1),
 
             (pan_left_btn, 0, wx.EXPAND, 0),
             (tilt_down_btn, 0, wx.EXPAND, 0),
             (pan_right_btn, 0, wx.EXPAND, 0),
             (0, 0),
-            (0, 0),
-            (self.pt_unit_choice, 0, wx.ALL|wx.EXPAND, 1),
         ])
 
-        jog_sizer.Add(xyzpt_grid, 1, wx.ALL|wx.EXPAND, 4)
+        jog_sizer.Add(xyzpt_grid, 0, wx.ALL|wx.EXPAND, 4)
+        jog_sizer.AddSpacer(8)
+
+        # ---
+
+        step_feedrate_grid = wx.FlexGridSizer(3, 2, 4, 8)
+        step_feedrate_grid.AddGrowableCol(0, 2)
+        step_feedrate_grid.AddGrowableCol(1, 1)
+
+        self.xyz_step_ctrl = FancyTextCtrl(
+            jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
+            max_precision=0, default_unit='mm', unit_conversions=utils.xyz_units)
+        self.pt_step_ctrl = FancyTextCtrl(
+            jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
+            max_precision=0, default_unit='dd', unit_conversions=utils.pt_units)
+        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1), style=wx.TE_PROCESS_ENTER, name='feed_rate')
+
+        step_feedrate_grid.AddMany([
+            (simple_statictext(jog_sizer.StaticBox, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
+
+            (simple_statictext(jog_sizer.StaticBox, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.pt_step_ctrl, 0, wx.EXPAND, 0),
+
+            (simple_statictext(jog_sizer.StaticBox, 'Feed rate:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.feed_rate_ctrl, 0, wx.EXPAND, 0),
+        ])
+
+        jog_sizer.Add(step_feedrate_grid, 0, wx.ALL|wx.EXPAND, 4)
+
         self.Sizer.Add(jog_sizer, 0, wx.ALL|wx.EXPAND, 7)
 
     def update_machine_pos(self, pos: Point5) -> None:
@@ -220,11 +232,3 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.z_m_text.ChangeValue(f'{pos.z:.3f}')
         self.p_m_text.ChangeValue(f'{pos.p:.3f}')
         self.t_m_text.ChangeValue(f'{pos.t:.3f}')
-
-    def update_world_pos(self, pos: Point5) -> None:
-        """Update world position values given point."""
-        self.x_w_text.ChangeValue(f'{pos.x:.3f}')
-        self.y_w_text.ChangeValue(f'{pos.y:.3f}')
-        self.z_w_text.ChangeValue(f'{pos.z:.3f}')
-        self.p_w_text.ChangeValue(f'{pos.p:.3f}')
-        self.t_w_text.ChangeValue(f'{pos.t:.3f}')

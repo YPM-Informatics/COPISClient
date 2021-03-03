@@ -125,11 +125,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._rot_lock = Lock()
         self._object_scale = 3
 
-        # bind copiscore listeners
-        dispatcher.connect(self.update_volumes, signal='core_a_list_changed')
-        dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
+        # bind core listeners
+        dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
+        dispatcher.connect(self._update_colors, signal='core_p_selected')
+        dispatcher.connect(self._update_colors, signal='core_p_deselected')
+        dispatcher.connect(self._update_devices, signal='core_d_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -280,27 +280,28 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
-    def update_volumes(self) -> None:
+    def _update_volumes(self) -> None:
         """When action list is modified, calculate point positions.
 
         Handles core_a_list_changed signal.
         """
         self._actionvis.update_actions()
-
         self._dirty = True
 
         glBindVertexArray(0)
 
-    def update_volume_colors(self) -> None:
-        self._actionvis.update_colors()
+    def _update_colors(self) -> None:
+        self._actionvis.update_action_vaos()
+        self._dirty = True
 
-    def update_id_offset(self) -> None:
-        """When the camera list has changed, update _id_offset to be used in
-        instanced rendering.
+    def _update_devices(self) -> None:
+        """When the device list has changed, update actionvis and _id_offset.
 
         Handles core_d_list_changed signal.
         """
         self._id_offset = len(self.c.devices)
+        self._actionvis.update_devices()
+        self._dirty = True
 
     # @timing
     def render(self):
@@ -434,6 +435,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 pass
 
         else:
+            print(id_)
             # id_ belongs to cameras or objects
             if id_ == -1:
                 self.c.select_device(-1)

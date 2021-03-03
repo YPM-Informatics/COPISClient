@@ -27,7 +27,7 @@ from enums import ActionType
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from utils import shade_color, xyzpt_to_mat4
+from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:
@@ -51,27 +51,27 @@ class GLActionVis:
         self.c = self.p.c
 
         self._initialized = False
-        self._num_devices = None
+        self._num_points = 0
+        self._num_devices = 0
 
+        self._devices = []
         self._items = {
             'line': defaultdict(list),
-            'point': defaultdict(list)}
+            'point': defaultdict(list),
+        }
         self._vaos = {
             'line': {},
-            'point': {}}
-
-        self._vao_box = None
-        self._num_points = 0
-
-        dispatcher.connect(self.update_vaos, signal='core_p_selected')
-        dispatcher.connect(self.update_vaos, signal='core_p_deselected')
+            'point': {},
+            'box': None,
+            'camera': None,
+        }
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         vbo = glGenBuffers(1)
 
         # initialize camera box
-        # TODO: update to stl
+        # TODO: update to obj file
         vertices = glm.array(
             glm.vec3(-0.5, -1.0, -1.0),     # bottom
             glm.vec3(0.5, -1.0, -1.0),
@@ -101,15 +101,20 @@ class GLActionVis:
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
 
-        self._vao_box = glGenVertexArrays(1)
-        glBindVertexArray(self._vao_box)
+        self._vaos['box'] = glGenVertexArrays(1)
+        glBindVertexArray(self._vaos['box'])
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-    def update_vaos(self) -> None:
+        self._vaos['camera'] = glGenVertexArrays(1)
+        glBindVertexArray(self._vaos['camera'])
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(0)
+
+    def update_action_vaos(self) -> None:
         """Update VAOs when action list changes."""
-        for vao in self._vaos.values():
-            vao.clear()
+        self._vaos['line'].clear()
+        self._vaos['point'].clear()
 
         # --- bind data for lines ---
 
@@ -164,13 +169,152 @@ class GLActionVis:
             return
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
-
         point_ids = np.array(point_ids, dtype=np.int32)
 
+        self._bind_vao_mat_col_id(self._vaos['box'], point_mats, point_colors, point_ids)
+
+    def update_device_vaos(self) -> None:
+        """Update VAO when device list changes."""
+        scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
+        mats = glm.array([x * scale for x in self._devices])
+        colors = glm.array([glm.vec4(self.colors[i % len(self.colors)]) for i in range(len(self._devices))])
+        ids = np.array(range(len(self._devices)), dtype=np.int32)
+
+        self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)
+
+
+    def update_actions(self) -> None:
+        """Update lines and points when action list changes.
+
+        Called from GLCanvas upon core_a_list_changed signal.
+
+        # TODO: process other action ids
+        """
+        self._items['line'].clear()
+        self._items['point'].clear()
+        self._num_points = 0
+        self._num_devices = len(self.c.devices)
+
+        for i, action in enumerate(self.c.actions):
+            if action.atype in (ActionType.G0, ActionType.G1):
+                self._items['line'][action.device].append((self._num_devices + i, xyzpt_to_mat4(*action.args)))
+
+            elif action.atype in (ActionType.C0, ActionType.C1):
+                if action.device not in self._items['line'].keys():
+                    continue
+                self._items['point'][action.device].append(self._items['line'][action.device][-1])
+
+            else:
+                # TODO!
+                pass
+
+        self.update_action_vaos()
+
+    def update_devices(self) -> None:
+        """Update device locations when device list changes.
+
+        Called from GLCanvas upon core_d_list_changed signal.
+        """
+        self._devices.clear()
+        for device in self.c.devices:
+            self._devices.append(point5_to_mat4(device.position))
+
+        self.update_device_vaos()
+
+    def init(self) -> bool:
+        """Initialize for rendering.
+
+        Returns:
+            True if initialized without error, False otherwise.
+        """
+        if self._initialized:
+            return True
+
+        self.create_vaos()
+        self.update_actions()
+        self.update_devices()
+
+        self._initialized = True
+        return True
+
+    def render(self) -> None:
+        """Render actions to canvas."""
+        if not self.init():
+            return
+
+        proj = self.p.projection_matrix
+        view = self.p.modelview_matrix
+        model = glm.mat4()
+
+        # --- render path lines ---
+
+        glUseProgram(self.p.shaders['single_color'])
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
+
+        for key, value in self._vaos['line'].items():
+            color = glm.vec4(self.colors[key % len(self.colors)])
+            glUniform4fv(3, 1, glm.value_ptr(color))
+            glBindVertexArray(value)
+            glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
+
+        if self._num_points <= 0:
+            return
+
+        # --- render points ---
+
+        glUseProgram(self.p.shaders['instanced_model_color'])
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        glBindVertexArray(self._vaos['box'])
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
+
+        # --- render cameras ---
+
+        glUseProgram(self.p.shaders['instanced_model_color'])
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        glBindVertexArray(self._vaos['camera'])
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+    def render_for_picking(self) -> None:
+        """Render action "pickables" for picking pass."""
+        if not self.init():
+            return
+
+        proj = self.p.projection_matrix
+        view = self.p.modelview_matrix
+
+        # --- render path lines for picking---
+
+        glUseProgram(self.p.shaders['instanced_picking'])
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+
+        # --- render points for picking---
+
+        glBindVertexArray(self._vaos['box'])
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
+
+        # --- render cameras for picking---
+
+        glBindVertexArray(self._vaos['camera'])
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
+
+        glBindVertexArray(0)
+        glUseProgram(0)
+
+    def _bind_vao_mat_col_id(self, vao, mat, col, id) -> None:
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, point_mats.nbytes, glm.value_ptr(point_mats), GL_STATIC_DRAW)
-        glBindVertexArray(self._vao_box)
+        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, glm.value_ptr(mat), GL_STATIC_DRAW)
+        glBindVertexArray(vao)
 
         # modelmats
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
@@ -189,14 +333,14 @@ class GLActionVis:
 
         # colors
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, point_colors.nbytes, glm.value_ptr(point_colors), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, col.nbytes, glm.value_ptr(col), GL_STATIC_DRAW)
         glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
         glVertexAttribDivisor(7, 1)
 
         # ids for picking
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
-        glBufferData(GL_ARRAY_BUFFER, point_ids.nbytes, point_ids, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, id.nbytes, id, GL_STATIC_DRAW)
         # huhhhh?????? I must have done something wrong because only GL_FLOAT works
         glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(8)
@@ -204,102 +348,3 @@ class GLActionVis:
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
-
-    def update_colors(self) -> None:
-        return
-
-    def update_actions(self) -> None:
-        """Update lines and points when action list changes.
-
-        Called from GLCanvas upon core_a_list_changed signal.
-
-        # TODO: process other action ids
-        """
-        for item in self._items.values():
-            item.clear()
-        self._num_points = 0
-        self._num_devices = len(self.c.devices)
-
-        for i, action in enumerate(self.c.actions):
-            if action.atype in (ActionType.G0, ActionType.G1):
-                self._items['line'][action.device].append((self._num_devices + i, xyzpt_to_mat4(*action.args)))
-
-            elif action.atype in (ActionType.C0, ActionType.C1):
-                if action.device not in self._items['line'].keys():
-                    continue
-                self._items['point'][action.device].append(self._items['line'][action.device][-1])
-
-            else:
-                # TODO!
-                pass
-
-        self.update_vaos()
-
-    def init(self) -> bool:
-        """Initialize for rendering.
-
-        Returns:
-            True if initialized without error, False otherwise.
-        """
-        if self._initialized:
-            return True
-
-        self.create_vaos()
-        self.update_actions()
-
-        self._initialized = True
-        return True
-
-    def render(self) -> None:
-        """Render actions to canvas."""
-        if not self.init():
-            return
-
-        proj = self.p.projection_matrix
-        view = self.p.modelview_matrix
-        model = glm.mat4()
-
-        # render path lines
-        glUseProgram(self.p.shaders['single_color'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        for key, value in self._vaos['line'].items():
-            color = glm.vec4(self.colors[key % len(self.colors)])
-            glUniform4fv(3, 1, glm.value_ptr(color))
-            glBindVertexArray(value)
-            glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
-
-        if self._num_points <= 0:
-            return
-
-        # render points
-        glUseProgram(self.p.shaders['instanced_model_color'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        glBindVertexArray(self._vao_box)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
-
-        glBindVertexArray(0)
-        glUseProgram(0)
-
-    def render_for_picking(self) -> None:
-        """Render action "pickables" for picking pass."""
-        if not self.init():
-            return
-
-        proj = self.p.projection_matrix
-        view = self.p.modelview_matrix
-
-        # render picking
-        glUseProgram(self.p.shaders['instanced_picking'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        glBindVertexArray(self._vao_box)
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
-
-        glBindVertexArray(0)
-        glUseProgram(0)

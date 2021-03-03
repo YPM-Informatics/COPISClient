@@ -19,21 +19,12 @@ import math
 import re
 from typing import Any, List, Optional, Union
 
+import utils
 import wx
 import wx.lib.scrolledpanel as scrolled
+from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+                         create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
-
-import utils
-from gui.wxutils import create_scaled_bitmap, FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT
-
-
-def _text(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
-    return wx.StaticText(
-        parent,
-        label=label,
-        size=(width, -1),
-        style=wx.ALIGN_RIGHT
-    )
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -241,17 +232,17 @@ class _PropTransform(wx.Panel):
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
-            (_text(self, 'X:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'X:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.x_ctrl, 0, wx.EXPAND, 0),
-            (_text(self, 'Pan:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Pan:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.p_ctrl, 0, wx.EXPAND, 0),
 
-            (_text(self, 'Y:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Y:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.y_ctrl, 0, wx.EXPAND, 0),
-            (_text(self, 'Tilt:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Tilt:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.t_ctrl, 0, wx.EXPAND, 0),
 
-            (_text(self, 'Z:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Z:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_ctrl, 0, wx.EXPAND, 0),
             (0, 0),
             (more_btn, 0, wx.ALIGN_RIGHT, 0)
@@ -279,9 +270,9 @@ class _PropTransform(wx.Panel):
         step_size_grid.AddGrowableCol(3, 0)
 
         step_size_grid.AddMany([
-            (_text(self, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
-            (_text(self, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.pt_step_ctrl, 0, wx.EXPAND, 0),
         ])
 
@@ -513,13 +504,13 @@ class _PropCameraInfo(wx.Panel):
         self.type_text = wx.StaticText(self, label='')
 
         grid.AddMany([
-            (_text(self, 'Device ID:', 80), 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Device ID:', 80), 0, wx.EXPAND, 0),
             (self.id_text, 0, wx.EXPAND, 0),
 
-            (_text(self, 'Device Name:', 80), 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Device Name:', 80), 0, wx.EXPAND, 0),
             (self.name_text, 0, wx.EXPAND, 0),
 
-            (_text(self, 'Device Type:', 80), 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Device Type:', 80), 0, wx.EXPAND, 0),
             (self.type_text, 0, wx.EXPAND, 0),
         ])
 
