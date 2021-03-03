@@ -251,7 +251,6 @@ class GLActionVis:
         glUseProgram(self.p.shaders['instanced_model_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
         glBindVertexArray(self._vaos['camera'])
         glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
 
@@ -274,9 +273,8 @@ class GLActionVis:
             glUseProgram(self.p.shaders['instanced_model_color'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        glBindVertexArray(self._vaos['box'])
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
+            glBindVertexArray(self._vaos['box'])
+            glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
 
         glBindVertexArray(0)
         glUseProgram(0)
@@ -290,19 +288,14 @@ class GLActionVis:
         view = self.p.modelview_matrix
 
         glUseProgram(self.p.shaders['instanced_picking'])
-
-        # --- render cameras for picking---
-
-        glBindVertexArray(self._vaos['camera'])
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
-
-        # --- render path lines for picking---
-
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        # --- render points for picking---
+        # render cameras for picking
+        glBindVertexArray(self._vaos['camera'])
+        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
 
+        # render points for picking
         if self._num_points > 0:
             glBindVertexArray(self._vaos['box'])
             glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
