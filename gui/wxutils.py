@@ -53,9 +53,15 @@ class FancyTextCtrl(wx.TextCtrl):
         max_precision:
         default_unit:
         unit_conversions:
+
+    Attributes:
+        num_value:
+        current_unit:
     """
 
-    def __init__(self, *args, num_value=1, max_precision=3, default_unit, unit_conversions, **kwargs):
+    def __init__(self, *args, num_value=1, max_precision=3, default_unit,
+                 unit_conversions, **kwargs):
+        """Inits FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
         self._num_value = num_value
         self._max_precision = max_precision
@@ -124,12 +130,9 @@ class FancyTextCtrl(wx.TextCtrl):
         wx.PostEvent(self, evt)
 
     def _update_value(self) -> None:
+        """Update control text."""
         self.Value = f'{self._num_value:.{self._max_precision}f} {self._current_unit}'
         self._text_dirty = False
-
-    @property
-    def current_unit(self) -> Tuple[str, float]:
-        return self._current_unit, self._units[self._current_unit]
 
     @property
     def num_value(self) -> float:
@@ -139,3 +142,7 @@ class FancyTextCtrl(wx.TextCtrl):
     def num_value(self, value) -> None:
         self._num_value = value
         self._update_value()
+
+    @property
+    def current_unit(self) -> Tuple[str, float]:
+        return self._current_unit, self._units[self._current_unit]

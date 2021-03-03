@@ -76,7 +76,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls
-    color_background = (1.0, 1.0, 1.0, 1.0)
+    # background_color = (0.9412, 0.9412, 0.9412, 1.0)
+    background_color = (1.0, 1.0, 1.0, 1.0)
     zoom_min = 0.1
     zoom_max = 7.0
 
@@ -154,7 +155,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._context is None:
             return False
 
-        glClearColor(*self.color_background)
+        glClearColor(*self.background_color)
         glClearDepth(1.0)
 
         glDepthFunc(GL_LESS)
@@ -532,10 +533,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._inside:
             # convert rgb value back to id
             color = glReadPixels(mouse[0], mouse[1], 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-            id_ = color[0] + (color[1] << 8) + (color[2] << 16)
+            id_ = (color[0]) + (color[1] << 8) + (color[2] << 16)
 
-            # ignore white (background color)
-            if id_ == 16777215:
+            # ignore background color
+            if id_ == (int(self.background_color[0] * 255)) + \
+                      (int(self.background_color[1] * 255) << 8) + \
+                      (int(self.background_color[2] * 255) << 16):
                 id_ = -1
 
         # check if mouse is inside viewcube area
@@ -546,13 +549,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         else:
             self._viewcube.hover_id = -1
 
-        # print(id_)
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
-        """Render objects with RGB color corresponding to id for picking.
-
-        """
+        """Render objects with RGB color corresponding to id for picking."""
         self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
@@ -561,7 +561,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_background(self) -> None:
         """Clear the background color."""
-        glClearColor(*self.color_background)
+        glClearColor(*self.background_color)
 
     def _render_chamber(self) -> None:
         """Render chamber."""

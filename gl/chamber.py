@@ -202,7 +202,7 @@ class GLChamber:
         bbox_shown: A boolean indicating if a bounding box should be rendered
             or not. Defaults to True.
     """
-    col_light = 0.96
+    col_light = 0.95
     col_dark = 0.80
     col_border = 0.50
 
