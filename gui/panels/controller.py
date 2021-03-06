@@ -211,13 +211,13 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1), style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([
-            (simple_statictext(jog_sizer.StaticBox, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(jog_sizer.StaticBox, 'XYZ distance:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(jog_sizer.StaticBox, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(jog_sizer.StaticBox, 'PT distance:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.pt_step_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(jog_sizer.StaticBox, 'Feed rate:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(jog_sizer.StaticBox, 'Feed rate:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.feed_rate_ctrl, 0, wx.EXPAND, 0),
         ])
 

@@ -26,7 +26,6 @@ import numpy as np
 from enums import ActionType
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from pydispatch import dispatcher
 from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
@@ -318,7 +317,6 @@ class GLActionVis:
         glEnableVertexAttribArray(5)
         glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
         glEnableVertexAttribArray(6)
-
         glVertexAttribDivisor(3, 1)
         glVertexAttribDivisor(4, 1)
         glVertexAttribDivisor(5, 1)
