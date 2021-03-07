@@ -201,14 +201,13 @@ class COPISCore:
     @locked
     def connect(self):
         """TODO: implement serial connection."""
-
         self.stop_read_thread = False
         self.read_thread = threading.Thread(
             target=self._listen,
             name='read thread')
         self.read_thread.start()
         self._start_sender()
-
+        
         dispatcher.send('core_message', message='Connected to device')
 
     def reset(self) -> None:
@@ -418,18 +417,7 @@ class COPISCore:
 
         TODO: Get rid of this when auto path generation is implemented.
         """
-
-        # self._actions.extend([
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        # ])
-
-        # self._devices.extend([
-        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        # ])
-
+        
         # logging.debug('Populating test action list')
         # self._actions.extend([
         #     Action(ActionType.C0, 0),
@@ -448,8 +436,6 @@ class COPISCore:
         #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
         #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
         # ])
-
-        # return
 
         heights = (-90, -45, 0, 45, 90)
         radius = 180
