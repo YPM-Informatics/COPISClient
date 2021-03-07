@@ -21,7 +21,7 @@ from PIL import Image
 
 
 class EvfPanel(wx.Panel):
-    """Electronic viewfinder panel. Shows live feed of connected camera.
+    """Electronic viewfinder panel. Shows live feed of connected device.
 
     Args:
         parent: Pointer to a parent wx.Frame.

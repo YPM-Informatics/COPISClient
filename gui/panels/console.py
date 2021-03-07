@@ -76,7 +76,7 @@ class ConsolePanel(wx.Panel):
     def on_command_entered(self, event: wx.CommandEvent) -> None:
         """Parse and process entered console command.
 
-        Can connect, disconnect, and take pictures from cameras.
+        Can connect, disconnect, and image devices.
         """
         cmd = event.String
 

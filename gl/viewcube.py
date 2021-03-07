@@ -21,19 +21,18 @@ TODO: Add text labels to viewcube sides
 
 from typing import Tuple, Union
 
+import glm
 import numpy as np
+from enums import ViewCubePos, ViewCubeSize
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
-import glm
-from enums import ViewCubePos, ViewCubeSize
 
 
 class GLViewCube:
     """Manage a ViewCube object in a GLCanvas.
 
     Args:
-        parent: Pointer to a parent GLCanvas.
+        p: Pointer to a p GLCanvas.
         position: Optional; An enums.ViewCubePos constant representing which
             corner of the viewport the ViewCube should render in. Defaults to
             ViewCubePos.TOP_RIGHT.
@@ -55,7 +54,7 @@ class GLViewCube:
                  position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
                  size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM) -> None:
         """Inits GLViewCube with constructors."""
-        self.parent = parent
+        self.p = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM
 
@@ -72,6 +71,8 @@ class GLViewCube:
         """Bind VAOs to define vertex data."""
         self._vao, self._vao_picking, self._vao_outline = glGenVertexArrays(3)
         vbo = glGenBuffers(6)
+
+        # --- standard viewcube ---
 
         vertices = np.array([
             1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
@@ -92,7 +93,6 @@ class GLViewCube:
             4, 7, 6, 6, 5, 4,
         ], dtype=np.uint16)
         glBindVertexArray(self._vao)
-        # standard viewcube
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -107,7 +107,7 @@ class GLViewCube:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
-        # ---
+        # --- viewcube for picking ---
 
         vertices = np.array([
             1.0, 1.0, 1.0,      # 0 front   (id = 0)
@@ -143,7 +143,6 @@ class GLViewCube:
         colors = np.zeros(72, dtype=np.float32)
         colors[::3] = np.arange(6).repeat(4) / 255.0
         glBindVertexArray(self._vao_picking)
-        # viewcube for picking
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -155,11 +154,10 @@ class GLViewCube:
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
-        # ---
+        # --- outlined face of viewcube ---
 
         colors_border = np.tile(np.array([0.0000, 0.4088, 0.9486], dtype=np.float32), 24)
         glBindVertexArray(self._vao_outline)
-        # outlined face of viewcube
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -194,12 +192,12 @@ class GLViewCube:
         if not self.init():
             return
 
-        glViewport(*self.get_viewport())
+        glViewport(*self._get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.parent.rot_quat)
+        modelview = glm.mat4_cast(self.p.rot_quat)
 
-        glUseProgram(self.parent.get_shader_program())
+        glUseProgram(self.p.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
@@ -216,16 +214,17 @@ class GLViewCube:
         if not self.init():
             return
 
-        glViewport(*self.get_viewport())
+        glViewport(*self.viewport)
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.parent.rot_quat)
+        modelview = glm.mat4_cast(self.p.rot_quat)
 
-        glUseProgram(self.parent.get_shader_program())
+        glUseProgram(self.p.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glBindVertexArray(self._vao_picking)
         glDrawArrays(GL_QUADS, 0, 24)
+
         glBindVertexArray(0)
         glUseProgram(0)
 
@@ -245,10 +244,10 @@ class GLViewCube:
         glLineWidth(1.0)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    def get_viewport(self) -> Tuple[int, int, int, int]:
+    def _get_viewport(self) -> Tuple[int, int, int, int]:
         """Return (x, y, width, height) to set viewport according to position.
         """
-        canvas_size = self.parent.get_canvas_size()
+        canvas_size = self.p.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
         if self._position == ViewCubePos.TOP_LEFT:
             corner = (0, height - self._size)
@@ -263,6 +262,10 @@ class GLViewCube:
     # --------------------------------------------------------------------------
     # Accessor methods
     # --------------------------------------------------------------------------
+
+    @property
+    def viewport(self) -> Tuple[int, int, int, int]:
+        return self._get_viewport()
 
     @property
     def hover_id(self) -> int:
