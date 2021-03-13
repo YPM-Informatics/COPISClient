@@ -70,7 +70,6 @@ class COPISApp(wx.App):
         if self.appconfig_exists:
             self.appconfig.load()
 
-
 if __name__ == '__main__':
 
     logging.basicConfig()
@@ -81,7 +80,7 @@ if __name__ == '__main__':
         # wx.lib.inspection.InspectionTool().Show() # debug
         app.MainLoop()
     except KeyboardInterrupt:
-        print("helo")
+        print("hello")
         pass
 
     app.c.terminate_edsdk()

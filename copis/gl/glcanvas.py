@@ -40,6 +40,7 @@ from gl.chamber import GLChamber
 from gl.glutils import arcball
 from gl.viewcube import GLViewCube
 
+import util.path_finder as path_finder
 
 class _Size(NamedTuple):
 
@@ -259,7 +260,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(self._vaos['model'])
         test_vbo = glGenBuffers(1)
 
-        bulldog = pywavefront.Wavefront('model/handsome_dan.obj', create_materials=True)
+        bulldog = pywavefront.Wavefront(path_finder.find('model/handsome_dan.obj'), create_materials=True)
         for name, material in bulldog.materials.items():
             # print(material.vertex_format)
             vertices = np.array(material.vertices)
