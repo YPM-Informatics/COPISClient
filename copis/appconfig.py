@@ -117,7 +117,7 @@ class AppConfig():
         # Unix: ~/.COPIS
         # Windows : "C:\Users\username\AppData\Roaming\COPIS" or "C:\Documents and Settings\username\Application Data\COPIS"
         # Mac : "~/Library/Application Support/COPIS"
-        return Path(find_path('copis.ini'))
+        return Path(find_path('config.ini'))
 
     def __iter__(self):
         """TODO"""
