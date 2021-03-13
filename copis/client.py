@@ -23,16 +23,9 @@ import signal
 import wx
 import wx.lib.inspection
 
-import copisconsole
-import copiscore
 from appconfig import AppConfig
-from copiscore import COPISCore
+from core import COPISCore
 from gui.main_frame import MainWindow
-
-# class COPISWindow(MainWindow, copisconsole.COPISConsole):
-#     def __init__(self, *args, **kwargs):
-#         copisconsole.COPISConsole.__init__(self)
-#         MainWindow.__init__(self, *args, **kwargs)
 
 _DEFAULT_APP_WINDOW_WIDTH = 800
 _DEFAULT_APP_WINDOW_HEIGHT = 600

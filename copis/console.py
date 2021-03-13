@@ -25,7 +25,7 @@ TODO: The entire thing is a todo
 
 import cmd
 
-import copiscore
+from core import COPISCore
 
 
 class COPISConsole(cmd.Cmd):
@@ -34,4 +34,4 @@ class COPISConsole(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
 
-        self.c = copiscore.COPISCore()
+        self.c = COPISCore()
