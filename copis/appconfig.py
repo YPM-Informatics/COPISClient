@@ -17,7 +17,7 @@
 
 import os
 import configparser
-import util.path_finder as path_finder
+from helpers import find_path
 
 from pathlib import Path
 from typing import Optional
@@ -117,7 +117,7 @@ class AppConfig():
         # Unix: ~/.COPIS
         # Windows : "C:\Users\username\AppData\Roaming\COPIS" or "C:\Documents and Settings\username\Application Data\COPIS"
         # Mac : "~/Library/Application Support/COPIS"
-        return Path(path_finder.find('copis.ini'))
+        return Path(find_path('copis.ini'))
 
     def __iter__(self):
         """TODO"""

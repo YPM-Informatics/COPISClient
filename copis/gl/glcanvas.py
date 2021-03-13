@@ -31,7 +31,7 @@ from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from helpers import timing
+from helpers import timing, find_path
 from wx import glcanvas
 
 import gl.shaders as shaderlib
@@ -39,8 +39,6 @@ from gl.actionvis import GLActionVis
 from gl.chamber import GLChamber
 from gl.glutils import arcball
 from gl.viewcube import GLViewCube
-
-import util.path_finder as path_finder
 
 class _Size(NamedTuple):
 
@@ -260,7 +258,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(self._vaos['model'])
         test_vbo = glGenBuffers(1)
 
-        bulldog = pywavefront.Wavefront(path_finder.find('model/handsome_dan.obj'), create_materials=True)
+        bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
         for name, material in bulldog.materials.items():
             # print(material.vertex_format)
             vertices = np.array(material.vertices)

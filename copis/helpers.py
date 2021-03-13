@@ -23,11 +23,26 @@ from typing import Callable, NamedTuple
 
 import glm
 
+import os
+from pathlib import Path
+
+# --------------------------------------------------------------------------
+# Path finding global logic
+# --------------------------------------------------------------------------
+_PROJECT_FOLDER = 'copis'
+
+_current = os.path.dirname(__file__)
+_segments = _current.split(os.sep)
+_index = _segments.index(_PROJECT_FOLDER)
+_root_segments = _segments[1:_index]
+
+_root = '/' + Path(os.path.join(*_root_segments)).as_posix()
+# --------------------------------------------------------------------------
+
 xyz_steps = [10, 1, 0.1, 0.01]
 xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
-
 
 def timing(f: Callable) -> Callable:
     """Time a function."""
@@ -65,6 +80,10 @@ def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
 
+def find_path(filename: str = '') -> str:
+    paths = [p for p in Path(_root).rglob(filename)]
+
+    return str(paths[0]) if len(paths) > 0 else ''
 
 class Point5(NamedTuple):
     x: float = 0.0

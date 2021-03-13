@@ -22,7 +22,7 @@ import wx
 import wx.lib.newevent
 import wx.svg as svg
 
-import util.path_finder as path_finder
+from helpers import find_path
 
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
@@ -44,7 +44,7 @@ def create_scaled_bitmap(bmp_name: str,
     """
     filename = 'img/' + bmp_name + '.svg'
 
-    image = svg.SVGimage.CreateFromFile(path_finder.find(filename)).ConvertToScaledBitmap((px_cnt, px_cnt))
+    image = svg.SVGimage.CreateFromFile(find_path(filename)).ConvertToScaledBitmap((px_cnt, px_cnt))
     return image
 
 
