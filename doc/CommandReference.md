@@ -68,7 +68,7 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
   * In development
 * *Bulb Mode*
   * In development
-* *Transfer Imgaery*
+* *Transfer Imagery*
   * In development
 * *Live View*
   * In development

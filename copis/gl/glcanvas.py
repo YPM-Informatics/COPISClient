@@ -31,7 +31,7 @@ from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from utils import timing
+from helpers import timing
 from wx import glcanvas
 
 import gl.shaders as shaderlib

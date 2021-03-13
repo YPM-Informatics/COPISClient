@@ -39,7 +39,7 @@ from gui.panels.visualizer import VisualizerPanel
 from gui.pathgen_frame import *
 from gui.pref_frame import *
 from gui.wxutils import create_scaled_bitmap, set_dialog
-from utils import Point3, Point5
+from helpers import Point3, Point5
 
 
 class MainWindow(wx.Frame):

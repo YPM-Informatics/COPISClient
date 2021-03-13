@@ -41,7 +41,7 @@ from pydispatch import dispatcher
 
 from enums import ActionType
 from gl.glutils import get_circle, get_helix
-from utils import Point3, Point5
+from helpers import Point3, Point5
 
 
 def locked(f):

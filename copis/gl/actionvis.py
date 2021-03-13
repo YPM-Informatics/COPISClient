@@ -26,7 +26,7 @@ import numpy as np
 from enums import ActionType
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from utils import point5_to_mat4, shade_color, xyzpt_to_mat4
+from helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:

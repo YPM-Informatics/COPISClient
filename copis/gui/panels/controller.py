@@ -19,13 +19,12 @@ TODO: Currently nonfunctional - needs to be connected to copiscore when
 serial connections are implemented.
 """
 
-import utils
 import wx
 import wx.lib.scrolledpanel as scrolled
 from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
                          create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
-from utils import Point3, Point5
+from helpers import Point5, pt_units, xyz_units
 
 
 class ControllerPanel(scrolled.ScrolledPanel):
@@ -204,10 +203,10 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         self.xyz_step_ctrl = FancyTextCtrl(
             jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
-            max_precision=0, default_unit='mm', unit_conversions=utils.xyz_units)
+            max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.pt_step_ctrl = FancyTextCtrl(
             jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
-            max_precision=0, default_unit='dd', unit_conversions=utils.pt_units)
+            max_precision=0, default_unit='dd', unit_conversions=pt_units)
         self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1), style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([

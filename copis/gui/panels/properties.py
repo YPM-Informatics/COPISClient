@@ -18,8 +18,8 @@
 import math
 import re
 from typing import Any, List, Optional, Union
+from helpers import xyz_units, pt_units
 
-import utils
 import wx
 import wx.lib.scrolledpanel as scrolled
 from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
@@ -216,19 +216,19 @@ class _PropTransform(wx.Panel):
 
         self.x_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x',
-            default_unit='mm', unit_conversions=utils.xyz_units)
+            default_unit='mm', unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y',
-            default_unit='mm', unit_conversions=utils.xyz_units)
+            default_unit='mm', unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z',
-            default_unit='mm', unit_conversions=utils.xyz_units)
+            default_unit='mm', unit_conversions=xyz_units)
         self.p_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p',
-            default_unit='dd', unit_conversions=utils.pt_units)
+            default_unit='dd', unit_conversions=pt_units)
         self.t_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t',
-            default_unit='dd', unit_conversions=utils.pt_units)
+            default_unit='dd', unit_conversions=pt_units)
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
@@ -260,10 +260,10 @@ class _PropTransform(wx.Panel):
 
         self.xyz_step_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
-            max_precision=0, default_unit='mm', unit_conversions=utils.xyz_units)
+            max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.pt_step_ctrl = FancyTextCtrl(
             self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
-            max_precision=0, default_unit='dd', unit_conversions=utils.pt_units)
+            max_precision=0, default_unit='dd', unit_conversions=pt_units)
 
         step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)
