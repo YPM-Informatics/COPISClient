@@ -22,7 +22,7 @@ import wx.lib.agw.aui as aui
 from enums import ToolIds
 from gui.settings_frame import SettingsFrame
 from gui.wxutils import create_scaled_bitmap, set_dialog
-from util.serial_controller import SerialController
+from coms.serial_controller import SerialController
 
 
 class ToolbarPanel(aui.AuiToolBar):

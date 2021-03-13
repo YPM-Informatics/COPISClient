@@ -604,8 +604,8 @@ class COPISCore:
             return
 
         try:
-            import util.edsdk_object
-            self._edsdk = util.edsdk_object
+            import coms.edsdk_object
+            self._edsdk = coms.edsdk_object
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
