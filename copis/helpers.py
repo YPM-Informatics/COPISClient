@@ -80,10 +80,11 @@ def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
 
+
 def find_path(filename: str = '') -> str:
     paths = [p for p in Path(_root).rglob(filename)]
-
     return str(paths[0]) if len(paths) > 0 else ''
+
 
 class Point5(NamedTuple):
     x: float = 0.0

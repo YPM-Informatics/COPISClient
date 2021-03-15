@@ -40,6 +40,7 @@ from gl.chamber import GLChamber
 from gl.glutils import arcball
 from gl.viewcube import GLViewCube
 
+
 class _Size(NamedTuple):
 
     width: int
