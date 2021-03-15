@@ -18,7 +18,7 @@ import os
 import time
 from ctypes import *
 
-from coms.Canon.EDSDKLib import *
+from canon.EDSDKLib import *
 
 _edsdk = None
 _console = None
