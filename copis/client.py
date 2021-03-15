@@ -17,23 +17,18 @@
 
 """Main COPIS App (GUI)."""
 
+import logging
 import signal
 
 import wx
 import wx.lib.inspection
 
-import copisconsole
-import copiscore
 from appconfig import AppConfig
-from copiscore import COPISCore
+from core import COPISCore
 from gui.main_frame import MainWindow
 
-
-# class COPISWindow(MainWindow, copisconsole.COPISConsole):
-#     def __init__(self, *args, **kwargs):
-#         copisconsole.COPISConsole.__init__(self)
-#         MainWindow.__init__(self, *args, **kwargs)
-
+_DEFAULT_APP_WINDOW_WIDTH = 800
+_DEFAULT_APP_WINDOW_HEIGHT = 600
 
 class COPISApp(wx.App):
     """Main wxPython app.
@@ -56,8 +51,8 @@ class COPISApp(wx.App):
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
-            size=(self.appconfig.config.getint('General', 'windowwidth'),
-                  self.appconfig.config.getint('General', 'windowheight'))
+            size=(self.appconfig.config.getint('AppWindow', 'width', fallback = _DEFAULT_APP_WINDOW_WIDTH),
+                  self.appconfig.config.getint('AppWindow', 'height', fallback = _DEFAULT_APP_WINDOW_HEIGHT))
         )
         self.mainwindow.Show()
 
@@ -70,14 +65,17 @@ class COPISApp(wx.App):
         if self.appconfig_exists:
             self.appconfig.load()
 
-
 if __name__ == '__main__':
+
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
+
     app = COPISApp()
     try:
         # wx.lib.inspection.InspectionTool().Show() # debug
         app.MainLoop()
     except KeyboardInterrupt:
-        print("helo")
+        print("hello")
         pass
 
     app.c.terminate_edsdk()

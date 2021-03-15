@@ -20,7 +20,6 @@ import shlex
 import wx
 from gui.wxutils import create_scaled_bitmap
 from pydispatch import dispatcher
-from utils import Point5
 
 
 class ConsolePanel(wx.Panel):
@@ -77,7 +76,7 @@ class ConsolePanel(wx.Panel):
     def on_command_entered(self, event: wx.CommandEvent) -> None:
         """Parse and process entered console command.
 
-        Can connect, disconnect, and take pictures from cameras.
+        Can connect, disconnect, and image devices.
         """
         cmd = event.String
 

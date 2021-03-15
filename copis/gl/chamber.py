@@ -37,12 +37,12 @@ class _Axes():
 
     def __init__(self, parent) -> None:
         """Inits _Axes with constructors."""
-        self._canvas = parent
+        self.p = parent
 
         self._vao_axes = None
         self._vao_arrows = None
 
-        build_dimensions = self._canvas.build_dimensions
+        build_dimensions = self.p.build_dimensions
         dist = 0.5 * (build_dimensions[1] + max(build_dimensions[0], build_dimensions[2]))
         self._arrow_base_radius = dist / 75.0
         self._arrow_length = 2.5 * self._arrow_base_radius
@@ -54,7 +54,7 @@ class _Axes():
         self._vao_axes, *self._vao_arrows = glGenVertexArrays(3)
         vbo = glGenBuffers(5)
 
-        build_dimensions = self._canvas.build_dimensions
+        build_dimensions = self.p.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
@@ -143,9 +143,9 @@ class _Axes():
         Returns:
             An np.ndarray for vertices, and an np.ndarray for color values.
         """
-        x = self._canvas.build_dimensions[0] - self._canvas.build_dimensions[3]
-        y = self._canvas.build_dimensions[1] - self._canvas.build_dimensions[4]
-        z = self._canvas.build_dimensions[2] - self._canvas.build_dimensions[5]
+        x = self.p.build_dimensions[0] - self.p.build_dimensions[3]
+        y = self.p.build_dimensions[1] - self.p.build_dimensions[4]
+        z = self.p.build_dimensions[2] - self.p.build_dimensions[5]
 
         thetas = np.linspace(0, 2 * np.pi, 16, endpoint=True)
         cos = np.cos(thetas) * self._arrow_base_radius
@@ -202,7 +202,7 @@ class GLChamber:
         bbox_shown: A boolean indicating if a bounding box should be rendered
             or not. Defaults to True.
     """
-    col_light = 0.96
+    col_light = 0.95
     col_dark = 0.80
     col_border = 0.50
 
@@ -217,7 +217,7 @@ class GLChamber:
         """
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
-        self._canvas = parent
+        self.p = parent
         self._build_dimensions = build_dimensions
         self._every = every
         self._subdivisions = subdivisions
@@ -300,10 +300,10 @@ class GLChamber:
 
         glDisable(GL_LINE_SMOOTH)
 
-        proj = self._canvas.projection_matrix
-        modelview = self._canvas.modelview_matrix
+        proj = self.p.projection_matrix
+        modelview = self.p.modelview_matrix
 
-        glUseProgram(self._canvas.get_shader_program())
+        glUseProgram(self.p.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
@@ -446,7 +446,7 @@ class GLChamber:
     @grid_shown.setter
     def grid_shown(self, value: bool) -> None:
         self._grid_shown = value
-        self._canvas.dirty = True
+        self.p.dirty = True
 
     @property
     def axes_shown(self) -> bool:
@@ -456,7 +456,7 @@ class GLChamber:
     def axes_shown(self, value: bool) -> None:
         self._axes_shown = value
         self.create_vaos()
-        self._canvas.dirty = True
+        self.p.dirty = True
 
     @property
     def bbox_shown(self) -> bool:
@@ -465,4 +465,4 @@ class GLChamber:
     @bbox_shown.setter
     def bbox_shown(self, value: bool) -> None:
         self._bbox_shown = value
-        self._canvas.dirty = True
+        self.p.dirty = True

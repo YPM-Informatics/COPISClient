@@ -21,14 +21,21 @@ If you have both Python 2.x and 3.x versions installed, you may need to specify:
 ```bash
 python3 -m pip install -r requirements.txt
 ```
-
+__Note: This project supports Python version 3.x.x.__
 ### Usage
 
-Run `./copis.py` to start the application.
-
+To start the application from the project root, run:
+```bash
+`python copis/client.py`
+```
+Or, using the start script in that folder; run:
+```bash
+`python copisclient.py`
+```
+__Note: These 2 commands can be run from any folder in the project directory tree__
 ### Configuration File
 
-The configuration file `copis.ini` contains settings for initialization.
+The configuration file `config.ini` contains initialization settings.
 
 ## License
 

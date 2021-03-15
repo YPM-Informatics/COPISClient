@@ -11,9 +11,9 @@
 .test/
 
 # Canon edsdk files
-util/Canon/*.dll
-util/Canon/*.lib
-util/Canon/*.h
+[Cc]anon/*.dll
+[Cc]anon/*.lib
+[Cc]anon/*.h
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

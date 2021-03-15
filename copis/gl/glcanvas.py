@@ -31,7 +31,7 @@ from OpenGL.GL import *
 from OpenGL.GL import shaders
 from OpenGL.GLU import *
 from pydispatch import dispatcher
-from utils import timing
+from helpers import timing, find_path
 from wx import glcanvas
 
 import gl.shaders as shaderlib
@@ -76,7 +76,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     """
 
     orbit_controls = True  # True: use arcball controls, False: use orbit controls
-    color_background = (1.0, 1.0, 1.0, 1.0)
+    # background_color = (0.9412, 0.9412, 0.9412, 1.0)
+    background_color = (1.0, 1.0, 1.0, 1.0)
     zoom_min = 0.1
     zoom_max = 7.0
 
@@ -96,18 +97,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._build_dimensions = build_dimensions
 
         # shader programs
-        self.default_shader = None
-        self.color_shader = None
-        self.instanced_color_shader = None
-        self.instanced_picking_shader = None
-        self.test_shader = None
+        self._shaders = {}
 
-        # gl related variables TODO comment/regroup
-        self._vao_box = None
-        self._vao_side = None
-        self._vao_top = None
-        self._vao_paths = None
-        self._vao_model = None
+        # more opengl things
+        self._vaos = {}
         self._point_lines = None
         self._point_count = None
         self._id_offset = len(self.c.devices)
@@ -132,11 +125,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._rot_lock = Lock()
         self._object_scale = 3
 
-        # bind copiscore listeners
-        dispatcher.connect(self.update_volumes, signal='core_a_list_changed')
-        dispatcher.connect(self.update_id_offset, signal='core_d_list_changed')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_selected')
-        dispatcher.connect(self.update_volume_colors, signal='core_p_deselected')
+        # bind core listeners
+        dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
+        dispatcher.connect(self._update_colors, signal='core_p_selected')
+        dispatcher.connect(self._update_colors, signal='core_p_deselected')
+        dispatcher.connect(self._update_devices, signal='core_d_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -162,7 +155,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._context is None:
             return False
 
-        glClearColor(*self.color_background)
+        glClearColor(*self.background_color)
         glClearDepth(1.0)
 
         glDepthFunc(GL_LESS)
@@ -183,18 +176,19 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self.create_vaos()
 
         # compile shader programs
-        self.default_shader = shaderlib.compile_shader(*shaderlib.default)
-        self.color_shader = shaderlib.compile_shader(*shaderlib.single_color)
-        self.instanced_color_shader = shaderlib.compile_shader(*shaderlib.instanced_model_color)
-        self.instanced_picking_shader = shaderlib.compile_shader(*shaderlib.instanced_picking)
-        self.test_shader = shaderlib.compile_shader(*shaderlib.test)
+        self._shaders['default'] = shaderlib.compile_shader(*shaderlib.default)
+        self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
+        self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
+        self._shaders['test'] = shaderlib.compile_shader(*shaderlib.test)
 
         self._gl_initialized = True
         return True
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        self._vao_box, self._vao_side, self._vao_top, self._vao_model = glGenVertexArrays(4)
+        self._vaos['box'], self._vaos['side'], \
+        self._vaos['top'], self._vaos['model'] = glGenVertexArrays(4)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -223,7 +217,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             -0.5, 1.0, 1.0,
             -0.5, 1.0, -1.0,
         ], dtype=np.float32)
-        glBindVertexArray(self._vao_box)
+        glBindVertexArray(self._vaos['box'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -239,7 +233,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         vertices[::3] = np.tile(np.array([1.0, 0.5], dtype=np.float32), 24)
         vertices[1::3] = np.repeat(y, 2)
         vertices[2::3] = np.repeat(z, 2)
-        glBindVertexArray(self._vao_side)
+        glBindVertexArray(self._vaos['side'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -250,7 +244,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         vertices = np.concatenate((np.array([1.0, 0.0, 0.0]), vertices)).astype(np.float32)
         indices = np.insert(np.arange(24) * 2 + 1, 0, 0).astype(np.uint16)
-        glBindVertexArray(self._vao_top)
+        glBindVertexArray(self._vaos['top'])
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -262,10 +256,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # ---
 
-        glBindVertexArray(self._vao_model)
+        glBindVertexArray(self._vaos['model'])
         test_vbo = glGenBuffers(1)
 
-        bulldog = pywavefront.Wavefront('model/handsome_dan.obj', create_materials=True)
+        bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
         for name, material in bulldog.materials.items():
             # print(material.vertex_format)
             vertices = np.array(material.vertices)
@@ -286,27 +280,28 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
-    def update_volumes(self) -> None:
+    def _update_volumes(self) -> None:
         """When action list is modified, calculate point positions.
 
         Handles core_a_list_changed signal.
         """
-        self._actionvis.update_arrays()
-
+        self._actionvis.update_actions()
         self._dirty = True
 
         glBindVertexArray(0)
 
-    def update_volume_colors(self) -> None:
-        self._actionvis.update_colors()
+    def _update_colors(self) -> None:
+        self._actionvis.update_action_vaos()
+        self._dirty = True
 
-    def update_id_offset(self) -> None:
-        """When the camera list has changed, update _id_offset to be used in
-        instanced rendering.
+    def _update_devices(self) -> None:
+        """When the device list has changed, update actionvis and _id_offset.
 
         Handles core_d_list_changed signal.
         """
         self._id_offset = len(self.c.devices)
+        self._actionvis.update_devices()
+        self._dirty = True
 
     # @timing
     def render(self):
@@ -448,7 +443,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 self.c.select_device(id_)
             else:
                 self.c.select_device(-1)
-                self.c.select_point(id_ - self._id_offset, clear=True)
+                self.c.select_point(id_, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -539,27 +534,26 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._inside:
             # convert rgb value back to id
             color = glReadPixels(mouse[0], mouse[1], 1, 1, GL_RGB, GL_UNSIGNED_BYTE)
-            id_ = color[0] + (color[1] << 8) + (color[2] << 16)
+            id_ = (color[0]) + (color[1] << 8) + (color[2] << 16)
 
-            # ignore white (background color)
-            if id_ == 16777215:
+            # ignore background color
+            if id_ == (int(self.background_color[0] * 255)) + \
+                      (int(self.background_color[1] * 255) << 8) + \
+                      (int(self.background_color[2] * 255) << 16):
                 id_ = -1
 
         # check if mouse is inside viewcube area
-        viewcube_area = self._viewcube.get_viewport()
+        viewcube_area = self._viewcube.viewport
         if viewcube_area[0] <= mouse[0] <= viewcube_area[0] + viewcube_area[2] and \
            viewcube_area[1] <= mouse[1] <= viewcube_area[1] + viewcube_area[3]:
             self._viewcube.hover_id = id_
         else:
             self._viewcube.hover_id = -1
 
-        # print(id_)
         self._hover_id = id_
 
     def _render_objects_for_picking(self) -> None:
-        """Render objects with RGB color corresponding to id for picking.
-
-        """
+        """Render objects with RGB color corresponding to id for picking."""
         self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
@@ -568,7 +562,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_background(self) -> None:
         """Clear the background color."""
-        glClearColor(*self.color_background)
+        glClearColor(*self.background_color)
 
     def _render_chamber(self) -> None:
         """Render chamber."""
@@ -582,14 +576,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         view = self.modelview_matrix
         model = glm.mat4()
 
-        glUseProgram(self.test_shader)
+        glUseProgram(self.shaders['test'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
-        glBindVertexArray(self._vao_model)
+        glBindVertexArray(self._vaos['model'])
         glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
 
     def _render_cameras(self) -> None:
@@ -610,22 +604,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # Accessor methods
     # --------------------------------------------------------------------------
 
-    def get_shader_program(
-            self, program: Optional[str] = 'default'
-        ) -> Optional[shaders.ShaderProgram]:
-        """Return specified shader program.
-
-        Args:
-            program: Optional; A string for selection. Defaults to 'default'.
-
-        Returns:
-            A GLuint compiled shader reference. See
-            http://pyopengl.sourceforge.net/documentation/pydoc/OpenGL.GL.shaders.html
-            for more info.
-        """
-        if program == 'color':
-            return self.color_shader
-        return self.default_shader # 'default'
+    @property
+    def shaders(self) -> shaders.ShaderProgram:
+        return self._shaders
 
     @property
     def rot_quat(self) -> glm.quat:
