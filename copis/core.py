@@ -41,7 +41,7 @@ from pydispatch import dispatcher
 
 from enums import ActionType
 from gl.glutils import get_circle, get_helix
-from utils import Point3, Point5
+from helpers import Point3, Point5
 
 
 def locked(f):
@@ -604,8 +604,8 @@ class COPISCore:
             return
 
         try:
-            import util.edsdk_object
-            self._edsdk = util.edsdk_object
+            import coms.edsdk_object
+            self._edsdk = coms.edsdk_object
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
