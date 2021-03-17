@@ -36,8 +36,6 @@ class COPISApp(wx.App):
     Initializes COPISCore and main frame.
     """
 
-    mainwindow = None
-
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
         self.c = COPISCore()
