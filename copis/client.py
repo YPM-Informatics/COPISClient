@@ -38,7 +38,7 @@ class COPISApp(wx.App):
 
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
-        self.c = COPISCore()
+        self.core = COPISCore()
         self.appconfig = None
         self.appconfig_exists = False
         self.init_appconfig()
@@ -76,5 +76,5 @@ if __name__ == '__main__':
         print("hello")
         pass
 
-    app.c.terminate_edsdk()
+    app.core.terminate_edsdk()
     del app

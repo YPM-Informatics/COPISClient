@@ -49,7 +49,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """Inits PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.c = self.parent.c
+        self.core = self.parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -125,7 +125,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.c.actions[points[0] - len(self.c.devices)]
+            action = self.core.actions[points[0] - len(self.core.devices)]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)

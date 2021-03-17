@@ -33,7 +33,7 @@ class ConsolePanel(wx.Panel):
         """Inits ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.c = self.parent.c
+        self.core = self.parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -97,24 +97,24 @@ class ConsolePanel(wx.Panel):
         # NOTE: this is temporary, just a way to test edsdk functions.
         if argv[0] == 'connect':
             if argc == 2 and argv[1].isdigit():
-                self.c.edsdk.connect(int(argv[1]))
+                self.core.edsdk.connect(int(argv[1]))
             elif argc == 1:
-                self.c.edsdk.connect()
+                self.core.edsdk.connect()
             else:
                 self.print('usage: connect [INDEX]')
 
         elif argv[0] == 'disconnect':
             if argc == 1:
-                self.c.edsdk.disconnect()
+                self.core.edsdk.disconnect()
             else:
                 self.print('usage: disconnect')
 
         elif argv[0] == 'shoot':
             if argc == 2 and argv[1].isdigit():
-                if self.c.edsdk.connect(int(argv[1])):
-                    self.c.edsdk.take_picture()
+                if self.core.edsdk.connect(int(argv[1])):
+                    self.core.edsdk.take_picture()
             elif argc == 1:
-                self.c.edsdk.take_picture()
+                self.core.edsdk.take_picture()
             else:
                 self.print('usage: shoot [INDEX]')
 

@@ -60,7 +60,7 @@ class MainWindow(wx.Frame):
     def __init__(self, *args, **kwargs) -> None:
         """Inits MainWindow with constructors."""
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.c = wx.GetApp().c
+        self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
         self.MinSize = wx.Size(800, 575)
 
@@ -446,7 +446,7 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        if self.c.edsdk.num_cams == 0:
+        if self.core.edsdk.num_cams == 0:
             return
 
         self.panels['evf'] = EvfPanel(self)
