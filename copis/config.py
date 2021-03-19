@@ -17,17 +17,10 @@ import os
 
 from pathlib import Path
 from configparser import ConfigParser
-from dataclasses import dataclass
 
 from enums import DebugEnv
-
-
-@dataclass
-class Settings:
-    debug_env: str
-
-    app_window_width: int
-    app_window_height: int
+from store import Store
+from settings import Settings
 
 
 class Config():
