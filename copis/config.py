@@ -26,38 +26,33 @@ from settings import Settings
 class Config():
     """Handles application configuration."""
 
-    _DEFAULT_CONFIG_PATH = os.environ.get('COPISCONFIG',
-        os.path.expanduser(f'~{os.sep}.copis{os.sep}config.ini'))
-
     _DEFAULT_DEBUG_ENV = DebugEnv.PROD
     _DEFAULT_APP_WINDOW_WIDTH = 1400
     _DEFAULT_APP_WINDOW_HEIGHT = 1000
 
 
     def __init__(self) -> None:
-        self._config_parser = self._ensure_config_exists(self._DEFAULT_CONFIG_PATH)
+        self._store = Store()
+        self._config_parser = self._ensure_config_exists()
         self.settings = self._populate_settings()
 
 
-    def _ensure_config_exists(self, file_path: str) -> ConfigParser:
-        path = Path(file_path)
-        parser = ConfigParser()
+    def _ensure_config_exists(self) -> ConfigParser:
+        parser = self._store.load_config()
         
-        if path.exists():
-            parser.read(file_path)
-        else:
+        if parser == None:
+            parser = ConfigParser()
+
             parser['AppWindow'] = {
                 'width': str(self._DEFAULT_APP_WINDOW_WIDTH),
                 'height': str(self._DEFAULT_APP_WINDOW_HEIGHT)
             }
 
             parser['Debug'] = {
-                'env': str(self._DEFAULT_DEBUG_ENV)
+                'env': self._DEFAULT_DEBUG_ENV.value
             }
 
-            path.parent.mkdir(parents = True, exist_ok = True)
-            with path.open('w', -1) as f:
-                parser.write(f)
+            self._store.save_config(parser)
 
         return parser
 
@@ -76,4 +71,3 @@ class Config():
             debug_env = self._DEFAULT_DEBUG_ENV
 
         return Settings(debug_env, app_window_width, app_window_height)
-
