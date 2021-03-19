@@ -19,16 +19,13 @@
 
 import logging
 import signal
-
 import wx
 import wx.lib.inspection
 
-from appconfig import AppConfig
+from config import Config
 from core import COPISCore
 from gui.main_frame import MainWindow
 
-_DEFAULT_APP_WINDOW_WIDTH = 800
-_DEFAULT_APP_WINDOW_HEIGHT = 600
 
 class COPISApp(wx.App):
     """Main wxPython app.
@@ -39,9 +36,7 @@ class COPISApp(wx.App):
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
         self.core = COPISCore()
-        self.appconfig = None
-        self.appconfig_exists = False
-        self.init_appconfig()
+        self.config = Config()
 
         self.AppName = 'COPIS Interface'
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
@@ -49,19 +44,10 @@ class COPISApp(wx.App):
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
-            size=(self.appconfig.config.getint('AppWindow', 'width', fallback = _DEFAULT_APP_WINDOW_WIDTH),
-                  self.appconfig.config.getint('AppWindow', 'height', fallback = _DEFAULT_APP_WINDOW_HEIGHT))
+            size=(self.config.settings.app_window_width, self.config.settings.app_window_height)
         )
         self.mainwindow.Show()
 
-    def init_appconfig(self) -> None:
-        """Init AppConfig."""
-        if self.appconfig is None:
-            self.appconfig = AppConfig()
-
-        self.appconfig_exists = self.appconfig.exists()
-        if self.appconfig_exists:
-            self.appconfig.load()
 
 if __name__ == '__main__':
 
