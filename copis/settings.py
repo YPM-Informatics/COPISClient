@@ -24,6 +24,8 @@ class Settings:
     app_window_width: int
     app_window_height: int
 
+    devices: list
+
     def as_dict(self):
         return {
             'AppWindow': {
@@ -32,5 +34,6 @@ class Settings:
             },
             'Debug': {
                 'env': self.debug_env
-            }
+            },
+            'Devices': self.devices
         }
