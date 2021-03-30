@@ -40,6 +40,7 @@ class COPISApp(wx.App):
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
         self.mainwindow = MainWindow(
+            # self.chamberdims,
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',

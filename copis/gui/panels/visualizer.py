@@ -43,7 +43,7 @@ class VisualizerPanel(wx.Panel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._selected_cam = None
+        self._selected_cam = NotImplemented
         self._build_dimensions = [400, 400, 400, 200, 200, 200] # chamberdims
         self.zoom_slider = None
 

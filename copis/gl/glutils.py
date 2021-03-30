@@ -186,7 +186,6 @@ def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
     return vertices, count
 
 '''
-
     def _create_sphere(self, radius, ncircle, pcircle, num_cams) -> None:
         """Populates action list with a spherical path to specification
         """
