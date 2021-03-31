@@ -701,7 +701,6 @@ import glm
 from pydispatch import dispatcher
 
 from copis.enums import ActionType
-from copis.gl.glutils import get_circle, get_helix
 from copis.helpers import Point3, Point5
 
 
@@ -1099,6 +1098,7 @@ class COPISCore:
 
         TODO: Get rid of this when auto path generation is implemented.
         """
+        from copis.gl.glutils import get_circle
         heights = (-90, -45, 0, 45, 90)
         radius = 180
         every = 80

@@ -18,7 +18,7 @@
 import shlex
 
 import wx
-from gui.wxutils import create_scaled_bitmap
+from copis.gui.wxutils import create_scaled_bitmap
 from pydispatch import dispatcher
 
 

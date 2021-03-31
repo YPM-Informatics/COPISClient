@@ -22,7 +22,7 @@ TODO: Overhaul timeline panel, visually
 import wx
 from pydispatch import dispatcher
 
-from gui.wxutils import set_dialog
+from copis.gui.wxutils import set_dialog
 
 
 class TimelinePanel(wx.Panel):

@@ -18,12 +18,13 @@
 import math
 import re
 from typing import Any, List, Optional, Union
-from helpers import xyz_units, pt_units
+from copis.helpers import xyz_units, pt_units
 
 import wx
 import wx.lib.scrolledpanel as scrolled
-from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
-                         create_scaled_bitmap, simple_statictext)
+from copis.gui.wxutils import (
+    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+    create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
 
 
