@@ -15,7 +15,6 @@
 
 import os
 
-from pathlib import Path
 from configparser import ConfigParser
 
 from enums import DebugEnv
@@ -34,7 +33,7 @@ class Config():
     def __init__(self) -> None:
         self._store = Store()
         self._config_parser = self._ensure_config_exists()
-        self.settings = self._populate_settings()
+        self._settings = self._populate_settings()
 
 
     def _ensure_config_exists(self) -> ConfigParser:
@@ -73,3 +72,8 @@ class Config():
         devices = self._config_parser.get('Devices', 'items', fallback = '').splitlines()
 
         return Settings(debug_env, app_window_width, app_window_height, devices)
+
+
+    @property
+    def settings(self) -> Settings:
+        return self._settings

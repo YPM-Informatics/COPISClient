@@ -35,5 +35,7 @@ class Settings:
             'Debug': {
                 'env': self.debug_env
             },
-            'Devices': self.devices
+            'Devices': {
+                'items': "\n".join(self.devices)
+            }
         }

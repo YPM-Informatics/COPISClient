@@ -173,10 +173,12 @@ class COPISCore:
         self._sidequeue = Queue(0)
         self._actions: List[Action] = []
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
+        self._store = Store()
         self._update_test()
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
+
 
     @locked
     def disconnect(self):
@@ -437,44 +439,51 @@ class COPISCore:
         #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
         # ])
 
-        heights = (-90, -45, 0, 45, 90)
-        radius = 180
-        every = 80
+        # heights = (-90, -45, 0, 45, 90)
+        # radius = 180
+        # every = 80
 
         # generate a sphere (for testing)
-        for i in heights:
-            r = math.sqrt(radius * radius - i * i)
-            num = int(2 * math.pi * r / every)
-            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
+        # for i in heights:
+        #     r = math.sqrt(radius * radius - i * i)
+        #     num = int(2 * math.pi * r / every)
+        #     path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
 
-            for j in range(count - 1):
-                point5 = [
-                    path[j * 3],
-                    path[j * 3 + 1],
-                    path[j * 3 + 2],
-                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
+        #     for j in range(count - 1):
+        #         point5 = [
+        #             path[j * 3],
+        #             path[j * 3 + 1],
+        #             path[j * 3 + 2],
+        #             math.atan2(path[j*3+2], path[j*3]) + math.pi,
+        #             math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
 
-                # temporary hack to divvy ids
-                rand_device = 0
-                if path[j * 3 + 1] < 0:
-                    rand_device += 3
-                if path[j * 3] > 60:
-                    rand_device += 2
-                elif path[j * 3] > -60:
-                    rand_device += 1
+        #         # temporary hack to divvy ids
+        #         rand_device = 0
+        #         if path[j * 3 + 1] < 0:
+        #             rand_device += 3
+        #         if path[j * 3] > 60:
+        #             rand_device += 2
+        #         elif path[j * 3] > -60:
+        #             rand_device += 1
 
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
+        #         self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
+        #         self._actions.append(Action(ActionType.C0, rand_device))
 
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
-            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
-            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
-            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
-            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
-            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
-        ])
+        # self._devices.extend([
+        #     Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
+        #     Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
+        #     Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
+        #     Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
+        #     Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
+        #     Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
+        # ])
+
+        # script = {
+        #     "actions": self._actions,
+        #     "devices": self._devices
+        # }
+        # self._store.save('actionScript', script)
+
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""

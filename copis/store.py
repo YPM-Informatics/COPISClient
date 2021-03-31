@@ -14,8 +14,9 @@
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import pickle
 
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from configparser import ConfigParser
 from typing import List
 
@@ -40,22 +41,22 @@ class Store():
         index = segments.index(self._PROJECT_FOLDER)
         root_segments = segments[1:index]
 
-        root = '/' + Path(os.path.join(*root_segments)).as_posix()
+        root = '/' + PurePath(os.path.join(*root_segments)).as_posix()
         
-        self._root_dir = Path(root)
-        self._config_dir = Path(os.path.join(root, self._PROJECT_FOLDER, self._CONFIG_FOLDER))
-        self._config_path = Path(os.path.join(self._config_dir, self._CONFIG_FILE))
-        # self._session_dir = Path(self._SESSION_DIR)
+        self._root_dir = root
+        self._config_dir = os.path.join(root, self._PROJECT_FOLDER, self._CONFIG_FOLDER)
+        self._config_path = os.path.join(self._config_dir, self._CONFIG_FILE)
+        # self._session_dir = self._SESSION_DIR
 
-        if not self._config_dir.exists():
-            self._config_dir.mkdir(parents = True, exist_ok = True)
+        if not os.path.exists(self._config_dir):
+            os.makedirs(self._config_dir)
         
-        # if not self._session_dir.exists():
-        #     self._session_dir.mkdir(parents = True, exist_ok = True)
+        # if not os.path.exists(self._session_dir:
+        #     os.makedirs(self._session_dir)
 
 
     def save_config(self, parser: ConfigParser) -> None:
-        with self._config_path.open('w', -1) as f:
+        with open(self._config_path, 'w') as f:
             parser.write(f)
 
 
@@ -67,7 +68,7 @@ class Store():
 
 
     def load_config(self) -> ConfigParser:
-        if self._config_path.exists():
+        if os.path.exists(self._config_path):
             parser = ConfigParser()
             parser.read(self._config_path)
 
@@ -75,6 +76,17 @@ class Store():
         else:
             return None
 
+
+    def save(self, filename: str, obj: object) -> None:
+        with open(filename, 'wb') as f:
+            pickle.dump(obj, f)
+
+
+    def load(self, filename: str, obj: object) -> object:
+        with open(filename, 'rb') as f:
+            obj = pickle.load(f)
+
+        return obj
 
     def create_session_path(self) -> str:
         """Returns new session path. Checks folder names first"""
