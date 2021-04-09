@@ -18,7 +18,6 @@
 """Main COPIS App (GUI)."""
 
 import logging
-import signal
 import wx
 import wx.lib.inspection
 
@@ -38,7 +37,7 @@ class COPISApp(wx.App):
         self.core = COPISCore()
         self.config = Config()
 
-        self.AppName = 'COPIS Interface'
+        self.app_name = 'COPIS Interface'
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
         self.mainwindow = MainWindow(
             None,
@@ -60,7 +59,6 @@ if __name__ == '__main__':
         app.MainLoop()
     except KeyboardInterrupt:
         print("hello")
-        pass
 
     app.core.terminate_edsdk()
     del app

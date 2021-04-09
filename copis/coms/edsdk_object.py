@@ -13,12 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-import os
-import time
-from ctypes import *
+"""Implements EDSDK Functionalities"""
 
-from canon.EDSDKLib import *
+import os
+import datetime
+
+from ctypes import c_int, c_uint, c_void_p, sizeof, WINFUNCTYPE
+
+from canon.EDSDKLib import (
+    EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
+    EdsShutterButton, EdsSize, Structure)
 
 _edsdk = None
 _console = None
