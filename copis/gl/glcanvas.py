@@ -23,17 +23,17 @@ import platform as pf
 from threading import Lock
 from typing import List, NamedTuple, Optional
 
+import copis.gl.shaders as shaderlib
 import glm
 import numpy as np
 import pywavefront
 import wx
 
-import copis.gl.shaders as shaderlib
 from copis.gl.actionvis import GLActionVis
 from copis.gl.chamber import GLChamber
-from copis.gl.glutils import arcball
 from copis.gl.viewcube import GLViewCube
 from copis.helpers import find_path, timing
+from copis.mathutils import arcball
 
 from OpenGL.GL import *
 from OpenGL.GL import shaders

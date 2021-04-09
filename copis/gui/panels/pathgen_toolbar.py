@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""ToolbarPanel class."""
+"""PathgenToolbar class."""
 
 import logging
 
@@ -25,7 +25,7 @@ from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 from copis.coms.serial_controller import SerialController
 
 
-class ToolbarPanel(aui.AuiToolBar):
+class PathgenToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -33,7 +33,7 @@ class ToolbarPanel(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
-        self.core = self.parent.core
+        self.c = self.parent.c
 
         self.serial_controller = None
 
@@ -113,13 +113,13 @@ class ToolbarPanel(aui.AuiToolBar):
                 connect_btn.Label = 'Connect'
 
                 # disconnected
-                self.core.disconnect()
+                self.c.disconnect()
             else:
                 self.serial_controller.selected_serial.open()
                 connect_btn.Label = 'Disconnect'
 
                 # connected
-                self.core.connect()
+                self.c.connect()
         else:
             set_dialog('Please select a port to connect to.')
 
@@ -138,23 +138,24 @@ class ToolbarPanel(aui.AuiToolBar):
         TODO: Link with copiscore when implemented.
         """
         if event.Id == ToolIds.PLAY.value:
-            if self.core.paused:
-                self.core.resume()
+            if self.c.paused:
+                self.c.resume()
             else:
-                self.core.start_imaging()
+                self.c.start_imaging()
 
         elif event.Id == ToolIds.PAUSE.value:
-            self.core.pause()
+            self.c.pause()
 
         elif event.Id == ToolIds.STOP.value:
-            self.core.cancel_imaging()
+            self.c.cancel_imaging()
 
         elif event.Id == ToolIds.SETTINGS.value:
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
 
         elif event.Id == ToolIds.EXPORT.value:
-            self.core.export_actions('actions.txt')
+            self.c._clear = True
+            # self.c.export_actions('actions.txt')
 
     def __del__(self) -> None:
         pass

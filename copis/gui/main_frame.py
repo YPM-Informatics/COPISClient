@@ -15,30 +15,33 @@
 
 """MainWindow class."""
 
+import math
+import pickle
 from ctypes import *
 from pathlib import Path
 
 import wx
 import wx.lib.agw.aui as aui
-from wx.lib.agw.aui.aui_constants import *
-from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
-                                          IndentPressedBitmap, StepColour,
-                                          TakeScreenShot)
-
 from copis.gui.about import AboutDialog
 from copis.gui.panels.console import ConsolePanel
 from copis.gui.panels.controller import ControllerPanel
 from copis.gui.panels.evf import EvfPanel
+from copis.gui.panels.pathgen_toolbar import PathgenToolbar
 from copis.gui.panels.properties import PropertiesPanel
+from copis.gui.panels.serial_toolbar import SerialToolbar
 from copis.gui.panels.timeline import TimelinePanel
-from copis.gui.panels.toolbar import ToolbarPanel
 from copis.gui.panels.visualizer import VisualizerPanel
-from copis.gui.proxyconfig_frame import ProxyConfigFrame
 from copis.gui.pathgen_dialog import PathgenDialog
 from copis.gui.pref_frame import PreferenceFrame
+from copis.gui.proxyconfig_frame import ProxyConfigFrame
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 from copis.helpers import Point3, Point5
 from copis.store import Store
+
+from wx.lib.agw.aui.aui_constants import *
+from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
+                                          IndentPressedBitmap, StepColour,
+                                          TakeScreenShot)
 
 
 class MainWindow(wx.Frame):
@@ -52,8 +55,9 @@ class MainWindow(wx.Frame):
         evf_panel: A pointer to the electronic viewfinder panel.
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
-        toolbar_panel: A pointer to the toolbar panel.
         visualizer_panel: A pointer to the visualizer panel.
+        serial_toolbar: A pointer to the serial toolbar.
+        pathgen_toolbar: A pointer to the pathgen toolbar.
     """
 
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
@@ -311,11 +315,10 @@ class MainWindow(wx.Frame):
         """Save project to file Path. TODO: Implement"""
         self.project_dirty = False
         wx.GetApp().c.export_actions(path)
-        #print(file)
 
     def do_load_project(self, path) -> None:
         """Load project from file Path. TODO: Implement"""
-        actions = self._store.load(file, [])
+        actions = self._store.load(path, [])
 
         self.core.actions.clear()
         self.core.actions.extend(actions)
@@ -338,8 +341,8 @@ class MainWindow(wx.Frame):
     def open_pathgen_dialog(self, _) -> None:
         with PathgenDialog(self) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
-                self.c._update_test()
-                print(self.c.actions)
+                self.core._update_test()
+                print(self.core.actions)
             else:
                 print(dlg)
         # pathgen_dialog = PathgenDialog(self)
@@ -419,51 +422,45 @@ class MainWindow(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
-        self.panels['toolbar'] = ToolbarPanel(self)
+        self.panels['serial_toolbar'] = SerialToolbar(self)
 
         # add visualizer panel
         self._mgr.AddPane(
-            self.panels['visualizer'], aui.AuiPaneInfo(). \
-            Name('visualizer').Caption('Visualizer'). \
-            Dock().Center().MaximizeButton().MinimizeButton(). \
-            DefaultPane().MinSize(350, 250))
+            self.panels['visualizer'],
+            aui.AuiPaneInfo().Name('visualizer').Caption('Visualizer').
+            Dock().Center().MaximizeButton().MinimizeButton().DefaultPane().MinSize(350, 250))
 
         # add console, timeline panel
         self._mgr.AddPane(
-            self.panels['console'], aui.AuiPaneInfo(). \
-            Name('console').Caption('Console'). \
-            Dock().Bottom().Position(0).Layer(0). \
-            MinSize(280, 180).Show(True))
+            self.panels['console'],
+            aui.AuiPaneInfo().Name('console').Caption('Console').
+            Dock().Bottom().Position(0).Layer(0).MinSize(280, 180).Show(True))
         self._mgr.AddPane(
-            self.panels['timeline'], aui.AuiPaneInfo(). \
-            Name('timeline').Caption('Timeline'). \
-            Dock().Bottom().Position(1).Layer(0). \
-            MinSize(280, 180).Show(True),
+            self.panels['timeline'],
+            aui.AuiPaneInfo().Name('timeline').Caption('Timeline').
+            Dock().Bottom().Position(1).Layer(0).MinSize(280, 180).Show(True),
             target=self._mgr.GetPane('console'))
 
         # add properties and controller panel
         self._mgr.AddPane(
-            self.panels['properties'], aui.AuiPaneInfo(). \
-            Name('properties').Caption('Properties'). \
-            Dock().Right().Position(0).Layer(1). \
-            MinSize(280, 200).Show(True))
+            self.panels['properties'],
+            aui.AuiPaneInfo().Name('properties').Caption('Properties').
+            Dock().Right().Position(0).Layer(1).MinSize(280, 200).Show(True))
         self._mgr.AddPane(
-            self.panels['controller'], aui.AuiPaneInfo(). \
-            Name('controller').Caption('Controller'). \
-            Dock().Right().Position(1).Layer(1). \
-            MinSize(280, 200).Show(True))
+            self.panels['controller'],
+            aui.AuiPaneInfo().Name('controller').Caption('Controller').
+            Dock().Right().Position(1).Layer(1).MinSize(280, 200).Show(True))
 
         # set first tab of all auto notebooks as the one selected
         for notebook in self._mgr.GetNotebooks():
             notebook.SetSelection(0)
 
         # add toolbar panel
-        self.panels['toolbar'].Realize()
+        self.panels['serial_toolbar'].Realize()
         self._mgr.AddPane(
-            self.panels['toolbar'], aui.AuiPaneInfo().
-            Name('toolbar').Caption('Toolbar'). \
-            ToolbarPane().BottomDockable(False). \
-            Top().Layer(10))
+            self.panels['serial_toolbar'],
+            aui.AuiPaneInfo().Name('toolbar').Caption('Serial Toolbar').
+            ToolbarPane().BottomDockable(False).Top().Layer(10))
 
         self._mgr.Update()
 
@@ -477,10 +474,10 @@ class MainWindow(wx.Frame):
 
         self.panels['evf'] = EvfPanel(self)
         self._mgr.AddPane(
-            self.panels['evf'], aui.AuiPaneInfo(). \
-            Name('Evf').Caption('Live View'). \
-            Float().Right().Position(1).Layer(0). \
-            MinSize(600, 420).MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
+            self.panels['evf'],
+            aui.AuiPaneInfo().Name('Evf').Caption('Live View').
+            Float().Right().Position(1).Layer(0).MinSize(600, 420).
+            MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
         self.Update()
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
@@ -556,12 +553,16 @@ class MainWindow(wx.Frame):
         return self.panels['timeline']
 
     @property
-    def toolbar_panel(self) -> ToolbarPanel:
-        return self.panels['toolbar']
-
-    @property
     def visualizer_panel(self) -> VisualizerPanel:
         return self.panels['visualizer']
+
+    @property
+    def serial_toolbar(self) -> SerialToolbar:
+        return self.panels['serial_toolbar']
+
+    @property
+    def pathgen_toolbar(self) -> PathgenToolbar:
+        return self.panels['pathgen_toolbar']
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""

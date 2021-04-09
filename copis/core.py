@@ -1103,6 +1103,8 @@ class COPISCore:
         radius = 170
         every = 70
 
+        alist = []
+
         # generate a sphere (for testing)
         for i in heights:
             r = math.sqrt(radius * radius - i * i)
@@ -1126,8 +1128,10 @@ class COPISCore:
                 elif path[j * 3] > -60:
                     rand_device += 1
 
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
+                alist.append(Action(ActionType.G0, rand_device, 5, point5))
+                alist.append(Action(ActionType.C0, rand_device))
+
+        self._actions.extend(alist)
 
     # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
     #     new = Proxy(proxy_type, proxy_name, position, length, height)
