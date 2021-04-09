@@ -100,92 +100,50 @@ class Point3(NamedTuple):
     y: float = 0.0
     z: float = 0.0
 
+
 '''
-def _create_sphere(self, radius, ncircle, pcircle, num_cams) -> None:
-        """Populates action list with a spherical path to specification
-        """
-        jump = 2 * radius / ncircle
-        heights = []
-        level = -radius
-        for i in range(1, ncircle + 1):
-            heights.append(level)
-            level += jump
+def _create_line(self, startX, startY, startZ, endX, endY, endZ, noPoints, num_cams) -> None:
+    xJump = (endX - startX) / (noPoints - 1)
+    yJump = (endY - startY) / (noPoints - 1)
+    zJump = (endZ - startZ) / (noPoints - 1)
+    cam_num = 0
+    cam_range = noPoints // num_cams
+    for i in range(0, noPoints - 1):
+        point5 = [
+            startX + i*xJump,
+            startY + i*yJump,
+            startZ + i*zJump,
+            math.atan2(startZ + i*zJump, startX + i*xJump) + math.pi,
+            math.atan((startY + i*yJump)/math.sqrt((startX + i*xJump)**2+(startZ + i*zJump)**2))]
+        if (i == (cam_range*(cam_num + 1))):
+            cam_num += 1
+        self._actions.append(Action(ActionType.G0, cam_num, 5, point5))
+        self._actions.append(Action(ActionType.C0, cam_num))
 
-        num_bottom = int(num_cams // 2)
-        num_top = int(-(num_cams // -2))
+def _create_helix(self, radius, nturn, pturn, num_cams) -> None:
+    """Populates action list with a spherical path to specification
+    """
+    # generate a sphere (for testing)
+    # For each of the nine levels
+        # Get path containing x,y,z and count for num of cams
+    path, count = get_helix(glm.vec3(0, 0, 0), glm.vec3(0, 1, 0), radius, 10, nturn, pturn)
 
-        # generate a sphere (for testing)
-        # For each of the nine levels
-        for i in heights:
-            # Compute radius, number of cameras
-            r = math.sqrt(radius * radius - i * i)
-            # Get path containing x,y,z and count for num of cams
-            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, pcircle)
+    for j in range(count - 1):
+        # Put x,y,z,pan,tilt for camera in point5
+        point5 = [
+            path[j * 3],
+            path[j * 3 + 1],
+            path[j * 3 + 2],
+            math.atan2(path[j*3+2], path[j*3]) + math.pi,
+            math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
 
-            for j in range(count - 1):
-                # Put x,y,z,pan,tilt for camera in point5
-                point5 = [
-                    path[j * 3],
-                    path[j * 3 + 1],
-                    path[j * 3 + 2],
-                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
+        # temporary hack to divvy ids
+        rand_device = 0
+        # Where is its x coord?
+        for i in range(1, num_cams):
+            if (path[j * 3] > (-radius + i*((radius*2)/num_cams))):
+                rand_device += 1
 
-                # temporary hack to divvy ids
-                rand_device = 0
-                # Is it above or below 0?
-                if path[j * 3 + 1] > 0:
-                    rand_device += num_bottom
-                # Where is its x coord?
-                for i in range(1, num_top):
-                    if (path[j * 3] > (-radius + i*((radius*2)/num_top))):
-                        rand_device += 1
-
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
-
-    def _create_line(self, startX, startY, startZ, endX, endY, endZ, noPoints, num_cams) -> None:
-        xJump = (endX - startX) / (noPoints - 1)
-        yJump = (endY - startY) / (noPoints - 1)
-        zJump = (endZ - startZ) / (noPoints - 1)
-        cam_num = 0
-        cam_range = noPoints // num_cams
-        for i in range(0, noPoints - 1):
-            point5 = [
-                startX + i*xJump,
-                startY + i*yJump,
-                startZ + i*zJump,
-                math.atan2(startZ + i*zJump, startX + i*xJump) + math.pi,
-                math.atan((startY + i*yJump)/math.sqrt((startX + i*xJump)**2+(startZ + i*zJump)**2))]
-            if (i == (cam_range*(cam_num + 1))):
-                cam_num += 1
-            self._actions.append(Action(ActionType.G0, cam_num, 5, point5))
-            self._actions.append(Action(ActionType.C0, cam_num))
-
-    def _create_helix(self, radius, nturn, pturn, num_cams) -> None:
-        """Populates action list with a spherical path to specification
-        """
-        # generate a sphere (for testing)
-        # For each of the nine levels
-            # Get path containing x,y,z and count for num of cams
-        path, count = get_helix(glm.vec3(0, 0, 0), glm.vec3(0, 1, 0), radius, 10, nturn, pturn)
-
-        for j in range(count - 1):
-            # Put x,y,z,pan,tilt for camera in point5
-            point5 = [
-                path[j * 3],
-                path[j * 3 + 1],
-                path[j * 3 + 2],
-                math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-            # temporary hack to divvy ids
-            rand_device = 0
-            # Where is its x coord?
-            for i in range(1, num_cams):
-                if (path[j * 3] > (-radius + i*((radius*2)/num_cams))):
-                    rand_device += 1
-
-            self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-            self._actions.append(Action(ActionType.C0, rand_device))
+        self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
+        self._actions.append(Action(ActionType.C0, rand_device))
 '''

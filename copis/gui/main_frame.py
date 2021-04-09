@@ -25,7 +25,6 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
                                           IndentPressedBitmap, StepColour,
                                           TakeScreenShot)
 
-
 from copis.gui.about import AboutDialog
 from copis.gui.panels.console import ConsolePanel
 from copis.gui.panels.controller import ControllerPanel
@@ -35,7 +34,7 @@ from copis.gui.panels.timeline import TimelinePanel
 from copis.gui.panels.toolbar import ToolbarPanel
 from copis.gui.panels.visualizer import VisualizerPanel
 from copis.gui.proxyconfig_frame import ProxyConfigFrame
-from copis.gui.pathgen_frame import PathgenFrame
+from copis.gui.pathgen_dialog import PathgenDialog
 from copis.gui.pref_frame import PreferenceFrame
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 from copis.helpers import Point3, Point5
@@ -196,7 +195,7 @@ class MainWindow(wx.Frame):
 
         # Tools menu
         tools_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.open_pathgen_frame, tools_menu.Append(wx.ID_ANY, '&Generate Path...', 'Open path generator window'))
+        self.Bind(wx.EVT_MENU, self.open_pathgen_dialog, tools_menu.Append(wx.ID_ANY, '&Generate Path...', 'Open path generator window'))
         tools_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, self.open_proxyconfig_frame, tools_menu.Append(wx.ID_ANY, '&Configure Proxy...', 'Open proxy object configuration window'))
 
@@ -336,9 +335,15 @@ class MainWindow(wx.Frame):
         preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
 
-    def open_pathgen_frame(self, _) -> None:
-        pathgen_frame = PathgenFrame(self)
-        pathgen_frame.Show()
+    def open_pathgen_dialog(self, _) -> None:
+        with PathgenDialog(self) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                self.c._update_test()
+                print(self.c.actions)
+            else:
+                print(dlg)
+        # pathgen_dialog = PathgenDialog(self)
+        # pathgen_dialog.Show()
 
     def open_proxyconfig_frame(self, _) -> None:
         proxyconfig_frame = ProxyConfigFrame(self)

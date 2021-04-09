@@ -842,10 +842,10 @@ class COPISCore:
         self._sidequeue = Queue(0)
 
         # self._proxies: List[Proxy] = []
-        self._actions: List[Action] = []
+        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
         self._update_devices()
-        self._update_test()
+        # self._update_test()
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
@@ -1099,9 +1099,9 @@ class COPISCore:
         TODO: Get rid of this when auto path generation is implemented.
         """
         from copis.gl.glutils import get_circle
-        heights = (-90, -45, 0, 45, 90)
-        radius = 180
-        every = 80
+        heights = (-135, -90, -45, 0, 45, 90, 135)
+        radius = 170
+        every = 70
 
         # generate a sphere (for testing)
         for i in heights:
