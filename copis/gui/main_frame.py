@@ -268,7 +268,6 @@ class MainWindow(wx.Frame):
             # Proceed loading the file chosen by the user
             path = fileDialog.Path
             try:
-                # with open(path, 'r') as file:
                 self.do_load_project(path)
             except Exception as e:
                 wx.LogError(str(e))
@@ -306,17 +305,16 @@ class MainWindow(wx.Frame):
 
     def do_load_project(self, file: Path) -> None:
         """Load project from file Path. TODO: Implement"""
-        #print(file)
         script = {
-            "actions": [],
-            "devices": []
+            'actions': [],
+            'devices': []
         }
 
-        script = self._store.load(path, script)
+        script = self._store.load(file, script)
         self.core.actions.clear()
         self.core.devices.clear()
-        self.core.actions.extend(script.actions)
-        self.core.devices.extend(script.devices)
+        self.core.actions.extend(script['actions'])
+        self.core.devices.extend(script['devices'])
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
