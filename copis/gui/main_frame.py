@@ -57,6 +57,8 @@ class MainWindow(wx.Frame):
         visualizer_panel: A pointer to the visualizer panel.
     """
 
+    _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
+
     def __init__(self, *args, **kwargs) -> None:
         """Inits MainWindow with constructors."""
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -257,7 +259,7 @@ class MainWindow(wx.Frame):
                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
                 return
 
-        with wx.FileDialog(self, 'Open Project File', wildcard='All Files (*.*)|*.*',
+        with wx.FileDialog(self, 'Open Project File', wildcard = self._FILE_DIALOG_WILDCARD,
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -283,7 +285,7 @@ class MainWindow(wx.Frame):
          TODO: Implement saving as file/directory to disk
         """
         with wx.FileDialog(
-            self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
+            self, 'Save Project As', wildcard = self._FILE_DIALOG_WILDCARD,
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
