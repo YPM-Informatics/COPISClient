@@ -78,13 +78,13 @@ class Store():
 
 
     def save(self, filename: str, obj: object) -> None:
-        with open(filename, 'wb') as f:
-            pickle.dump(obj, f)
+        with open(filename, 'wb') as file:
+            pickle.dump(obj, file)
 
 
     def load(self, filename: str, obj: object) -> object:
-        with open(filename, 'rb') as f:
-            obj = pickle.load(f)
+        with open(filename, 'rb') as file:
+            obj = pickle.load(file)
 
         return obj
 

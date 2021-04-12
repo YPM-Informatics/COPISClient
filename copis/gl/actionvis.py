@@ -176,7 +176,6 @@ class GLActionVis:
         """Update VAO when device list changes."""
         self._num_devices = len(self.core.devices)
 
-        print('messaging')
         if len(self._devices) > 0:
             scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
             mats = glm.array([x * scale for x in self._devices])
