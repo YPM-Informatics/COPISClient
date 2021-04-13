@@ -95,11 +95,11 @@ class MonitoredList(list):
         self._dispatch()
 
     def _dispatch(self) -> None:
-        """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the 
+        """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
         '__iterable' even before the object's instance attributes are set. This causes dispatching
         to fail while unpickling the object because 'signal' does not yet exist. But dispatching does not
         need to happen for an object being unpickled because it's just a monitored list being restored
-        and not technically being actively changed. Besides, there is no need to dispatch if there's no 
+        and not technically being actively changed. Besides, there is no need to dispatch if there's no
         registered signal."""
 
         if 'signal' in self.__dict__:
@@ -481,25 +481,20 @@ class COPISCore:
         #         self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
         #         self._actions.append(Action(ActionType.C0, rand_device))
 
-        # self._devices.extend([
-        #     Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
-        #     Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
-        #     Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X',
-        #     ['USBHost-PTP'], Point5(-100, 100, 100)),
-        #     Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'],
-        #     Point5(100, -100, 100)),
-        #     Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'],
-        #     Point5(100, 100, -100)),
-        #     Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'],
-        #     Point5(0, 100, -100)),
-        # ])
+        # self._store.save('actionScript.copis', self._actions)
 
-        # script = {
-        #     "actions": self._actions,
-        #     "devices": self._devices
-        # }
-        # self._store.save('actionScript', script)
-
+        self._devices.extend([
+            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
+            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
+            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X',
+            ['USBHost-PTP'], Point5(-100, 100, 100)),
+            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'],
+            Point5(100, -100, 100)),
+            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'],
+            Point5(100, 100, -100)),
+            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'],
+            Point5(0, 100, -100)),
+        ])
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""

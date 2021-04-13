@@ -305,16 +305,10 @@ class MainWindow(wx.Frame):
 
     def do_load_project(self, file: Path) -> None:
         """Load project from file Path. TODO: Implement"""
-        script = {
-            'actions': [],
-            'devices': []
-        }
-
-        script = self._store.load(file, script)
+        actions = self._store.load(file, [])
+        
         self.core.actions.clear()
-        self.core.devices.clear()
-        self.core.actions.extend(script['actions'])
-        self.core.devices.extend(script['devices'])
+        self.core.actions.extend(actions)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
