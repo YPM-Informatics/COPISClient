@@ -37,7 +37,6 @@ class LocalEDSDK():
         self._camera = CameraSettings()
         self._image = ImageSettings()
 
-
     def initialize(self, console) -> None:
         """Initialize the EDSDK object"""
         if self._is_connected:
@@ -53,7 +52,6 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(
                 f'An exception occurred while initializing Canon API: {err.args[0]}')
-
 
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.
@@ -125,7 +123,6 @@ class LocalEDSDK():
 
         return True
 
-
     def disconnect(self) -> bool:
         """Disconnect from camera.
 
@@ -144,7 +141,6 @@ class LocalEDSDK():
         self._camera.index = -1
 
         return True
-
 
     def take_picture(self) -> bool:
         """Take picture on connected camera.
@@ -177,7 +173,6 @@ class LocalEDSDK():
                 f'{self._camera.index}: {err.args[0]}')
             return False
 
-
     def terminate(self):
         """Terminate EDSDK."""
         try:
@@ -187,11 +182,9 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(f'An exception occurred while terminating Canon API: {err.args[0]}')
 
-
     def get_camera_count(self) -> int:
         """Return camera count"""
         return self._camera.count
-
 
     # def step_focus(self) -> bool:
     #     """TODO
@@ -201,33 +194,27 @@ class LocalEDSDK():
     #     """
     #     return False
 
-
     # def start_liveview(self):
     #     """TODO"""
     #     return
-
 
     # def download_evf_data(self):
     #     """TODO"""
     #     return
 
-
     # def end_liveview(self):
     #     """TODO"""
     #     return
-
 
     def _update_camera_list(self):
         """Update camera list and camera count."""
         self._camera.items = self._edsdk.EdsGetCameraList()
         self._camera.count = self._edsdk.EdsGetChildCount(self._camera.items)
 
-
     def _generate_file_name(self):
         """Sets the filename for an image."""
         now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
         self._image.filename = os.path.abspath(f'./{self._image.PREFIX}_{now}.jpg')
-
 
     def _download_image(self, image) -> None:
         """Download image from camera buffer to host computer.
@@ -252,7 +239,6 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(f'An exception occurred while downloading an image: {err.args[0]}')
 
-
     def _handle_object(self, evt, obj):
         """Handles the group of events where request notifications are issued to
         create, delete or transfer image data stored in a camera or image files on
@@ -262,13 +248,11 @@ class LocalEDSDK():
             self._download_image(obj)
         return 0
 
-
     def _handle_property(self, evt, prop, param, ctx):
         """Handles the group of events where notifications are issued regarding
         changes in the properties of a camera.
         """
         return 0
-
 
     def _handle_state(self, evt, state, ctx):
         """Handles the group of events where notifications are issued regarding
