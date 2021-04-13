@@ -125,7 +125,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.core.actions[points[0] - len(self.core.devices)]
+            action = self.parent.core.actions[points[0] - len(self.parent.core.devices)]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
@@ -352,7 +352,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -361,7 +361,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""
@@ -617,13 +617,13 @@ class _PropCameraConfig(wx.Panel):
             self.ptp_rbh.Value = False
             self.ptp_rbh.Disable()
 
-            if self.parent.c.edsdk_enabled:
-                self.parent.c.terminate_edsdk()
+            if self.parent.core.edsdk_enabled:
+                self.parent.core.terminate_edsdk()
         elif rb.Label == 'EDSDK':
-            self.parent.c.init_edsdk()
+            self.parent.core.init_edsdk()
         else:
-            if self.parent.c.edsdk_enabled:
-                self.parent.c.terminate_edsdk()
+            if self.parent.core.edsdk_enabled:
+                self.parent.core.terminate_edsdk()
 
     def on_take_picture(self, event: wx.CommandEvent) -> None:
         """ Take picture.
@@ -632,8 +632,8 @@ class _PropCameraConfig(wx.Panel):
         """
         return
         # camera = self.main_combo.Selection
-        # if self.parent.c.get_selected_camera() is not None:
-        #     self.parent.c.get_selected_camera().shoot()
+        # if self.parent.core.get_selected_camera() is not None:
+        #     self.parent.core.get_selected_camera().shoot()
         # else:
         #     set_dialog('Please select the camera to take a picture.')
 
@@ -641,8 +641,8 @@ class _PropCameraConfig(wx.Panel):
         """TODO: implement when edsdk is fully implemented in copiscore.
         """
         return
-        # if self.parent.c.get_selected_camera() is not None:
-        #     self.parent.c.get_selected_camera().startEvf()
+        # if self.parent.core.get_selected_camera() is not None:
+        #     self.parent.core.get_selected_camera().startEvf()
         #     self.parent.add_evf_pane()
         # else:
         #     set_dialog('Please select the camera to start live view.')
