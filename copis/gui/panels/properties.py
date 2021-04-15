@@ -125,7 +125,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.parent.core.actions[points[0] - len(self.parent.core.devices)]
+            action = self.core.actions[points[0] - len(self.core.devices)]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
