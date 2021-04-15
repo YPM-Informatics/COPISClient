@@ -26,6 +26,7 @@ from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
+
 class LocalEDSDK():
     """Implement EDSDK Functionalities"""
     def __init__(self) -> None:
@@ -289,7 +290,6 @@ class CameraSettings():
         self.items = None
         self.ref = None
 
-
     def __iter__(self):
         return iter((
             self.count,
@@ -309,7 +309,6 @@ class ImageSettings():
         self.filename = None
         self.folder = ''
         self.index = None
-
 
     def __iter__(self):
         return iter((

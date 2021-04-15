@@ -29,17 +29,15 @@ class Config():
     _DEFAULT_APP_WINDOW_WIDTH = 1400
     _DEFAULT_APP_WINDOW_HEIGHT = 1000
 
-
     def __init__(self) -> None:
         self._store = Store()
         self._config_parser = self._ensure_config_exists()
         self._settings = self._populate_settings()
 
-
     def _ensure_config_exists(self) -> ConfigParser:
         parser = self._store.load_config()
-        
-        if parser == None:
+
+        if parser is None:
             parser = ConfigParser()
 
             parser['AppWindow'] = {
@@ -55,13 +53,12 @@ class Config():
 
         return parser
 
-
     def _populate_settings(self) -> Settings:
         app_window_height = self._config_parser.getint('AppWindow',
-            'height', fallback = self._DEFAULT_APP_WINDOW_HEIGHT)
+            'height', fallback=self._DEFAULT_APP_WINDOW_HEIGHT)
 
         app_window_width = self._config_parser.getint('AppWindow',
-            'width', fallback = self._DEFAULT_APP_WINDOW_WIDTH)
+            'width', fallback=self._DEFAULT_APP_WINDOW_WIDTH)
 
         debug_env = self._config_parser.get('Debug', 'env',
             fallback = self._DEFAULT_DEBUG_ENV)
@@ -76,4 +73,5 @@ class Config():
 
     @property
     def settings(self) -> Settings:
+        """Settings getter"""
         return self._settings

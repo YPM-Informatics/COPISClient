@@ -25,6 +25,7 @@ from configparser import ConfigParser
 
 from settings import Settings
 
+
 class Store():
     """Handles application-wide data storage operations."""
 
@@ -32,7 +33,6 @@ class Store():
 
     _CONFIG_FOLDER = 'config'
     _CONFIG_FILE = 'app.ini'
-
 
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
@@ -49,12 +49,10 @@ class Store():
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
 
-
     def save_config(self, parser: ConfigParser) -> None:
         """Saves a configuration object to file."""
         with open(self._config_path, 'w') as file:
             parser.write(file)
-
 
     def save_config_settings(self, settings: Settings) -> None:
         """Saves a configuration object to file, via its settings object."""
@@ -62,7 +60,6 @@ class Store():
         parser.read_dict(settings.as_dict())
 
         self.save_config(parser)
-
 
     def load_config(self) -> ConfigParser:
         """Load a configuration object from file"""
@@ -74,12 +71,10 @@ class Store():
 
         return None
 
-
     def save(self, filename: str, obj: object) -> None:
         """Saves an object to file"""
         with open(filename, 'wb') as file:
             pickle.dump(obj, file)
-
 
     def load(self, filename: str, obj: object) -> object:
         """Loads as object from file"""

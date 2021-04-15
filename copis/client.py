@@ -37,7 +37,8 @@ class COPISApp(wx.App):
         self.core = COPISCore()
         self.config = Config()
 
-        self.app_name = 'COPIS Interface'
+        # pylint: disable=invalid-name
+        self.AppName = 'COPIS Interface'
         self.locale = wx.Locale(wx.Locale.GetSystemLanguage())
         self.mainwindow = MainWindow(
             None,

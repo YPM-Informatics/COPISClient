@@ -19,6 +19,7 @@ from enums import DebugEnv
 
 @dataclass
 class Settings:
+    """Configuration settings data structure"""
     debug_env: DebugEnv
 
     app_window_width: int
@@ -27,6 +28,7 @@ class Settings:
     devices: list
 
     def as_dict(self):
+        """Return a dictionary representation of a Settings instance."""
         return {
             'AppWindow': {
                 'width': self.app_window_width,

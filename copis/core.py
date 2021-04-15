@@ -17,8 +17,15 @@
 
 __version__ = ""
 
-import logging
 import sys
+
+if sys.version_info.major < 3:
+    print("You need to run this on Python 3")
+    sys.exit(-1)
+
+# pylint: disable=wrong-import-position
+import logging
+
 import threading
 import time
 from dataclasses import dataclass
@@ -33,10 +40,6 @@ from enums import ActionType
 from helpers import Point3, Point5
 from store import Store
 from coms import edsdk_object
-
-if sys.version_info.major < 3:
-    print("You need to run this on Python 3")
-    sys.exit(-1)
 
 
 def locked(func):
@@ -97,10 +100,10 @@ class MonitoredList(list):
     def _dispatch(self) -> None:
         """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
         '__iterable' even before the object's instance attributes are set. This causes dispatching
-        to fail while unpickling the object because 'signal' does not yet exist. But dispatching does not
-        need to happen for an object being unpickled because it's just a monitored list being restored
-        and not technically being actively changed. Besides, there is no need to dispatch if there's no
-        registered signal."""
+        to fail while unpickling the object because 'signal' does not yet exist. But dispatching
+        does not need to happen for an object being unpickled because it's just a monitored list
+        being restored and not technically being actively changed. Besides, there is no need to
+        dispatch if there's no registered signal."""
 
         if 'signal' in self.__dict__:
             dispatcher.send(self.signal)
@@ -313,7 +316,7 @@ class COPISCore:
         # might be calling it from the thread itself
         try:
             self.imaging_thread.join()
-        except:
+        except RuntimeError:
             pass
 
         self.imaging_thread = None

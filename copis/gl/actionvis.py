@@ -176,10 +176,11 @@ class GLActionVis:
         """Update VAO when device list changes."""
         self._num_devices = len(self.core.devices)
 
-        if len(self._devices) > 0:
+        if self._num_devices > 0:
             scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
             mats = glm.array([x * scale for x in self._devices])
-            colors = glm.array([glm.vec4(self.colors[i % len(self.colors)]) for i in range(self._num_devices)])
+            colors = glm.array([glm.vec4(self.colors[i % len(self.colors)])
+                for i in range(self._num_devices)])
             ids = np.array(range(self._num_devices), dtype=np.int32)
 
             self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)

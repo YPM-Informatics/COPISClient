@@ -42,6 +42,7 @@ from gui.wxutils import create_scaled_bitmap, set_dialog
 from helpers import Point3, Point5
 from store import Store
 
+
 class MainWindow(wx.Frame):
     """Main window.
 
@@ -259,7 +260,7 @@ class MainWindow(wx.Frame):
                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
                 return
 
-        with wx.FileDialog(self, 'Open Project File', wildcard = self._FILE_DIALOG_WILDCARD,
+        with wx.FileDialog(self, 'Open Project File', wildcard=self._FILE_DIALOG_WILDCARD,
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -306,7 +307,7 @@ class MainWindow(wx.Frame):
     def do_load_project(self, file: Path) -> None:
         """Load project from file Path. TODO: Implement"""
         actions = self._store.load(file, [])
-        
+
         self.core.actions.clear()
         self.core.actions.extend(actions)
 
