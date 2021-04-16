@@ -61,12 +61,12 @@ class Config():
             'width', fallback=self._DEFAULT_APP_WINDOW_WIDTH)
 
         debug_env = self._config_parser.get('Debug', 'env',
-            fallback = self._DEFAULT_DEBUG_ENV)
+            fallback=self._DEFAULT_DEBUG_ENV)
 
         if not any(e.value == debug_env for e in DebugEnv):
             debug_env = self._DEFAULT_DEBUG_ENV
 
-        devices = self._config_parser.get('Devices', 'items', fallback = '').splitlines()
+        devices = self._config_parser.get('Devices', 'items', fallback='').splitlines()
 
         return Settings(debug_env, app_window_width, app_window_height, devices)
 
