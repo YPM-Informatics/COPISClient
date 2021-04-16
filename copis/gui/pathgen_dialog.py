@@ -34,8 +34,11 @@ class PathgenDialog(wx.Dialog):
         self.p = parent
         self.c = self.p.c
 
+        self.setting_sizers = {}
+
         # self.SetMinSize(wx.Size(300, 400))
-        self._camera_num_choices = list(map(lambda x: x.device_name, self.c.devices))
+        # self._camera_num_choices = list(map(lambda x: x.device_name, self.c.devices))
+        self._camera_num_choices = list(range(len(self.c.devices)))
         print(self._camera_num_choices)
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -68,6 +71,10 @@ class PathgenDialog(wx.Dialog):
         button_sizer = self.CreateButtonSizer(wx.APPLY | wx.OK | wx.CANCEL)
 
         self.Sizer.Add(button_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 0)
+
+        self.setting_sizers['Radius'] = wx.BoxSizer(wx.HORIZONTAL)
+        self.setting_sizers['Radius'] = wx.BoxSizer(wx.HORIZONTAL)
+        self.setting_sizers['Radius'] = wx.BoxSizer(wx.HORIZONTAL)
 
         # self.button_sizer.Realize()
         # self.panel.Sizer.Add(self.button_sizer)

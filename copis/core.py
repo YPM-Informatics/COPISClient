@@ -691,16 +691,15 @@ import queue
 import random
 import threading
 import time
-from dataclasses import dataclass
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import glm
 from pydispatch import dispatcher
 
-from copis.enums import ActionType
+from copis.enums import ActionType, Device, Action, Proxy
 from copis.helpers import Point3, Point5
 
 
@@ -757,36 +756,6 @@ class MonitoredList(list):
     def __delitem__(self, key) -> None:
         super().__delitem__(key)
         dispatcher.send(self.signal)
-
-
-@dataclass
-class Device:
-    device_id: int = 0
-    device_name: str = ''
-    device_type: str = ''
-    interfaces: Optional[List[str]] = None
-    position: Point5 = Point5()
-    home_position: Point5 = Point5()
-    max_feed_rates: Point5 = Point5()
-    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-
-
-@dataclass
-class Action:
-    atype: ActionType = ActionType.NONE
-    device: int = -1
-    argc: int = 0
-    args: Optional[List[Any]] = None
-
-
-@dataclass
-class Proxy:
-    proxy_type: int = 0
-    proxy_name: str = ''
-    position: Optional[List[Any]] = None
-    length: int = 10
-    height: int = 10
 
 class COPISCore:
     """COPISCore. Connects and interacts with devices in system.

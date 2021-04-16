@@ -75,6 +75,8 @@ class FancyTextCtrl(wx.TextCtrl):
                  unit_conversions, **kwargs):
         """Inits FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
+        self.WindowStyle = wx.TE_PROCESS_ENTER
+
         self._num_value = num_value
         self._max_precision = max_precision
         self._units = dict(unit_conversions)
@@ -139,6 +141,8 @@ class FancyTextCtrl(wx.TextCtrl):
         evt = FancyTextUpdatedEvent()
         # wxPython is dumb. WHY DOESN'T evt.EventObject = self WORK??????
         evt.SetEventObject(self)
+
+        self.SelectNone()
         wx.PostEvent(self, evt)
 
     def _update_value(self) -> None:

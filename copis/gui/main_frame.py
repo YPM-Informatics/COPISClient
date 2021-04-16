@@ -423,6 +423,7 @@ class MainWindow(wx.Frame):
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
         self.panels['serial_toolbar'] = SerialToolbar(self)
+        self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
         # add visualizer panel
         self._mgr.AddPane(
@@ -455,11 +456,16 @@ class MainWindow(wx.Frame):
         for notebook in self._mgr.GetNotebooks():
             notebook.SetSelection(0)
 
-        # add toolbar panel
+        # add toolbar panels
         self.panels['serial_toolbar'].Realize()
         self._mgr.AddPane(
             self.panels['serial_toolbar'],
-            aui.AuiPaneInfo().Name('toolbar').Caption('Serial Toolbar').
+            aui.AuiPaneInfo().Name('serial_toolbar').Caption('Serial Toolbar').
+            ToolbarPane().BottomDockable(False).Top().Layer(10))
+        self.panels['pathgen_toolbar'].Realize()
+        self._mgr.AddPane(
+            self.panels['pathgen_toolbar'],
+            aui.AuiPaneInfo().Name('pathgen_toolbar').Caption('Pathgen Toolbar').
             ToolbarPane().BottomDockable(False).Top().Layer(10))
 
         self._mgr.Update()
