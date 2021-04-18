@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""COPIS Application Core functions"""
 
 __version__ = ""
 
@@ -215,7 +216,7 @@ class COPISCore:
     def _listen(self) -> None:
         while self._listen_can_continue():
             time.sleep(0.001)
-            if not self.edsdk.waiting_for_image:
+            if not self.edsdk.is_waiting_for_image():
                 self._clear = True
 
     def _start_sender(self) -> None:

@@ -187,9 +187,14 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(f'An exception occurred while terminating Canon API: {err.args[0]}')
 
+    # TODO: Turn these into @property getters if possible within prebound methods pattern.
     def get_camera_count(self) -> int:
         """Return camera count"""
         return self._camera.count
+
+    def is_waiting_for_image(self) -> bool:
+        """Return a flag indicating whether we are waiting for an image"""
+        return self._is_waiting_for_image
 
     # def step_focus(self) -> bool:
     #     """TODO
@@ -326,7 +331,9 @@ _instance = LocalEDSDK()
 
 connect = _instance.connect
 disconnect = _instance.disconnect
-get_camera_count = _instance.get_camera_count
 initialize = _instance.initialize
 take_picture = _instance.take_picture
 terminate = _instance.terminate
+
+get_camera_count = _instance.get_camera_count
+is_waiting_for_image = _instance.is_waiting_for_image

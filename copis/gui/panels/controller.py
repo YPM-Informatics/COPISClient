@@ -27,6 +27,8 @@ from copis.gui.wxutils import (
     create_scaled_bitmap, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
 
+from coms.serial_controller import SerialController
+
 
 class ControllerPanel(scrolled.ScrolledPanel):
     """Controller panel. When camera selected, jogs movement.
@@ -64,6 +66,39 @@ class ControllerPanel(scrolled.ScrolledPanel):
         """On core_d_deselected, clear and disable controls."""
         self.update_machine_pos(Point5())
         self.Disable()
+
+    def on_jog_button(self, event: wx.CommandEvent) -> None:
+        """On EVT_BUTTONs, step value accordingly."""
+        button = event.EventObject
+        print(f'button clicked: {button.Name[0]}, {button.Name[1]}')
+        # if button.Name[0] in 'xyz':
+        #     step = self.xyz_step
+        # else: # button.Name in 'pt':
+        #     step = self.pt_step
+        # if button.Name[1] == '-':
+        #     step *= -1
+
+        serial = self.p.panels['toolbar'].serial_controller.selected_serial
+
+        if button.Name == 'xy':
+            print('Not implemented.')
+            return
+
+        msg = f'g1{button.Name}5\r'
+        msg = msg.replace('+', '')
+
+        if button.Name[1] not in '+-':
+            msg = msg.replace('n', 'y5')
+            msg = msg.replace('s', 'y-5')
+            msg = msg.replace('e', 'x')
+            msg = msg.replace('w', 'x-')
+
+        if (serial is not None and serial.is_open):
+            print('Serial is open.')
+            serial.write('g91\r'.encode())
+            serial.write(msg.encode())
+        else:
+            print('no serial')
 
     def _add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
@@ -142,10 +177,14 @@ class ControllerPanel(scrolled.ScrolledPanel):
         for col in (0, 1, 2, 3):
             xyzpt_grid.AddGrowableCol(col)
 
-        arrow_nw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_nw', 20), size=(24, 24))
-        arrow_ne_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_ne', 20), size=(24, 24))
-        arrow_sw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_sw', 20), size=(24, 24))
-        arrow_se_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_se', 20), size=(24, 24))
+        arrow_nw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_nw', 20),
+            size=(24, 24), name='nw')
+        arrow_ne_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_ne', 20),
+        size=(24, 24), name='ne')
+        arrow_sw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_sw', 20), size=(24, 24),
+        name='sw')
+        arrow_se_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_se', 20), size=(24, 24),
+        name='se')
 
         x_pos_btn = wx.Button(jog_sizer.StaticBox, label='X+', size=(24, 24))
         x_neg_btn = wx.Button(jog_sizer.StaticBox, label='X-', size=(24, 24))
@@ -156,14 +195,19 @@ class ControllerPanel(scrolled.ScrolledPanel):
         z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24))
         z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24))
 
-        tilt_up_btn = wx.Button(jog_sizer.StaticBox, label='T+', size=(24, 24))
-        tilt_down_btn = wx.Button(jog_sizer.StaticBox, label='T-', size=(24, 24))
-        pan_right_btn = wx.Button(jog_sizer.StaticBox, label='P+', size=(24, 24))
-        pan_left_btn = wx.Button(jog_sizer.StaticBox, label='P-', size=(24, 24))
+        tilt_up_btn = wx.Button(jog_sizer.StaticBox, label='T+', size=(24, 24), name='t+')
+        tilt_down_btn = wx.Button(jog_sizer.StaticBox, label='T-', size=(24, 24), name='t-')
+        pan_right_btn = wx.Button(jog_sizer.StaticBox, label='P+', size=(24, 24), name='p+')
+        pan_left_btn = wx.Button(jog_sizer.StaticBox, label='P-', size=(24, 24), name='p-')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
                     tilt_up_btn, pan_left_btn, tilt_down_btn, pan_right_btn):
             btn.Font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+
+        for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
+                    tilt_up_btn, pan_left_btn, tilt_down_btn, pan_right_btn, xy_btn,
+                    arrow_ne_btn, arrow_nw_btn, arrow_se_btn, arrow_sw_btn):
+            btn.Bind(wx.EVT_BUTTON, self.on_jog_button)
 
         xyzpt_grid.AddMany([
             (arrow_nw_btn, 0, wx.EXPAND, 0),

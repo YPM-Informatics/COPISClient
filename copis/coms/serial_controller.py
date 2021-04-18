@@ -35,7 +35,7 @@ class SerialController(object):
     def get_bauds(self):
         if self.selected_serial:
             standard = [9600, 19200, 38400, 57600, 115200]
-            return standard[:standard.index(self.selected_serial.baudrate) + 1]
+            return standard #[:standard.index(self.selected_serial.baudrate) + 1]
 
     def set_current_serial(self, port):
         try:
