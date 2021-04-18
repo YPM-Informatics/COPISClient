@@ -524,12 +524,12 @@ class COPISCore:
 
     @property
     def actions(self) -> List[Action]:
-        """Get actions"""
+        """Get monitored actions list"""
         return self._actions
 
     @property
     def devices(self) -> List[Device]:
-        """Get devices"""
+        """Get monitored devices list"""
         return self._devices
 
     def check_point(self, point: Tuple[int, Point5]) -> bool:
