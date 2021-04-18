@@ -24,6 +24,7 @@ if sys.version_info.major < 3:
     sys.exit(-1)
 
 # pylint: disable=wrong-import-position
+from importlib import import_module
 import logging
 
 import threading
@@ -39,8 +40,6 @@ from pydispatch import dispatcher
 from enums import ActionType
 from helpers import Point3, Point5
 from store import Store
-from coms import edsdk_object
-
 
 def locked(func):
     """TODO"""
@@ -632,12 +631,11 @@ class COPISCore:
             return
 
         try:
-            self._edsdk = edsdk_object
+            self._edsdk = import_module('coms.edsdk_object')
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
-        # TODO: Add better exception perhaps
-        except:
+        except ModuleNotFoundError:
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
