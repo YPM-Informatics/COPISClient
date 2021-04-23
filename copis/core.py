@@ -1192,7 +1192,7 @@ class COPISCore:
             dispatcher.send('core_p_deselected')
             return
 
-        if index >= len(self._actions):
+        if index >= len(self._actions) + len(self._devices):
             return
 
         if clear:

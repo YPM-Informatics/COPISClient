@@ -84,7 +84,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
                     new_actions = []
                     for i in range(z_div):
-                        z = i * (height / (z_div - 1))
+                        z = 0 if z_div == 1 else i * (height / (z_div - 1))
                         vertices, count = get_circle(
                             glm.vec3(0, -height/2 + z, 0), glm.vec3(0, 1, 0), radius, points)
 
@@ -214,9 +214,7 @@ class _PathgenCylinder(wx.Dialog):
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
-
         self.Sizer.AddSpacer(8)
-
         self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
@@ -261,9 +259,7 @@ class _PathgenHelix(wx.Dialog):
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
-
         self.Sizer.AddSpacer(8)
-
         self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
@@ -305,9 +301,7 @@ class _PathgenSphere(wx.Dialog):
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
-
         self.Sizer.AddSpacer(8)
-
         self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
