@@ -27,7 +27,7 @@ from canon.EDSDKLib import (
     EdsShutterButton, EdsSize, Structure)
 
 
-class LocalEDSDK():
+class EDSDKController():
     """Implement EDSDK Functionalities"""
     _object_handler = _property_handler = _state_handler = object
 
@@ -109,20 +109,23 @@ class LocalEDSDK():
 
         # set handlers
         object_prototype = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
-        LocalEDSDK._object_handler = object_prototype(self._handle_object)
+        EDSDKController._object_handler = object_prototype(self._handle_object)
 
         property_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
-        LocalEDSDK._property_handler = property_prototype(self._handle_property)
+        EDSDKController._property_handler = property_prototype(self._handle_property)
 
         state_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
-        LocalEDSDK._state_handler = state_prototype(self._handle_state)
+        EDSDKController._state_handler = state_prototype(self._handle_state)
 
         self._edsdk.EdsSetObjectEventHandler(
-            cam_ref, self._edsdk.ObjectEvent_All, LocalEDSDK._object_handler, None)
+            cam_ref, self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
+
         self._edsdk.EdsSetPropertyEventHandler(
-            cam_ref, self._edsdk.PropertyEvent_All, LocalEDSDK._property_handler, cam_ref)
+            cam_ref, self._edsdk.PropertyEvent_All, EDSDKController._property_handler, cam_ref)
+
         self._edsdk.EdsSetCameraStateEventHandler(
-            cam_ref, self._edsdk.StateEvent_All, LocalEDSDK._state_handler, cam_ref)
+            cam_ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, cam_ref)
+
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 
@@ -327,7 +330,7 @@ class ImageSettings():
         ))
 
 
-_instance = LocalEDSDK()
+_instance = EDSDKController()
 
 connect = _instance.connect
 disconnect = _instance.disconnect

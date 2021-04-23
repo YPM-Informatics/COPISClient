@@ -565,7 +565,7 @@ class COPISCore:
             return
 
         try:
-            self._edsdk = import_module('copis.coms.edsdk_object')
+            self._edsdk = import_module('copis.coms.edsdk_controller')
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
