@@ -53,19 +53,19 @@ class PathgenToolbar(aui.AuiToolBar):
         Icons taken from https://material.io/resources/icons/?style=baseline.
         """
         # add path shape adders
-        _bmp = create_scaled_bitmap('cylinder_wire', 24)
+        _bmp = create_scaled_bitmap('cylinder_path', 24)
         self.AddTool(PathIds.CYLINDER.value, 'Cylinder', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add cylinder path')
         _bmp = create_scaled_bitmap('add', 24)
         self.AddTool(PathIds.HELIX.value, 'Helix', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add helix path')
-        _bmp = create_scaled_bitmap('sphere_wire', 24)
+        _bmp = create_scaled_bitmap('sphere_path', 24)
         self.AddTool(PathIds.SPHERE.value, 'Sphere', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add sphere path')
-        _bmp = create_scaled_bitmap('line_wire', 24)
+        _bmp = create_scaled_bitmap('line_path', 24)
         self.AddTool(PathIds.LINE.value, 'Line', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add line path')
 
         self.AddSeparator()
 
         # add settings tool
-        _bmp = create_scaled_bitmap('settings', 24)
+        _bmp = create_scaled_bitmap('linked_camera', 24)
         self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:

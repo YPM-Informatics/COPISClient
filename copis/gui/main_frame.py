@@ -31,7 +31,6 @@ from copis.gui.panels.properties import PropertiesPanel
 from copis.gui.panels.serial_toolbar import SerialToolbar
 from copis.gui.panels.timeline import TimelinePanel
 from copis.gui.panels.visualizer import VisualizerPanel
-from copis.gui.pathgen_dialog import PathgenDialog
 from copis.gui.pref_frame import PreferenceFrame
 from copis.gui.proxyconfig_frame import ProxyConfigFrame
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
@@ -199,8 +198,6 @@ class MainWindow(wx.Frame):
 
         # Tools menu
         tools_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.open_pathgen_dialog, tools_menu.Append(wx.ID_ANY, '&Generate Path...', 'Open path generator window'))
-        tools_menu.AppendSeparator()
         self.Bind(wx.EVT_MENU, self.open_proxyconfig_frame, tools_menu.Append(wx.ID_ANY, '&Configure Proxy...', 'Open proxy object configuration window'))
 
         # Window menu
@@ -337,16 +334,6 @@ class MainWindow(wx.Frame):
     def open_preferences_frame(self, _) -> None:
         preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
-
-    def open_pathgen_dialog(self, _) -> None:
-        with PathgenDialog(self) as dlg:
-            if dlg.ShowModal() == wx.ID_OK:
-                self.core._update_test()
-                print(self.core.actions)
-            else:
-                print(dlg)
-        # pathgen_dialog = PathgenDialog(self)
-        # pathgen_dialog.Show()
 
     def open_proxyconfig_frame(self, _) -> None:
         proxyconfig_frame = ProxyConfigFrame(self)
