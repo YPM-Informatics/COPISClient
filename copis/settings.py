@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from .enums import DebugEnv
 
 @dataclass
-class Settings:
+class ConfigSettings:
     """Configuration settings data structure"""
     debug_env: DebugEnv
 

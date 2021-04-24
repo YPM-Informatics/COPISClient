@@ -19,7 +19,7 @@ from configparser import ConfigParser
 
 from .enums import DebugEnv
 from .store import Store
-from .settings import Settings
+from .settings import ConfigSettings
 
 
 class Config():
@@ -53,7 +53,7 @@ class Config():
 
         return parser
 
-    def _populate_settings(self) -> Settings:
+    def _populate_settings(self) -> ConfigSettings:
         app_window_height = self._config_parser.getint('AppWindow',
             'height', fallback=self._DEFAULT_APP_WINDOW_HEIGHT)
 
@@ -68,9 +68,9 @@ class Config():
 
         devices = self._config_parser.get('Devices', 'items', fallback='').splitlines()
 
-        return Settings(debug_env, app_window_width, app_window_height, devices)
+        return ConfigSettings(debug_env, app_window_width, app_window_height, devices)
 
     @property
-    def settings(self) -> Settings:
-        """Settings getter"""
+    def settings(self) -> ConfigSettings:
+        """Configuration settings getter"""
         return self._settings

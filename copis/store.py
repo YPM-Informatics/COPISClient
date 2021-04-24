@@ -23,7 +23,7 @@ from configparser import ConfigParser
 from pathlib import PurePath
 from typing import Optional
 
-from .settings import Settings
+from .settings import ConfigSettings
 
 
 class Store():
@@ -54,7 +54,7 @@ class Store():
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
-    def save_config_settings(self, settings: Settings) -> None:
+    def save_config_settings(self, settings: ConfigSettings) -> None:
         """Saves a configuration object to file, via its settings object."""
         parser = ConfigParser()
         parser.read_dict(settings.as_dict())
