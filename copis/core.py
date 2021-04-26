@@ -17,11 +17,16 @@
 
 __version__ = ""
 
+import os
 import sys
 
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
+
+root = os.path.dirname(os.path.dirname(__file__))
+if root not in sys.path:
+    sys.path.insert(0, root)
 
 # pylint: disable=wrong-import-position
 from importlib import import_module
