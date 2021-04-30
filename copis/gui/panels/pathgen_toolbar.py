@@ -65,8 +65,9 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddSeparator()
 
         # add settings tool
-        _bmp = create_scaled_bitmap('linked_camera', 24)
-        self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
+        _bmp = create_scaled_bitmap('add_circle_outline', 24)
+        # TODO: ToolIds.SETTINGS.value == PathIds.LINE.value (change!)
+        self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, check which and process accordingly.
@@ -169,7 +170,22 @@ class PathgenToolbar(aui.AuiToolBar):
                     self.core.actions.extend(new_actions)
 
         elif event.Id == PathIds.LINE.value:
-            print('LINE')
+            logging.debug('LINE')
+
+        elif event.Id == PathIds.POINT.value:
+            with _PathgenPoint(self) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    device_id = int(dlg.cam_choice.GetString(dlg.cam_choice.Selection).split(' ')[0])
+                    x = dlg.x_ctrl.num_value
+                    y = dlg.y_ctrl.num_value
+                    z = dlg.z_ctrl.num_value
+
+                    self.core.actions.extend([
+                        Action(ActionType.G0, device_id, 5, [x, y, z,
+                            math.atan2(z, x) + math.pi,
+                            math.atan(y/math.sqrt(x * x + z * z))]),
+                        Action(ActionType.C0, device_id)
+                    ])
 
     def __del__(self) -> None:
         pass
@@ -201,7 +217,7 @@ class _PathgenCylinder(wx.Dialog):
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Cameras:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -236,9 +252,9 @@ class _PathgenCylinder(wx.Dialog):
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, event) -> None:
-        if '' in (
-                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
-                self.height_ctrl.Value, self.z_div_ctrl.Value, self.points_ctrl.Value):
+        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
+            self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
+            self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
 
         self._affirmative_button.Enable()
@@ -271,7 +287,7 @@ class _PathgenHelix(wx.Dialog):
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Cameras:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -306,9 +322,9 @@ class _PathgenHelix(wx.Dialog):
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, event) -> None:
-        if '' in (
-                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
-                self.height_ctrl.Value, self.rotation_ctrl.Value, self.points_ctrl.Value):
+        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
+            self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
+            self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
 
         self._affirmative_button.Enable()
@@ -329,7 +345,7 @@ class _PathgenSphere(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(5, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(4, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
@@ -340,7 +356,7 @@ class _PathgenSphere(wx.Dialog):
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Cameras:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -372,9 +388,74 @@ class _PathgenSphere(wx.Dialog):
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, event) -> None:
-        if '' in (
-                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
-                self.z_div_ctrl.Value, self.distance_ctrl.Value):
+        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
+            self.radius_ctrl.Value == '' or self.z_div_ctrl.Value == '' or
+            self.distance_ctrl.Value == ''):
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
+
+class _PathgenPoint(wx.Dialog):
+    """TODO"""
+
+    def __init__(self, parent):
+        """Inits _PathgenPoint with constructors."""
+        super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(200, -1))
+        self.parent = parent
+
+        self._camera_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # ---
+
+        options_grid = wx.FlexGridSizer(4, 2, 12, 8)
+        options_grid.AddGrowableCol(1, 0)
+
+        self.cam_choice = wx.Choice(self, choices=self._camera_choices)
+        self.x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+
+        options_grid.AddMany([
+            (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.cam_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'X Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.y_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Z Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.z_ctrl, 0, wx.EXPAND, 0),
+        ])
+
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        self.Layout()
+
+        # ---
+
+        self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, event) -> None:
+        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
+            self.x_ctrl.Value == '' or self.y_ctrl.Value == '' or
+            self.z_ctrl.Value == ''):
             return
 
         self._affirmative_button.Enable()

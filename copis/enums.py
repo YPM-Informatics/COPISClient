@@ -35,6 +35,7 @@ class PathIds(Enum):
     HELIX = auto()
     SPHERE = auto()
     LINE = auto()
+    POINT = auto()
 
 
 class CamAxis(Enum):
