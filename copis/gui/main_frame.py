@@ -40,6 +40,7 @@ from gui.pathgen_frame import *
 from gui.pref_frame import *
 from gui.wxutils import create_scaled_bitmap, set_dialog
 from helpers import Point3, Point5
+from store import Store
 
 
 class MainWindow(wx.Frame):
@@ -57,10 +58,12 @@ class MainWindow(wx.Frame):
         visualizer_panel: A pointer to the visualizer panel.
     """
 
+    _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
+
     def __init__(self, *args, **kwargs) -> None:
         """Inits MainWindow with constructors."""
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.c = wx.GetApp().c
+        self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
         self.MinSize = wx.Size(800, 575)
 
@@ -77,6 +80,8 @@ class MainWindow(wx.Frame):
         self.init_statusbar()
         self.init_menubar()
         self.init_mgr()
+
+        self._store = Store()
 
         # TODO: re-enable liveview
         # self.add_evf_pane()
@@ -255,7 +260,7 @@ class MainWindow(wx.Frame):
                              wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
                 return
 
-        with wx.FileDialog(self, 'Open Project File', wildcard='XYZ files (*.xyz)|*.xyz',
+        with wx.FileDialog(self, 'Open Project File', wildcard=self._FILE_DIALOG_WILDCARD,
                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -264,10 +269,9 @@ class MainWindow(wx.Frame):
             # Proceed loading the file chosen by the user
             path = fileDialog.Path
             try:
-                with open(path, 'r') as file:
-                    self.do_load_project(file)
-            except IOError:
-                wx.LogError(f'Could not open file "{path}".')
+                self.do_load_project(path)
+            except Exception as e:
+                wx.LogError(str(e))
 
     def on_save(self, event: wx.CommandEvent) -> None:
         """Open 'save' dialog.
@@ -281,7 +285,7 @@ class MainWindow(wx.Frame):
          TODO: Implement saving as file/directory to disk
         """
         with wx.FileDialog(
-            self, 'Save Project As', wildcard='XYZ files (*.xyz)|*.xyz',
+            self, 'Save Project As', wildcard = self._FILE_DIALOG_WILDCARD,
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
@@ -302,7 +306,10 @@ class MainWindow(wx.Frame):
 
     def do_load_project(self, file: Path) -> None:
         """Load project from file Path. TODO: Implement"""
-        print(file)
+        actions = self._store.load(file, [])
+
+        self.core.actions.clear()
+        self.core.actions.extend(actions)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
@@ -446,7 +453,7 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        if self.c.edsdk.num_cams == 0:
+        if self.core.edsdk.get_camera_count() == 0:
             return
 
         self.panels['evf'] = EvfPanel(self)

@@ -46,8 +46,8 @@ class GLActionVis:
 
     def __init__(self, parent):
         """Inits GLActionVis with constructors."""
-        self.p = parent
-        self.c = self.p.c
+        self.parent = parent
+        self.core = self.parent.core
 
         self._initialized = False
         self._num_points = 0
@@ -149,7 +149,7 @@ class GLActionVis:
 
             # if point is selected, darken its color
             for i, v in enumerate(value):
-                if v[0] in self.c.selected_points:
+                if v[0] in self.core.selected_points:
                     new_colors[i] = shade_color(new_colors[i], 0.6)
 
             new_ids = [p[0] for p in value]
@@ -174,14 +174,16 @@ class GLActionVis:
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
-        self._num_devices = len(self.c.devices)
+        self._num_devices = len(self.core.devices)
 
-        scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
-        mats = glm.array([x * scale for x in self._devices])
-        colors = glm.array([glm.vec4(self.colors[i % len(self.colors)]) for i in range(self._num_devices)])
-        ids = np.array(range(self._num_devices), dtype=np.int32)
+        if self._num_devices > 0:
+            scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
+            mats = glm.array([x * scale for x in self._devices])
+            colors = glm.array([glm.vec4(self.colors[i % len(self.colors)])
+                for i in range(self._num_devices)])
+            ids = np.array(range(self._num_devices), dtype=np.int32)
 
-        self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)
+            self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -194,7 +196,7 @@ class GLActionVis:
         self._items['point'].clear()
         self._num_points = 0
 
-        for i, action in enumerate(self.c.actions):
+        for i, action in enumerate(self.core.actions):
             if action.atype in (ActionType.G0, ActionType.G1):
                 self._items['line'][action.device].append((self._num_devices + i, xyzpt_to_mat4(*action.args)))
 
@@ -215,7 +217,7 @@ class GLActionVis:
         Called from GLCanvas upon core_d_list_changed signal.
         """
         self._devices.clear()
-        for device in self.c.devices:
+        for device in self.core.devices:
             self._devices.append(point5_to_mat4(device.position))
 
         self.update_device_vaos()
@@ -241,13 +243,13 @@ class GLActionVis:
         if not self.init():
             return
 
-        proj = self.p.projection_matrix
-        view = self.p.modelview_matrix
+        proj = self.parent.projection_matrix
+        view = self.parent.modelview_matrix
         model = glm.mat4()
 
         # --- render cameras ---
 
-        glUseProgram(self.p.shaders['instanced_model_color'])
+        glUseProgram(self.parent.shaders['instanced_model_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glBindVertexArray(self._vaos['camera'])
@@ -255,7 +257,7 @@ class GLActionVis:
 
         # --- render path lines ---
 
-        glUseProgram(self.p.shaders['single_color'])
+        glUseProgram(self.parent.shaders['single_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
@@ -269,7 +271,7 @@ class GLActionVis:
         # --- render points ---
 
         if self._num_points > 0:
-            glUseProgram(self.p.shaders['instanced_model_color'])
+            glUseProgram(self.parent.shaders['instanced_model_color'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
             glBindVertexArray(self._vaos['box'])
@@ -283,10 +285,10 @@ class GLActionVis:
         if not self.init():
             return
 
-        proj = self.p.projection_matrix
-        view = self.p.modelview_matrix
+        proj = self.parent.projection_matrix
+        view = self.parent.modelview_matrix
 
-        glUseProgram(self.p.shaders['instanced_picking'])
+        glUseProgram(self.parent.shaders['instanced_picking'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 

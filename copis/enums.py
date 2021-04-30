@@ -15,7 +15,7 @@
 
 """Store all enums."""
 
-from enum import Enum, IntEnum, auto
+from enum import Enum, IntEnum, auto, unique
 
 
 class ToolIds(Enum):
@@ -76,3 +76,9 @@ class ActionType(Enum):
     M24 = auto()    # resume processing
     M17 = auto()    # enable all motors
     M18 = auto()    # disable all motors
+
+
+@unique
+class DebugEnv(Enum):
+    PROD = 'prod'
+    DEV = 'dev'
