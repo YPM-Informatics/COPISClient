@@ -22,7 +22,7 @@ import glm
 import numpy as np
 import wx
 import wx.lib.agw.aui as aui
-from copis.enums import ActionType, PathIds, ToolIds, Action
+from copis.enums import Action, ActionType, PathIds
 from copis.gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
                                simple_statictext)
 from copis.helpers import xyz_units
@@ -64,9 +64,8 @@ class PathgenToolbar(aui.AuiToolBar):
 
         self.AddSeparator()
 
-        # add settings tool
+        # add single point adder
         _bmp = create_scaled_bitmap('add_circle_outline', 24)
-        # TODO: ToolIds.SETTINGS.value == PathIds.LINE.value (change!)
         self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
@@ -251,7 +250,7 @@ class _PathgenCylinder(wx.Dialog):
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
-    def _on_ctrl_update(self, event) -> None:
+    def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
             self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
@@ -321,7 +320,7 @@ class _PathgenHelix(wx.Dialog):
         self.rotation_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
-    def _on_ctrl_update(self, event) -> None:
+    def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
             self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
@@ -387,7 +386,7 @@ class _PathgenSphere(wx.Dialog):
         self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
-    def _on_ctrl_update(self, event) -> None:
+    def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.radius_ctrl.Value == '' or self.z_div_ctrl.Value == '' or
             self.distance_ctrl.Value == ''):
@@ -452,7 +451,7 @@ class _PathgenPoint(wx.Dialog):
 
         self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
 
-    def _on_ctrl_update(self, event) -> None:
+    def _on_ctrl_update(self, _) -> None:
         if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
             self.x_ctrl.Value == '' or self.y_ctrl.Value == '' or
             self.z_ctrl.Value == ''):
