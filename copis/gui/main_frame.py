@@ -32,7 +32,7 @@ from .panels.visualizer import VisualizerPanel
 from .pref_frame import PreferenceFrame
 from .proxyconfig_frame import ProxyConfigFrame
 from .wxutils import create_scaled_bitmap, set_dialog
-from copis.store import Store
+from copis.store import Store, load as store_load
 
 from wx.lib.agw.aui.aui_constants import *
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
@@ -306,7 +306,7 @@ class MainWindow(wx.Frame):
 
     def do_load_project(self, path) -> None:
         """Load project from file Path. TODO: Implement"""
-        actions = self._store.load(path, [])
+        actions = store_load(path, [])
 
         self.core.actions.clear()
         self.core.actions.extend(actions)

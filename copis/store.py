@@ -70,14 +70,18 @@ class Store():
 
         return None
 
-    def save(self, filename: str, obj: object) -> None:
-        """Saves an object to file"""
-        with open(filename, 'wb') as file:
-            pickle.dump(obj, file)
+def load_machine(filename: str):
+    """Parses a machine.ini file and returns instances of the objects within"""
+    return
 
-    def load(self, filename: str, obj: object) -> object:
-        """Loads as object from file"""
-        with open(filename, 'rb') as file:
-            obj = pickle.load(file)
+def save(filename: str, obj: object) -> None:
+    """Saves an object to file"""
+    with open(filename, 'wb') as file:
+        pickle.dump(obj, file)
 
-        return obj
+def load(filename: str, obj: object) -> object:
+    """Loads as object from file"""
+    with open(filename, 'rb') as file:
+        obj = pickle.load(file)
+
+    return obj

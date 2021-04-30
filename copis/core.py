@@ -39,9 +39,9 @@ from typing import List, Optional, Tuple
 import glm
 from pydispatch import dispatcher
 
-from .enums import Action, ActionType, Device, Proxy
+from .enums import ActionType
 from .helpers import Point3, Point5
-from .store import Store
+from .store import Store, save as store_save, load_machine as store_load_machine
 
 
 def locked(f):
@@ -131,7 +131,7 @@ class COPISCore:
         core_error: Any copiscore access errors.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self) -> None:
         """Inits a CopisCore instance."""
         self._baud = None
         self._port = None
@@ -431,9 +431,7 @@ class COPISCore:
     #     dispatcher.send('core_proxy_list_changed')
     #     return proxy
 
-    # def clear_proxy(self) -> None:
-    #     self._proxies.clear()
-    #     dispatcher.send('core_proxy_list_changed')
+        # self._store.save('actionScript.copis', self._actions)
 
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
