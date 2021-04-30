@@ -37,14 +37,14 @@ class Store():
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
         segments = current.split(os.sep)
-        index = segments.index(self._PROJECT_FOLDER)
+        index = segments.index(Store._PROJECT_FOLDER)
         root_segments = segments[1:index]
 
         root = '/' + PurePath(os.path.join(*root_segments)).as_posix()
 
         self._root_dir = root
-        self._config_dir = os.path.join(root, self._PROJECT_FOLDER, self._CONFIG_FOLDER)
-        self._config_path = os.path.join(self._config_dir, self._CONFIG_FILE)
+        self._config_dir = os.path.join(root, Store._PROJECT_FOLDER, Store._CONFIG_FOLDER)
+        self._config_path = os.path.join(self._config_dir, Store._CONFIG_FILE)
 
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
