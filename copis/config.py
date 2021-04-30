@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 from configparser import ConfigParser
 
 from .enums import DebugEnv
@@ -66,9 +64,9 @@ class Config():
         if not any(e.value == debug_env for e in DebugEnv):
             debug_env = self._DEFAULT_DEBUG_ENV
 
-        devices = self._config_parser.get('Devices', 'items', fallback='').splitlines()
+        machine_config_path = self._config_parser.get('Machine', 'path', fallback='')
 
-        return ConfigSettings(debug_env, app_window_width, app_window_height, devices)
+        return ConfigSettings(debug_env, app_window_width, app_window_height, machine_config_path)
 
     @property
     def settings(self) -> ConfigSettings:

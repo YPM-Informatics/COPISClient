@@ -25,7 +25,7 @@ class ConfigSettings:
     app_window_width: int
     app_window_height: int
 
-    devices: list
+    machine_config_path: str
 
     def as_dict(self):
         """Return a dictionary representation of a Settings instance."""
@@ -37,7 +37,7 @@ class ConfigSettings:
             'Debug': {
                 'env': self.debug_env
             },
-            'Devices': {
-                'items': "\n".join(self.devices)
+            'Machine': {
+                'path': self.machine_config_path
             }
         }
