@@ -26,9 +26,10 @@ from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
-
 class LocalEDSDK():
     """Implement EDSDK Functionalities"""
+    _object_handler = _property_handler = _state_handler = object
+
     def __init__(self) -> None:
         self._edsdk = None
         self._console = None
@@ -50,9 +51,15 @@ class LocalEDSDK():
             self._edsdk.EdsInitializeSDK()
             self._update_camera_list()
 
-        except Exception as err:
-            self._console.print(
-                f'An exception occurred while initializing Canon API: {err.args[0]}')
+        # TODO: Check everywhere messages are dispatched to the console.
+        # Because it is part of the main frame and that doesn't get loaded (in client) till
+        # after Core, messages dispatched in parts of Core and its descendants (like here) don't get
+        # printed because the console doesn't exist yet.
+        # That causes a lot of errors to get swallowed up.
+        except FileNotFoundError as err:
+            msg = f'An exception occurred while initializing Canon API: {err.args[0]}'
+            self._console.print(msg)
+            print(msg)
 
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.
@@ -85,7 +92,6 @@ class LocalEDSDK():
             self._console.print(f'Invalid camera index: {index}.')
             return False
 
-
         self._is_connected = True
 
         self._camera.index = index
@@ -102,22 +108,22 @@ class LocalEDSDK():
 
         # set handlers
         object_prototype = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
-        object_handler = object_prototype(self._handle_object)
+        LocalEDSDK._object_handler = object_prototype(self._handle_object)
 
         property_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
-        property_handler = property_prototype(self._handle_property)
+        LocalEDSDK._property_handler = property_prototype(self._handle_property)
 
         state_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
-        state_handler = state_prototype(self._handle_state)
+        LocalEDSDK._state_handler = state_prototype(self._handle_state)
 
         self._edsdk.EdsSetObjectEventHandler(
-            cam_ref, self._edsdk.ObjectEvent_All, object_handler, None)
+            cam_ref, self._edsdk.ObjectEvent_All, LocalEDSDK._object_handler, None)
 
         self._edsdk.EdsSetPropertyEventHandler(
-            cam_ref, self._edsdk.PropertyEvent_All, property_handler, cam_ref)
+            cam_ref, self._edsdk.PropertyEvent_All, LocalEDSDK._property_handler, cam_ref)
 
         self._edsdk.EdsSetCameraStateEventHandler(
-            cam_ref, self._edsdk.StateEvent_All, state_handler, cam_ref)
+            cam_ref, self._edsdk.StateEvent_All, LocalEDSDK._state_handler, cam_ref)
 
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
@@ -240,28 +246,28 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(f'An exception occurred while downloading an image: {err.args[0]}')
 
-    def _handle_object(self, evt, obj):
+    def _handle_object(self, event, obj, _context):
         """Handles the group of events where request notifications are issued to
         create, delete or transfer image data stored in a camera or image files on
         the memory card.
         """
-        if evt == self._edsdk.ObjectEvent_DirItemRequestTransfer:
+        if event == self._edsdk.ObjectEvent_DirItemRequestTransfer:
             self._download_image(obj)
         return 0
 
-    def _handle_property(self, evt, prop, param, ctx):
+    def _handle_property(self, _event, _property, _parameter, _context):
         """Handles the group of events where notifications are issued regarding
         changes in the properties of a camera.
         """
         return 0
 
-    def _handle_state(self, evt, state, ctx):
+    def _handle_state(self, event, _state, context):
         """Handles the group of events where notifications are issued regarding
         changes in the state of a camera, such as activation of a shut-down timer.
         """
-        if evt == self._edsdk.StateEvent_WillSoonShutDown:
+        if event == self._edsdk.StateEvent_WillSoonShutDown:
             try:
-                self._edsdk.EdsSendCommand(ctx, 1, 0)
+                self._edsdk.EdsSendCommand(context, 1, 0)
             except Exception as err:
                 self._console.print(
                     f'An exception occurred while handling the state change event: {err.args[0]}')
