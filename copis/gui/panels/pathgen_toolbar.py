@@ -207,7 +207,7 @@ class _PathgenCylinder(wx.Dialog):
             (self.radius_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Height:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.height_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Number of Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Z Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_div_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Points Per Circle:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
@@ -215,9 +215,34 @@ class _PathgenCylinder(wx.Dialog):
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
         self.Sizer.AddSpacer(8)
-        self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+
+        # ---
+
+        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, event) -> None:
+        if '' in (
+                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
+                self.height_ctrl.Value, self.z_div_ctrl.Value, self.points_ctrl.Value):
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
 
 
 class _PathgenHelix(wx.Dialog):
@@ -260,9 +285,34 @@ class _PathgenHelix(wx.Dialog):
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
         self.Sizer.AddSpacer(8)
-        self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+
+        # ---
+
+        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.rotation_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, event) -> None:
+        if '' in (
+                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
+                self.height_ctrl.Value, self.rotation_ctrl.Value, self.points_ctrl.Value):
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
 
 
 class _PathgenSphere(wx.Dialog):
@@ -294,14 +344,38 @@ class _PathgenSphere(wx.Dialog):
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Number of Height Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Z Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_div_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Distance Between Points:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Spacing Distance:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.distance_ctrl, 0, wx.EXPAND, 0),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
         self.Sizer.AddSpacer(8)
-        self.Sizer.Add(self.CreateButtonSizer(wx.OK|wx.CANCEL), 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+
+        # ---
+
+        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, event) -> None:
+        if '' in (
+                self.num_cams_choice.CurrentSelection, self.radius_ctrl.Value,
+                self.z_div_ctrl.Value, self.distance_ctrl.Value):
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()

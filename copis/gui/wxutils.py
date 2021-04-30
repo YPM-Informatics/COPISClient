@@ -124,6 +124,7 @@ class FancyTextCtrl(wx.TextCtrl):
     def on_text_enter(self, event: wx.CommandEvent) -> None:
         """On EVT_TEXT_ENTER, process the updated value."""
         if not self._text_dirty:
+            self.Navigate()
             return
 
         regex = re.findall(rf'(-?\d*\.?\d+)\s*({"|".join(self._units.keys())})?', self.Value)
@@ -144,6 +145,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
         self.SelectNone()
         wx.PostEvent(self, evt)
+        self.Navigate()
 
     def _update_value(self) -> None:
         """Update control text."""
