@@ -16,8 +16,8 @@
 from configparser import ConfigParser
 
 from .enums import DebugEnv
-from .store import Store
-from .settings import ConfigSettings
+from .store import Store, load_machine as store_load_machine
+from .classes import ConfigSettings, MachineSettings
 
 
 class Config():
@@ -31,6 +31,7 @@ class Config():
         self._store = Store()
         self._config_parser = self._ensure_config_exists()
         self._settings = self._populate_settings()
+        self._machine_settings = self._populate_machine_settings()
 
     def _ensure_config_exists(self) -> ConfigParser:
         parser = self._store.load_config()
@@ -68,7 +69,28 @@ class Config():
 
         return ConfigSettings(debug_env, app_window_width, app_window_height, machine_config_path)
 
+    def _populate_machine_settings(self) -> MachineSettings:
+        machine_parser = store_load_machine(self._settings.machine_config_path)
+
+        items = []
+        for section in machine_parser.sections():
+            item = {
+                "name": section
+            }
+
+            for option in machine_parser[section]:
+                item[option] = machine_parser[section][option]
+            items.append(item)
+
+        return MachineSettings(items)
+
+
     @property
     def settings(self) -> ConfigSettings:
         """Configuration settings getter"""
         return self._settings
+
+    @property
+    def machine_settings(self) -> MachineSettings:
+        """Machine configuration settings getter"""
+        return self._machine_settings

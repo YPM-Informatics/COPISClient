@@ -40,8 +40,9 @@ import glm
 from pydispatch import dispatcher
 
 from .enums import ActionType
-from .helpers import Point3, Point5
-from .store import Store, save as store_save, load_machine as store_load_machine
+from .helpers import Point5
+from .store import Store
+from .classes import Device
 
 
 def locked(f):
@@ -131,8 +132,10 @@ class COPISCore:
         core_error: Any copiscore access errors.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, parent) -> None:
         """Inits a CopisCore instance."""
+        self.config = parent.config
+
         self._baud = None
         self._port = None
 

@@ -33,8 +33,8 @@ class COPISApp(wx.App):
 
     def __init__(self, *args, **kwargs) -> None:
         super(COPISApp, self).__init__(*args, **kwargs)
-        self.core = COPISCore()
         self.config = Config()
+        self.core = COPISCore(self)
 
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'

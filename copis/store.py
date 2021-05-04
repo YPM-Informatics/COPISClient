@@ -23,7 +23,7 @@ from configparser import ConfigParser
 from pathlib import PurePath
 from typing import Optional
 
-from .settings import ConfigSettings
+from .classes import ConfigSettings, MachineSettings
 
 
 class Store():
@@ -70,9 +70,20 @@ class Store():
 
         return None
 
-def load_machine(filename: str):
+def save_machine(filename: str, settings: MachineSettings) -> None:
+    """Saves a machine configuration settings object to file."""
+    parser = ConfigParser()
+    parser.read_dict(settings.as_dict())
+
+    with open(filename, 'w') as file:
+        parser.write(file)
+
+def load_machine(filename: str) -> ConfigParser:
     """Parses a machine.ini file and returns instances of the objects within"""
-    return
+    parser = ConfigParser()
+    parser.read(filename)
+
+    return parser
 
 def save(filename: str, obj: object) -> None:
     """Saves an object to file"""
