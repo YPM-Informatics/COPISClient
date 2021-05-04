@@ -15,29 +15,25 @@
 
 from dataclasses import dataclass
 
-from .enums import DebugEnv
+from classes import Bounds
+
 
 @dataclass
-class ConfigSettings:
-    """Configuration settings data structure"""
-    debug_env: DebugEnv
-
-    app_window_width: int
-    app_window_height: int
-
-    machine_config_path: str
+class Chamber:
+    """Machine chamber data structure"""
+    chamber_id: int
+    name: str
+    bounds: Bounds
 
     def as_dict(self):
-        """Return a dictionary representation of a Settings instance."""
+        """Returns a dictionary representation of a Chamber instance."""
         return {
-            'AppWindow': {
-                'width': self.app_window_width,
-                'height': self.app_window_height
-            },
-            'Debug': {
-                'env': self.debug_env
-            },
-            'Machine': {
-                'path': self.machine_config_path
+            f'Chamber {self.name}': {
+                'min_x': self.bounds.lower.x,
+                'max_x': self.bounds.upper.x,
+                'min_y': self.bounds.lower.y,
+                'max_y': self.bounds.upper.y,
+                'min_z': self.bounds.lower.z,
+                'max_z': self.bounds.upper.z
             }
         }
