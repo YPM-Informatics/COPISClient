@@ -68,7 +68,7 @@ class MachineSettings:
         self._chambers = []
 
         for i, datum in enumerate(data):
-            name = datum['name'].split(' ')[1]
+            name = datum['name'].split(' ', maxsplit=1)[1]
             min_x = float(datum['min_x'])
             min_y = float(datum['min_y'])
             min_z = float(datum['min_z'])
@@ -84,7 +84,7 @@ class MachineSettings:
         self._devices = []
 
         for i, datum in enumerate(data):
-            name = datum['name'].split(' ')[1]
+            name = datum['name'].split(' ', maxsplit=1)[1]
             pos_x = float(datum['x'])
             pos_y = float(datum['y'])
             pos_z = float(datum['z'])
