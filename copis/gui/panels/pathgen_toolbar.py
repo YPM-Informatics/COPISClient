@@ -216,7 +216,7 @@ class _PathgenCylinder(wx.Dialog):
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -286,7 +286,7 @@ class _PathgenHelix(wx.Dialog):
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -355,7 +355,7 @@ class _PathgenSphere(wx.Dialog):
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Number of Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
@@ -400,7 +400,7 @@ class _PathgenPoint(wx.Dialog):
 
     def __init__(self, parent):
         """Inits _PathgenPoint with constructors."""
-        super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(200, -1))
+        super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 
         self._camera_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
