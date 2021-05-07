@@ -28,7 +28,7 @@ from copis.coms import SerialController
 class MachineToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Inits MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
@@ -58,30 +58,39 @@ class MachineToolbar(aui.AuiToolBar):
 
         Icons taken from https://material.io/resources/icons/?style=baseline.
         """
-        # add port, baud comboboxes
+        # Add port, baud comboboxes.
         self.AddControl(wx.StaticText(self, label='Port', style=wx.ALIGN_LEFT))
         self.port_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.AddControl(self.port_cb, label='Port combobox')
-        self.refresh_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('refresh', 20), size=(-1, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_refresh_port, self.AddControl(self.refresh_btn, label='Refresh port'))
+        self.refresh_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('refresh', 20),
+            size=(-1, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_refresh_port, self.AddControl(self.refresh_btn,
+            label='Refresh port'))
         self.AddSpacer(8)
         self.AddControl(wx.StaticText(self, label='Baud', style=wx.ALIGN_LEFT))
-        self.baud_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
-        self.Bind(wx.EVT_COMBOBOX, self.on_select_baud, self.AddControl(self.baud_cb, label='Baud combobox'))
+        self.baud_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY,
+            size=(75, -1))
+        self.Bind(wx.EVT_COMBOBOX, self.on_select_baud, self.AddControl(self.baud_cb,
+            label='Baud combobox'))
         self.AddSpacer(8)
-        self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))))
+        self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(wx.Button(self,
+            wx.ID_ANY,label='Connect', size=(75, -1))))
 
         self.AddSeparator()
 
-        # add play, pause, stop tools
+        # Add play, pause, stop tools.
         _bmp = create_scaled_bitmap('play_arrow', 24)
-        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Play simulation')
+        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
+            short_help_string='Play simulation')
         _bmp = create_scaled_bitmap('pause', 24)
-        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Pause simulation')
+        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL,
+            short_help_string='Pause simulation')
         _bmp = create_scaled_bitmap('stop', 24)
-        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Stop and reset simulation')
+        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL,
+            short_help_string='Stop and reset simulation')
         _bmp = create_scaled_bitmap('get_app', 24)
-        self.AddTool(ToolIds.EXPORT.value, 'Export', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Export actions as text')
+        self.AddTool(ToolIds.EXPORT.value, 'Export', _bmp, _bmp, aui.ITEM_NORMAL,
+            short_help_string='Export actions as text')
 
         # TODO: implement settings dialog, uncomment below
 
