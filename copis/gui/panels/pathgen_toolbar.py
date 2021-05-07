@@ -169,7 +169,9 @@ class PathgenToolbar(aui.AuiToolBar):
                     self.core.actions.extend(new_actions)
 
         elif event.Id == PathIds.LINE.value:
-            logging.debug('LINE')
+            with _PathgenLine(self) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    logging.debug('LINE_OK')
 
         elif event.Id == PathIds.POINT.value:
             with _PathgenPoint(self) as dlg:
@@ -204,20 +206,38 @@ class _PathgenCylinder(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(5, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.base_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.height_ctrl = FancyTextCtrl(
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
+        self.lookat_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.base_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Height:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -226,6 +246,12 @@ class _PathgenCylinder(wx.Dialog):
             (self.z_div_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Points Per Circle:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
@@ -243,6 +269,8 @@ class _PathgenCylinder(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+        self.SetMinSize((250, -1))
+        self.Fit()
 
         # ---
 
@@ -252,7 +280,6 @@ class _PathgenCylinder(wx.Dialog):
 
     def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
-            self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
             self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
 
@@ -274,20 +301,38 @@ class _PathgenHelix(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(5, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.base_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.height_ctrl = FancyTextCtrl(
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.rotation_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
+        self.lookat_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.base_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Height:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -296,6 +341,12 @@ class _PathgenHelix(wx.Dialog):
             (self.rotation_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Points per Rotation:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
@@ -313,6 +364,8 @@ class _PathgenHelix(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+        self.SetMinSize((250, -1))
+        self.Fit()
 
         # ---
 
@@ -322,7 +375,6 @@ class _PathgenHelix(wx.Dialog):
 
     def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
-            self.radius_ctrl.Value == '' or self.height_ctrl.Value == '' or
             self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
 
@@ -344,10 +396,16 @@ class _PathgenSphere(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(4, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(7, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.center_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.center_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.center_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
             self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
@@ -357,6 +415,12 @@ class _PathgenSphere(wx.Dialog):
         options_grid.AddMany([
             (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Center X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.center_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.center_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.center_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Z Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -380,6 +444,8 @@ class _PathgenSphere(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+        self.SetMinSize((250, -1))
+        self.Fit()
 
         # ---
 
@@ -388,12 +454,94 @@ class _PathgenSphere(wx.Dialog):
 
     def _on_ctrl_update(self, _) -> None:
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
-            self.radius_ctrl.Value == '' or self.z_div_ctrl.Value == '' or
-            self.distance_ctrl.Value == ''):
+            self.z_div_ctrl.Value == ''):
             return
 
         self._affirmative_button.Enable()
         self._affirmative_button.SetDefault()
+
+
+class _PathgenLine(wx.Dialog):
+    """TODO"""
+
+    def __init__(self, parent):
+        """Inits _PathgenLine with constructors."""
+        super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
+        self.parent = parent
+
+        self._camera_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # ---
+
+        options_grid = wx.FlexGridSizer(8, 2, 12, 8)
+        options_grid.AddGrowableCol(1, 0)
+
+        self.cam_choice = wx.Choice(self, choices=self._camera_choices)
+        self.start_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.start_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.start_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.end_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.end_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.end_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
+
+        options_grid.AddMany([
+            (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.cam_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Start X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.start_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'End X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.end_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Number of Points:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.points_ctrl, 0, wx.EXPAND, 0),
+        ])
+
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        self.Layout()
+        self.SetMinSize((200, -1))
+        self.Fit()
+
+        # ---
+
+        self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, _) -> None:
+        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
+            self.points_ctrl.Value == ''):
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
+
 
 class _PathgenPoint(wx.Dialog):
     """TODO"""
@@ -423,12 +571,12 @@ class _PathgenPoint(wx.Dialog):
         options_grid.AddMany([
             (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.cam_choice, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'X Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Position X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.y_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Z Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.z_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
@@ -446,15 +594,15 @@ class _PathgenPoint(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
+        self.SetMinSize((200, -1))
+        self.Fit()
 
         # ---
 
         self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
-        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
-            self.x_ctrl.Value == '' or self.y_ctrl.Value == '' or
-            self.z_ctrl.Value == ''):
+        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND):
             return
 
         self._affirmative_button.Enable()
