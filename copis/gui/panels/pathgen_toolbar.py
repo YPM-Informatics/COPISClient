@@ -55,7 +55,7 @@ class PathgenToolbar(aui.AuiToolBar):
         # add path shape adders
         _bmp = create_scaled_bitmap('cylinder_path', 24)
         self.AddTool(PathIds.CYLINDER.value, 'Cylinder', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add cylinder path')
-        _bmp = create_scaled_bitmap('add', 24)
+        _bmp = create_scaled_bitmap('helix_path', 24)
         self.AddTool(PathIds.HELIX.value, 'Helix', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add helix path')
         _bmp = create_scaled_bitmap('sphere_path', 24)
         self.AddTool(PathIds.SPHERE.value, 'Sphere', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add sphere path')
