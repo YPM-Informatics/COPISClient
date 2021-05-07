@@ -111,7 +111,9 @@ class COPISCore:
 
         # self._proxies: List[Proxy] = MonitoredList([], 'core_proxy_list_changed')
         self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
-        self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
+        self._devices: List[Device] = MonitoredList(
+            self.config.machine_settings.devices, 'core_d_list_changed')
+
         self._store = Store()
 
         self._update_devices()
@@ -352,32 +354,6 @@ class COPISCore:
     # --------------------------------------------------------------------------
     # Action and device data methods
     # --------------------------------------------------------------------------
-
-    def _update_devices(self) -> None:
-        self._devices.clear()
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
-            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
-            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
-            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
-            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
-            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
-        ])
-
-    # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
-    #     new = Proxy(proxy_type, proxy_name, position, length, height)
-    #     self._proxies.append(new)
-    #     dispatcher.send('core_proxy_list_changed')
-    #     return True
-
-    # def remove_proxy(self, index: int) -> Proxy:
-    #     """Remove a proxy object given its index in the proxy list"""
-    #     proxy = self._proxies.pop(index)
-    #     dispatcher.send('core_proxy_list_changed')
-    #     return proxy
-
-        # self._store.save('actionScript.copis', self._actions)
-
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""
