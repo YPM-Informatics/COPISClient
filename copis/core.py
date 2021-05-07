@@ -42,7 +42,7 @@ from pydispatch import dispatcher
 from .enums import ActionType
 from .helpers import Point5
 from .store import Store
-from .classes import Device
+from .classes import Action, Device, MonitoredList
 
 
 def locked(f):
@@ -52,64 +52,6 @@ def locked(f):
             return f(*args, **kw)
     inner.lock = threading.Lock()
     return inner
-
-
-class MonitoredList(list):
-    """Monitored list. Just a regular list, but sends notifications when
-    changed or modified.
-    """
-
-    def __init__(self, iterable, signal: str) -> None:
-        super().__init__(iterable)
-        self.signal = signal
-
-    def clear(self) -> None:
-        super().clear()
-        self._dispatch()
-
-    def append(self, __object) -> None:
-        super().append(__object)
-        self._dispatch()
-
-    def extend(self, __iterable) -> None:
-        super().extend(__iterable)
-        self._dispatch()
-
-    def pop(self, __index: int):
-        value = super().pop(__index)
-        self._dispatch()
-        return value
-
-    def insert(self, __index: int, __object) -> None:
-        super().insert(__index, __object)
-        self._dispatch()
-
-    def remove(self, __value) -> None:
-        super().remove(__value)
-        self._dispatch()
-
-    def reverse(self) -> None:
-        super().reverse()
-        self._dispatch()
-
-    def __setitem__(self, key, value) -> None:
-        super().__setitem__(key, value)
-        self._dispatch()
-
-    def __delitem__(self, key) -> None:
-        super().__delitem__(key)
-        self._dispatch()
-
-    def _dispatch(self) -> None:
-        """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
-        '__iterable' even before the object's instance attributes are set. This causes dispatching
-        to fail while unpickling the object because 'signal' does not yet exist. But dispatching
-        does not need to happen for an object being unpickled because it's just a monitored list
-        being restored and not technically being actively changed. Besides, there is no need to
-        dispatch if there's no registered signal."""
-
-        if 'signal' in self.__dict__:
-            dispatcher.send(self.signal)
 
 
 class COPISCore:

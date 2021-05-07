@@ -13,14 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS classes package"""
+"""Provides the COPIS Action Class"""
 
-from classes.device import Device
-from classes.bounds import Bounds
-from classes.chamber import Chamber
-from classes.settings import ConfigSettings, MachineSettings
-from classes.monitored_list import MonitoredList
-from classes.action import Action
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
-__all__ = ["Device", "Bounds", "ConfigSettings", "MachineSettings", "MonitoredList",
-            "Action"]
+from enums import ActionType
+
+@dataclass
+class Action:
+    """Data structure that implements a camera action"""
+
+    atype: ActionType = ActionType.NONE
+    device: int = -1
+    argc: int = 0
+    args: Optional[List[Any]] = None
