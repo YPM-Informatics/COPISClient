@@ -21,6 +21,7 @@ import datetime
 from ctypes import c_int, c_uint, c_void_p, sizeof, WINFUNCTYPE
 from dataclasses import dataclass
 from typing import ClassVar
+from mprop import mproperty
 
 from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
@@ -39,6 +40,11 @@ class EDSDKController():
 
         self._camera = CameraSettings()
         self._image = ImageSettings()
+
+        # Locally aliasing WINFUNCTYPE is required to avoid NameError cause
+        # by the use of @mproperty.
+        # See: https://github.com/josiahcarlson/mprop
+        self._win_func_type = WINFUNCTYPE
 
     def initialize(self, console) -> None:
         """Initialize the EDSDK object"""
@@ -108,13 +114,13 @@ class EDSDKController():
         self._edsdk.EdsSetCapacity(cam_ref, EdsCapacity(10000000, 512, 1))
 
         # set handlers
-        object_prototype = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
+        object_prototype = self._win_func_type(c_int, c_int, c_void_p, c_void_p)
         EDSDKController._object_handler = object_prototype(self._handle_object)
 
-        property_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
+        property_prototype = self._win_func_type(c_int, c_int, c_int, c_int, c_void_p)
         EDSDKController._property_handler = property_prototype(self._handle_property)
 
-        state_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
+        state_prototype = self._win_func_type(c_int, c_int, c_int, c_void_p)
         EDSDKController._state_handler = state_prototype(self._handle_state)
 
         self._edsdk.EdsSetObjectEventHandler(
@@ -190,13 +196,14 @@ class EDSDKController():
         except Exception as err:
             self._console.print(f'An exception occurred while terminating Canon API: {err.args[0]}')
 
-    # TODO: Turn these into @property getters if possible within prebound methods pattern.
-    def get_camera_count(self) -> int:
-        """Return camera count"""
+    @property
+    def camera_count(self) -> int:
+        """Returns camera count"""
         return self._camera.count
 
+    @property
     def is_waiting_for_image(self) -> bool:
-        """Return a flag indicating whether we are waiting for an image"""
+        """Returns a flag indicating whether we are waiting for an image"""
         return self._is_waiting_for_image
 
     # def step_focus(self) -> bool:
@@ -338,5 +345,12 @@ initialize = _instance.initialize
 take_picture = _instance.take_picture
 terminate = _instance.terminate
 
-get_camera_count = _instance.get_camera_count
-is_waiting_for_image = _instance.is_waiting_for_image
+@mproperty
+def camera_count(mod) -> int:
+    """Returns camera count from the module"""
+    return mod._instance.camera_count
+
+@mproperty
+def is_waiting_for_image(mod) -> bool:
+    """Returns a flag indicating whether we are waiting for an image; from the module"""
+    return mod._instance.is_waiting_for_image

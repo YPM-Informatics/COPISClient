@@ -450,7 +450,7 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        if self.core.edsdk.get_camera_count() == 0:
+        if self.core.edsdk.camera_count == 0:
             return
 
         self.panels['evf'] = EvfPanel(self)
