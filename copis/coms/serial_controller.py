@@ -22,6 +22,8 @@ from serial.tools import list_ports
 class SerialController():
     """Implement Serial Functionalities"""
 
+    _TEST_SERIAL_PORT = 'TEST'
+
     def __init__(self):
         self.selected_serial = None
         self.ports = self.get_ports()
@@ -32,6 +34,8 @@ class SerialController():
 
         for n, (portname, desc, hwind) in enumerate(sorted(list_ports.comports())):
             ports.append(portname)
+
+        ports.append(SerialController._TEST_SERIAL_PORT)
         return ports
 
     def get_bauds(self):
@@ -41,7 +45,11 @@ class SerialController():
 
     def set_current_serial(self, port):
         try:
-            self.selected_serial = serial.Serial(port)
+            if port == SerialController._TEST_SERIAL_PORT:
+                self.selected_serial = serial.serial_for_url('loop://')
+            else:
+                self.selected_serial = serial.Serial(port)
+
             self.selected_serial.close()
             self.bauds = self.get_bauds()
             return True
