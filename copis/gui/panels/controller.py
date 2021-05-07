@@ -27,8 +27,6 @@ from copis.gui.wxutils import (
     create_scaled_bitmap, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
 
-from coms.serial_controller import SerialController
-
 
 class ControllerPanel(scrolled.ScrolledPanel):
     """Controller panel. When camera selected, jogs movement.
