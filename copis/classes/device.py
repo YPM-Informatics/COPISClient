@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Provides the COPIS Device Class"""
+
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
@@ -21,7 +23,7 @@ from helpers import Point3, Point5
 
 @dataclass
 class Device:
-    """Device data structure"""
+    """Data structure that implements a COPIS instrument imagining device"""
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''

@@ -13,12 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Provides the COPIS Bounds Class"""
+
 from typing import NamedTuple
 
 from helpers import Point3
 
 
 class Bounds(NamedTuple):
-    """A data structure for 3D point bounds"""
+    """Data structure that implements point boundaries in 3D space"""
     lower: Point3
     upper: Point3

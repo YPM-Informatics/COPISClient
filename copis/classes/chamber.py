@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Provides the COPIS Chamber Class"""
+
 from dataclasses import dataclass
 
 from classes import Bounds
@@ -20,7 +22,7 @@ from classes import Bounds
 
 @dataclass
 class Chamber:
-    """Machine chamber data structure"""
+    """Data structure that implements a chamber for the imaging instrument"""
     chamber_id: int
     name: str
     bounds: Bounds

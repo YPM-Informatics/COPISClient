@@ -13,14 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Manages COPIS Serial Communications"""
+
 import serial
 from serial.tools import list_ports
 
 
-class SerialController(object):
+class SerialController():
+    """Implement Serial Functionalities"""
 
     def __init__(self):
-        super(SerialController, self).__init__()
         self.selected_serial = None
         self.ports = self.get_ports()
         self.bauds = []
