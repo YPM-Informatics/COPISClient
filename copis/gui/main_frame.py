@@ -15,8 +15,6 @@
 
 """MainWindow class."""
 
-import math
-import pickle
 from ctypes import *
 from pathlib import Path
 
@@ -34,7 +32,6 @@ from copis.gui.panels.visualizer import VisualizerPanel
 from copis.gui.pref_frame import PreferenceFrame
 from copis.gui.proxyconfig_frame import ProxyConfigFrame
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
-from copis.helpers import Point3, Point5
 from copis.store import Store
 
 from wx.lib.agw.aui.aui_constants import *

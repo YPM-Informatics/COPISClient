@@ -3,6 +3,7 @@
 import wx
 from pydispatch import dispatcher
 
+
 class ProxyConfigFrame(wx.Frame):
     def __init__(self, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, wx.ID_ANY, 'Proxy Object Configuration', size=(300, 400))

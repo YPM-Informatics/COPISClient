@@ -20,8 +20,9 @@ TODO: Object collisions via general 3D object class.
 
 import math
 import platform as pf
+from dataclasses import dataclass
 from threading import Lock
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple
 
 import copis.gl.shaders as shaderlib
 import glm
@@ -43,7 +44,6 @@ from wx import glcanvas
 
 
 class _Size(NamedTuple):
-
     width: int
     height: int
     scale_factor: float

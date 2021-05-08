@@ -16,8 +16,7 @@
 """PropertiesPanel class."""
 
 import math
-import re
-from typing import Any, List, Optional, Union
+from typing import List, Union
 from copis.helpers import xyz_units, pt_units
 
 import wx

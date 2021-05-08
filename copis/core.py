@@ -28,7 +28,6 @@ import os
 import platform
 import threading
 import time
-from dataclasses import dataclass
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
@@ -56,6 +55,7 @@ class MonitoredList(list):
     """Monitored list. Just a regular list, but sends notifications when
     changed or modified.
     """
+
     def __init__(self, iterable, signal: str) -> None:
         super().__init__(iterable)
         self.signal = signal

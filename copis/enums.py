@@ -95,6 +95,7 @@ class DebugEnv(Enum):
     PROD = 'prod'
     DEV = 'dev'
 
+
 @dataclass
 class Action:
     """Action dataclass"""

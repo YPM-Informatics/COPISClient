@@ -31,7 +31,7 @@ from copis.pathutils import create_circle, create_helix, create_line
 
 
 class PathgenToolbar(aui.AuiToolBar):
-    """Manage pathgen toolbar panel."""
+    """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Inits ToolbarPanel with constructors."""
@@ -237,7 +237,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
 
 class _PathgenCylinder(wx.Dialog):
-    """TODO"""
+    """Dialog to generate a cylinder path."""
 
     def __init__(self, parent):
         """Inits _PathgenCylinder with constructors."""
@@ -333,7 +333,7 @@ class _PathgenCylinder(wx.Dialog):
 
 
 class _PathgenHelix(wx.Dialog):
-    """TODO"""
+    """Dialog to generate a helix path."""
 
     def __init__(self, parent):
         """Inits _PathgenHelix with constructors."""
@@ -429,7 +429,7 @@ class _PathgenHelix(wx.Dialog):
 
 
 class _PathgenSphere(wx.Dialog):
-    """TODO"""
+    """Dialog to generate a sphere path."""
 
     def __init__(self, parent):
         """Inits _PathgenSphere with constructors."""
@@ -509,7 +509,7 @@ class _PathgenSphere(wx.Dialog):
 
 
 class _PathgenLine(wx.Dialog):
-    """TODO"""
+    """Dialog to generate a line path."""
 
     def __init__(self, parent):
         """Inits _PathgenLine with constructors."""
@@ -605,7 +605,7 @@ class _PathgenLine(wx.Dialog):
 
 
 class _PathgenPoint(wx.Dialog):
-    """TODO"""
+    """Dialog to generate a single point."""
 
     def __init__(self, parent):
         """Inits _PathgenPoint with constructors."""
