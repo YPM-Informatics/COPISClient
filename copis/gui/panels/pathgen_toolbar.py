@@ -86,7 +86,10 @@ class PathgenToolbar(aui.AuiToolBar):
                     for i in range(z_div):
                         z = 0 if z_div == 1 else i * (height / (z_div - 1))
                         vertices, count = get_circle(
-                            glm.vec3(0, -height/2 + z, 0), glm.vec3(0, 1, 0), radius, points)
+                            glm.vec3(dlg.base_x_ctrl.num_value,
+                                     dlg.base_y_ctrl.num_value + z,
+                                     dlg.base_z_ctrl.num_value),
+                            glm.vec3(0, 1 if height > 0 else -1, 0), radius, points)
 
                         for j in range(count - 1):
                             point5 = [
@@ -113,10 +116,13 @@ class PathgenToolbar(aui.AuiToolBar):
                     rotations = int(dlg.rotation_ctrl.GetValue())
                     points = int(dlg.points_ctrl.GetValue())
 
-                    pitch = height / rotations
+                    pitch = abs(height) / rotations
 
                     vertices, count = get_helix(
-                        glm.vec3(0, -height/2, 0), glm.vec3(0, 1, 0), radius, pitch, rotations, points)
+                        glm.vec3(dlg.base_x_ctrl.num_value,
+                                 dlg.base_y_ctrl.num_value,
+                                 dlg.base_z_ctrl.num_value),
+                        glm.vec3(0, 1 if height > 0 else -1, 0), radius, pitch, rotations, points)
 
                     new_actions = []
                     for j in range(count - 1):
@@ -154,9 +160,9 @@ class PathgenToolbar(aui.AuiToolBar):
 
                         for j in range(count - 1):
                             point5 = [
-                                vertices[j * 3],
-                                vertices[j * 3 + 1],
-                                vertices[j * 3 + 2],
+                                vertices[j * 3] + dlg.center_x_ctrl.num_value,
+                                vertices[j * 3 + 1] + dlg.center_y_ctrl.num_value,
+                                vertices[j * 3 + 2] + dlg.center_z_ctrl.num_value,
                                 math.atan2(vertices[j*3+2], vertices[j*3]) + math.pi,
                                 math.atan(vertices[j*3+1]/math.sqrt(vertices[j*3]**2+vertices[j*3+2]**2))]
 
