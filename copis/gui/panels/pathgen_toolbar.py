@@ -38,7 +38,7 @@ class PathgenToolbar(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
-        self.core = self.parent.c
+        self.core = self.parent.core
 
         self._path_dialogs = {}
         self.init_toolbar()

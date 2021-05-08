@@ -90,7 +90,6 @@ class ActionType(Enum):
     M18 = auto()    # disable all motors
 
 
-
 @unique
 class DebugEnv(Enum):
     PROD = 'prod'
@@ -98,6 +97,7 @@ class DebugEnv(Enum):
 
 @dataclass
 class Action:
+    """Action dataclass"""
     atype: ActionType = ActionType.NONE
     device: int = -1
     argc: int = 0
@@ -106,6 +106,7 @@ class Action:
 
 @dataclass
 class Proxy:
+    """Proxy dataclass"""
     proxy_type: int = 0
     proxy_name: str = ''
     position: Optional[List[Any]] = None
@@ -115,6 +116,7 @@ class Proxy:
 
 @dataclass
 class Device:
+    """Device dataclass"""
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''
