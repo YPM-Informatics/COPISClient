@@ -25,10 +25,10 @@ import glm
 from copis.mathutils import rotate_basis_to
 
 
-def get_circle(p: glm.vec3,
-               n: glm.vec3,
-               r: float,
-               sides: int = 36) -> Tuple[np.ndarray, int]:
+def create_circle(p: glm.vec3,
+                  n: glm.vec3,
+                  r: float,
+                  sides: int = 36) -> Tuple[np.ndarray, int]:
     """Create circle vertices given point, normal vector, radius, and # sides.
 
     Uses an approximation method to compute vertices versus many trig calls.
@@ -55,12 +55,12 @@ def get_circle(p: glm.vec3,
     return vertices, count
 
 
-def get_helix(p: glm.vec3,
-              n: glm.vec3,
-              r: float,
-              pitch: int = 1,
-              turns: float = 1.0,
-              sides: int = 36) -> Tuple[np.ndarray, int]:
+def create_helix(p: glm.vec3,
+                 n: glm.vec3,
+                 r: float,
+                 pitch: int = 1,
+                 turns: float = 1.0,
+                 sides: int = 36) -> Tuple[np.ndarray, int]:
     """Create helix vertices given point, normal vector, radius, pitch, # turns,
     and # sides.
 
@@ -89,6 +89,21 @@ def get_helix(p: glm.vec3,
     return vertices, count
 
 
+def create_line(start: glm.vec3,
+                end: glm.vec3,
+                points: int = 2) -> Tuple[np.ndarray, int]:
+    """Create line given start position, end position, and # points."""
+    if points < 2:
+        raise IndexError('number of points in line must be greater than 2')
+
+    vertices = np.empty(points * 3)
+    vertices[::3] = np.linspace(start.x, end.x, points)
+    vertices[1::3] = np.linspace(start.y, end.y, points)
+    vertices[2::3] = np.linspace(start.z, end.z, points)
+
+    return vertices, points
+
+
 # def get_circle_trig(p, n, r, sides=36):
 #     a, n, b = rotate_basis_to(glm.vec3(*n))
 #     tau = 6.28318530717958647692
@@ -113,50 +128,3 @@ def get_helix(p: glm.vec3,
 #         vertices[i*3 + 1] = p[1] + n[1]*(i*pitch/sides) + r*(a[1]*cos(i*tau/sides) + b[1]*sin(i*tau/sides))
 #         vertices[i*3 + 2] = p[2] + n[2]*(i*pitch/sides) + r*(a[2]*cos(i*tau/sides) + b[2]*sin(i*tau/sides))
 #     return vertices, count
-
-'''
-    def _create_line(self, startX, startY, startZ, endX, endY, endZ, noPoints, num_cams) -> None:
-        xJump = (endX - startX) / (noPoints - 1)
-        yJump = (endY - startY) / (noPoints - 1)
-        zJump = (endZ - startZ) / (noPoints - 1)
-        cam_num = 0
-        cam_range = noPoints // num_cams
-        for i in range(0, noPoints - 1):
-            point5 = [
-                startX + i*xJump,
-                startY + i*yJump,
-                startZ + i*zJump,
-                math.atan2(startZ + i*zJump, startX + i*xJump) + math.pi,
-                math.atan((startY + i*yJump)/math.sqrt((startX + i*xJump)**2+(startZ + i*zJump)**2))]
-            if (i == (cam_range*(cam_num + 1))):
-                cam_num += 1
-            self._actions.append(Action(ActionType.G0, cam_num, 5, point5))
-            self._actions.append(Action(ActionType.C0, cam_num))
-
-    def _create_helix(self, radius, nturn, pturn, num_cams) -> None:
-        """Populates action list with a spherical path to specification
-        """
-        # generate a sphere (for testing)
-        # For each of the nine levels
-            # Get path containing x,y,z and count for num of cams
-        path, count = get_helix(glm.vec3(0, 0, 0), glm.vec3(0, 1, 0), radius, 10, nturn, pturn)
-
-        for j in range(count - 1):
-            # Put x,y,z,pan,tilt for camera in point5
-            point5 = [
-                path[j * 3],
-                path[j * 3 + 1],
-                path[j * 3 + 2],
-                math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-            # temporary hack to divvy ids
-            rand_device = 0
-            # Where is its x coord?
-            for i in range(1, num_cams):
-                if (path[j * 3] > (-radius + i*((radius*2)/num_cams))):
-                    rand_device += 1
-
-            self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-            self._actions.append(Action(ActionType.C0, rand_device))
-'''

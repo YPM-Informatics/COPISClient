@@ -26,7 +26,7 @@ from copis.enums import Action, ActionType, PathIds
 from copis.gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
                                simple_statictext)
 from copis.helpers import xyz_units
-from copis.pathutils import get_circle, get_helix
+from copis.pathutils import create_circle, create_helix, create_line
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -69,130 +69,149 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
-        """On toolbar tool selected, check which and process accordingly.
-
-        TODO: Link with copiscore when implemented.
+        """On toolbar tool selected, create pathgen dialog and process accordingly.
         """
         if event.Id == PathIds.CYLINDER.value:
             with _PathgenCylinder(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
+                    logging.debug('CYLINDER added')
                     num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
                     z_div = int(dlg.z_div_ctrl.GetValue())
                     points = int(dlg.points_ctrl.GetValue())
 
-                    new_actions = []
+                    vertices = []
+                    count = 0
                     for i in range(z_div):
                         z = 0 if z_div == 1 else i * (height / (z_div - 1))
-                        vertices, count = get_circle(
+                        v, c = create_circle(
                             glm.vec3(dlg.base_x_ctrl.num_value,
                                      dlg.base_y_ctrl.num_value + z,
                                      dlg.base_z_ctrl.num_value),
                             glm.vec3(0, 1 if height > 0 else -1, 0), radius, points)
 
-                        for j in range(count - 1):
-                            point5 = [
-                                vertices[j * 3],
-                                vertices[j * 3 + 1],
-                                vertices[j * 3 + 2],
-                                math.atan2(vertices[j*3+2], vertices[j*3]) + math.pi,
-                                math.atan(vertices[j*3+1]/math.sqrt(vertices[j*3]**2+vertices[j*3+2]**2))]
+                        vertices.extend(v[:-3].tolist())
+                        count += c - 1
 
-                            device_id = 0
-                            if num_cams == 2 and vertices[j*3+1] < 0:
-                                device_id = 1
-                            new_actions.append(Action(ActionType.G0, device_id, 5, point5))
-                            new_actions.append(Action(ActionType.C0, device_id))
+                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                                      dlg.lookat_y_ctrl.num_value,
+                                      dlg.lookat_z_ctrl.num_value)
 
-                    self.core.actions.extend(new_actions)
+                    self._extend_actions(vertices, count, lookat)
 
         elif event.Id == PathIds.HELIX.value:
             with _PathgenHelix(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
+                    logging.debug('HELIX added')
                     num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
                     rotations = int(dlg.rotation_ctrl.GetValue())
                     points = int(dlg.points_ctrl.GetValue())
-
                     pitch = abs(height) / rotations
 
-                    vertices, count = get_helix(
+                    vertices, count = create_helix(
                         glm.vec3(dlg.base_x_ctrl.num_value,
                                  dlg.base_y_ctrl.num_value,
                                  dlg.base_z_ctrl.num_value),
                         glm.vec3(0, 1 if height > 0 else -1, 0), radius, pitch, rotations, points)
 
-                    new_actions = []
-                    for j in range(count - 1):
-                        point5 = [
-                            vertices[j * 3],
-                            vertices[j * 3 + 1],
-                            vertices[j * 3 + 2],
-                            math.atan2(vertices[j*3+2], vertices[j*3]) + math.pi,
-                            math.atan(vertices[j*3+1]/math.sqrt(vertices[j*3]**2+vertices[j*3+2]**2))]
+                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                                      dlg.lookat_y_ctrl.num_value,
+                                      dlg.lookat_z_ctrl.num_value)
 
-                        device_id = 0
-                        if num_cams == 2 and vertices[j*3+1] < 0:
-                            device_id = 1
-                        new_actions.append(Action(ActionType.G0, device_id, 5, point5))
-                        new_actions.append(Action(ActionType.C0, device_id))
-
-                    self.core.actions.extend(new_actions)
+                    self._extend_actions(vertices, count, lookat)
 
         elif event.Id == PathIds.SPHERE.value:
             with _PathgenSphere(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
+                    logging.debug('SPHERE added')
                     num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
                     radius = dlg.radius_ctrl.num_value
                     z_div = int(dlg.z_div_ctrl.GetValue())
                     distance = dlg.distance_ctrl.num_value
 
-                    new_actions = []
+                    vertices = []
+                    count = 0
                     for i in range(z_div):
                         z = i * (radius*0.8 * 2 / (z_div - 1)) - radius*0.8
                         r = math.sqrt(radius * radius - z * z)
                         num = int(2 * math.pi * r / distance)
 
-                        vertices, count = get_circle(
-                            glm.vec3(0, z, 0), glm.vec3(0, 1, 0), r, num)
+                        v, c = create_circle(
+                            glm.vec3(dlg.center_x_ctrl.num_value,
+                                     z + dlg.center_y_ctrl.num_value,
+                                     dlg.center_z_ctrl.num_value),
+                            glm.vec3(0, 1, 0), r, num)
+                        vertices.extend(v[:-3].tolist())
+                        count += c - 1
 
-                        for j in range(count - 1):
-                            point5 = [
-                                vertices[j * 3] + dlg.center_x_ctrl.num_value,
-                                vertices[j * 3 + 1] + dlg.center_y_ctrl.num_value,
-                                vertices[j * 3 + 2] + dlg.center_z_ctrl.num_value,
-                                math.atan2(vertices[j*3+2], vertices[j*3]) + math.pi,
-                                math.atan(vertices[j*3+1]/math.sqrt(vertices[j*3]**2+vertices[j*3+2]**2))]
+                    lookat = glm.vec3(dlg.center_x_ctrl.num_value,
+                                      dlg.center_y_ctrl.num_value,
+                                      dlg.center_z_ctrl.num_value)
 
-                            device_id = 0
-                            if num_cams == 2 and vertices[j*3+1] < 0:
-                                device_id = 1
-                            new_actions.append(Action(ActionType.G0, device_id, 5, point5))
-                            new_actions.append(Action(ActionType.C0, device_id))
-
-                    self.core.actions.extend(new_actions)
+                    self._extend_actions(vertices, count, lookat)
 
         elif event.Id == PathIds.LINE.value:
             with _PathgenLine(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    logging.debug('LINE_OK')
+                    logging.debug('LINE added')
+                    device_id = int(dlg.cam_choice.GetString(dlg.cam_choice.Selection).split(' ')[0])
+                    points = int(dlg.points_ctrl.GetValue())
+
+                    start = glm.vec3(dlg.start_x_ctrl.num_value,
+                                     dlg.start_y_ctrl.num_value,
+                                     dlg.start_z_ctrl.num_value)
+                    end = glm.vec3(dlg.end_x_ctrl.num_value,
+                                   dlg.end_y_ctrl.num_value,
+                                   dlg.end_z_ctrl.num_value)
+                    vertices, count = create_line(start, end, points)
+
+                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                                      dlg.lookat_y_ctrl.num_value,
+                                      dlg.lookat_z_ctrl.num_value)
+
+                    self._extend_actions(vertices, count, lookat)
 
         elif event.Id == PathIds.POINT.value:
             with _PathgenPoint(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
+                    logging.debug('POINT added')
                     device_id = int(dlg.cam_choice.GetString(dlg.cam_choice.Selection).split(' ')[0])
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
+                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                                      dlg.lookat_y_ctrl.num_value,
+                                      dlg.lookat_z_ctrl.num_value)
 
-                    self.core.actions.extend([
-                        Action(ActionType.G0, device_id, 5, [x, y, z,
-                            math.atan2(z, x) + math.pi,
-                            math.atan(y/math.sqrt(x * x + z * z))]),
-                        Action(ActionType.C0, device_id)
-                    ])
+                    self._extend_actions((x, y, z), 1, lookat)
+
+    def _extend_actions(self, vertices, count: int, lookat: glm.vec3, *args) -> None:
+        """Extend core actions list by given vertices.
+
+        TODO: Add smart divide between camera groups
+
+        Args:
+            vertices: A flattened list of vertices, where length = count * 3.
+            count: An integer representing the number of vertices.
+            lookat: A glm.vec3 representing the lookat point in space.
+        """
+        new_actions = []
+        for i in range(count):
+            x, y, z = vertices[i * 3:i * 3 + 3]
+            dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
+            pan = math.atan2(dz, dx) + math.pi
+            tilt = math.atan(dy / math.sqrt(dx * dx + dz * dz))
+
+            new_actions.extend((
+                Action(ActionType.G0, 0, 5, [x, y, z, pan, tilt]),
+                Action(ActionType.C0, 0),
+            ))
+
+        self.core.actions.extend(new_actions)
+
 
     def __del__(self) -> None:
         pass
@@ -285,6 +304,7 @@ class _PathgenCylinder(wx.Dialog):
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
@@ -380,6 +400,7 @@ class _PathgenHelix(wx.Dialog):
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
             return
@@ -459,6 +480,7 @@ class _PathgenSphere(wx.Dialog):
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
         if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
             self.z_div_ctrl.Value == ''):
             return
@@ -481,23 +503,29 @@ class _PathgenLine(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(8, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.cam_choice = wx.Choice(self, choices=self._camera_choices)
         self.start_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.start_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.start_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.end_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.end_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.end_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
+        self.lookat_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -516,6 +544,12 @@ class _PathgenLine(wx.Dialog):
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Number of Points:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
@@ -541,6 +575,7 @@ class _PathgenLine(wx.Dialog):
         self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
         if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
             self.points_ctrl.Value == ''):
             return
@@ -563,16 +598,22 @@ class _PathgenPoint(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(4, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(7, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.cam_choice = wx.Choice(self, choices=self._camera_choices)
         self.x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -583,6 +624,12 @@ class _PathgenPoint(wx.Dialog):
             (self.y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
@@ -608,6 +655,7 @@ class _PathgenPoint(wx.Dialog):
         self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
         if (self.cam_choice.CurrentSelection == wx.NOT_FOUND):
             return
 
