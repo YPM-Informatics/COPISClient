@@ -17,6 +17,7 @@
 
 import logging
 import math
+from typing import Optional
 
 import glm
 import numpy as np
@@ -95,7 +96,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat)
+                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
 
         elif event.Id == PathIds.HELIX.value:
             with _PathgenHelix(self) as dlg:
@@ -118,7 +119,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat)
+                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
 
         elif event.Id == PathIds.SPHERE.value:
             with _PathgenSphere(self) as dlg:
@@ -138,7 +139,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
                         v, c = create_circle(
                             glm.vec3(dlg.center_x_ctrl.num_value,
-                                     z + dlg.center_y_ctrl.num_value,
+                                     dlg.center_y_ctrl.num_value + z,
                                      dlg.center_z_ctrl.num_value),
                             glm.vec3(0, 1, 0), r, num)
                         vertices.extend(v[:-3].tolist())
@@ -148,7 +149,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.center_y_ctrl.num_value,
                                       dlg.center_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat)
+                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
 
         elif event.Id == PathIds.LINE.value:
             with _PathgenLine(self) as dlg:
@@ -169,7 +170,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat)
+                    self._extend_actions(vertices, count, lookat, device_id=device_id)
 
         elif event.Id == PathIds.POINT.value:
             with _PathgenPoint(self) as dlg:
@@ -183,9 +184,14 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions((x, y, z), 1, lookat)
+                    self._extend_actions((x, y, z), 1, lookat, device_id=device_id)
 
-    def _extend_actions(self, vertices, count: int, lookat: glm.vec3, *args) -> None:
+    def _extend_actions(self,
+                        vertices,
+                        count: int,
+                        lookat: glm.vec3,
+                        cam_group: Optional[int] = None,
+                        device_id: Optional[int] = None) -> None:
         """Extend core actions list by given vertices.
 
         TODO: Add smart divide between camera groups
@@ -200,15 +206,31 @@ class PathgenToolbar(aui.AuiToolBar):
             x, y, z = vertices[i * 3:i * 3 + 3]
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
             pan = math.atan2(dz, dx) + math.pi
-            tilt = math.atan(dy / math.sqrt(dx * dx + dz * dz))
+            d2z2 = dx * dx + dz * dz
+            tilt = 0.0 if d2z2 == 0 else math.atan(dy / math.sqrt(dx * dx + dz * dz))
+
+            device = 0
+            # TODO: temporary hack to divvy up points
+            if cam_group is not None:
+                if cam_group == 2:
+                    device = 0 if y > 0 else 1
+                elif cam_group == 4:
+                    if y < 0:     device += 2
+                    if x > 0:     device += 1
+                elif cam_group == 6:
+                    if y < 0:     device += 3
+                    if x > 60:    device += 2
+                    elif x > -60: device += 1
+            elif device_id is not None:
+                device = device_id
 
             new_actions.extend((
-                Action(ActionType.G0, 0, 5, [x, y, z, pan, tilt]),
-                Action(ActionType.C0, 0),
+                Action(ActionType.G0, device, 5, [x, y, z, pan, tilt]),
+                Action(ActionType.C0, device),
             ))
 
+        # extend core actions list
         self.core.actions.extend(new_actions)
-
 
     def __del__(self) -> None:
         pass
@@ -222,7 +244,7 @@ class _PathgenCylinder(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('123456')
+        self._camera_num_choices = list('1246')
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -239,9 +261,9 @@ class _PathgenCylinder(wx.Dialog):
         self.base_z_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.height_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.lookat_x_ctrl = FancyTextCtrl(
@@ -276,7 +298,7 @@ class _PathgenCylinder(wx.Dialog):
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
-        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.Add(options_grid, 1, wx.ALL|wx.EXPAND, 4)
         self.Sizer.AddSpacer(8)
 
         # ---
@@ -318,7 +340,7 @@ class _PathgenHelix(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('123456')
+        self._camera_num_choices = list('1246')
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -335,9 +357,9 @@ class _PathgenHelix(wx.Dialog):
         self.base_z_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.height_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.rotation_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.lookat_x_ctrl = FancyTextCtrl(
@@ -414,7 +436,7 @@ class _PathgenSphere(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('123456')
+        self._camera_num_choices = list('1246')
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -431,10 +453,10 @@ class _PathgenSphere(wx.Dialog):
         self.center_z_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.distance_ctrl = FancyTextCtrl(
-            self, size=(48, -1), max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=10, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -570,6 +592,7 @@ class _PathgenLine(wx.Dialog):
         # ---
 
         self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
