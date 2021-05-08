@@ -162,10 +162,11 @@ class COPISCore:
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
-        # self._proxies: List[Proxy] = []
+        # self._proxies: List[Proxy] = MonitoredList([], 'core_proxy_list_changed')
         self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
         self._store = Store()
+
         self._update_devices()
 
         self._selected_points: List[int] = []
@@ -415,42 +416,6 @@ class COPISCore:
             Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
             Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
         ])
-
-    def _update_test(self) -> None:
-        """Populates action list manually as a test.
-
-        TODO: Get rid of this when auto path generation is implemented.
-        """
-
-        heights = (-90, -45, 0, 45, 90)
-        radius = 180
-        every = 80
-
-        # generate a sphere (for testing)
-        for i in heights:
-            r = math.sqrt(radius * radius - i * i)
-            num = int(2 * math.pi * r / every)
-            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
-
-            for j in range(count - 1):
-                point5 = [
-                    path[j * 3],
-                    path[j * 3 + 1],
-                    path[j * 3 + 2],
-                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-                # temporary hack to divvy ids
-                rand_device = 0
-                if path[j * 3 + 1] < 0:
-                    rand_device += 3
-                if path[j * 3] > 60:
-                    rand_device += 2
-                elif path[j * 3] > -60:
-                    rand_device += 1
-
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
 
     # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
     #     new = Proxy(proxy_type, proxy_name, position, length, height)
