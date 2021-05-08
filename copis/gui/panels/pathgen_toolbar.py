@@ -39,10 +39,7 @@ class PathgenToolbar(aui.AuiToolBar):
         self.parent = parent
         self.core = self.parent.c
 
-        self.serial_controller = None
-
         self._path_dialogs = {}
-
         self.init_toolbar()
 
         self.Bind(wx.EVT_TOOL, self.on_tool_selected)
