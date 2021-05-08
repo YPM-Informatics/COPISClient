@@ -49,7 +49,6 @@ class COPISApp(wx.App):
         self.mainwindow.Show()
 
 
-
 if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
