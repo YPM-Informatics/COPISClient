@@ -24,9 +24,9 @@ from copis.gui.about import AboutDialog
 from copis.gui.panels.console import ConsolePanel
 from copis.gui.panels.controller import ControllerPanel
 from copis.gui.panels.evf import EvfPanel
+from copis.gui.panels.machine_toolbar import MachineToolbar
 from copis.gui.panels.pathgen_toolbar import PathgenToolbar
 from copis.gui.panels.properties import PropertiesPanel
-from copis.gui.panels.serial_toolbar import SerialToolbar
 from copis.gui.panels.timeline import TimelinePanel
 from copis.gui.panels.visualizer import VisualizerPanel
 from copis.gui.pref_frame import PreferenceFrame
@@ -52,7 +52,7 @@ class MainWindow(wx.Frame):
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
         visualizer_panel: A pointer to the visualizer panel.
-        serial_toolbar: A pointer to the serial toolbar.
+        machine_toolbar: A pointer to the machine toolbar.
         pathgen_toolbar: A pointer to the pathgen toolbar.
     """
 
@@ -406,7 +406,7 @@ class MainWindow(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
-        self.panels['serial_toolbar'] = SerialToolbar(self)
+        self.panels['machine_toolbar'] = MachineToolbar(self)
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
         # add visualizer panel
@@ -441,10 +441,10 @@ class MainWindow(wx.Frame):
             notebook.SetSelection(0)
 
         # add toolbar panels
-        self.panels['serial_toolbar'].Realize()
+        self.panels['machine_toolbar'].Realize()
         self._mgr.AddPane(
-            self.panels['serial_toolbar'],
-            aui.AuiPaneInfo().Name('serial_toolbar').Caption('Serial Toolbar').
+            self.panels['machine_toolbar'],
+            aui.AuiPaneInfo().Name('machine_toolbar').Caption('Machine Toolbar').
             ToolbarPane().BottomDockable(False).Top().Layer(10))
         self.panels['pathgen_toolbar'].Realize()
         self._mgr.AddPane(
@@ -547,8 +547,8 @@ class MainWindow(wx.Frame):
         return self.panels['visualizer']
 
     @property
-    def serial_toolbar(self) -> SerialToolbar:
-        return self.panels['serial_toolbar']
+    def machine_toolbar(self) -> MachineToolbar:
+        return self.panels['machine_toolbar']
 
     @property
     def pathgen_toolbar(self) -> PathgenToolbar:
