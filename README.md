@@ -33,9 +33,10 @@ Or, using the start script in that folder, run:
 python copisclient.py
 ```
 *Note: These 2 commands can be run from any folder in the project directory tree.*
-### Configuration File
+### Configuration Files
 
-The configuration file `config.ini` contains initialization settings.
+* `config.ini` contains initialization settings.
+* `machine.ini` contains settings for the imaging instrument.
 
 ## License
 
