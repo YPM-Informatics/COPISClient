@@ -15,7 +15,11 @@
 
 """Store all enums."""
 
+from dataclasses import dataclass
 from enum import Enum, IntEnum, auto, unique
+from typing import Any, List, Optional, Tuple
+
+from copis.helpers import Point3, Point5
 
 
 class ToolIds(Enum):
@@ -24,6 +28,14 @@ class ToolIds(Enum):
     STOP = 3
     SETTINGS = 4
     EXPORT = 5
+
+
+class PathIds(Enum):
+    CYLINDER = auto()
+    HELIX = auto()
+    SPHERE = auto()
+    LINE = auto()
+    POINT = auto()
 
 
 class CamAxis(Enum):
@@ -82,3 +94,36 @@ class ActionType(Enum):
 class DebugEnv(Enum):
     PROD = 'prod'
     DEV = 'dev'
+
+
+@dataclass
+class Action:
+    """Action dataclass"""
+    atype: ActionType = ActionType.NONE
+    device: int = -1
+    argc: int = 0
+    args: Optional[List[Any]] = None
+
+
+@dataclass
+class Proxy:
+    """Proxy dataclass"""
+    proxy_type: int = 0
+    proxy_name: str = ''
+    position: Optional[List[Any]] = None
+    length: int = 10
+    height: int = 10
+
+
+@dataclass
+class Device:
+    """Device dataclass"""
+    device_id: int = 0
+    device_name: str = ''
+    device_type: str = ''
+    interfaces: Optional[List[str]] = None
+    position: Point5 = Point5()
+    home_position: Point5 = Point5()
+    max_feed_rates: Point5 = Point5()
+    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
+    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())

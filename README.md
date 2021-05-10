@@ -26,16 +26,17 @@ __Note: This project supports Python version 3.x.x.__
 
 To start the application from the project root, run:
 ```bash
-`python copis/client.py`
+python copis/client.py
 ```
-Or, using the start script in that folder; run:
+Or, using the start script in that folder, run:
 ```bash
-`python copisclient.py`
+python copisclient.py
 ```
-__Note: These 2 commands can be run from any folder in the project directory tree__
-### Configuration File
+*Note: These 2 commands can be run from any folder in the project directory tree.*
+### Configuration Files
 
-The configuration file `config.ini` contains initialization settings.
+* `config.ini` contains initialization settings.
+* `machine.ini` contains settings for the imaging instrument.
 
 ## License
 

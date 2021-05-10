@@ -15,8 +15,7 @@
 
 """VisualizerPanel class."""
 
-from gl.glcanvas import GLCanvas3D
-from typing import List, Optional
+from copis.gl.glcanvas import GLCanvas3D
 
 import wx
 
@@ -43,8 +42,8 @@ class VisualizerPanel(wx.Panel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._selected_cam = None
-        self._build_dimensions = [400, 400, 400, 200, 200, 200]
+        self._selected_cam = NotImplemented
+        self._build_dimensions = [400, 400, 400, 200, 200, 200] # chamberdims
         self.zoom_slider = None
 
         self._glcanvas = GLCanvas3D(

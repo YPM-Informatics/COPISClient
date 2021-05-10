@@ -26,6 +26,7 @@ from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
+
 class LocalEDSDK():
     """Implement EDSDK Functionalities"""
     _object_handler = _property_handler = _state_handler = object
@@ -118,13 +119,10 @@ class LocalEDSDK():
 
         self._edsdk.EdsSetObjectEventHandler(
             cam_ref, self._edsdk.ObjectEvent_All, LocalEDSDK._object_handler, None)
-
         self._edsdk.EdsSetPropertyEventHandler(
             cam_ref, self._edsdk.PropertyEvent_All, LocalEDSDK._property_handler, cam_ref)
-
         self._edsdk.EdsSetCameraStateEventHandler(
             cam_ref, self._edsdk.StateEvent_All, LocalEDSDK._state_handler, cam_ref)
-
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 

@@ -13,23 +13,23 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""ToolbarPanel class."""
+"""MachineToolbar class."""
 
 import logging
 
 import wx
 import wx.lib.agw.aui as aui
-from enums import ToolIds
-from gui.settings_frame import SettingsFrame
-from gui.wxutils import create_scaled_bitmap, set_dialog
-from coms.serial_controller import SerialController
+from copis.enums import ToolIds
+from copis.gui.settings_frame import SettingsFrame
+from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.coms.serial_controller import SerialController
 
 
-class ToolbarPanel(aui.AuiToolBar):
+class MachineToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits ToolbarPanel with constructors."""
+        """Inits MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent

@@ -16,14 +16,14 @@
 """PropertiesPanel class."""
 
 import math
-import re
-from typing import Any, List, Optional, Union
-from helpers import xyz_units, pt_units
+from typing import List, Union
+from copis.helpers import xyz_units, pt_units
 
 import wx
 import wx.lib.scrolledpanel as scrolled
-from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
-                         create_scaled_bitmap, simple_statictext)
+from copis.gui.wxutils import (
+    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+    create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
 
 
@@ -215,20 +215,15 @@ class _PropTransform(wx.Panel):
         grid.AddGrowableCol(3, 0)
 
         self.x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='x', default_unit='mm', unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='y', default_unit='mm', unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='z', default_unit='mm', unit_conversions=xyz_units)
         self.p_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p',
-            default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='p', default_unit='dd', unit_conversions=pt_units)
         self.t_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t',
-            default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='t', default_unit='dd', unit_conversions=pt_units)
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
@@ -259,11 +254,9 @@ class _PropTransform(wx.Panel):
         self._step_sizer.AddSpacer(8)
 
         self.xyz_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
-            max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='xyz_step', max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.pt_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
-            max_precision=0, default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='pt_step', max_precision=0, default_unit='dd', unit_conversions=pt_units)
 
         step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)

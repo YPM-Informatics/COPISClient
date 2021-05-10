@@ -31,7 +31,7 @@ class EvfPanel(wx.Panel):
         """Inits EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
-        self.c = self.parent.c
+        self.c = self.parent.core
         # self.timer = wx.CallLater(10, self.update)
 
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM

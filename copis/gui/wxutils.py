@@ -22,7 +22,7 @@ import wx
 import wx.lib.newevent
 import wx.svg as svg
 
-from helpers import find_path
+from copis.helpers import find_path
 
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
@@ -75,6 +75,8 @@ class FancyTextCtrl(wx.TextCtrl):
                  unit_conversions, **kwargs):
         """Inits FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
+        self.WindowStyle = wx.TE_PROCESS_ENTER
+
         self._num_value = num_value
         self._max_precision = max_precision
         self._units = dict(unit_conversions)
@@ -122,6 +124,7 @@ class FancyTextCtrl(wx.TextCtrl):
     def on_text_enter(self, event: wx.CommandEvent) -> None:
         """On EVT_TEXT_ENTER, process the updated value."""
         if not self._text_dirty:
+            self.Navigate()
             return
 
         regex = re.findall(rf'(-?\d*\.?\d+)\s*({"|".join(self._units.keys())})?', self.Value)
@@ -139,7 +142,10 @@ class FancyTextCtrl(wx.TextCtrl):
         evt = FancyTextUpdatedEvent()
         # wxPython is dumb. WHY DOESN'T evt.EventObject = self WORK??????
         evt.SetEventObject(self)
+
+        self.SelectNone()
         wx.PostEvent(self, evt)
+        self.Navigate()
 
     def _update_value(self) -> None:
         """Update control text."""
