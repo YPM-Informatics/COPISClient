@@ -199,6 +199,7 @@ class GLActionVis:
         self._num_points = 0
 
         for i, action in enumerate(self.core.actions):
+
             if action.atype in (ActionType.G0, ActionType.G1):
                 self._items['line'][action.device].append((self._num_devices + i, xyzpt_to_mat4(*action.args)))
 

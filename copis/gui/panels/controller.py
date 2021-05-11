@@ -152,6 +152,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         y_pos_btn = wx.Button(jog_sizer.StaticBox, label='Y+', size=(24, 24))
         y_neg_btn = wx.Button(jog_sizer.StaticBox, label='Y-', size=(24, 24))
         xy_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('keyboard', 24), size=(24, 24))
+        xy_btn.Disable() # TODO: implement keyboard jog
         z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24))
         z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24))
 

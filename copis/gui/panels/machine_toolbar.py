@@ -20,7 +20,7 @@ import logging
 import wx
 import wx.lib.agw.aui as aui
 from copis.enums import ToolIds
-from copis.gui.settings_frame import SettingsFrame
+from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 from copis.coms.serial_controller import SerialController
 
@@ -83,11 +83,13 @@ class MachineToolbar(aui.AuiToolBar):
         _bmp = create_scaled_bitmap('get_app', 24)
         self.AddTool(ToolIds.EXPORT.value, 'Export', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Export actions as text')
 
-        self.AddSeparator()
+        # TODO: implement settings dialog, uncomment below
 
-        # add settings tool
-        _bmp = create_scaled_bitmap('settings', 24)
-        self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
+        # self.AddSeparator()
+
+        # # add settings tool
+        # _bmp = create_scaled_bitmap('settings', 24)
+        # self.AddTool(ToolIds.SETTINGS.value, 'Settings', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Edit simulation settings')
 
     def on_refresh_port(self, event: wx.CommandEvent) -> None:
         """On refresh button pressed, update baud combobox."""
@@ -150,8 +152,8 @@ class MachineToolbar(aui.AuiToolBar):
             self.core.cancel_imaging()
 
         elif event.Id == ToolIds.SETTINGS.value:
-            settings_frame = SettingsFrame(self)
-            settings_frame.Show()
+            with MachineSettingsDialog(self) as dlg:
+                logging.debug('Machine Settings opened')
 
         elif event.Id == ToolIds.EXPORT.value:
             self.core.export_actions('actions.txt')

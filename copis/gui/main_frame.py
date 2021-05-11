@@ -113,9 +113,6 @@ class MainWindow(wx.Frame):
                 - &Save                     Ctrl+S
                 - &Save As...               Ctrl+Shift+S
                 ---
-                - &Import GCODE...
-                - &Generate GCODE...        F8
-                ---
                 - E&xit                     Alt+F4
             - &Edit
                 - &Keyboard Shortcuts...
@@ -165,13 +162,13 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
         file_menu.AppendSeparator()
 
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Import GCODE...', '')
-        _item.Bitmap = create_scaled_bitmap('get_app', 16)
-        self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
-        _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
-        _item.Bitmap = create_scaled_bitmap('publish', 16)
-        self.Bind(wx.EVT_MENU, self.on_export, file_menu.Append(_item))
-        file_menu.AppendSeparator()
+        # _item = wx.MenuItem(None, wx.ID_ANY, '&Import GCODE...', '')
+        # _item.Bitmap = create_scaled_bitmap('get_app', 16)
+        # self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
+        # _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
+        # _item.Bitmap = create_scaled_bitmap('publish', 16)
+        # self.Bind(wx.EVT_MENU, self.on_export, file_menu.Append(_item))
+        # file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
         _item.Bitmap = create_scaled_bitmap('exit_to_app', 16)
@@ -246,9 +243,7 @@ class MainWindow(wx.Frame):
         self.SetMenuBar(self._menubar)
 
     def on_new_project(self, event: wx.CommandEvent) -> None:
-        """TODO: Implement project file/directory creation
-        """
-        wx.GetApp().c.clear_action()
+        """TODO: Implement project file/directory creation """
         pass
 
     def on_open(self, event: wx.CommandEvent) -> None:
@@ -277,13 +272,13 @@ class MainWindow(wx.Frame):
     def on_save(self, event: wx.CommandEvent) -> None:
         """Open 'save' dialog.
 
-        TODO: Implement saving file/directory to disk
+        TODO: Implement saving with projects
         """
 
     def on_save_as(self, event: wx.CommandEvent) -> None:
         """Open 'save as' dialog.
 
-         TODO: Implement saving as file/directory to disk
+         TODO: Implement saving as with projects
         """
         with wx.FileDialog(
             self, 'Save Project As', wildcard = self._FILE_DIALOG_WILDCARD,
@@ -301,14 +296,13 @@ class MainWindow(wx.Frame):
                 wx.LogError(f'Could not save in file "{path}".')
 
     def on_export(self, event: wx.CommandEvent) -> None:
-        """Export action list as series of gcode commands
-        """
-        wx.GetApp().c.export_actions("./test.copis")
+        """Export action list as series of gcode commands"""
+        self.core.export_actions("./test.copis")
 
     def do_save_project(self, path) -> None:
         """Save project to file Path. TODO: Implement"""
         self.project_dirty = False
-        wx.GetApp().c.export_actions(path)
+        self._store.save(path, self.core.actions)
 
     def do_load_project(self, path) -> None:
         """Load project from file Path. TODO: Implement"""
@@ -319,10 +313,7 @@ class MainWindow(wx.Frame):
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Update status bar visibility based on menu item."""
-        if event.IsChecked():
-            self.StatusBar.Show()
-        else:
-            self.StatusBar.Hide() # or .Show(False)
+        self.StatusBar.Show(event.IsChecked())
         self._mgr.Update()
 
     def update_menubar(self) -> None:
