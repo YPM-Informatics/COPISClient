@@ -16,14 +16,14 @@
 """PropertiesPanel class."""
 
 import math
-import re
-from typing import Any, List, Optional, Union
-from helpers import xyz_units, pt_units
+from typing import List, Union
+from copis.helpers import xyz_units, pt_units
 
 import wx
 import wx.lib.scrolledpanel as scrolled
-from gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
-                         create_scaled_bitmap, simple_statictext)
+from copis.gui.wxutils import (
+    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+    create_scaled_bitmap, simple_statictext)
 from pydispatch import dispatcher
 
 
@@ -49,7 +49,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """Inits PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
-        self.c = self.parent.c
+        self.core = self.parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -125,7 +125,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.c.actions[points[0] - len(self.c.devices)]
+            action = self.core.actions[points[0] - len(self.core.devices)]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
@@ -215,20 +215,15 @@ class _PropTransform(wx.Panel):
         grid.AddGrowableCol(3, 0)
 
         self.x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='x',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='x', default_unit='mm', unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='y',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='y', default_unit='mm', unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='z',
-            default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='z', default_unit='mm', unit_conversions=xyz_units)
         self.p_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='p',
-            default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='p', default_unit='dd', unit_conversions=pt_units)
         self.t_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='t',
-            default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='t', default_unit='dd', unit_conversions=pt_units)
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
@@ -259,11 +254,9 @@ class _PropTransform(wx.Panel):
         self._step_sizer.AddSpacer(8)
 
         self.xyz_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
-            max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='xyz_step', max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.pt_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
-            max_precision=0, default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='pt_step', max_precision=0, default_unit='dd', unit_conversions=pt_units)
 
         step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)
@@ -352,7 +345,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -361,7 +354,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.c.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""
@@ -617,13 +610,13 @@ class _PropCameraConfig(wx.Panel):
             self.ptp_rbh.Value = False
             self.ptp_rbh.Disable()
 
-            if self.parent.c.edsdk_enabled:
-                self.parent.c.terminate_edsdk()
+            if self.parent.core.edsdk_enabled:
+                self.parent.core.terminate_edsdk()
         elif rb.Label == 'EDSDK':
-            self.parent.c.init_edsdk()
+            self.parent.core.init_edsdk()
         else:
-            if self.parent.c.edsdk_enabled:
-                self.parent.c.terminate_edsdk()
+            if self.parent.core.edsdk_enabled:
+                self.parent.core.terminate_edsdk()
 
     def on_take_picture(self, event: wx.CommandEvent) -> None:
         """ Take picture.
@@ -632,8 +625,8 @@ class _PropCameraConfig(wx.Panel):
         """
         return
         # camera = self.main_combo.Selection
-        # if self.parent.c.get_selected_camera() is not None:
-        #     self.parent.c.get_selected_camera().shoot()
+        # if self.parent.core.get_selected_camera() is not None:
+        #     self.parent.core.get_selected_camera().shoot()
         # else:
         #     set_dialog('Please select the camera to take a picture.')
 
@@ -641,8 +634,8 @@ class _PropCameraConfig(wx.Panel):
         """TODO: implement when edsdk is fully implemented in copiscore.
         """
         return
-        # if self.parent.c.get_selected_camera() is not None:
-        #     self.parent.c.get_selected_camera().startEvf()
+        # if self.parent.core.get_selected_camera() is not None:
+        #     self.parent.core.get_selected_camera().startEvf()
         #     self.parent.add_evf_pane()
         # else:
         #     set_dialog('Please select the camera to start live view.')

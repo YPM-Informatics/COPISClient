@@ -13,27 +13,27 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""ToolbarPanel class."""
+"""MachineToolbar class."""
 
 import logging
 
 import wx
 import wx.lib.agw.aui as aui
-from enums import ToolIds
-from gui.settings_frame import SettingsFrame
-from gui.wxutils import create_scaled_bitmap, set_dialog
-from coms.serial_controller import SerialController
+from copis.enums import ToolIds
+from copis.gui.settings_frame import SettingsFrame
+from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.coms.serial_controller import SerialController
 
 
-class ToolbarPanel(aui.AuiToolBar):
+class MachineToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits ToolbarPanel with constructors."""
+        """Inits MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
-        self.c = self.parent.c
+        self.core = self.parent.core
 
         self.serial_controller = None
 
@@ -113,13 +113,13 @@ class ToolbarPanel(aui.AuiToolBar):
                 connect_btn.Label = 'Connect'
 
                 # disconnected
-                self.c.disconnect()
+                self.core.disconnect()
             else:
                 self.serial_controller.selected_serial.open()
                 connect_btn.Label = 'Disconnect'
 
                 # connected
-                self.c.connect()
+                self.core.connect()
         else:
             set_dialog('Please select a port to connect to.')
 
@@ -138,23 +138,23 @@ class ToolbarPanel(aui.AuiToolBar):
         TODO: Link with copiscore when implemented.
         """
         if event.Id == ToolIds.PLAY.value:
-            if self.c.paused:
-                self.c.resume()
+            if self.core.paused:
+                self.core.resume()
             else:
-                self.c.start_imaging()
+                self.core.start_imaging()
 
         elif event.Id == ToolIds.PAUSE.value:
-            self.c.pause()
+            self.core.pause()
 
         elif event.Id == ToolIds.STOP.value:
-            self.c.cancel_imaging()
+            self.core.cancel_imaging()
 
         elif event.Id == ToolIds.SETTINGS.value:
             settings_frame = SettingsFrame(self)
             settings_frame.Show()
 
         elif event.Id == ToolIds.EXPORT.value:
-            self.c.export_actions('actions.txt')
+            self.core.export_actions('actions.txt')
 
     def __del__(self) -> None:
         pass

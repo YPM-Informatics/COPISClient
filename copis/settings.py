@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # This file is part of COPISClient.
 #
 # COPISClient is free software: you can redistribute it and/or modify
@@ -15,23 +13,31 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Console command processor. Headless.
+from dataclasses import dataclass
 
-Ignore; currently unused.
+from enums import DebugEnv
 
-TODO: The entire thing is a todo
-"""
+@dataclass
+class Settings:
+    """Configuration settings data structure"""
+    debug_env: DebugEnv
 
-import cmd
+    app_window_width: int
+    app_window_height: int
 
-from copis.core import COPISCore
+    devices: list
 
-
-class COPISConsole(cmd.Cmd):
-    """COPISConsole."""
-
-    def __init__(self):
-        cmd.Cmd.__init__(self)
-
-        self.c = COPISCore()
+    def as_dict(self):
+        """Return a dictionary representation of a Settings instance."""
+        return {
+            'AppWindow': {
+                'width': self.app_window_width,
+                'height': self.app_window_height
+            },
+            'Debug': {
+                'env': self.debug_env
+            },
+            'Devices': {
+                'items': "\n".join(self.devices)
+            }
+        }

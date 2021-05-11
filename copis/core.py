@@ -26,22 +26,20 @@ import logging
 import math
 import os
 import platform
-import queue
-import random
 import threading
 import time
-from dataclasses import dataclass
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import glm
 from pydispatch import dispatcher
 
-from enums import ActionType
-from gl.glutils import get_circle, get_helix
-from helpers import Point3, Point5
+from copis.enums import Action, ActionType, Device, Proxy
+from copis.gl.glutils import get_circle
+from copis.helpers import Point3, Point5
+from copis.store import Store
 
 
 def locked(f):
@@ -52,71 +50,63 @@ def locked(f):
     inner.lock = threading.Lock()
     return inner
 
+
 class MonitoredList(list):
-    """Monitored list. Just a regular list, but sends notificiations when
+    """Monitored list. Just a regular list, but sends notifications when
     changed or modified.
     """
+
     def __init__(self, iterable, signal: str) -> None:
         super().__init__(iterable)
         self.signal = signal
 
     def clear(self) -> None:
         super().clear()
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def append(self, __object) -> None:
         super().append(__object)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def extend(self, __iterable) -> None:
         super().extend(__iterable)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def pop(self, __index: int):
         value = super().pop(__index)
-        dispatcher.send(self.signal)
+        self._dispatch()
         return value
 
     def insert(self, __index: int, __object) -> None:
         super().insert(__index, __object)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def remove(self, __value) -> None:
         super().remove(__value)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def reverse(self) -> None:
         super().reverse()
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def __setitem__(self, key, value) -> None:
         super().__setitem__(key, value)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
     def __delitem__(self, key) -> None:
         super().__delitem__(key)
-        dispatcher.send(self.signal)
+        self._dispatch()
 
+    def _dispatch(self) -> None:
+        """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
+        '__iterable' even before the object's instance attributes are set. This causes dispatching
+        to fail while unpickling the object because 'signal' does not yet exist. But dispatching
+        does not need to happen for an object being unpickled because it's just a monitored list
+        being restored and not technically being actively changed. Besides, there is no need to
+        dispatch if there's no registered signal."""
 
-@dataclass
-class Device:
-    device_id: int = 0
-    device_name: str = ''
-    device_type: str = ''
-    interfaces: Optional[List[str]] = None
-    position: Point5 = Point5()
-    home_position: Point5 = Point5()
-    max_feed_rates: Point5 = Point5()
-    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-
-
-@dataclass
-class Action:
-    atype: ActionType = ActionType.NONE
-    device: int = -1
-    argc: int = 0
-    args: Optional[List[Any]] = None
+        if 'signal' in self.__dict__:
+            dispatcher.send(self.signal)
 
 
 class COPISCore:
@@ -171,9 +161,13 @@ class COPISCore:
 
         self._mainqueue = None
         self._sidequeue = Queue(0)
-        self._actions: List[Action] = []
+
+        # self._proxies: List[Proxy] = MonitoredList([], 'core_proxy_list_changed')
+        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
-        self._update_test()
+        self._store = Store()
+
+        self._update_devices()
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
@@ -207,7 +201,7 @@ class COPISCore:
             name='read thread')
         self.read_thread.start()
         self._start_sender()
-        
+
         dispatcher.send('core_message', message='Connected to device')
 
     def reset(self) -> None:
@@ -412,61 +406,8 @@ class COPISCore:
     # Action and device data methods
     # --------------------------------------------------------------------------
 
-    def _update_test(self) -> None:
-        """Populates action list manually as a test.
-
-        TODO: Get rid of this when auto path generation is implemented.
-        """
-        
-        # logging.debug('Populating test action list')
-        # self._actions.extend([
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        #     Action(ActionType.C0, 0),
-        #     Action(ActionType.C0, 1),
-        # ])
-
-        # self._devices.extend([
-        #     Device(0, 'Camera A', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 100, 100)),
-        #     Device(1, 'Camera B', 'Canon EOS 80D', ['PC_EDSDK'], Point5(100, 23.222, 100)),
-        # ])
-
-        heights = (-90, -45, 0, 45, 90)
-        radius = 180
-        every = 80
-
-        # generate a sphere (for testing)
-        for i in heights:
-            r = math.sqrt(radius * radius - i * i)
-            num = int(2 * math.pi * r / every)
-            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, num)
-
-            for j in range(count - 1):
-                point5 = [
-                    path[j * 3],
-                    path[j * 3 + 1],
-                    path[j * 3 + 2],
-                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-                # temporary hack to divvy ids
-                rand_device = 0
-                if path[j * 3 + 1] < 0:
-                    rand_device += 3
-                if path[j * 3] > 60:
-                    rand_device += 2
-                elif path[j * 3] > -60:
-                    rand_device += 1
-
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
-
+    def _update_devices(self) -> None:
+        self._devices.clear()
         self._devices.extend([
             Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
             Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
@@ -475,6 +416,23 @@ class COPISCore:
             Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
             Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
         ])
+
+    # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
+    #     new = Proxy(proxy_type, proxy_name, position, length, height)
+    #     self._proxies.append(new)
+    #     dispatcher.send('core_proxy_list_changed')
+    #     return True
+
+    # def remove_proxy(self, index: int) -> Proxy:
+    #     """Remove a proxy object given its index in the proxy list"""
+    #     proxy = self._proxies.pop(index)
+    #     dispatcher.send('core_proxy_list_changed')
+    #     return proxy
+
+    # def clear_proxy(self) -> None:
+    #     self._proxies.clear()
+    #     dispatcher.send('core_proxy_list_changed')
+
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""
@@ -578,6 +536,7 @@ class COPISCore:
         TODO: Expand to include not just G0 and C0 actions
         """
         with open(filename, 'w') as file:
+            # pickle.dump(self._actions, file)
             for action in self._actions:
                 file.write('>' + str(action.device))
 
@@ -604,8 +563,7 @@ class COPISCore:
             return
 
         try:
-            import coms.edsdk_object
-            self._edsdk = coms.edsdk_object
+            self._edsdk = import_module('copis.coms.edsdk_object')
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
 
@@ -623,9 +581,11 @@ class COPISCore:
 
 
 class ConsoleOutput:
+    """Implements console output operations."""
 
     def __init__(self):
         return
 
     def print(self, msg: str) -> None:
+        """Dispatch a message to the console."""
         dispatcher.send('core_message', message=msg)

@@ -23,7 +23,9 @@ from typing import Tuple, Union
 
 import glm
 import numpy as np
-from enums import ViewCubePos, ViewCubeSize
+
+from copis.enums import ViewCubePos, ViewCubeSize
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
