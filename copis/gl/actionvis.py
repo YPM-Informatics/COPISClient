@@ -151,7 +151,8 @@ class GLActionVis:
 
             # if point is selected, darken its color
             for i, v in enumerate(value):
-                if v[0] in self.core.selected_points:
+                # un-offset ids
+                if (v[0] - self._num_devices) in self.core.selected_points:
                     new_colors[i] = shade_color(new_colors[i], 0.6)
 
             new_ids = [p[0] for p in value]
