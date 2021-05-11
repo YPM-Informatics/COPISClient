@@ -45,11 +45,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self._add_state_controls()
         self._add_jog_controls()
 
-        self.SetupScrolling(scroll_x=False)
-
         # start disabled, as no devices will be selected
         self.Disable()
         self.Layout()
+
+        self.SetupScrolling(scroll_x=False, scrollIntoView=False)
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
