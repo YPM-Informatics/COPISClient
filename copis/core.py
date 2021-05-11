@@ -106,6 +106,10 @@ class COPISCore:
         self.evf_thread = None
         self.init_edsdk()
 
+        self._serial_enabled = True
+        self._serial = None
+        self.init_serial()
+
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
@@ -479,7 +483,7 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
-        """Initialize Canon EDSDK connection."""
+        """Initializes Canon EDSDK connection."""
         if not self._edsdk_enabled:
             return
 
@@ -492,13 +496,24 @@ class COPISCore:
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
-        """Terminate Canon EDSDK connection."""
+        """Terminates Canon EDSDK connection."""
         if self._edsdk_enabled and self._edsdk is not None:
             self._edsdk.terminate()
+
+    def init_serial(self) -> None:
+        """Initializes serial connection."""
+
+    def terminate_serial(self):
+        """Terminates serial connection."""
 
     @property
     def edsdk(self):
         return self._edsdk
+
+    @property
+    def serial(self):
+        """get edsdk"""
+        return self._serial
 
 
 class ConsoleOutput:
