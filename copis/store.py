@@ -19,9 +19,9 @@ __version__ = ""
 
 import os
 import pickle
-
-from pathlib import PurePath
 from configparser import ConfigParser
+from pathlib import PurePath
+from typing import Optional
 
 from settings import Settings
 
@@ -61,12 +61,11 @@ class Store():
 
         self.save_config(parser)
 
-    def load_config(self) -> ConfigParser:
+    def load_config(self) -> Optional[ConfigParser]:
         """Load a configuration object from file"""
         if os.path.exists(self._config_path):
             parser = ConfigParser()
             parser.read(self._config_path)
-
             return parser
 
         return None

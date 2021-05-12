@@ -45,11 +45,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self._add_state_controls()
         self._add_jog_controls()
 
-        self.SetupScrolling(scroll_x=False)
-
         # start disabled, as no devices will be selected
         self.Disable()
         self.Layout()
+
+        self.SetupScrolling(scroll_x=False, scrollIntoView=False)
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
@@ -152,6 +152,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         y_pos_btn = wx.Button(jog_sizer.StaticBox, label='Y+', size=(24, 24))
         y_neg_btn = wx.Button(jog_sizer.StaticBox, label='Y-', size=(24, 24))
         xy_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('keyboard', 24), size=(24, 24))
+        xy_btn.Disable() # TODO: implement keyboard jog
         z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24))
         z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24))
 

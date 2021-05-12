@@ -444,7 +444,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 self.core.select_device(id_)
             else:
                 self.core.select_device(-1)
-                self.core.select_point(id_, clear=True)
+                # un-offset ids
+                self.core.select_point(id_ - self._id_offset, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
