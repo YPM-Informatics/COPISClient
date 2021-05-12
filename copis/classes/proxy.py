@@ -13,15 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS classes package"""
+"""Provides the COPIS Proxy Class"""
 
-from classes.device import Device
-from classes.bounds import Bounds
-from classes.chamber import Chamber
-from classes.settings import ConfigSettings, MachineSettings
-from classes.monitored_list import MonitoredList
-from classes.action import Action
-from classes.proxy import Proxy
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
-__all__ = ["Device", "Bounds", "Chamber", "ConfigSettings", "MachineSettings", "MonitoredList",
-            "Action", "Proxy"]
+@dataclass
+class Proxy:
+    """Data structure that implements an imaging proxy object"""
+    proxy_type: int = 0
+    proxy_name: str = ''
+    position: Optional[List[Any]] = None
+    length: int = 10
+    height: int = 10
