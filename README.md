@@ -26,11 +26,11 @@ __Note: This project supports Python version 3.x.x.__
 
 To start the application from the project root, run:
 ```bash
-python copis/client.py
-```
-Or, using the start script in that folder, run:
-```bash
 python copisclient.py
+```
+Or, as a module:
+```bash
+python -m copisclient
 ```
 *Note: These 2 commands can be run from any folder in the project directory tree.*
 ### Configuration Files
