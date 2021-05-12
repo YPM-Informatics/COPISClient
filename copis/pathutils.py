@@ -22,7 +22,7 @@ from typing import Tuple
 import numpy as np
 import glm
 
-from copis.mathutils import rotate_basis_to
+from .mathutils import rotate_basis_to
 
 
 def create_circle(p: glm.vec3,

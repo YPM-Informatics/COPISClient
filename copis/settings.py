@@ -15,7 +15,7 @@
 
 from dataclasses import dataclass
 
-from enums import DebugEnv
+from .enums import DebugEnv
 
 @dataclass
 class Settings:

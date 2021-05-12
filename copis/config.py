@@ -17,9 +17,9 @@ import os
 
 from configparser import ConfigParser
 
-from enums import DebugEnv
-from store import Store
-from settings import Settings
+from .enums import DebugEnv
+from .store import Store
+from .settings import Settings
 
 
 class Config():

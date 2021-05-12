@@ -23,7 +23,7 @@ from configparser import ConfigParser
 from pathlib import PurePath
 from typing import Optional
 
-from settings import Settings
+from .settings import Settings
 
 
 class Store():
