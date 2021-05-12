@@ -569,7 +569,6 @@ class COPISCore:
             self._edsdk.connect()
 
         except: # TODO: add better exception perhaps
-            print('fuck')
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
