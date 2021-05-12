@@ -32,7 +32,8 @@ from .wxutils import create_scaled_bitmap, set_dialog
 from copis.store import Store, load as store_load
 
 from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
-    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT)
+    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
+    AUI_BUTTON_STATE_PRESSED)
 
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
