@@ -17,13 +17,12 @@
 
 """Main COPIS App (GUI)."""
 
-import logging
 import wx
 import wx.lib.inspection
 
-from copis.config import Config
-from copis.core import COPISCore
-from copis.gui.main_frame import MainWindow
+from .config import Config
+from .core import COPISCore
+from .gui.main_frame import MainWindow
 
 
 class COPISApp(wx.App):
@@ -47,18 +46,3 @@ class COPISApp(wx.App):
             size=(self.config.settings.app_window_width, self.config.settings.app_window_height)
         )
         self.mainwindow.Show()
-
-
-if __name__ == '__main__':
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    app = COPISApp()
-    try:
-        # wx.lib.inspection.InspectionTool().Show() # debug
-        app.MainLoop()
-    except KeyboardInterrupt:
-        print("hello")
-
-    app.core.terminate_edsdk()
-    del app

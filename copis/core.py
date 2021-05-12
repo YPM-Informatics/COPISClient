@@ -22,8 +22,10 @@ if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
 
+# pylint: disable=wrong-import-position
+from importlib import import_module
 import logging
-import math
+
 import os
 import platform
 import threading
@@ -36,10 +38,9 @@ from typing import List, Optional, Tuple
 import glm
 from pydispatch import dispatcher
 
-from copis.enums import Action, ActionType, Device, Proxy
-from copis.gl.glutils import get_circle
-from copis.helpers import Point3, Point5
-from copis.store import Store
+from .enums import Action, ActionType, Device, Proxy
+from .helpers import Point3, Point5
+from .store import Store
 
 
 def locked(f):
@@ -568,6 +569,7 @@ class COPISCore:
             self._edsdk.connect()
 
         except: # TODO: add better exception perhaps
+            print('fuck')
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
