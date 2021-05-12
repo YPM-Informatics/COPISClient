@@ -17,24 +17,24 @@
 
 import logging
 import math
-import random
-from typing import Tuple
-
 import glm
-import numpy as np
 import wx
+
 import wx.lib.agw.aui as aui
-from copis.enums import Action, ActionType, PathIds
-from copis.gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
+
+from typing import Optional
+from gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
                                simple_statictext)
-from copis.helpers import xyz_units
-from copis.pathutils import create_circle, create_helix, create_line
+from helpers import xyz_units
+from pathutils import create_circle, create_helix, create_line
+from enums import ActionType, PathIds
+from classes import Action
 
 
 class PathgenToolbar(aui.AuiToolBar):
     """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Inits ToolbarPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)

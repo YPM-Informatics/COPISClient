@@ -20,11 +20,10 @@ TODO: Object collisions via general 3D object class.
 
 import math
 import platform as pf
-from dataclasses import dataclass
 from threading import Lock
 from typing import List, NamedTuple
 
-import copis.gl.shaders as shaderlib
+import gl.shaders as shaderlib
 import glm
 import numpy as np
 import pywavefront
@@ -33,7 +32,7 @@ import wx
 from .actionvis import GLActionVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
-from copis.helpers import find_path, timing
+from copis.helpers import find_path
 from copis.mathutils import arcball
 
 from OpenGL.GL import *

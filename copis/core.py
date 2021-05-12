@@ -36,20 +36,19 @@ from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import List, Optional, Tuple
 
-import glm
 from pydispatch import dispatcher
 
 from .enums import ActionType
 from .helpers import Point5
-from .store import Store
 from .classes import Action, Device, MonitoredList
 
 
-def locked(f):
-    @wraps(f)
+def locked(func):
+    """Provides thread locking mechanism"""
+    @wraps(func)
     def inner(*args, **kw):
         with inner.lock:
-            return f(*args, **kw)
+            return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
 
@@ -113,14 +112,9 @@ class COPISCore:
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
-        # self._proxies: List[Proxy] = MonitoredList([], 'core_proxy_list_changed')
         self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList(
             self.config.machine_settings.devices, 'core_d_list_changed')
-
-        self._store = Store()
-
-        self._update_devices()
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1

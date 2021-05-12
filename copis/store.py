@@ -91,7 +91,7 @@ def save(filename: str, obj: object) -> None:
         pickle.dump(obj, file)
 
 def load(filename: str, obj: object) -> object:
-    """Loads as object from file"""
+    """Loads an object from file"""
     with open(filename, 'rb') as file:
         obj = pickle.load(file)
 

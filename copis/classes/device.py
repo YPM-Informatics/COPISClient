@@ -23,7 +23,7 @@ from helpers import Point3, Point5
 
 @dataclass
 class Device:
-    """Data structure that implements a COPIS instrument imagining device"""
+    """Data structure that implements a COPIS instrument imaging device"""
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''

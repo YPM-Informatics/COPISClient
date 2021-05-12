@@ -34,7 +34,7 @@ class VisualizerPanel(wx.Panel):
         axes_shown: A boolean indicating if the canvas axes is shown or not.
     """
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Inits VisualizerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent

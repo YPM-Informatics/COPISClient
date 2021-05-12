@@ -15,9 +15,6 @@
 
 """MainWindow class."""
 
-from ctypes import *
-from pathlib import Path
-
 import wx
 import wx.lib.agw.aui as aui
 from .about import AboutDialog
@@ -34,10 +31,11 @@ from .proxyconfig_frame import ProxyConfigFrame
 from .wxutils import create_scaled_bitmap, set_dialog
 from copis.store import Store, load as store_load
 
-from wx.lib.agw.aui.aui_constants import *
+from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
+    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT)
+
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
-                                          IndentPressedBitmap, StepColour,
-                                          TakeScreenShot)
+    IndentPressedBitmap, StepColour, TakeScreenShot)
 
 
 class MainWindow(wx.Frame):
@@ -59,10 +57,11 @@ class MainWindow(wx.Frame):
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
 
     def __init__(self, *args, **kwargs) -> None:
-        """Inits MainWindow with constructors."""
-        super(MainWindow, self).__init__(*args, **kwargs)
+        """Initializes MainWindow with constructors"""
+        super().__init__(*args, **kwargs)
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
+        # pylint: disable=invalid-name
         self.MinSize = wx.Size(800, 575)
 
         # project saving
@@ -773,7 +772,6 @@ class CustomAuiTabArt(aui.AuiDefaultTabArt):
 
         ypos = drawn_tab_yoff + (drawn_tab_height)/2 - (texty/2) + 1
 
-        offset_focus = text_offset
         if control:
             if control.GetPosition() != wxPoint(text_offset+1, ypos):
                 control.SetPosition(wxPoint(text_offset+1, ypos))
