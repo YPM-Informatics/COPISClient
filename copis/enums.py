@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum, auto, unique
 from typing import Any, List, Optional, Tuple
 
-from copis.helpers import Point3, Point5
+from .helpers import Point3, Point5
 
 
 class ToolIds(Enum):

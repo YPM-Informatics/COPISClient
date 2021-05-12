@@ -20,18 +20,18 @@ from pathlib import Path
 
 import wx
 import wx.lib.agw.aui as aui
-from copis.gui.about import AboutDialog
-from copis.gui.panels.console import ConsolePanel
-from copis.gui.panels.controller import ControllerPanel
-from copis.gui.panels.evf import EvfPanel
-from copis.gui.panels.machine_toolbar import MachineToolbar
-from copis.gui.panels.pathgen_toolbar import PathgenToolbar
-from copis.gui.panels.properties import PropertiesPanel
-from copis.gui.panels.timeline import TimelinePanel
-from copis.gui.panels.visualizer import VisualizerPanel
-from copis.gui.pref_frame import PreferenceFrame
-from copis.gui.proxyconfig_frame import ProxyConfigFrame
-from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from .about import AboutDialog
+from .panels.console import ConsolePanel
+from .panels.controller import ControllerPanel
+from .panels.evf import EvfPanel
+from .panels.machine_toolbar import MachineToolbar
+from .panels.pathgen_toolbar import PathgenToolbar
+from .panels.properties import PropertiesPanel
+from .panels.timeline import TimelinePanel
+from .panels.visualizer import VisualizerPanel
+from .pref_frame import PreferenceFrame
+from .proxyconfig_frame import ProxyConfigFrame
+from .wxutils import create_scaled_bitmap, set_dialog
 from copis.store import Store
 
 from wx.lib.agw.aui.aui_constants import *

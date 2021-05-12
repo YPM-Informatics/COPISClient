@@ -30,9 +30,9 @@ import numpy as np
 import pywavefront
 import wx
 
-from copis.gl.actionvis import GLActionVis
-from copis.gl.chamber import GLChamber
-from copis.gl.viewcube import GLViewCube
+from .actionvis import GLActionVis
+from .chamber import GLChamber
+from .viewcube import GLViewCube
 from copis.helpers import find_path, timing
 from copis.mathutils import arcball
 
