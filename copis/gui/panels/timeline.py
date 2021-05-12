@@ -16,7 +16,7 @@
 """TimelinePanel class.
 
 TODO: Get timeline buttons to actually modify the action list
-TODO: Overhaul timeline panel, visually
+TODO: Overhaul timeline panel visually
 """
 
 import wx
@@ -47,7 +47,7 @@ class TimelinePanel(wx.Panel):
         self.update_timeline()
 
         # bind copiscore listeners
-        dispatcher.connect(self.update_timeline, signal='core_p_list_changed')
+        dispatcher.connect(self.update_timeline, signal='core_a_list_changed')
 
         self.Layout()
 

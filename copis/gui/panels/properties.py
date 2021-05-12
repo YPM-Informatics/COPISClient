@@ -31,6 +31,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """Properties panel. Shows settings and controls in the context of the
     current selection.
 
+    TODO: implement quick actions
+
     Args:
         parent: Pointer to a parent wx.Frame.
 
@@ -39,10 +41,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """
 
     config = {
-        'Default': ('visualizer', 'quick_actions'),
-        'Camera': ('camera_info', 'camera_config', 'quick_actions'),
-        'Point': ('transform', 'quick_actions'),
-        'Group': ('transform', 'quick_actions'),
+        'Default': ('visualizer'),
+        'Camera': ('camera_info', 'camera_config'),
+        'Point': ('transform'),
+        'Group': ('transform'),
     }
 
     def __init__(self, parent, *args, **kwargs) -> None:

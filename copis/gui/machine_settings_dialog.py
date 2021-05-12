@@ -16,7 +16,16 @@
 import wx
 
 
-class SettingsFrame(wx.Frame):
+class MachineSettingsDialog(wx.Dialog):
+    """Dialog TODO"""
+
     def __init__(self, parent, *args, **kwargs):
-        super(SettingsFrame, self).__init__(parent, wx.ID_ANY, 'Settings')
+        """Inits SettingsDialog with constructors."""
+        super().__init__(parent, wx.ID_ANY, 'Settings')
+        self.parent = parent
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.Layout()
+        self.Fit()
         # TODO: design settings interface
