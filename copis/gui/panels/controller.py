@@ -77,7 +77,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         # if button.Name[1] == '-':
         #     step *= -1
 
-        serial = self.p.panels['toolbar'].serial_controller.selected_serial
+        serial = self.p.panels['machine_toolbar'].serial_controller.selected_serial
 
         if button.Name == 'xy':
             print('Not implemented.')
