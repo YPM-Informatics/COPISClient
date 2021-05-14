@@ -21,9 +21,10 @@ serial connections are implemented.
 
 import wx
 import wx.lib.scrolledpanel as scrolled
+
 from pydispatch import dispatcher
-from copis.gui.wxutils import (
-    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
+
+from copis.gui.wxutils import (FancyTextCtrl,
     create_scaled_bitmap, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
 

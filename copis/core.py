@@ -27,8 +27,6 @@ if sys.version_info.major < 3:
 from importlib import import_module
 import logging
 
-import os
-import platform
 import threading
 import time
 from functools import wraps

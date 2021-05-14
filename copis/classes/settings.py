@@ -16,9 +16,9 @@
 from dataclasses import dataclass
 from typing import List, Dict
 
-from enums import DebugEnv
-from helpers import Point3, Point5
-from classes import Device, Chamber, Bounds
+from copis.enums import DebugEnv
+from copis.helpers import Point3, Point5
+from . import Device, Chamber, Bounds
 
 @dataclass
 class ConfigSettings:

@@ -24,15 +24,15 @@ from collections import defaultdict
 import glm
 import numpy as np
 
-from enums import ActionType
-from helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
-
-from OpenGL.GL import (glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv,
-                       glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
-                       glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
-                       glDrawArrays, glDrawArraysInstanced,
-                       GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP)
+from OpenGL.GL import (GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP,
+    glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv,
+    glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
+    glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
+    glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
+
+from copis.enums import ActionType
+from copis.helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:

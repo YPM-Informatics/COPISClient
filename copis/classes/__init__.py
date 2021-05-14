@@ -15,13 +15,13 @@
 
 """COPIS classes package"""
 
-from classes.device import Device
-from classes.bounds import Bounds
-from classes.chamber import Chamber
-from classes.settings import ConfigSettings, MachineSettings
-from classes.monitored_list import MonitoredList
-from classes.action import Action
-from classes.proxy import Proxy
+from .device import Device
+from .bounds import Bounds
+from .chamber import Chamber
+from .settings import ConfigSettings, MachineSettings
+from .monitored_list import MonitoredList
+from .action import Action
+from .proxy import Proxy
 
 __all__ = ["Device", "Bounds", "Chamber", "ConfigSettings", "MachineSettings", "MonitoredList",
             "Action", "Proxy"]

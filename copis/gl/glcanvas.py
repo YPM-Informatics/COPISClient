@@ -20,26 +20,35 @@ TODO: Object collisions via general 3D object class.
 
 import math
 import platform as pf
-from threading import Lock
-from typing import List, NamedTuple
-
-import gl.shaders as shaderlib
 import glm
 import numpy as np
 import pywavefront
 import wx
 
+from threading import Lock
+from typing import List, NamedTuple
+from wx import glcanvas
+from pydispatch import dispatcher
+from OpenGL.GL import ( shaders,
+    GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW,
+    GL_MULTISAMPLE, GL_FALSE, GL_UNSIGNED_BYTE, GL_FLOAT, GL_AMBIENT_AND_DIFFUSE,
+    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL, GL_CULL_FACE,
+    GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FILL, GL_FRONT_AND_BACK, GL_LESS,
+    GL_LINE_SMOOTH, GL_ONE_MINUS_SRC_ALPHA, GL_RGB, GL_SRC_ALPHA, GL_TRIANGLES,
+    glGenVertexArrays, glUniformMatrix4fv, glDeleteBuffers, glGenBuffers,
+    glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
+    glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
+    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable, 
+    glPolygonMode, glViewport, glReadPixels, glDrawArrays)
+from OpenGL.GLU import ctypes
+
+import copis.gl.shaders as shaderlib
+
+from copis.helpers import find_path
+from copis.mathutils import arcball
 from .actionvis import GLActionVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
-from copis.helpers import find_path
-from copis.mathutils import arcball
-
-from OpenGL.GL import *
-from OpenGL.GL import shaders
-from OpenGL.GLU import *
-from pydispatch import dispatcher
-from wx import glcanvas
 
 
 class _Size(NamedTuple):
@@ -260,8 +269,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         test_vbo = glGenBuffers(1)
 
         bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
-        for name, material in bulldog.materials.items():
-            # print(material.vertex_format)
+        for _, material in bulldog.materials.items():
             vertices = np.array(material.vertices)
             vertices = np.float32(vertices)
 
@@ -274,8 +282,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
             glEnableVertexAttribArray(1)
             glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
             glEnableVertexAttribArray(2)
-
-        # glDeleteBuffers(1, test_vbo)
 
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
@@ -361,7 +367,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def on_key(self, event: wx.KeyEvent) -> None:
         """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
-        pass
 
     def on_mouse_wheel(self, event: wx.MouseEvent) -> None:
         """On mouse wheel change, adjust zoom accordingly."""
@@ -449,7 +454,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
-        pass
 
     def on_paint(self, event: wx.PaintEvent) -> None:
         """On EVT_PAINT, try to refresh canvas."""
@@ -590,7 +594,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_cameras(self) -> None:
         """Render cameras."""
-        pass
 
     def _render_paths(self) -> None:
         """Render paths."""

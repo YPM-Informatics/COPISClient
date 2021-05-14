@@ -19,16 +19,16 @@ import logging
 import math
 import glm
 import wx
-
 import wx.lib.agw.aui as aui
 
 from typing import Optional
-from gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
-                               simple_statictext)
-from helpers import xyz_units
-from pathutils import create_circle, create_helix, create_line
-from enums import ActionType, PathIds
-from classes import Action
+
+from copis.gui.wxutils import (FancyTextCtrl,
+    create_scaled_bitmap, simple_statictext)
+from copis.helpers import xyz_units
+from copis.pathutils import create_circle, create_helix, create_line
+from copis.enums import ActionType, PathIds
+from copis.classes import Action
 
 
 class PathgenToolbar(aui.AuiToolBar):

@@ -17,6 +17,14 @@
 
 import wx
 import wx.lib.agw.aui as aui
+
+from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
+    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
+    AUI_BUTTON_STATE_PRESSED)
+from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
+    IndentPressedBitmap, StepColour, TakeScreenShot)
+
+from copis.store import load as store_load, save as store_save
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -28,15 +36,7 @@ from .panels.timeline import TimelinePanel
 from .panels.visualizer import VisualizerPanel
 from .pref_frame import PreferenceFrame
 from .proxyconfig_frame import ProxyConfigFrame
-from .wxutils import create_scaled_bitmap, set_dialog
-from copis.store import Store, load as store_load
-
-from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
-    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
-    AUI_BUTTON_STATE_PRESSED)
-
-from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
-    IndentPressedBitmap, StepColour, TakeScreenShot)
+from .wxutils import create_scaled_bitmap
 
 
 class MainWindow(wx.Frame):
@@ -78,8 +78,6 @@ class MainWindow(wx.Frame):
         self.init_statusbar()
         self.init_menubar()
         self.init_mgr()
-
-        self._store = Store()
 
         # TODO: re-enable liveview
         # self.add_evf_pane()
@@ -300,12 +298,12 @@ class MainWindow(wx.Frame):
         self.core.export_actions("./test.copis")
 
     def do_save_project(self, path) -> None:
-        """Save project to file Path. TODO: Implement"""
+        """Saves project to file Path"""
         self.project_dirty = False
-        self._store.save(path, self.core.actions)
+        store_save(path, self.core.actions)
 
-    def do_load_project(self, path) -> None:
-        """Load project from file Path. TODO: Implement"""
+    def do_load_project(self, path: str) -> None:
+        """Loads project from file Path"""
         actions = store_load(path, [])
 
         self.core.actions.clear()

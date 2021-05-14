@@ -17,7 +17,7 @@
 
 from typing import NamedTuple
 
-from helpers import Point3
+from copis.helpers import Point3
 
 
 class Bounds(NamedTuple):

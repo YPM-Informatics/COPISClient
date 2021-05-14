@@ -15,16 +15,18 @@
 
 """PropertiesPanel class."""
 
-import math
 from typing import List, Union
-from copis.helpers import xyz_units, pt_units
 
+import math
 import wx
 import wx.lib.scrolledpanel as scrolled
-from copis.gui.wxutils import (
-    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
-    create_scaled_bitmap, simple_statictext)
+
 from pydispatch import dispatcher
+
+from copis.helpers import xyz_units, pt_units
+from copis.gui.wxutils import (FancyTextCtrl,
+    EVT_FANCY_TEXT_UPDATED_EVENT,
+    simple_statictext)
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):

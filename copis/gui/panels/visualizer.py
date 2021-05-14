@@ -15,9 +15,9 @@
 
 """VisualizerPanel class."""
 
-from copis.gl.glcanvas import GLCanvas3D
-
 import wx
+
+from copis.gl.glcanvas import GLCanvas3D
 
 
 class VisualizerPanel(wx.Panel):

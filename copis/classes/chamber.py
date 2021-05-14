@@ -17,7 +17,7 @@
 
 from dataclasses import dataclass
 
-from classes import Bounds
+from . import Bounds
 
 
 @dataclass

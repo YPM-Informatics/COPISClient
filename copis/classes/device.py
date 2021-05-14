@@ -18,7 +18,7 @@
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from helpers import Point3, Point5
+from copis.helpers import Point3, Point5
 
 
 @dataclass
