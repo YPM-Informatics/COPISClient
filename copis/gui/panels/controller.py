@@ -185,15 +185,15 @@ class ControllerPanel(scrolled.ScrolledPanel):
         arrow_se_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_se', 20), size=(24, 24),
         name='se')
 
-        x_pos_btn = wx.Button(jog_sizer.StaticBox, label='X+', size=(24, 24))
-        x_neg_btn = wx.Button(jog_sizer.StaticBox, label='X-', size=(24, 24))
-        y_pos_btn = wx.Button(jog_sizer.StaticBox, label='Y+', size=(24, 24))
-        y_neg_btn = wx.Button(jog_sizer.StaticBox, label='Y-', size=(24, 24))
-        xy_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('keyboard', 24), size=(24, 24))
+        x_pos_btn = wx.Button(jog_sizer.StaticBox, label='X+', size=(24, 24), name='x+')
+        x_neg_btn = wx.Button(jog_sizer.StaticBox, label='X-', size=(24, 24), name='x-')
+        y_pos_btn = wx.Button(jog_sizer.StaticBox, label='Y+', size=(24, 24), name='y+')
+        y_neg_btn = wx.Button(jog_sizer.StaticBox, label='Y-', size=(24, 24), name='y-')
+        xy_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('keyboard', 24),
+        size=(24, 24), name='xy')
         xy_btn.Disable() # TODO: implement keyboard jog
-        z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24))
-        z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24))
-
+        z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24), name='z+')
+        z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24), name='z-')
         tilt_up_btn = wx.Button(jog_sizer.StaticBox, label='T+', size=(24, 24), name='t+')
         tilt_down_btn = wx.Button(jog_sizer.StaticBox, label='T-', size=(24, 24), name='t-')
         pan_right_btn = wx.Button(jog_sizer.StaticBox, label='P+', size=(24, 24), name='p+')
