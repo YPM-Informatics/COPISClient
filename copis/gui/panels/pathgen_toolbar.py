@@ -67,6 +67,15 @@ class PathgenToolbar(aui.AuiToolBar):
         _bmp = create_scaled_bitmap('add_circle_outline', 24)
         self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
 
+        self.AddSeparator()
+
+        self.Bind(wx.EVT_BUTTON, self.on_clear_path, self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
+
+    def on_clear_path(self, _) -> None:
+        """On clear button pressed, clear core action list"""
+        if len(self.core.actions) > 0:
+            self.core.actions.clear()
+
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, create pathgen dialog and process accordingly.
         """
