@@ -13,16 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS classes package"""
+"""Provides the COPIS Dimensions Class"""
 
-from .device import Device
-from .bounds import Bounds
-from .chamber import Chamber
-from .proxy import Proxy
-from .action import Action
-from .dimensions import Dimensions
-from .monitored_list import MonitoredList
-from .settings import ConfigSettings, MachineSettings
+from typing import NamedTuple
 
-__all__ = ["Device", "Bounds", "Chamber", "Proxy", "Action","Dimensions",
-            "MonitoredList", "ConfigSettings", "MachineSettings"]
+
+class Dimensions(NamedTuple):
+    """Data structure that implements dimensions in 3D space"""
+    width: float = 0.0
+    depth: float = 0.0
+    height: float = 0.0

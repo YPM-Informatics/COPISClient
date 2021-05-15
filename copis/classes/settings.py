@@ -18,7 +18,7 @@ from typing import List, Dict
 
 from copis.enums import DebugEnv
 from copis.helpers import Point3, Point5
-from . import Device, Chamber, Bounds
+from . import Device, Chamber, Bounds, Dimensions
 
 @dataclass
 class ConfigSettings:
@@ -69,15 +69,20 @@ class MachineSettings:
 
         for i, datum in enumerate(data):
             name = datum['name'].split(' ', maxsplit=1)[1]
+            width = float(datum['width'])
+            depth = float(datum['depth'])
+            height =float(datum['height'])
             min_x = float(datum['min_x'])
             min_y = float(datum['min_y'])
             min_z = float(datum['min_z'])
             max_x = float(datum['max_x'])
             max_y = float(datum['max_y'])
             max_z = float(datum['max_z'])
+            port = datum['port']
 
+            dimensions = Dimensions(width, depth, height)
             bounds = Bounds(Point3(min_x, min_y, min_z), Point3(max_x, max_y, max_z))
-            chamber = Chamber(i, name, bounds)
+            chamber = Chamber(i, name, bounds, dimensions, port)
             self._chambers.append(chamber)
 
     def _parse_devices(self, data: List[Dict[str, str]]) -> None:

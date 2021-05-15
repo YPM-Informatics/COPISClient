@@ -15,6 +15,7 @@
 
 """Provides the COPIS Chamber Class"""
 
+from copis.classes import dimensions
 from dataclasses import dataclass
 
 from . import Bounds
@@ -26,16 +27,22 @@ class Chamber:
     chamber_id: int
     name: str
     bounds: Bounds
+    dimensions: dimensions.Dimensions
+    port: str
 
     def as_dict(self):
         """Returns a dictionary representation of a Chamber instance."""
         return {
             f'Chamber {self.name}': {
+                'width': self.dimensions.width,
+                'depth': self.dimensions.depth,
+                'height': self.dimensions.height,
                 'min_x': self.bounds.lower.x,
                 'max_x': self.bounds.upper.x,
                 'min_y': self.bounds.lower.y,
                 'max_y': self.bounds.upper.y,
                 'min_z': self.bounds.lower.z,
-                'max_z': self.bounds.upper.z
+                'max_z': self.bounds.upper.z,
+                'port': self.port
             }
         }
