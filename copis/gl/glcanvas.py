@@ -419,8 +419,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event: wx.MouseEvent) -> None:
         id_ = self._hover_id
 
+        # id_ belongs to viewcube
         if self._viewcube.hovered:
-            print(id_)
             if id_ == 0:    # front
                 self._rot_quat = glm.quat()
             elif id_ == 1:  # top
@@ -430,9 +430,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
             elif id_ == 3:  # bottom
                 self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
             elif id_ == 4:  # left
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 90, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 90)))
             elif id_ == 5:  # back
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 180)))
             else:
                 pass
 
