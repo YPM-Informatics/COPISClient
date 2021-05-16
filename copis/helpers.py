@@ -62,9 +62,9 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4(
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
     model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
             glm.mat4(
-                math.cos(t) * math.cos(p), -math.sin(t), math.cos(t) * math.sin(p), 0.0,
-                math.sin(t) * math.cos(p), math.cos(t), math.sin(t) * math.sin(p), 0.0,
-                -math.sin(p), 0.0, math.cos(p), 0.0,
+                math.cos(t) * math.cos(p), -math.cos(t) * math.sin(p), math.sin(t), 0.0,
+                math.sin(p), math.cos(p), 0.0, 0.0,
+                -math.sin(t) * math.cos(p), math.sin(t) * math.sin(p), math.cos(t), 0.0,
                 0.0, 0.0, 0.0, 1.0)
     return model
 
