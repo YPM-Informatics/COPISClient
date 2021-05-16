@@ -345,7 +345,7 @@ class GLChamber:
             axes_colors = np.array([self.col_dark]).repeat(12)
 
         # gridlines parallel to x axis
-        i = np.append(np.arange(-step, y[1], -step), -y[1])
+        i = np.append(np.arange(-step, -y[1], -step), -y[1])
         j = np.append(np.arange(step, y[0], step), y[0])
         k = np.concatenate([i, j])
         x_verts = np.zeros(k.size * 6)
