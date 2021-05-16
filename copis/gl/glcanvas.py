@@ -420,12 +420,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         id_ = self._hover_id
 
         if self._viewcube.hovered:
+            print(id_)
             if id_ == 0:    # front
                 self._rot_quat = glm.quat()
             elif id_ == 1:  # top
                 self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
             elif id_ == 2:  # right
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, -90, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, -90)))
             elif id_ == 3:  # bottom
                 self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
             elif id_ == 4:  # left
