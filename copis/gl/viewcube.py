@@ -56,7 +56,7 @@ class GLViewCube:
                  position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
                  size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM) -> None:
         """Inits GLViewCube with constructors."""
-        self.p = parent
+        self.parent = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM
 
@@ -197,9 +197,9 @@ class GLViewCube:
         glViewport(*self._get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.p.rot_quat)
+        modelview = glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.p.shaders['default'])
+        glUseProgram(self.parent.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
@@ -219,9 +219,9 @@ class GLViewCube:
         glViewport(*self.viewport)
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.p.rot_quat)
+        modelview = glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.p.shaders['default'])
+        glUseProgram(self.parent.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glBindVertexArray(self._vao_picking)
@@ -249,7 +249,7 @@ class GLViewCube:
     def _get_viewport(self) -> Tuple[int, int, int, int]:
         """Return (x, y, width, height) to set viewport according to position.
         """
-        canvas_size = self.p.get_canvas_size()
+        canvas_size = self.parent.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
         if self._position == ViewCubePos.TOP_LEFT:
             corner = (0, height - self._size)

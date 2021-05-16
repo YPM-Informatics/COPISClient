@@ -85,9 +85,9 @@ class PathgenToolbar(aui.AuiToolBar):
                         z = 0 if z_div == 1 else i * (height / (z_div - 1))
                         v, c = create_circle(
                             glm.vec3(dlg.base_x_ctrl.num_value,
-                                     dlg.base_y_ctrl.num_value + z,
-                                     dlg.base_z_ctrl.num_value),
-                            glm.vec3(0, 1 if height > 0 else -1, 0), radius, points)
+                                     dlg.base_y_ctrl.num_value,
+                                     dlg.base_z_ctrl.num_value + z),
+                            glm.vec3(0, 0, 1 if height > 0 else -1), radius, points)
 
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
@@ -113,7 +113,7 @@ class PathgenToolbar(aui.AuiToolBar):
                         glm.vec3(dlg.base_x_ctrl.num_value,
                                  dlg.base_y_ctrl.num_value,
                                  dlg.base_z_ctrl.num_value),
-                        glm.vec3(0, 1 if height > 0 else -1, 0), radius, pitch, rotations, points)
+                        glm.vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
 
                     lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
@@ -139,9 +139,9 @@ class PathgenToolbar(aui.AuiToolBar):
 
                         v, c = create_circle(
                             glm.vec3(dlg.center_x_ctrl.num_value,
-                                     dlg.center_y_ctrl.num_value + z,
-                                     dlg.center_z_ctrl.num_value),
-                            glm.vec3(0, 1, 0), r, num)
+                                     dlg.center_y_ctrl.num_value,
+                                     dlg.center_z_ctrl.num_value + z),
+                            glm.vec3(0, 0, 1), r, num)
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
@@ -205,20 +205,20 @@ class PathgenToolbar(aui.AuiToolBar):
         for i in range(count):
             x, y, z = vertices[i * 3:i * 3 + 3]
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
-            pan = math.atan2(dz, dx) + math.pi
-            d2z2 = dx * dx + dz * dz
-            tilt = 0.0 if d2z2 == 0 else math.atan(dy / math.sqrt(dx * dx + dz * dz))
+            pan = -math.atan2(dy, dx)
+            x2y2 = dx * dx + dy * dy
+            tilt = 0.0 if x2y2 == 0 else math.atan(dz / math.sqrt(x2y2))
 
             device = 0
             # TODO: temporary hack to divvy up points
             if cam_group is not None:
                 if cam_group == 2:
-                    device = 0 if y > 0 else 1
+                    device = 0 if z > 0 else 1
                 elif cam_group == 4:
-                    if y < 0:     device += 2
+                    if z < 0:     device += 2
                     if x > 0:     device += 1
                 elif cam_group == 6:
-                    if y < 0:     device += 3
+                    if z < 0:     device += 3
                     if x > 60:    device += 2
                     elif x > -60: device += 1
             elif device_id is not None:
