@@ -37,12 +37,12 @@ class _Axes():
 
     def __init__(self, parent) -> None:
         """Inits _Axes with constructors."""
-        self.p = parent
+        self.parent = parent
 
         self._vao_axes = None
         self._vao_arrows = None
 
-        build_dimensions = self.p.build_dimensions
+        build_dimensions = self.parent.build_dimensions
         dist = 0.5 * (build_dimensions[1] + max(build_dimensions[0], build_dimensions[2]))
         self._arrow_base_radius = dist / 75.0
         self._arrow_length = 2.5 * self._arrow_base_radius
@@ -54,7 +54,7 @@ class _Axes():
         self._vao_axes, *self._vao_arrows = glGenVertexArrays(3)
         vbo = glGenBuffers(5)
 
-        build_dimensions = self.p.build_dimensions
+        build_dimensions = self.parent.build_dimensions
         x = build_dimensions[0] - build_dimensions[3], build_dimensions[3]
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
@@ -143,9 +143,9 @@ class _Axes():
         Returns:
             An np.ndarray for vertices, and an np.ndarray for color values.
         """
-        x = self.p.build_dimensions[0] - self.p.build_dimensions[3]
-        y = self.p.build_dimensions[1] - self.p.build_dimensions[4]
-        z = self.p.build_dimensions[2] - self.p.build_dimensions[5]
+        x = self.parent.build_dimensions[0] - self.parent.build_dimensions[3]
+        y = self.parent.build_dimensions[1] - self.parent.build_dimensions[4]
+        z = self.parent.build_dimensions[2] - self.parent.build_dimensions[5]
 
         thetas = np.linspace(0, 2 * np.pi, 16, endpoint=True)
         cos = np.cos(thetas) * self._arrow_base_radius
@@ -217,7 +217,7 @@ class GLChamber:
         """
         if not all([0 <= build_dimensions[i+3] <= build_dimensions[i] for i in range(3)]):
             raise ValueError('build dimension origin out of range')
-        self.p = parent
+        self.parent = parent
         self._build_dimensions = build_dimensions
         self._every = every
         self._subdivisions = subdivisions
@@ -300,10 +300,10 @@ class GLChamber:
 
         glDisable(GL_LINE_SMOOTH)
 
-        proj = self.p.projection_matrix
-        modelview = self.p.modelview_matrix
+        proj = self.parent.projection_matrix
+        modelview = self.parent.modelview_matrix
 
-        glUseProgram(self.p.shaders['default'])
+        glUseProgram(self.parent.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
@@ -327,7 +327,7 @@ class GLChamber:
             An np.ndarray for vertices, and an np.ndarray for color values.
         """
         x = self._build_dimensions[0] - self._build_dimensions[3], self._build_dimensions[3]
-        z = self._build_dimensions[2] - self._build_dimensions[5], self._build_dimensions[5]
+        y = self._build_dimensions[1] - self._build_dimensions[4], self._build_dimensions[4]
         step = self._every / self._subdivisions
 
         def darken(arr):
@@ -340,36 +340,36 @@ class GLChamber:
             axes_colors = np.array([])
         else:
             axes_verts = np.array([
-                x[0], 0, 0, -x[1], 0, 0,
-                0, 0, z[0], 0, 0, -z[1]])
+                x[0], 0.0, 0.0, -x[1], 0.0, 0.0,
+                0.0, y[0], 0.0, 0.0, -y[1], 0.0])
             axes_colors = np.array([self.col_dark]).repeat(12)
 
         # gridlines parallel to x axis
-        i = np.append(np.arange(-step, -z[1], -step), -z[1])
-        j = np.append(np.arange(step, z[0], step), z[0])
+        i = np.append(np.arange(-step, y[1], -step), -y[1])
+        j = np.append(np.arange(step, y[0], step), y[0])
         k = np.concatenate([i, j])
         x_verts = np.zeros(k.size * 6)
-        x_verts[2::3] = k.repeat(2)
+        x_verts[1::3] = k.repeat(2)
         x_verts[0::6] = -x[1]
         x_verts[3::6] = x[0]
         x_colors = np.concatenate([
             darken(np.full(i.size, self.col_light)),
             darken(np.full(j.size, self.col_light))]).repeat(6)
 
-        # gridlines parallel to z axis
+        # gridlines parallel to y axis
         i = np.append(np.arange(-step, -x[1], -step), -x[1])
         j = np.append(np.arange(step, x[0], step), x[0])
         k = np.concatenate([i, j])
-        z_verts = np.zeros(k.size * 6)
-        z_verts[0::3] = k.repeat(2)
-        z_verts[2::6] = -z[1]
-        z_verts[5::6] = z[0]
-        z_colors = np.concatenate([
+        y_verts = np.zeros(k.size * 6)
+        y_verts[0::3] = k.repeat(2)
+        y_verts[1::6] = -y[1]
+        y_verts[4::6] = y[0]
+        y_colors = np.concatenate([
             darken(np.full(i.size, self.col_light)),
             darken(np.full(j.size, self.col_light))]).repeat(6)
 
-        verts = np.concatenate([axes_verts, x_verts, z_verts]).astype(np.float32)
-        colors = np.concatenate([axes_colors, x_colors, z_colors]).astype(np.float32)
+        verts = np.concatenate([axes_verts, x_verts, y_verts]).astype(np.float32)
+        colors = np.concatenate([axes_colors, x_colors, y_colors]).astype(np.float32)
         return verts, colors
 
     def _get_bounding_box(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -446,7 +446,7 @@ class GLChamber:
     @grid_shown.setter
     def grid_shown(self, value: bool) -> None:
         self._grid_shown = value
-        self.p.dirty = True
+        self.parent.dirty = True
 
     @property
     def axes_shown(self) -> bool:
@@ -456,7 +456,7 @@ class GLChamber:
     def axes_shown(self, value: bool) -> None:
         self._axes_shown = value
         self.create_vaos()
-        self.p.dirty = True
+        self.parent.dirty = True
 
     @property
     def bbox_shown(self) -> bool:
@@ -465,4 +465,4 @@ class GLChamber:
     @bbox_shown.setter
     def bbox_shown(self, value: bool) -> None:
         self._bbox_shown = value
-        self.p.dirty = True
+        self.parent.dirty = True

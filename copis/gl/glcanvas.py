@@ -112,8 +112,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-        self._dist = 0.5 * (self._build_dimensions[1] + \
-                            max(self._build_dimensions[0], self._build_dimensions[2]))
+        self._dist = 0.5 * (self._build_dimensions[2] + \
+                            max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
@@ -662,9 +662,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
     @property
     def modelview_matrix(self) -> glm.mat4:
         """Returns a glm.mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(glm.vec3(0.0, 0.0, self._dist * 1.5),  # position
+        mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
                          glm.vec3(0.0, 0.0, 0.0),               # target
-                         glm.vec3(0.0, 1.0, 0.0))               # up
+                         glm.vec3(0.0, 0.0, 1.0))               # up
         return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
