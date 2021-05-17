@@ -17,12 +17,12 @@
 
 from .device import Device
 from .bounds import Bounds
-from .chamber import Chamber
 from .proxy import Proxy
 from .action import Action
 from .dimensions import Dimensions
+from .chamber import Chamber
 from .monitored_list import MonitoredList
 from .settings import ConfigSettings, MachineSettings
 
-__all__ = ["Device", "Bounds", "Chamber", "Proxy", "Action","Dimensions",
+__all__ = ["Device", "Bounds", "Proxy", "Action","Dimensions", "Chamber",
             "MonitoredList", "ConfigSettings", "MachineSettings"]

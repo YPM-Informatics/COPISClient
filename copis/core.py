@@ -111,6 +111,8 @@ class COPISCore:
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
+        self.offset_devices(*self.config.machine_settings.devices)
+
         self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList(
             self.config.machine_settings.devices, 'core_d_list_changed')
@@ -138,6 +140,21 @@ class COPISCore:
                 warnings.warn(warning)
             else:
                 raise warning
+
+    def offset_devices(self, *devices) -> None:
+        """Takes a list of devices and applies the chamber offsets to their coordinates"""
+
+        for device in devices:
+            chamber = next(filter(lambda c, d = device : c.name == d.chamber_name,
+            self.config.machine_settings.chambers))
+
+            new_position = Point5(
+                device.position.x + chamber.offsets.x,
+                device.position.y + chamber.offsets.y,
+                device.position.z + chamber.offsets.z,
+                device.position.p, device.position.t)
+
+            device.position = new_position
 
     @locked
     def disconnect(self):

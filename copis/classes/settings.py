@@ -78,11 +78,15 @@ class MachineSettings:
             max_x = float(datum['max_x'])
             max_y = float(datum['max_y'])
             max_z = float(datum['max_z'])
+            x_offset = 0 if 'x_offset' not in datum.keys() else float(datum['x_offset'])
+            y_offset = 0 if 'y_offset' not in datum.keys() else float(datum['y_offset'])
+            z_offset = 0 if 'z_offset' not in datum.keys() else float(datum['z_offset'])
             port = datum['port']
 
             dimensions = Dimensions(width, depth, height)
+            offsets = Point3(x_offset, y_offset, z_offset)
             bounds = Bounds(Point3(min_x, min_y, min_z), Point3(max_x, max_y, max_z))
-            chamber = Chamber(i, name, bounds, dimensions, port)
+            chamber = Chamber(i, name, bounds, dimensions, offsets, port)
             self._chambers.append(chamber)
 
     def _parse_devices(self, data: List[Dict[str, str]]) -> None:

@@ -15,10 +15,10 @@
 
 """Provides the COPIS Chamber Class"""
 
-from copis.classes import dimensions
 from dataclasses import dataclass
 
-from . import Bounds
+from . import Bounds, Dimensions
+from copis.helpers import Point3
 
 
 @dataclass
@@ -27,7 +27,8 @@ class Chamber:
     chamber_id: int
     name: str
     bounds: Bounds
-    dimensions: dimensions.Dimensions
+    dimensions: Dimensions
+    offsets: Point3
     port: str
 
     def as_dict(self):
@@ -43,6 +44,9 @@ class Chamber:
                 'max_y': self.bounds.upper.y,
                 'min_z': self.bounds.lower.z,
                 'max_z': self.bounds.upper.z,
+                'x_offset': self.offsets.x,
+                'y_offset': self.offsets.y,
+                'z_offset': self.offsets.z,
                 'port': self.port
             }
         }
