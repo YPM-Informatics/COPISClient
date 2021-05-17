@@ -23,3 +23,19 @@ class Dimensions(NamedTuple):
     width: float = 0.0
     depth: float = 0.0
     height: float = 0.0
+
+    def __iter__(self):
+        return iter((
+            self.width,
+            self.depth,
+            self.height
+        ))
+
+    def to_list(self):
+        """Returns dimensions as a list"""
+        width, depth, height = self
+        return [width, depth, height]
+
+    def get_origin(self):
+        """Returns a list of origin coordinates from the dimensions list"""
+        return [d / 2 for d in self.to_list()]

@@ -57,13 +57,15 @@ class MainWindow(wx.Frame):
 
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
         """Initializes MainWindow with constructors"""
         super().__init__(*args, **kwargs)
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
         # pylint: disable=invalid-name
         self.MinSize = wx.Size(800, 575)
+
+        self.chamber_dimensions = chamber_dimensions
 
         # project saving
         self.project_dirty = False

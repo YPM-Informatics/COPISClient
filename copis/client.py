@@ -32,17 +32,41 @@ class COPISApp(wx.App):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        super(COPISApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.config = Config()
         self.core = COPISCore(self)
 
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
+        dims_list = self._parse_chamber_dimensions()
+
         self.mainwindow = MainWindow(
-            # self.chamberdims,
+            dims_list,
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
             size=(self.config.settings.app_window_width, self.config.settings.app_window_height)
         )
         self.mainwindow.Show()
+
+    def _parse_chamber_dimensions(self) -> list:
+        _STACK_INDEX = 2
+
+        sizes = [c.dimensions.to_list() for c in self.config.machine_settings.chambers]
+        origins = [c.dimensions.get_origin() for c in self.config.machine_settings.chambers]
+
+        size = sizes[0]
+        origin = origins[0]
+
+        if len(sizes) > 1:
+            size_sum = [sum(s) for s in zip(*sizes)]
+            origin_sum = [sum(s) for s in zip(*origins)]
+
+            # Z stack the chambers
+            size[_STACK_INDEX] = size_sum[_STACK_INDEX]
+            origin[_STACK_INDEX] = origin_sum[_STACK_INDEX]
+        else:
+            origin[_STACK_INDEX] = 0
+
+        size.extend(origin)
+        return size

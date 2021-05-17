@@ -120,14 +120,19 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-        self._dist = 0.5 * (self._build_dimensions[2] + \
+
+        # This offset allows us to adjust the chamber's position on the canvas
+        #  when only rending one chamber
+        self._z_offset = 0 if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
+
+        self._dist = 0.5 * (self._build_dimensions[2] + self._z_offset + \
                             max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
 
         # other values
-        self._zoom = 1
+        self._zoom = round(400 / (self._build_dimensions[2] + self._z_offset), 1)
         self._hover_id = -1
         self._inside = False
         self._rot_quat = glm.quat()
@@ -666,8 +671,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def modelview_matrix(self) -> glm.mat4:
         """Returns a glm.mat4 representing the current modelview matrix."""
         mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
-                         glm.vec3(0.0, 0.0, 0.0),               # target
-                         glm.vec3(0.0, 0.0, 1.0))               # up
+                         glm.vec3(0.0, 0.0, self._z_offset),     # target
+                         glm.vec3(0.0, 0.0, 1.0))                # up
         return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
