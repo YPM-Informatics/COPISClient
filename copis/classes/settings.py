@@ -102,9 +102,10 @@ class MachineSettings:
             chamber = datum['chamber']
             device_type = datum['type']
             interfaces = datum['interfaces'].splitlines()
+            home = '' if 'home' not in datum.keys() else datum['home']
 
             device = Device(i, name, device_type, chamber, interfaces,
-                Point5(pos_x, pos_y, pos_z, pos_p, pos_t))
+                Point5(pos_x, pos_y, pos_z, pos_p, pos_t), homing_sequence = home)
 
             self._devices.append(device)
 

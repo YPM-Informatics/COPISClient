@@ -30,14 +30,15 @@ class Device:
     chamber_name: str = ''
     interfaces: Optional[List[str]] = None
     position: Point5 = Point5()
-    home_position: Point5 = Point5()
+    initial_position: Point5 = Point5()
     max_feed_rates: Point5 = Point5()
     device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
     collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
+    homing_sequence: str = ''
 
     def as_dict(self):
         """Returns a dictionary representation of a Device instance."""
-        return {
+        data = {
             f'Camera {self.device_name}': {
                 'x': self.position.x,
                 'y': self.position.y,
@@ -49,3 +50,9 @@ class Device:
                 'interfaces': '\n'.join(self.interfaces)
             }
         }
+
+        home = '' if self.homing_sequence is None else self.homing_sequence.strip()
+        if len(home) > 0:
+            data['home'] = home
+
+        return data
