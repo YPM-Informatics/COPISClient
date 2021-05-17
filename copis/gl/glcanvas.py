@@ -693,10 +693,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         with self._rot_lock:
             if orbit:
                 dx = p2y - p1y
-                dz = p2x - p1x
+                dy = p2x - p1x
 
                 pitch = glm.angleAxis(dx, glm.vec3(-1.0, 0.0, 0.0))
-                yaw = glm.angleAxis(dz, glm.vec3(0.0, 1.0, 0.0))
+                yaw = glm.angleAxis(dy, glm.vec3(0.0, 0.0, 1.0))
                 self._rot_quat = pitch * self._rot_quat * yaw
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)
