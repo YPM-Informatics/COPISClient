@@ -24,11 +24,12 @@ if sys.version_info.major < 3:
     sys.exit(-1)
 
 # pylint: disable=wrong-import-position
-from importlib import import_module
 import logging
-
 import threading
 import time
+import warnings
+
+from importlib import import_module
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
@@ -36,7 +37,7 @@ from typing import List, Optional, Tuple
 
 from pydispatch import dispatcher
 
-from .enums import ActionType
+from .enums import ActionType, DebugEnv
 from .helpers import Point5
 from .classes import Action, Device, MonitoredList
 
@@ -75,8 +76,17 @@ class COPISCore:
         """Inits a CopisCore instance."""
         self.config = parent.config
 
-        self._baud = None
-        self._port = None
+        self._edsdk_enabled = False
+        self._edsdk = None
+        self.evf_thread = None
+
+        self._serial_enabled = False
+        self._serial = None
+
+        self.init_edsdk()
+        self.init_serial()
+
+        self._check_configs()
 
         # serial instance connected to the machine, None when disconnected
         self._machine = None
@@ -98,15 +108,6 @@ class COPISCore:
         self.stop_send_thread = False
         self.imaging_thread = None
 
-        self._edsdk_enabled = True
-        self._edsdk = None
-        self.evf_thread = None
-        self.init_edsdk()
-
-        self._serial_enabled = True
-        self._serial = None
-        self.init_serial()
-
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
@@ -116,6 +117,27 @@ class COPISCore:
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
+
+    def _check_configs(self) -> None:
+        warn = self.config.settings.debug_env == DebugEnv.DEV.value
+        msg = None
+        machine_config = self.config.machine_settings
+
+        if len(machine_config.chambers) == 0:
+            msg = 'No chambers configured.'
+        elif len(machine_config.chambers) > 2:
+            msg = '2 chambers maximum exceeded.'
+        # TODO:
+        # - Check 3 cameras per chamber max.
+        # - Check all cameras assigned to a chamber.
+        # - Check cameras within chamber bounds.
+
+        if msg is not None:
+            warning = UserWarning(msg)
+            if warn:
+                warnings.warn(warning)
+            else:
+                raise warning
 
     @locked
     def disconnect(self):
@@ -464,7 +486,7 @@ class COPISCore:
                                f'P{action.args[3]:.3f}'
                                f'T{action.args[4]:.3f}')
                 elif action.atype == ActionType.C0:
-                    file.write(f'C0')
+                    file.write('C0')
                 else:
                     pass
                 file.write('\n')
@@ -483,13 +505,17 @@ class COPISCore:
             self._edsdk = import_module('copis.coms.edsdk_controller')
             self._edsdk.initialize(ConsoleOutput())
             self._edsdk.connect()
+            self._edsdk.disconnect()
+
+            if self._edsdk is not None:
+                self._edsdk_enabled = True
 
         except AttributeError:
             self._edsdk_enabled = False
 
     def terminate_edsdk(self):
         """Terminates Canon EDSDK connection."""
-        if self._edsdk_enabled and self._edsdk is not None:
+        if self._edsdk_enabled:
             self._edsdk.terminate()
 
     def init_serial(self) -> None:
