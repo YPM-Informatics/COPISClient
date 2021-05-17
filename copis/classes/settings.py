@@ -71,7 +71,7 @@ class MachineSettings:
             name = datum['name'].split(' ', maxsplit=1)[1]
             width = float(datum['width'])
             depth = float(datum['depth'])
-            height =float(datum['height'])
+            height = float(datum['height'])
             min_x = float(datum['min_x'])
             min_y = float(datum['min_y'])
             min_z = float(datum['min_z'])
@@ -86,7 +86,7 @@ class MachineSettings:
             dimensions = Dimensions(width, depth, height)
             offsets = Point3(x_offset, y_offset, z_offset)
             bounds = Bounds(Point3(min_x, min_y, min_z), Point3(max_x, max_y, max_z))
-            chamber = Chamber(i, name, bounds, dimensions, offsets, port)
+            chamber = Chamber(i, name, bounds, dimensions, port, offsets)
             self._chambers.append(chamber)
 
     def _parse_devices(self, data: List[Dict[str, str]]) -> None:

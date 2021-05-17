@@ -17,8 +17,8 @@
 
 from dataclasses import dataclass
 
-from . import Bounds, Dimensions
 from copis.helpers import Point3
+from . import Bounds, Dimensions
 
 
 @dataclass
@@ -28,12 +28,13 @@ class Chamber:
     name: str
     bounds: Bounds
     dimensions: Dimensions
-    offsets: Point3
     port: str
+    offsets: Point3 = Point3()
+
 
     def as_dict(self):
         """Returns a dictionary representation of a Chamber instance."""
-        return {
+        data = {
             f'Chamber {self.name}': {
                 'width': self.dimensions.width,
                 'depth': self.dimensions.depth,
@@ -44,9 +45,14 @@ class Chamber:
                 'max_y': self.bounds.upper.y,
                 'min_z': self.bounds.lower.z,
                 'max_z': self.bounds.upper.z,
-                'x_offset': self.offsets.x,
-                'y_offset': self.offsets.y,
-                'z_offset': self.offsets.z,
                 'port': self.port
             }
         }
+
+        offs = Point3() if self.offsets is None else self.offsets
+        if offs.x > 0 or offs.y > 0 or offs.z > 0:
+            data['x_offset'] = offs.x
+            data['y_offset'] = offs.y
+            data['z_offset'] = offs.z
+
+        return data
