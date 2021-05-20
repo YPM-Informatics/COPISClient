@@ -99,11 +99,8 @@ class EDSDKController():
             self._console.print(f'Invalid camera index: {index}.')
             return False
 
-        self._is_connected = True
-
         self._camera.index = index
         self._camera.ref = self._edsdk.EdsGetChildAtIndex(cam_items, index)
-        self._console.print(f'Connected to camera {self._camera.index}.')
 
         *_, cam_ref = self._camera
 
@@ -135,7 +132,10 @@ class EDSDKController():
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 
-        return True
+        self._is_connected = True
+        self._console.print(f'Connected to camera {self._camera.index}.')
+
+        return self._is_connected
 
     def disconnect(self) -> bool:
         """Disconnect from camera.
@@ -150,11 +150,12 @@ class EDSDKController():
         self._edsdk.EdsCloseSession(self._camera.ref)
         self._console.print(f'Disconnected from camera {self._camera.index}.')
 
-        self._is_connected = False
         self._camera.ref = None
         self._camera.index = -1
 
-        return True
+        self._is_connected = False
+
+        return not self._is_connected
 
     def take_picture(self) -> bool:
         """Take picture on connected camera.
@@ -354,3 +355,8 @@ def camera_count(mod) -> int:
 def is_waiting_for_image(mod) -> bool:
     """Returns a flag indicating whether we are waiting for an image; from the module"""
     return mod._instance.is_waiting_for_image
+
+@mproperty
+def is_enabled(mod) -> bool:
+    """Returns a flag indicating whether EDSDK is enabled"""
+    return mod._instance._edsdk is not None

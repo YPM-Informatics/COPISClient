@@ -76,11 +76,11 @@ class COPISCore:
         """Inits a CopisCore instance."""
         self.config = parent.config
 
-        self._edsdk_enabled = False
+        self._is_edsdk_enabled = False
         self._edsdk = None
         self.evf_thread = None
 
-        self._serial_enabled = False
+        self._is_serial_enabled = False
         self._serial = None
 
         self.init_edsdk()
@@ -515,24 +515,17 @@ class COPISCore:
 
     def init_edsdk(self) -> None:
         """Initializes Canon EDSDK connection."""
-        if not self._edsdk_enabled:
+        if self._is_edsdk_enabled:
             return
 
-        try:
-            self._edsdk = import_module('copis.coms.edsdk_controller')
-            self._edsdk.initialize(ConsoleOutput())
-            self._edsdk.connect()
-            self._edsdk.disconnect()
-
-            if self._edsdk is not None:
-                self._edsdk_enabled = True
-
-        except AttributeError:
-            self._edsdk_enabled = False
+        self._edsdk = import_module('copis.coms.edsdk_controller')
+        self._edsdk.initialize(ConsoleOutput())
+        
+        self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
         """Terminates Canon EDSDK connection."""
-        if self._edsdk_enabled:
+        if self._is_edsdk_enabled:
             self._edsdk.terminate()
 
     def init_serial(self) -> None:
