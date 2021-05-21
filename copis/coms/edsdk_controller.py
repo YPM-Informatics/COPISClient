@@ -360,3 +360,17 @@ def is_waiting_for_image(mod) -> bool:
 def is_enabled(mod) -> bool:
     """Returns a flag indicating whether EDSDK is enabled"""
     return mod._instance._edsdk is not None
+
+@mproperty
+def device_list(mod) -> list:
+    """Returns a list of descriptions of devices connected via edsdk"""
+    devices = []
+    mod._instance._update_camera_list()
+
+    for i in range(mod._instance._camera.count):
+        ref = mod._instance._edsdk.EdsGetChildAtIndex(mod._instance._camera.items, i)
+        info = mod._instance._edsdk.EdsGetDeviceInfo(ref)
+
+        devices.append(info)
+
+    return devices

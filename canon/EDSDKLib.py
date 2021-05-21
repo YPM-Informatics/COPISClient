@@ -751,7 +751,14 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	#def EdsGetDeviceInfo( IntPtr  inCameraRef, out EdsDeviceInfo  outDeviceInfo):
+	def EdsGetDeviceInfo(self, inCameraRef):
+		deviceInfo = EdsDeviceInfo()
+		err = self.dll.EdsGetDeviceInfo(inCameraRef, byref(deviceInfo))
+
+		if err != EdsErrorCodes.EDS_ERR_OK.value:
+			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
+
+		return deviceInfo
 	
 	##############################################################################
 	#  Function:   EdsOpenSession
@@ -1455,7 +1462,10 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	############################################################################## 
-	#def EdsSetCameraAddedHandler(EdsCameraAddedHandler inCameraAddedHandler, IntPtr inContext):
+	def EdsSetCameraAddedHandler(self, inCameraAddedHandler, inContext):
+		err = self.dll.EdsSetCameraAddedHandler(inCameraAddedHandler, inContext)
+		if err != EdsErrorCodes.EDS_ERR_OK.value:
+			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
 	##############################################################################
 	#  Function:   EdsSetPropertyEventHandler
@@ -1624,6 +1634,12 @@ class EdsImageInfo(Structure):
 			 ("componentDepth", c_uint),
 			 ("effectiveRect", EdsRect),
 			 ("reserved", c_uint)]
+
+class EdsDeviceInfo(Structure):
+	_fields_ = [("szPortName", c_char*256),
+			("szDeviceDescription", c_char*256),
+			("deviceSubType", c_uint),
+			("reserved", c_uint)]
 
 		
 #################### Enum Classes ####################
