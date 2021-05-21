@@ -216,11 +216,11 @@ class PathgenToolbar(aui.AuiToolBar):
                     device = 0 if z > 0 else 1
                 elif cam_group == 4:
                     if z < 0:     device += 2
-                    if x > 0:     device += 1
+                    if y > 0:     device += 1
                 elif cam_group == 6:
                     if z < 0:     device += 3
-                    if x > 60:    device += 2
-                    elif x > -60: device += 1
+                    if y > 60:    device += 2
+                    elif y > -60: device += 1
             elif device_id is not None:
                 device = device_id
 
