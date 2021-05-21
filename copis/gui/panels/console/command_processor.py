@@ -85,11 +85,11 @@ class _CommandProcessor:
                 self._console.print('A device needs to be connected via \'edsdk\' \
                     in order to shoot.')
             else:
-                cam_index = '0' if len(opts) < 1 else opts[0]
-
-                if cam_index.isdigit():
-                    self._console.core.edsdk.connect(int(cam_index))
+                if len(opts) < 1:
                     self._console.core.edsdk.take_picture()
+                elif opts[0].isdigit():
+                    if self._console.core.edsdk.connect(int(opts[0])):
+                        self._console.core.edsdk.take_picture()
                 else:
                     self._console.print('Invalid operation. \'Usage: shoot <device_index>\';  \
                         where <device_index> in an integer.')
@@ -101,8 +101,11 @@ class _CommandProcessor:
                 devices = self._console.core.edsdk.device_list
 
                 if len(devices) > 0:
-                    for i, device in enumerate(devices):
-                        self._console.print(f'\t{i}: {device.szDeviceDescription.decode("utf-8")}')
+                    for i, item in enumerate(devices):
+                        (device, is_connected) = item
+                        status = " - connected" if is_connected else ""
+                        desc = device.szDeviceDescription.decode("utf-8")
+                        self._console.print(f'\t{i}: {desc}{status}')
                 else:
                     self._console.print('No devices found.')
             else:

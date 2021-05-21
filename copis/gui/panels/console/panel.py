@@ -15,7 +15,6 @@
 
 """ConsolePanel class."""
 
-import shlex
 import wx
 
 from pydispatch import dispatcher

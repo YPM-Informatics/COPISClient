@@ -367,10 +367,18 @@ def device_list(mod) -> list:
     devices = []
     mod._instance._update_camera_list()
 
-    for i in range(mod._instance._camera.count):
-        ref = mod._instance._edsdk.EdsGetChildAtIndex(mod._instance._camera.items, i)
-        info = mod._instance._edsdk.EdsGetDeviceInfo(ref)
+    cam_count, cam_index, cam_items, cam_ref = mod._instance._camera
+    edsdk = mod._instance._edsdk
 
-        devices.append(info)
+    for i in range(cam_count):
+        ref = edsdk.EdsGetChildAtIndex(cam_items, i)
+        info = edsdk.EdsGetDeviceInfo(ref)
+
+        ref_value = None if ref is None else ref.value
+        cam_ref_value = None if cam_ref is None else cam_ref.value
+
+        is_connected = ref_value == cam_ref_value and i == cam_index
+
+        devices.append((info, is_connected))
 
     return devices
