@@ -112,8 +112,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-        self._dist = 0.5 * (self._build_dimensions[1] + \
-                            max(self._build_dimensions[0], self._build_dimensions[2]))
+        self._dist = 0.5 * (self._build_dimensions[2] + \
+                            max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
@@ -419,19 +419,20 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def on_left_dclick(self, event: wx.MouseEvent) -> None:
         id_ = self._hover_id
 
+        # id_ belongs to viewcube
         if self._viewcube.hovered:
             if id_ == 0:    # front
                 self._rot_quat = glm.quat()
             elif id_ == 1:  # top
                 self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
             elif id_ == 2:  # right
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, -90, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, -90)))
             elif id_ == 3:  # bottom
                 self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
             elif id_ == 4:  # left
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 90, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 90)))
             elif id_ == 5:  # back
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 180, 0)))
+                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 180)))
             else:
                 pass
 
@@ -662,9 +663,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
     @property
     def modelview_matrix(self) -> glm.mat4:
         """Returns a glm.mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(glm.vec3(0.0, 0.0, self._dist * 1.5),  # position
+        mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
                          glm.vec3(0.0, 0.0, 0.0),               # target
-                         glm.vec3(0.0, 1.0, 0.0))               # up
+                         glm.vec3(0.0, 0.0, 1.0))               # up
         return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
@@ -693,10 +694,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         with self._rot_lock:
             if orbit:
                 dx = p2y - p1y
-                dz = p2x - p1x
+                dy = p2x - p1x
 
                 pitch = glm.angleAxis(dx, glm.vec3(-1.0, 0.0, 0.0))
-                yaw = glm.angleAxis(dz, glm.vec3(0.0, 1.0, 0.0))
+                yaw = glm.angleAxis(dy, glm.vec3(0.0, 0.0, 1.0))
                 self._rot_quat = pitch * self._rot_quat * yaw
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)

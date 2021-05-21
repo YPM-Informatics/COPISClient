@@ -56,7 +56,7 @@ class GLViewCube:
                  position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
                  size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM) -> None:
         """Inits GLViewCube with constructors."""
-        self.p = parent
+        self.parent = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM
 
@@ -78,13 +78,13 @@ class GLViewCube:
 
         vertices = np.array([
             1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
-            1.0, -1.0, 1.0, 0.5, 0.5, 0.5,
-            1.0, -1.0, -1.0, 0.5, 0.5, 0.5,
-            1.0, 1.0, -1.0, 0.7, 0.7, 0.7,
-            -1.0, 1.0, -1.0, 0.7, 0.7, 0.7,
+            1.0, -1.0, 1.0, 0.7, 0.7, 0.7,
+            1.0, -1.0, -1.0, 0.4, 0.4, 0.4,
+            1.0, 1.0, -1.0, 0.4, 0.4, 0.4,
+            -1.0, 1.0, -1.0, 0.4, 0.4, 0.4,
             -1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
-            -1.0, -1.0, 1.0, 0.5, 0.5, 0.5,
-            -1.0, -1.0, -1.0, 0.5, 0.5, 0.5,
+            -1.0, -1.0, 1.0, 0.7, 0.7, 0.7,
+            -1.0, -1.0, -1.0, 0.4, 0.4, 0.4,
         ], dtype=np.float32)
         indices = np.array([
             0, 1, 2, 2, 3, 0,
@@ -112,35 +112,35 @@ class GLViewCube:
         # --- viewcube for picking ---
 
         vertices = np.array([
-            1.0, 1.0, 1.0,      # 0 front   (id = 0)
-            -1.0, 1.0, 1.0,     # 5
-            -1.0, -1.0, 1.0,    # 6
-            1.0, -1.0, 1.0,     # 1
-
-            1.0, 1.0, 1.0,      # 0 top     (id = 1)
-            1.0, 1.0, -1.0,     # 3
-            -1.0, 1.0, -1.0,    # 4
-            -1.0, 1.0, 1.0,     # 5
-
-            1.0, 1.0, 1.0,      # 0 right   (id = 2)
-            1.0, -1.0, 1.0,     # 1
-            1.0, -1.0, -1.0,    # 2
-            1.0, 1.0, -1.0,     # 3
-
-            1.0, -1.0, 1.0,     # 1 bottom  (id = 3)
+            1.0, -1.0, 1.0,     # 1 front  (id = 0)
             -1.0, -1.0, 1.0,    # 6
             -1.0, -1.0, -1.0,   # 7
             1.0, -1.0, -1.0,    # 2
 
-            -1.0, -1.0, -1.0,   # 7 left    (id = 4)
+            1.0, 1.0, 1.0,      # 0 top    (id = 1)
+            -1.0, 1.0, 1.0,     # 5
+            -1.0, -1.0, 1.0,    # 6
+            1.0, -1.0, 1.0,     # 1
+
+            1.0, 1.0, 1.0,      # 0 right  (id = 2)
+            1.0, -1.0, 1.0,     # 1
+            1.0, -1.0, -1.0,    # 2
+            1.0, 1.0, -1.0,    # 3
+
+            -1.0, -1.0, -1.0,   # 7 bottom (id = 3)
+            -1.0, 1.0, -1.0,    # 4
+            1.0, 1.0, -1.0,     # 3
+            1.0, -1.0, -1.0,    # 2
+
+            -1.0, -1.0, -1.0,   # 7 left   (id = 4)
             -1.0, -1.0, 1.0,    # 6
             -1.0, 1.0, 1.0,     # 5
             -1.0, 1.0, -1.0,    # 4
 
-            -1.0, -1.0, -1.0,   # 7 back    (id = 5)
-            -1.0, 1.0, -1.0,    # 4
+            1.0, 1.0, 1.0,      # 0 back   (id = 5)
             1.0, 1.0, -1.0,     # 3
-            1.0, -1.0, -1.0,    # 2
+            -1.0, 1.0, -1.0,    # 4
+            -1.0, 1.0, 1.0,     # 5
         ], dtype=np.float32)
         colors = np.zeros(72, dtype=np.float32)
         colors[::3] = np.arange(6).repeat(4) / 255.0
@@ -197,9 +197,12 @@ class GLViewCube:
         glViewport(*self._get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.p.rot_quat)
+        mat = glm.lookAt(glm.vec3(0.0, -1.0, 0.0),               # position
+                         glm.vec3(0.0, 0.0, 0.0),                # target
+                         glm.vec3(0.0, 0.0, 1.0))                # up
+        modelview = mat * glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.p.shaders['default'])
+        glUseProgram(self.parent.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
@@ -219,9 +222,12 @@ class GLViewCube:
         glViewport(*self.viewport)
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        modelview = glm.mat4_cast(self.p.rot_quat)
+        mat = glm.lookAt(glm.vec3(0.0, -1.0, 0.0),               # position
+                         glm.vec3(0.0, 0.0, 0.0),                # target
+                         glm.vec3(0.0, 0.0, 1.0))                # up
+        modelview = mat * glm.mat4_cast(self.parent.rot_quat)
 
-        glUseProgram(self.p.shaders['default'])
+        glUseProgram(self.parent.shaders['default'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
         glBindVertexArray(self._vao_picking)
@@ -249,7 +255,7 @@ class GLViewCube:
     def _get_viewport(self) -> Tuple[int, int, int, int]:
         """Return (x, y, width, height) to set viewport according to position.
         """
-        canvas_size = self.p.get_canvas_size()
+        canvas_size = self.parent.get_canvas_size()
         width, height = canvas_size.width, canvas_size.height
         if self._position == ViewCubePos.TOP_LEFT:
             corner = (0, height - self._size)

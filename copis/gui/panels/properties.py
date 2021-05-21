@@ -127,7 +127,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_p_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.core.actions[points[0] - len(self.core.devices)]
+            action = self.core.actions[points[0]]
             if action.argc == 5:
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
@@ -293,14 +293,14 @@ class _PropTransform(wx.Panel):
             (0, 0, wx.GBPosition(0, 0)),    # vertical spacer
 
             (x_neg_btn, wx.GBPosition(0, 1), wx.GBSpan(2, 1), wx.EXPAND, 0),
-            (z_pos_btn, wx.GBPosition(0, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (z_neg_btn, wx.GBPosition(1, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (y_pos_btn, wx.GBPosition(0, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (y_neg_btn, wx.GBPosition(1, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
             (x_pos_btn, wx.GBPosition(0, 3), wx.GBSpan(2, 1), wx.EXPAND, 0),
 
             (0, 0, wx.GBPosition(0, 4)),    # vertical spacer
 
-            (y_pos_btn, wx.GBPosition(0, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
-            (y_neg_btn, wx.GBPosition(1, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (z_pos_btn, wx.GBPosition(0, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
+            (z_neg_btn, wx.GBPosition(1, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
 
             (4, 0, wx.GBPosition(0, 6)),    # vertical spacer
 
