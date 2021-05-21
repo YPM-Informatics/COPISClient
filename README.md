@@ -24,10 +24,11 @@ python3 -m pip install -r requirements.txt
 __Note: This project supports Python version 3.x.x.__
 ### Usage
 
-To start the application from the project root, run:
+To start the application, run:
 ```bash
 python copisclient.py
 ```
+This should work regardless of the current directory.
 
 ### Configuration Files
 
