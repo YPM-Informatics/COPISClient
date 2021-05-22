@@ -24,6 +24,7 @@ class _CommandProcessor:
     Args:
         parent: Pointer to a parent console panel.
     """
+    _PROTOCOLS = ['edsdk', 'serial']
 
     def __init__(self, parent) -> None:
         self._console = parent
@@ -46,12 +47,13 @@ class _CommandProcessor:
     def switch(self, cmd: str, opts) -> None:
         """Switch statement implementation for commands list."""
         def use():
-            if len(opts) < 1:
-                self._console.print('No protocol provided. Usage: \'use <protocol>\'; \
+            protocol = opts[0].lower()
+            if len(protocol) < 1 or protocol not in self._PROTOCOLS:
+                self._console.print('No valid protocol provided. Usage: \'use <protocol>\'; \
                     where <protocol> is \'edsdk\' or \'serial\'.')
                 return
 
-            self._protocol = opts[0].lower()
+            self._protocol = protocol
             self._console.print(f'Using {self._protocol}.')
 
         def release():
