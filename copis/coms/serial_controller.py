@@ -15,7 +15,10 @@
 
 """Manages COPIS Serial Communications"""
 
+from dataclasses import dataclass
+
 import serial
+
 from serial.tools import list_ports
 
 
@@ -24,34 +27,164 @@ class SerialController():
 
     _TEST_SERIAL_PORT = 'TEST'
 
+    BAUDS = [ 9600, 19200, 38400, 57600, 115200]
+
     def __init__(self):
-        self.selected_serial = None
-        self.ports = self.get_ports()
-        self.bauds = []
+        self._ports = []
+        self._active_port = None
+        self._console = None
+        self._is_dev_env = False
 
-    def get_ports(self):
-        ports = []
+    def initialize(self, console, is_dev_env: bool = False) -> None:
+        """Initialize the serial object"""
+        if any(p.is_open for p in self._ports):
+            return
 
-        for n, (portname, desc, hwind) in enumerate(sorted(list_ports.comports())):
-            ports.append(portname)
+        self._console = console
+        self._is_dev_env = is_dev_env
 
-        ports.append(SerialController._TEST_SERIAL_PORT)
-        return ports
+        self._update_port_list()
 
-    def get_bauds(self):
-        if self.selected_serial:
-            standard = [9600, 19200, 38400, 57600, 115200]
-            return standard #[:standard.index(self.selected_serial.baudrate) + 1]
+    def select_port(self, name: str) -> bool:
+        """Creates a serial connection with the given port, without opening it"""
+        port = self._get_port(name)
+        has_active_port = self._active_port is not None
 
-    def set_current_serial(self, port):
-        try:
-            if port == SerialController._TEST_SERIAL_PORT:
-                self.selected_serial = serial.serial_for_url('loop://')
-            else:
-                self.selected_serial = serial.Serial(port)
-
-            self.selected_serial.close()
-            self.bauds = self.get_bauds()
-            return True
-        except serial.serialutil.SerialException:
+        if port is None:
+            self._console.print('Invalid attempt to select unknown port.')
             return False
+
+        if has_active_port and port.name == self._active_port.name \
+            and self._active_port is not None:
+            self._console.print('Port already selected.')
+            return True
+
+        self._active_port.is_active = False
+
+        if port.connection is not None:
+            port.is_active = True
+            self._active_port = port
+            return True
+
+        try:
+            connection = None
+            if name == SerialController._TEST_SERIAL_PORT:
+                connection = serial.serial_for_url('loop://', do_not_open=True)
+            else:
+                connection = serial.Serial()
+                connection.port = name
+
+            port.connection = connection
+            port.is_active = True
+            self._active_port = port
+
+            return True
+        except serial.SerialException as err:
+            self._console.print(f'Error instantiating serial connection: {err.args[0]}')
+            return False
+
+    def open_port(self, baud: int = BAUDS[-1]) -> bool:
+        """Opens the active port"""
+        active_port = self._active_port
+        has_active_port = active_port is not None
+
+        if not has_active_port:
+            self._console.print('No port selected.')
+            return False
+
+        if active_port.connection.is_open:
+            self._console.print('Port connection already open.')
+            return True
+
+        active_port.baudrate = baud
+        active_port.open()
+        return True
+
+    def close_port(self) -> None:
+        """Closes the active port"""
+        active_port = self._active_port
+        has_active_port = active_port is not None
+
+        if has_active_port and active_port.connection.is_open:
+            active_port.connection.close()
+
+    def write(self, data: str) -> None:
+        """Writes to the active port"""
+        data = data.rstrip("\r")
+        data = f'{data}\r'.encode()
+        active_port = self._active_port
+
+        if active_port is not None and active_port.connection is not None \
+            and active_port.connection.is_open:
+            active_port.write(data)
+
+    def terminate(self) -> None:
+        """Closes all ports"""
+        for port in self._ports:
+            if port is not None and port.connection is not None and port.connection.is_open:
+                port.connection.close()
+
+    @property
+    def is_port_open(self) -> bool:
+        """Returns open status of the active port"""
+        return self._active_port.connection.is_open \
+            if self._active_port is not None else False
+
+    @property
+    def port_list(self) -> list:
+        """Returns a copy of the serial ports list"""
+        self._update_port_list()
+
+        return self._ports.copy()
+
+    def _update_port_list(self):
+        """Updates the serial ports list"""
+        new_ports = []
+        has_active_port = self._active_port is not None
+
+        for (name, desc, _hwind) in enumerate(sorted(list_ports.comports())):
+            port = self._get_port(name)
+            is_active = has_active_port and self._active_port.name == name
+
+            if port is None:
+                port = SerialPort(name, None, desc, is_active)
+
+            new_ports.append(port)
+
+        # Ensure test port is added if in dev environment
+        if self._is_dev_env:
+            p_name = SerialController._TEST_SERIAL_PORT
+            port = self._get_port(p_name)
+            is_active = has_active_port and self._active_port.name == p_name
+
+            if port is None:
+                port = SerialPort(p_name, None, 'Loopback port for test', is_active)
+
+            new_ports.append(port)
+
+        self._ports.clear()
+        self._ports.append(new_ports)
+
+        if has_active_port and not \
+            any(p.name == self._active_port.name for p in self._ports):
+            self._active_port = None
+
+    def _get_port(self, name: str):
+        """Finds a serial port by name in the list of ports and returns it, or None"""
+        return next(filter(lambda p, n = name: p.name == n, self._ports), None)
+
+@dataclass
+class SerialPort():
+    """Data structure to hold a COPIS serial port object"""
+    name: str = ''
+    connection: serial.Serial = None
+    description: str = ''
+    is_active: bool = False
+
+    def __iter__(self):
+        return iter((
+            self.name,
+            self.connection,
+            self.description,
+            self.is_active
+        ))
