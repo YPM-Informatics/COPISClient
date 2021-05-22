@@ -37,6 +37,8 @@ from typing import List, Optional, Tuple
 
 from pydispatch import dispatcher
 
+import copis.coms.serial_controller as serial_controller
+
 from .enums import ActionType, DebugEnv
 from .helpers import Point5
 from .classes import Action, Device, MonitoredList
@@ -514,25 +516,37 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
-        """Initializes Canon EDSDK connection."""
+        """Initializes Canon EDSDK connection"""
         if self._is_edsdk_enabled:
             return
 
         self._edsdk = import_module('copis.coms.edsdk_controller')
         self._edsdk.initialize(ConsoleOutput())
-        
+
         self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
-        """Terminates Canon EDSDK connection."""
+        """Terminates Canon EDSDK connection"""
         if self._is_edsdk_enabled:
             self._edsdk.terminate()
 
+    # --------------------------------------------------------------------------
+    # Serial methods
+    # --------------------------------------------------------------------------
+
     def init_serial(self) -> None:
-        """Initializes serial connection."""
+        """Initializes serial connection"""
+        if self._is_serial_enabled:
+            return
+
+        self._serial = serial_controller
+        self._serial.initialize(ConsoleOutput())
+        self._is_serial_enabled = True
 
     def terminate_serial(self):
-        """Terminates serial connection."""
+        """Terminates serial connection"""
+        if self._is_serial_enabled:
+            self._serial.terminate()
 
     @property
     def edsdk(self):
