@@ -27,17 +27,17 @@ class EvfPanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent):
         """Inits EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
-        self.c = self.parent.core
+        self.core = self.parent.core
         # self.timer = wx.CallLater(10, self.update)
 
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
         # self.Bind(wx.EVT_PAINT, self.on_paint)
 
-        self.c.edsdk.connect(0)
+        self.core.edsdk.connect(0)
 
         # self.update()
 
@@ -64,5 +64,5 @@ class EvfPanel(wx.Panel):
 
     def on_close(self):
         # self.cam.end_evf()
-        self.c.edsdk.end_evf()
+        self.core.edsdk.end_evf()
         self.timer.Stop()
