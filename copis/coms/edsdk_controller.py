@@ -20,11 +20,11 @@ import datetime
 
 from ctypes import c_int, c_uint, c_void_p, sizeof, WINFUNCTYPE
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
+    EDSDK, EdsCapacity, EdsDeviceInfo, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
 
@@ -213,7 +213,7 @@ class EDSDKController():
         return self._edsdk is not None
 
     @property
-    def device_list(self) -> list:
+    def device_list(self) -> List[EdsDeviceInfo]:
         """Returns a list of descriptions of devices connected via edsdk"""
         devices = []
         self._update_camera_list()
@@ -385,6 +385,6 @@ def is_enabled(mod) -> bool:
     return mod._instance.is_enabled
 
 @mproperty
-def device_list(mod) -> list:
+def device_list(mod) -> List[EdsDeviceInfo]:
     """Returns a list of descriptions of devices connected via edsdk; from the module"""
     return mod._instance.device_list
