@@ -207,6 +207,29 @@ class EDSDKController():
         """Returns a flag indicating whether we are waiting for an image"""
         return self._is_waiting_for_image
 
+    @property
+    def is_enabled(self) -> bool:
+        """Returns a flag indicating whether EDSDK is enabled"""
+        return self._edsdk is not None
+
+    @property
+    def device_list(self) -> list:
+        """Returns a list of descriptions of devices connected via edsdk"""
+        devices = []
+        self._update_camera_list()
+
+        cam_count, cam_index, cam_items, *_ = self._camera
+
+        for i in range(cam_count):
+            ref = self._edsdk.EdsGetChildAtIndex(cam_items, i)
+            info = self._edsdk.EdsGetDeviceInfo(ref)
+
+            is_connected = self._is_connected and i == cam_index
+
+            devices.append((info, is_connected))
+
+        return devices
+
     # def step_focus(self) -> bool:
     #     """TODO
 
@@ -228,7 +251,7 @@ class EDSDKController():
     #     return
 
     def _update_camera_list(self):
-        """Update camera list and camera count."""
+        """Updates camera list and camera count."""
         self._camera.items = self._edsdk.EdsGetCameraList()
         self._camera.count = self._edsdk.EdsGetChildCount(self._camera.items)
 
@@ -358,27 +381,10 @@ def is_waiting_for_image(mod) -> bool:
 
 @mproperty
 def is_enabled(mod) -> bool:
-    """Returns a flag indicating whether EDSDK is enabled"""
-    return mod._instance._edsdk is not None
+    """Returns a flag indicating whether EDSDK is enabled; from the module"""
+    return mod._instance.is_enabled
 
 @mproperty
 def device_list(mod) -> list:
-    """Returns a list of descriptions of devices connected via edsdk"""
-    devices = []
-    mod._instance._update_camera_list()
-
-    cam_count, cam_index, cam_items, cam_ref = mod._instance._camera
-    edsdk = mod._instance._edsdk
-
-    for i in range(cam_count):
-        ref = edsdk.EdsGetChildAtIndex(cam_items, i)
-        info = edsdk.EdsGetDeviceInfo(ref)
-
-        ref_value = None if ref is None else ref.value
-        cam_ref_value = None if cam_ref is None else cam_ref.value
-
-        is_connected = ref_value == cam_ref_value and i == cam_index
-
-        devices.append((info, is_connected))
-
-    return devices
+    """Returns a list of descriptions of devices connected via edsdk; from the module"""
+    return mod._instance.device_list
