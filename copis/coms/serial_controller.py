@@ -16,10 +16,29 @@
 """Manages COPIS Serial Communications"""
 
 from dataclasses import dataclass
+from typing import List
 
 import serial
 
 from serial.tools import list_ports
+from mprop import mproperty
+
+
+@dataclass
+class SerialPort():
+    """Data structure to hold a COPIS serial port object"""
+    name: str = ''
+    connection: serial.Serial = None
+    description: str = ''
+    is_active: bool = False
+
+    def __iter__(self):
+        return iter((
+            self.name,
+            self.connection,
+            self.description,
+            self.is_active
+        ))
 
 
 class SerialController():
@@ -131,7 +150,7 @@ class SerialController():
             if self._active_port is not None else False
 
     @property
-    def port_list(self) -> list:
+    def port_list(self) -> List[SerialPort]:
         """Returns a copy of the serial ports list"""
         self._update_port_list()
 
@@ -173,18 +192,22 @@ class SerialController():
         """Finds a serial port by name in the list of ports and returns it, or None"""
         return next(filter(lambda p, n = name: p.name == n, self._ports), None)
 
-@dataclass
-class SerialPort():
-    """Data structure to hold a COPIS serial port object"""
-    name: str = ''
-    connection: serial.Serial = None
-    description: str = ''
-    is_active: bool = False
 
-    def __iter__(self):
-        return iter((
-            self.name,
-            self.connection,
-            self.description,
-            self.is_active
-        ))
+_instance = SerialController()
+
+initialize = _instance.initialize
+select_port = _instance.select_port
+open_port = _instance.open_port
+close_port = _instance.close_port
+write = _instance.write
+terminate = _instance.terminate
+
+@mproperty
+def is_port_open(mod) -> bool:
+    """Returns open status of the active port, from the module"""
+    return mod._instance.is_port_open
+
+@mproperty
+def port_list(mod) -> List[SerialPort]:
+    """Returns a copy of the serial ports list, from the module"""
+    return mod._instance.port_list
