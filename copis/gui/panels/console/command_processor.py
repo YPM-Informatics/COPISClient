@@ -26,95 +26,161 @@ class _CommandProcessor:
     """
     _PROTOCOLS = ['edsdk', 'serial']
 
-    def __init__(self, parent) -> None:
-        self._console = parent
+    def __init__(self, core, console = None) -> None:
+        self._core = core
+        self._console = console
         self._protocol = ''
 
     def process(self, cmd_line: str) -> None:
         """Processes the given command."""
         protocol_prompt = f'<{self._protocol}>' if len(self._protocol) > 0 else ''
-        self._console.print(f'{protocol_prompt}$ {cmd_line}')
+        self._print(f'{protocol_prompt}$ {cmd_line}')
 
-        self._console.on_command_cleared()
+        if self._console is not None:
+            self._console.on_command_cleared()
 
         argv = shlex.split(cmd_line)
 
         if len(argv) < 1:
-            self._console.print('No command provided.')
+            self._print('No command provided.')
 
         self.switch(argv[0], argv[1:])
 
+    # pylint: disable=too-many-statements
     def switch(self, cmd: str, opts) -> None:
         """Switch statement implementation for commands list."""
         def use():
-            protocol = opts[0].lower()
+            protocol = '' if len(opts) < 1 else opts[0].lower()
             if len(protocol) < 1 or protocol not in self._PROTOCOLS:
-                self._console.print('No valid protocol provided. Usage: \'use <protocol>\'; \
-                    where <protocol> is \'edsdk\' or \'serial\'.')
+                self._print('No valid protocol provided. Usage: \'use <protocol>\';',
+                    ' where <protocol> is \'edsdk\' or \'serial\'.')
                 return
 
             self._protocol = protocol
-            self._console.print(f'Using {self._protocol}.')
+            self._print(f'Using {self._protocol}.')
 
         def release():
-            self._console.print(f'Protocol {self._protocol} released.')
+            if self._protocol == 'edsdk':
+                self._core.edsdk.disconnect()
+            elif self._protocol == 'serial':
+                self._core.serial.terminate()
+            self._print(f'Protocol {self._protocol} released.')
             self._protocol = ''
 
         def connect():
             if self._protocol == '':
-                self._console.print('No protocol to connect with.')
+                self._print('No protocol to connect with.')
             elif self._protocol == 'edsdk':
                 cam_index = '0' if len(opts) < 1 else opts[0]
 
                 if cam_index.isdigit():
-                    self._console.core.edsdk.connect(int(cam_index))
+                    self._core.edsdk.connect(int(cam_index))
+                    self._protocol(f'Connected to camera {cam_index}')
                 else:
-                    self._console.print('Invalid operation. \'Usage: connect <device_index>\'; \
-                        where <device_index> in an integer.')
-            else:
-                self._console.print(f'Protocol \'{self._protocol}\' not implemented.')
+                    self._print('Invalid operation. Usage: \'connect <device_index>\';',
+                        ' where <device_index> in an integer.')
+            elif self._protocol == 'serial':
+                if len(opts) == 1 or (len(opts) > 1 and opts[0] not in ['-b', '--baudrate']):
+                    self._print('Invalid operation. Usage: \'connect -b[--baudrate] <baud_rate>\';',
+                        ' where <baud_rate> in an integer.')
+                    return
+
+                baud = str(self._core.serial.BAUDS[-1]) if len(opts) < 1 else opts[1]
+
+                if baud.isdigit():
+                    if self._core.serial.open_port(int(baud)):
+                        self._print(f'Connected via serial at baud rate {baud}.')
+                else:
+                    self._print('Invalid operation. Usage: \'connect -b[--baudrate] <baud_rate>\';',
+                        ' where <baud_rate> in an integer.')
 
         def disconnect():
             if self._protocol == '':
-                self._console.print('No protocol to disconnect from.')
+                self._print('No protocol to disconnect from.')
             elif self._protocol == 'edsdk':
-                self._console.core.edsdk.disconnect()
+                self._core.edsdk.disconnect()
             else:
-                self._console.print(f'Protocol \'{self._protocol}\' not implemented.')
+                self._core.serial.close_port()
+
+            self._print('Disconnected.')
 
         def shoot():
-            if self._protocol != 'edsdk':
-                self._console.print('A device needs to be connected via \'edsdk\' \
-                    in order to shoot.')
-            else:
+            if self._protocol == '':
+                self._print('No protocol to shoot from.')
+            elif self._protocol == 'edsdk':
                 if len(opts) < 1:
-                    self._console.core.edsdk.take_picture()
+                    self._core.edsdk.take_picture()
                 elif opts[0].isdigit():
-                    if self._console.core.edsdk.connect(int(opts[0])):
-                        self._console.core.edsdk.take_picture()
+                    if self._core.edsdk.connect(int(opts[0])):
+                        self._core.edsdk.take_picture()
                 else:
-                    self._console.print('Invalid operation. \'Usage: shoot <device_index>\';  \
-                        where <device_index> in an integer.')
+                    self._print('Invalid operation. Usage: \'shoot <device_index>\';',
+                        ' where <device_index> in an integer.')
+            elif self._protocol == 'serial':
+                if not self._core.serial.is_port_open:
+                    self._print('A serial port needs to be open in order to shoot.')
+                else:
+                    cmd = 'C0S500'
+                    if len(opts) < 1:
+                        self._core.serial.write(cmd)
+                    elif opts[0].isdigit():
+                        index = int(opts[0])
+                        if index > 0:
+                            self._core.serial.write(f'>{index}{cmd}')
+                        else:
+                            self._core.serial.write(cmd)
+                    else:
+                        self._print('Invalid operation. Usage: \'shoot <device_index>\';',
+                            ' where <device_index> in an integer.')
 
         def list_():
             if self._protocol == '':
-                self._console.print('No protocol to list items for.')
+                self._print('No protocol to list items for.')
             elif self._protocol == 'edsdk':
-                devices = self._console.core.edsdk.device_list
+                devices = self._core.edsdk.device_list
 
                 if len(devices) > 0:
                     for i, item in enumerate(devices):
                         (device, is_connected) = item
-                        status = " - connected" if is_connected else ""
-                        desc = device.szDeviceDescription.decode("utf-8")
-                        self._console.print(f'\t{i}: {desc}{status}')
+                        status = ' - connected' if is_connected else ''
+                        desc = device.szDeviceDescription.decode('utf-8')
+                        self._print(f'\t{i}: {desc}{status}')
                 else:
-                    self._console.print('No devices found.')
+                    self._print('No devices found.')
+            elif self._protocol == 'serial':
+                devices = self._core.serial.port_list
+
+                if len(devices) > 0:
+                    for device in devices:
+                        status = ' - connected' if device.connection is not None and \
+                            device.connection.is_open else ''
+                        active = ' - selected' if device.is_active else ''
+                        self._print(f'\t{device.name}: {status}{active}')
+                else:
+                    self._print('No devices found.')
+
+        def refresh():
+            if self._protocol != 'serial':
+                self._print('this command is only allowed for serial protocol.')
             else:
-                self._console.print(f'Protocol \'{self._protocol}\' not implemented.')
+                self._print('Refreshing...')
+                self._core.serial.update_port_list()
+                self._print('refreshed.')
+                list_()
+
+        def select():
+            if self._protocol != 'serial':
+                self._print('this command is only allowed for serial protocol.')
+            else:
+                if len(opts) < 1:
+                    self._print('No port provided. Usage: \'select <port_name>\';',
+                        ' where <port_name> is a string.')
+                else:
+                    port = self._core.serial.select_port(opts[0])
+                    self._print(f'{opts[0]} {"not " if port is None else ""}selected.')
 
         def default():
-            self._console.print("Command not implemented.")
+            self._print("Command not implemented.")
 
         cmds = {
             'use': use,
@@ -122,7 +188,16 @@ class _CommandProcessor:
             "list": list_,
             'connect': connect,
             'disconnect': disconnect,
-            'shoot': shoot
+            'shoot': shoot,
+            'refresh': refresh,
+            'select': select
         }
 
         cmds.get(cmd, default)()
+
+    def _print(self, *msgs):
+        msg = ''.join(msgs)
+        if self._console is None:
+            print(msg)
+        else:
+            self._console.print(msg)
