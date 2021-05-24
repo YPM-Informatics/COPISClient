@@ -84,7 +84,7 @@ def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
 
 
 def find_path(filename: str = '') -> str:
-    paths = [p for p in Path(_root).rglob(filename)]
+    paths = list(Path(_root).rglob(filename))
     return str(paths[0]) if len(paths) > 0 else ''
 
 
