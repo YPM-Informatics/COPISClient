@@ -397,7 +397,7 @@ class MainWindow(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
-        self.panels['machine_toolbar'] = MachineToolbar(self)
+        self.panels['machine_toolbar'] = MachineToolbar(self, self.panels['console'])
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
         # add visualizer panel
