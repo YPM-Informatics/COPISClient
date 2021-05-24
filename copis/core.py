@@ -538,9 +538,9 @@ class COPISCore:
         """Initializes serial connection"""
         if self._is_serial_enabled:
             return
-
+        is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
         self._serial = serial_controller
-        self._serial.initialize(ConsoleOutput())
+        self._serial.initialize(ConsoleOutput(), is_dev_env)
         self._is_serial_enabled = True
 
     def terminate_serial(self):
