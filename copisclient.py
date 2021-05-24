@@ -31,4 +31,5 @@ if __name__ == '__main__':
         logging.debug('KeyboardInterrupt')
 
     app.core.terminate_edsdk()
+    app.core.terminate_serial()
     del app
