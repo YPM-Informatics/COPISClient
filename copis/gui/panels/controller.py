@@ -36,10 +36,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Inits ControllerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.p = parent
+        self.parent = parent
+        self.core = self.parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -77,7 +78,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         # if button.Name[1] == '-':
         #     step *= -1
 
-        serial = self.p.panels['machine_toolbar'].serial_controller.selected_serial
+        serial = self.core.serial
 
         if button.Name == 'xy':
             print('Not implemented.')
@@ -92,10 +93,10 @@ class ControllerPanel(scrolled.ScrolledPanel):
             msg = msg.replace('e', 'x')
             msg = msg.replace('w', 'x-')
 
-        if (serial is not None and serial.is_open):
+        if (serial is not None and serial.is_port_open):
             print('Serial is open.')
-            serial.write('g91\r'.encode())
-            serial.write(msg.encode())
+            serial.write('g91\r')
+            serial.write(msg)
         else:
             print('no serial')
 

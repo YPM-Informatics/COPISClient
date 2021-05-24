@@ -614,13 +614,11 @@ class _PropCameraConfig(wx.Panel):
             self.ptp_rbh.Value = False
             self.ptp_rbh.Disable()
 
-            if self.parent.core.edsdk_enabled:
-                self.parent.core.terminate_edsdk()
+            self.parent.core.terminate_edsdk()
         elif rb.Label == 'EDSDK':
             self.parent.core.init_edsdk()
         else:
-            if self.parent.core.edsdk_enabled:
-                self.parent.core.terminate_edsdk()
+            self.parent.core.terminate_edsdk()
 
     def on_take_picture(self, event: wx.CommandEvent) -> None:
         """ Take picture.
