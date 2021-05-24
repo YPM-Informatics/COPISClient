@@ -19,6 +19,7 @@ import math
 import os
 from collections import OrderedDict
 from functools import wraps
+from math import cos, sin
 from pathlib import Path
 from time import time
 from typing import Callable, NamedTuple
@@ -60,11 +61,12 @@ def timing(f: Callable) -> Callable:
 
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
+    t -= math.pi / 2.0
     model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
             glm.mat4(
-                math.cos(t) * math.cos(p), -math.cos(t) * math.sin(p), math.sin(t), 0.0,
-                math.sin(p), math.cos(p), 0.0, 0.0,
-                -math.sin(t) * math.cos(p), math.sin(t) * math.sin(p), math.cos(t), 0.0,
+                cos(p), -sin(p), 0.0, 0.0,
+                cos(t) * sin(p), cos(t) * cos(p), -sin(t), 0.0,
+                sin(t) * sin(p), sin(t) * cos(p), cos(t), 0.0,
                 0.0, 0.0, 0.0, 1.0)
     return model
 
