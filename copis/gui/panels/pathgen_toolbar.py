@@ -207,7 +207,7 @@ class PathgenToolbar(aui.AuiToolBar):
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
             pan = math.atan2(dx, dy)
             x2y2 = dx * dx + dy * dy
-            tilt = math.atan2(math.sqrt(x2y2), dz)
+            tilt = -math.atan2(dz, math.sqrt(x2y2))
 
             device = 0
             # TODO: temporary hack to divvy up points

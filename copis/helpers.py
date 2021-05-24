@@ -61,7 +61,6 @@ def timing(f: Callable) -> Callable:
 
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
-    t -= math.pi / 2.0
     model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
             glm.mat4(
                 cos(p), -sin(p), 0.0, 0.0,
