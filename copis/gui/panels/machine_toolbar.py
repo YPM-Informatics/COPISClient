@@ -138,6 +138,7 @@ class MachineToolbar(aui.AuiToolBar):
                     connect_btn.Label = 'Disconnect'
                 else:
                     connect_btn.Label = 'Connect'
+                    set_dialog('Unable to connect.')
             else:
                 self.core.serial.close_port()
                 connect_btn.Label = 'Connect'
