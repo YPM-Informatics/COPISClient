@@ -61,18 +61,19 @@ class FancyTextCtrl(wx.TextCtrl):
     """TextCtrl but a bit smarter.
 
     Args:
-        num_value:
-        max_precision:
-        default_unit:
-        unit_conversions:
+        num_value: Optional; A float representing initial value. Defaults to 1.
+        max_precision: Optional; An integer representing the max precision to
+            display. Defaults to 3.
+        default_unit: A string representing the default unit.
+        unit_conversions: A dictionary with pairs of (unit: str, conversion: float).
 
     Attributes:
-        num_value:
-        current_unit:
+        num_value: A float representing current value in the current units.
+        current_unit: A tuple of current unit string and conversion from default.
     """
 
-    def __init__(self, *args, num_value=1, max_precision=3, default_unit,
-                 unit_conversions, **kwargs):
+    def __init__(self, *args, num_value: float = 1, max_precision: int = 3,
+                 default_unit: str, unit_conversions, **kwargs):
         """Inits FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
         self.WindowStyle = wx.TE_PROCESS_ENTER
@@ -94,7 +95,7 @@ class FancyTextCtrl(wx.TextCtrl):
         self.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
         self.Bind(wx.EVT_KILL_FOCUS, self.on_kill_focus)
         self.Bind(wx.EVT_TEXT, self.on_text_change)
-        self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        self.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
 
     def on_left_up(self, event: wx.CommandEvent) -> None:
         """On EVT_LEFT_UP, if not already focused, select digits."""
@@ -121,10 +122,23 @@ class FancyTextCtrl(wx.TextCtrl):
         self._text_dirty = True
         event.Skip()
 
-    def on_text_enter(self, event: wx.CommandEvent) -> None:
-        """On EVT_TEXT_ENTER, process the updated value."""
+    def on_key_down(self, event: wx.KeyEvent) -> None:
+        """On EVT_KEY_DOWN, process the text if enter or tab is pressed."""
+        keycode = event.KeyCode
+        if not event.HasAnyModifiers() and \
+            (keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB):
+            self._process_text()
+
+            # handle if shift is held
+            event.EventObject.Navigate(flags=
+                wx.NavigationKeyEvent.IsBackward if event.shiftDown else wx.NavigationKeyEvent.IsForward)
+
+        else:
+            event.Skip()
+
+    def _process_text(self) -> None:
+        """Process updated text. Uses a regex to automatically convert between units."""
         if not self._text_dirty:
-            self.Navigate()
             return
 
         regex = re.findall(rf'(-?\d*\.?\d+)\s*({"|".join(self._units.keys())})?', self.Value)
@@ -140,12 +154,10 @@ class FancyTextCtrl(wx.TextCtrl):
         self._update_value()
 
         evt = FancyTextUpdatedEvent()
-        # wxPython is dumb. WHY DOESN'T evt.EventObject = self WORK??????
         evt.SetEventObject(self)
 
         self.SelectNone()
         wx.PostEvent(self, evt)
-        self.Navigate()
 
     def _update_value(self) -> None:
         """Update control text."""
@@ -154,6 +166,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
     @property
     def num_value(self) -> float:
+        """Current value in the current units."""
         return self._num_value
 
     @num_value.setter
@@ -163,4 +176,5 @@ class FancyTextCtrl(wx.TextCtrl):
 
     @property
     def current_unit(self) -> Tuple[str, float]:
+        """Tuple of current unit string and conversion from default."""
         return self._current_unit, self._units[self._current_unit]
