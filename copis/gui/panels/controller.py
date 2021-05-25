@@ -84,7 +84,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
             print('Not implemented.')
             return
 
-        msg = f'g1{button.Name}5\r'
+        msg = f'G0{button.Name}5\r'
         msg = msg.replace('+', '')
 
         if button.Name[1] not in '+-':
@@ -94,9 +94,10 @@ class ControllerPanel(scrolled.ScrolledPanel):
             msg = msg.replace('w', 'x-')
 
         if (serial is not None and serial.is_port_open):
+            data = f'G91\r{msg.upper()}'
             print('Serial is open.')
-            serial.write('g91\r')
-            serial.write(msg)
+            print(data.encode())
+            print(serial.write(data))
         else:
             print('no serial')
 

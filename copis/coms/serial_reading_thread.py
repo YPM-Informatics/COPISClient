@@ -33,19 +33,19 @@ class SerialReadingThread(threading.Thread):
     def run(self):
         while self._connection.is_open:
             time.sleep(0.001)
-            while self._connection.is_open and self._connection.in_waiting > 0:
-                p_bytes = self._connection.readline().decode('utf-8')
-                print(p_bytes)
+            while self._connection.is_open and self._connection.in_waiting:
+                p_bytes = self._connection.readline().decode()
                 self._parse_output(p_bytes)
 
                 if self._connection.in_waiting == 0:
                     idle_response = \
                         next(filter(lambda r: r['ssf'] == 0, self._response_stack), None)
-                    
+
                     if idle_response is not None:
-                        #TODO: broadcast OK.
-                        #TODO: fix serial.serialutil.SerialException: ClearCommError failed (OSError(9, 'The handle is invalid.', None, 6))
-                        # that occurs on exit.
+                        # TODO: broadcast OK.
+                        # TODO: fix serial.serialutil.SerialException:
+                        # ClearCommError failed (OSError(9, 'The handle is invalid.', None, 6))
+                        # that occurs on serial port close.
                         pass
 
                     self._response_stack.clear()

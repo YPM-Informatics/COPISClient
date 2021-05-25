@@ -16,16 +16,16 @@
 """Manages COPIS Serial Communications"""
 
 
+import ast
+import time
+import serial
+
 from dataclasses import dataclass
 from typing import List
 
-import serial
 from serial.serialutil import SerialException
-
 from serial.tools import list_ports
 from mprop import mproperty
-
-from .serial_reading_thread import SerialReadingThread
 
 
 @dataclass
@@ -129,7 +129,8 @@ class SerialController():
             self._print(err.args[0])
             return False
 
-        SerialReadingThread(active_port.connection).start()
+        self._print('\n' +
+            '\n'.join([line for line in self._read() if isinstance(line, str)]))
 
         return True
 
@@ -141,9 +142,10 @@ class SerialController():
         if has_active_port and active_port.connection.is_open:
             active_port.connection.close()
 
-    def write(self, data: str) -> None:
+    def write(self, data: str) -> List[str]:
         """Writes to the active port"""
         active_port = self._active_port
+        response = []
 
         if active_port is not None and active_port.connection is not None \
             and active_port.connection.is_open:
@@ -151,6 +153,9 @@ class SerialController():
             data = f'{data}\r'.encode()
 
             active_port.connection.write(data)
+            response = self._read()
+
+        return response
 
     def terminate(self) -> None:
         """Closes all ports"""
@@ -191,14 +196,64 @@ class SerialController():
             any(p.name == self._active_port.name for p in self._ports):
             self._active_port = None
 
+    def _read(self) -> list:
+        wait = .09
+        active_port = self._active_port
+        read_buffer = []
+        time.sleep(wait)
+
+        if active_port is not None and active_port.connection is not None \
+            and active_port.connection.is_open:
+            while active_port.connection.is_open and active_port.connection.in_waiting:
+                p_bytes = active_port.connection.readline().decode()
+                read_buffer.append(p_bytes)
+                time.sleep(wait)
+
+        return self._parse_output(read_buffer)
+
     def _print(self, msg):
-        print(msg) if self._console is None else self._console.print(msg)
+        if self._console is None:
+            print(msg)
+        else:
+            self._console.print(msg)
 
     def _get_port(self, name: str):
         if len(self._ports) < 1:
             return None
 
         return next(filter(lambda p, n = name: p.name == n, self._ports), None)
+
+    def _parse_output(self, output: List[str]) -> list:
+        response_stack = []
+
+        for data in output:
+            data = data.strip('\r\n')
+
+            if data.startswith('<') and data.endswith('>'):
+                data = data.lstrip('<').rstrip('>')
+
+                segments = data.split(',', 2)
+                segments = [tuple(s.split(':')) for s in segments]
+                mapped = map(self._stringify, segments)
+
+                result = '{' + ', '.join(mapped) + '}'
+
+                result_dict = ast.literal_eval(result)
+                result_dict['idle'] = result_dict['ssf'] == 0
+
+                response_stack.append(result_dict)
+            else:
+                response_stack.append(data)
+
+        return response_stack
+
+    def _stringify(self, data):
+        if ',' in data[1]:
+            value = '{{"X": {0}, "Y": {1}, "Z": {2}, "P": {3}, "T": {4}}}'\
+                .format(*data[1].split(','))
+            return f'"{data[0]}": {value}'
+
+        return f'"{data[0]}": {data[1]}'
 
     @property
     def is_port_open(self) -> bool:
