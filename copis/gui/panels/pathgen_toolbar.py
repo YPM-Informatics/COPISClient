@@ -20,8 +20,8 @@ import math
 import glm
 import wx
 import wx.lib.agw.aui as aui
-
-from typing import Optional
+import random
+from typing import Tuple
 
 from copis.gui.wxutils import (FancyTextCtrl,
     create_scaled_bitmap, simple_statictext)
