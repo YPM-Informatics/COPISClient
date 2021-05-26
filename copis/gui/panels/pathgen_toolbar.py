@@ -17,7 +17,8 @@
 
 import logging
 import math
-from typing import Optional
+import random
+from typing import Tuple
 
 import glm
 import numpy as np
@@ -73,7 +74,7 @@ class PathgenToolbar(aui.AuiToolBar):
             with _PathgenCylinder(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     logging.debug('CYLINDER added')
-                    num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
+                    selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
                     z_div = int(dlg.z_div_ctrl.GetValue())
@@ -96,13 +97,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
+                    self._extend_actions(vertices, count, lookat, selected_devices)
 
         elif event.Id == PathIds.HELIX.value:
             with _PathgenHelix(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     logging.debug('HELIX added')
-                    num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
+                    selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
                     rotations = int(dlg.rotation_ctrl.GetValue())
@@ -119,13 +120,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
+                    self._extend_actions(vertices, count, lookat, selected_devices)
 
         elif event.Id == PathIds.SPHERE.value:
             with _PathgenSphere(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     logging.debug('SPHERE added')
-                    num_cams = int(dlg.num_cams_choice.GetString(dlg.num_cams_choice.Selection))
+                    selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     z_div = int(dlg.z_div_ctrl.GetValue())
                     distance = dlg.distance_ctrl.num_value
@@ -149,13 +150,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.center_y_ctrl.num_value,
                                       dlg.center_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat, cam_group=num_cams)
+                    self._extend_actions(vertices, count, lookat, selected_devices)
 
         elif event.Id == PathIds.LINE.value:
             with _PathgenLine(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     logging.debug('LINE added')
-                    device_id = int(dlg.cam_choice.GetString(dlg.cam_choice.Selection).split(' ')[0])
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
                     start = glm.vec3(dlg.start_x_ctrl.num_value,
@@ -170,13 +171,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat, device_id=device_id)
+                    self._extend_actions(vertices, count, lookat, (device_id,))
 
         elif event.Id == PathIds.POINT.value:
             with _PathgenPoint(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     logging.debug('POINT added')
-                    device_id = int(dlg.cam_choice.GetString(dlg.cam_choice.Selection).split(' ')[0])
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
@@ -184,17 +185,16 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions((x, y, z), 1, lookat, device_id=device_id)
+                    self._extend_actions((x, y, z), 1, lookat, (device_id,))
 
     def _extend_actions(self,
                         vertices,
                         count: int,
                         lookat: glm.vec3,
-                        cam_group: Optional[int] = None,
-                        device_id: Optional[int] = None) -> None:
+                        device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
-        TODO: Add smart divide between camera groups
+        TODO: Add smart divide between devices
 
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
@@ -205,24 +205,29 @@ class PathgenToolbar(aui.AuiToolBar):
         for i in range(count):
             x, y, z = vertices[i * 3:i * 3 + 3]
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
-            pan = -math.atan2(dy, dx)
+            pan = math.atan2(dx, dy)
             x2y2 = dx * dx + dy * dy
-            tilt = 0.0 if x2y2 == 0 else math.atan(dz / math.sqrt(x2y2))
+            tilt = -math.atan2(dz, math.sqrt(x2y2))
 
             device = 0
             # TODO: temporary hack to divvy up points
-            if cam_group is not None:
-                if cam_group == 2:
+            num_devices = len(device_list)
+            if num_devices > 1:
+                if num_devices == 2:
                     device = 0 if z > 0 else 1
-                elif cam_group == 4:
+                elif num_devices == 4:
                     if z < 0:     device += 2
                     if y > 0:     device += 1
-                elif cam_group == 6:
+                elif num_devices == 6:
                     if z < 0:     device += 3
                     if y > 60:    device += 2
                     elif y > -60: device += 1
-            elif device_id is not None:
-                device = device_id
+                else:
+                    # for now, just randomly divide if 3 or 5
+                    device = random.randrange(num_devices)
+
+            else:
+                device = device_list[0]
 
             new_actions.extend((
                 Action(ActionType.G0, device, 5, [x, y, z, pan, tilt]),
@@ -244,7 +249,7 @@ class _PathgenCylinder(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('1246')
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -253,7 +258,7 @@ class _PathgenCylinder(wx.Dialog):
         options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
         self.base_x_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.base_y_ctrl = FancyTextCtrl(
@@ -274,8 +279,8 @@ class _PathgenCylinder(wx.Dialog):
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_checklist, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.base_x_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
@@ -318,14 +323,15 @@ class _PathgenCylinder(wx.Dialog):
 
         # ---
 
-        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
+        if (not self.device_checklist.CheckedItems or
             self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
+            self._affirmative_button.Disable()
             return
 
         self._affirmative_button.Enable()
@@ -340,7 +346,7 @@ class _PathgenHelix(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('1246')
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -349,7 +355,7 @@ class _PathgenHelix(wx.Dialog):
         options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
         self.base_x_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.base_y_ctrl = FancyTextCtrl(
@@ -370,8 +376,8 @@ class _PathgenHelix(wx.Dialog):
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_checklist, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.base_x_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
@@ -414,14 +420,15 @@ class _PathgenHelix(wx.Dialog):
 
         # ---
 
-        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
         self.rotation_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
+        if (not self.device_checklist.CheckedItems or
             self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
+            self._affirmative_button.Disable()
             return
 
         self._affirmative_button.Enable()
@@ -436,7 +443,7 @@ class _PathgenSphere(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
 
-        self._camera_num_choices = list('1246')
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -445,7 +452,7 @@ class _PathgenSphere(wx.Dialog):
         options_grid = wx.FlexGridSizer(7, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.num_cams_choice = wx.Choice(self, choices=self._camera_num_choices)
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
         self.center_x_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.center_y_ctrl = FancyTextCtrl(
@@ -459,8 +466,8 @@ class _PathgenSphere(wx.Dialog):
             self, size=(48, -1), num_value=10, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Device Group:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.num_cams_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_checklist, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Center X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.center_x_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
@@ -495,13 +502,13 @@ class _PathgenSphere(wx.Dialog):
 
         # ---
 
-        self.num_cams_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
         self.z_div_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.num_cams_choice.CurrentSelection == wx.NOT_FOUND or
-            self.z_div_ctrl.Value == ''):
+        if (not self.device_checklist.CheckedItems or self.z_div_ctrl.Value == ''):
+            self._affirmative_button.Disable()
             return
 
         self._affirmative_button.Enable()
@@ -516,7 +523,7 @@ class _PathgenLine(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 
-        self._camera_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -525,7 +532,7 @@ class _PathgenLine(wx.Dialog):
         options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.cam_choice = wx.Choice(self, choices=self._camera_choices)
+        self.device_choice = wx.Choice(self, choices=self._device_choices)
         self.start_x_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.start_y_ctrl = FancyTextCtrl(
@@ -547,8 +554,8 @@ class _PathgenLine(wx.Dialog):
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.cam_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Start X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.start_x_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
@@ -591,13 +598,14 @@ class _PathgenLine(wx.Dialog):
 
         # ---
 
-        self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.device_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
         self.points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND or
+        if (self.device_choice.CurrentSelection == wx.NOT_FOUND or
             self.points_ctrl.Value == ''):
+            self._affirmative_button.Disable()
             return
 
         self._affirmative_button.Enable()
@@ -612,7 +620,7 @@ class _PathgenPoint(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 
-        self._camera_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -621,7 +629,7 @@ class _PathgenPoint(wx.Dialog):
         options_grid = wx.FlexGridSizer(7, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.cam_choice = wx.Choice(self, choices=self._camera_choices)
+        self.device_choice = wx.Choice(self, choices=self._device_choices)
         self.x_ctrl = FancyTextCtrl(
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
@@ -636,8 +644,8 @@ class _PathgenPoint(wx.Dialog):
             self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Device ID:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.cam_choice, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Position X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.x_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
@@ -672,11 +680,12 @@ class _PathgenPoint(wx.Dialog):
 
         # ---
 
-        self.cam_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
+        self.device_choice.Bind(wx.EVT_CHOICE, self._on_ctrl_update)
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.cam_choice.CurrentSelection == wx.NOT_FOUND):
+        if (self.device_choice.CurrentSelection == wx.NOT_FOUND):
+            self._affirmative_button.Disable()
             return
 
         self._affirmative_button.Enable()

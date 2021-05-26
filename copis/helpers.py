@@ -19,6 +19,7 @@ import math
 import os
 from collections import OrderedDict
 from functools import wraps
+from math import cos, sin
 from pathlib import Path
 from time import time
 from typing import Callable, NamedTuple
@@ -40,9 +41,9 @@ _root = '/' + Path(os.path.join(*_root_segments)).as_posix()
 
 
 xyz_steps = [10, 1, 0.1, 0.01]
-xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
+xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
-pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
+pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/math.pi)])
 
 
 def timing(f: Callable) -> Callable:
@@ -62,9 +63,9 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4(
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
     model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
             glm.mat4(
-                math.cos(t) * math.cos(p), -math.cos(t) * math.sin(p), math.sin(t), 0.0,
-                math.sin(p), math.cos(p), 0.0, 0.0,
-                -math.sin(t) * math.cos(p), math.sin(t) * math.sin(p), math.cos(t), 0.0,
+                cos(p), -sin(p), 0.0, 0.0,
+                cos(t) * sin(p), cos(t) * cos(p), -sin(t), 0.0,
+                sin(t) * sin(p), sin(t) * cos(p), cos(t), 0.0,
                 0.0, 0.0, 0.0, 1.0)
     return model
 
@@ -83,7 +84,7 @@ def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
 
 
 def find_path(filename: str = '') -> str:
-    paths = [p for p in Path(_root).rglob(filename)]
+    paths = list(Path(_root).rglob(filename))
     return str(paths[0]) if len(paths) > 0 else ''
 
 

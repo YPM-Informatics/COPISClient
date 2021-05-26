@@ -74,30 +74,30 @@ class GLActionVis:
         # initialize camera box
         # TODO: update to obj file
         vertices = glm.array(
-            glm.vec3(-0.5, -1.0, -1.0),     # bottom
-            glm.vec3(0.5, -1.0, -1.0),
-            glm.vec3(0.5, -1.0, 1.0),
-            glm.vec3(-0.5, -1.0, 1.0),
-            glm.vec3(-0.5, 1.0, -1.0),      # right
-            glm.vec3(0.5, 1.0, -1.0),
-            glm.vec3(0.5, -1.0, -1.0),
-            glm.vec3(-0.5, -1.0, -1.0),
-            glm.vec3(-0.5, 1.0, 1.0),       # top
-            glm.vec3(0.5, 1.0, 1.0),
-            glm.vec3(0.5, 1.0, -1.0),
-            glm.vec3(-0.5, 1.0, -1.0),
-            glm.vec3(-0.5, -1.0, 1.0),      # left
-            glm.vec3(0.5, -1.0, 1.0),
-            glm.vec3(0.5, 1.0, 1.0),
-            glm.vec3(-0.5, 1.0, 1.0),
-            glm.vec3(0.5, 1.0, -1.0),       # back
-            glm.vec3(0.5, 1.0, 1.0),
-            glm.vec3(0.5, -1.0, 1.0),
-            glm.vec3(0.5, -1.0, -1.0),
-            glm.vec3(-0.5, -1.0, -1.0),     # front
-            glm.vec3(-0.5, -1.0, 1.0),
-            glm.vec3(-0.5, 1.0, 1.0),
-            glm.vec3(-0.5, 1.0, -1.0),
+            glm.vec3(-1.0, -0.5, -1.0),     # bottom
+            glm.vec3(-1.0, -0.5, 1.0),
+            glm.vec3(-1.0, 0.5, 1.0),
+            glm.vec3(-1.0, 0.5, -1.0),
+            glm.vec3(1.0, -0.5, -1.0),      # right
+            glm.vec3(-1.0, -0.5, -1.0),
+            glm.vec3(-1.0, 0.5, -1.0),
+            glm.vec3(1.0, 0.5, -1.0),
+            glm.vec3(1.0, -0.5, 1.0),       # top
+            glm.vec3(1.0, -0.5, -1.0),
+            glm.vec3(1.0, 0.5, -1.0),
+            glm.vec3(1.0, 0.5, 1.0),
+            glm.vec3(-1.0, -0.5, 1.0),      # left
+            glm.vec3(1.0, -0.5, 1.0),
+            glm.vec3(1.0, 0.5, 1.0),
+            glm.vec3(-1.0, 0.5, 1.0),
+            glm.vec3(1.0, 0.5, -1.0),       # back
+            glm.vec3(-1.0, 0.5, -1.0),
+            glm.vec3(-1.0, 0.5, 1.0),
+            glm.vec3(1.0, 0.5, 1.0),
+            glm.vec3(-1.0, -0.5, -1.0),     # front
+            glm.vec3(1.0, -0.5, -1.0),
+            glm.vec3(1.0, -0.5, 1.0),
+            glm.vec3(-1.0, -0.5, 1.0),
         )
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
