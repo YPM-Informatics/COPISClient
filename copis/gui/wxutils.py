@@ -127,24 +127,23 @@ class FancyTextCtrl(wx.TextCtrl):
         keycode = event.KeyCode
         if not event.HasAnyModifiers() and \
             (keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB):
-            self._process_text()
-
-            # handle if shift is held
-            event.EventObject.Navigate(flags=
-                wx.NavigationKeyEvent.IsBackward if event.shiftDown else wx.NavigationKeyEvent.IsForward)
+            if self._process_text():
+                # handle if shift is held
+                event.EventObject.Navigate(flags=
+                    wx.NavigationKeyEvent.IsBackward if event.shiftDown else wx.NavigationKeyEvent.IsForward)
 
         else:
             event.Skip()
 
-    def _process_text(self) -> None:
+    def _process_text(self) -> bool:
         """Process updated text. Uses a regex to automatically convert between units."""
         if not self._text_dirty:
-            return
+            return True
 
         regex = re.findall(rf'(-?\d*\.?\d+)\s*({"|".join(self._units.keys())})?', self.Value)
         if len(regex) == 0:
             self.Undo()
-            return
+            return False
         value, unit = regex[0]
 
         if unit not in self._units:
@@ -158,6 +157,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
         self.SelectNone()
         wx.PostEvent(self, evt)
+        return True
 
     def _update_value(self) -> None:
         """Update control text."""
