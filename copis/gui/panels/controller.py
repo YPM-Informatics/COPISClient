@@ -25,7 +25,7 @@ import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 from copis.gui.wxutils import (FancyTextCtrl,
-    create_scaled_bitmap, simple_statictext)
+    create_scaled_bitmap, set_dialog, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
 
 
@@ -70,13 +70,15 @@ class ControllerPanel(scrolled.ScrolledPanel):
     def on_jog_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
         button = event.EventObject
-        print(f'button clicked: {button.Name[0]}, {button.Name[1]}')
-        # if button.Name[0] in 'xyz':
-        #     step = self.xyz_step
-        # else: # button.Name in 'pt':
-        #     step = self.pt_step
-        # if button.Name[1] == '-':
-        #     step *= -1
+
+        if button.Name[0] in 'xyzns':
+            step = self.xyz_step_ctrl.Value
+        else: # button.Name in 'pt':
+            step = self.pt_step_ctrl.Value
+
+        step = float(step.split(' ')[0])
+
+        feed_rate = float(str(self.feed_rate_ctrl.Value).split(' ')[0])
 
         serial = self.core.serial
 
@@ -84,22 +86,23 @@ class ControllerPanel(scrolled.ScrolledPanel):
             print('Not implemented.')
             return
 
-        msg = f'G0{button.Name}5\r'
+        # Ignore feed rate for z axis; screw motor axis doesn't work properly at high speeds.
+        fee_rate_msg = '' if button.Name[0] == 'z' else f'F{feed_rate}'
+
+        msg = f'G0{button.Name}{step}{fee_rate_msg}\r'
         msg = msg.replace('+', '')
 
         if button.Name[1] not in '+-':
-            msg = msg.replace('n', 'y5')
-            msg = msg.replace('s', 'y-5')
+            msg = msg.replace('n', f'y{step}')
+            msg = msg.replace('s', f'y-{step}')
             msg = msg.replace('e', 'x')
             msg = msg.replace('w', 'x-')
 
         if (serial is not None and serial.is_port_open):
             data = f'G91\r{msg.upper()}'
-            print('Serial is open.')
-            print(data.encode())
-            print(serial.write(data))
+            serial.write(data)
         else:
-            print('no serial')
+            set_dialog('Connect to the machine in order to jog.')
 
     def _add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
