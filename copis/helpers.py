@@ -41,9 +41,9 @@ _root = '/' + Path(os.path.join(*_root_segments)).as_posix()
 
 
 xyz_steps = [10, 1, 0.1, 0.01]
-xyz_units = OrderedDict([('mm', 1), ('cm', 10), ('in', 25.4)])
+xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
-pt_units = OrderedDict([('dd', math.pi/180), ('rad', 1)])
+pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/math.pi)])
 
 
 def timing(f: Callable) -> Callable:

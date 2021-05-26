@@ -294,6 +294,7 @@ class GLViewCube:
 
     @property
     def hovered(self) -> bool:
+        "Whether or not the mouse has hovered over a face of the ViewCube."
         return self._hovered
 
     @hovered.setter
@@ -302,6 +303,7 @@ class GLViewCube:
 
     @property
     def selected(self) -> bool:
+        """Whether or not the mouse has selected a face of the ViewCube."""
         return self._selected
 
     @selected.setter
@@ -310,6 +312,7 @@ class GLViewCube:
 
     @property
     def position(self) -> Union[str, ViewCubePos]:
+        """Which corner of the viewport the ViewCube should render in."""
         return self._position
 
     @position.setter
@@ -321,6 +324,7 @@ class GLViewCube:
 
     @property
     def size(self) -> Union[int, ViewCubeSize]:
+        """The size of the ViewCube render area."""
         return self._size
 
     @size.setter
