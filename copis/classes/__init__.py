@@ -13,31 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
+"""COPIS classes package."""
 
-from .enums import DebugEnv
+from .device import Device
+from .bounding_box import BoundingBox
+from .proxy import Proxy
+from .action import Action
+from .chamber import Chamber
+from .monitored_list import MonitoredList
+from .settings import ConfigSettings, MachineSettings
 
-@dataclass
-class Settings:
-    """Configuration settings data structure"""
-    debug_env: DebugEnv
-
-    app_window_width: int
-    app_window_height: int
-
-    devices: list
-
-    def as_dict(self):
-        """Return a dictionary representation of a Settings instance."""
-        return {
-            'AppWindow': {
-                'width': self.app_window_width,
-                'height': self.app_window_height
-            },
-            'Debug': {
-                'env': self.debug_env
-            },
-            'Devices': {
-                'items': "\n".join(self.devices)
-            }
-        }
+__all__ = ["Device", "BoundingBox", "Proxy", "Action", "Chamber",
+            "MonitoredList", "ConfigSettings", "MachineSettings"]

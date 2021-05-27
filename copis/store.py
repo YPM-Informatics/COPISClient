@@ -23,11 +23,11 @@ from configparser import ConfigParser
 from pathlib import PurePath
 from typing import Optional
 
-from .settings import Settings
+from .classes import ConfigSettings, MachineSettings
 
 
 class Store():
-    """Handles application-wide data storage operations."""
+    """Handle application-wide data storage operations."""
 
     _PROJECT_FOLDER = 'copis'
 
@@ -37,32 +37,32 @@ class Store():
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
         segments = current.split(os.sep)
-        index = segments.index(self._PROJECT_FOLDER)
+        index = segments.index(Store._PROJECT_FOLDER)
         root_segments = segments[1:index]
 
         root = '/' + PurePath(os.path.join(*root_segments)).as_posix()
 
         self._root_dir = root
-        self._config_dir = os.path.join(root, self._PROJECT_FOLDER, self._CONFIG_FOLDER)
-        self._config_path = os.path.join(self._config_dir, self._CONFIG_FILE)
+        self._config_dir = os.path.join(root, Store._PROJECT_FOLDER, Store._CONFIG_FOLDER)
+        self._config_path = os.path.join(self._config_dir, Store._CONFIG_FILE)
 
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
 
     def save_config(self, parser: ConfigParser) -> None:
-        """Saves a configuration object to file."""
+        """Save a configuration object to file."""
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
-    def save_config_settings(self, settings: Settings) -> None:
-        """Saves a configuration object to file, via its settings object."""
+    def save_config_settings(self, settings: ConfigSettings) -> None:
+        """Save a configuration object to file, via its settings object."""
         parser = ConfigParser()
         parser.read_dict(settings.as_dict())
 
         self.save_config(parser)
 
     def load_config(self) -> Optional[ConfigParser]:
-        """Load a configuration object from file"""
+        """Load a configuration object from file."""
         if os.path.exists(self._config_path):
             parser = ConfigParser()
             parser.read(self._config_path)
@@ -70,14 +70,30 @@ class Store():
 
         return None
 
-    def save(self, filename: str, obj: object) -> None:
-        """Saves an object to file"""
-        with open(filename, 'wb') as file:
-            pickle.dump(obj, file)
+def save_machine(filename: str, settings: MachineSettings) -> None:
+    """Save a machine configuration settings object to file."""
+    parser = ConfigParser()
+    parser.read_dict(settings.as_dict())
 
-    def load(self, filename: str, obj: object) -> object:
-        """Loads as object from file"""
-        with open(filename, 'rb') as file:
-            obj = pickle.load(file)
+    with open(filename, 'w') as file:
+        parser.write(file)
 
-        return obj
+def load_machine(filename: str) -> ConfigParser:
+    """Parse a machine.ini file and returns instances of the objects within."""
+    parser = ConfigParser()
+    parser.read(filename)
+
+    return parser
+
+def save(filename: str, obj: object) -> None:
+    """Save an object to file."""
+    with open(filename, 'wb') as file:
+        pickle.dump(obj, file)
+
+
+def load(filename: str, obj: object) -> object:
+    """Load an object from file."""
+    with open(filename, 'rb') as file:
+        obj = pickle.load(file)
+
+    return obj

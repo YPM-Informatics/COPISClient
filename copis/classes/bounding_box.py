@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # This file is part of COPISClient.
 #
 # COPISClient is free software: you can redistribute it and/or modify
@@ -15,21 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
+"""Provide the COPIS Bounding Box Class."""
 
-from copis.client import COPISApp
+from typing import NamedTuple
+
+from glm import vec3
 
 
-if __name__ == '__main__':
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
 
-    app = COPISApp()
-    try:
-        app.MainLoop()
-    except KeyboardInterrupt:
-        logging.debug('KeyboardInterrupt')
-
-    app.core.terminate_edsdk()
-    app.core.terminate_serial()
-    del app
+class BoundingBox(NamedTuple):
+    """Data structure that implements point boundaries in 3D space."""
+    lower: vec3 = vec3()
+    upper: vec3 = vec3()

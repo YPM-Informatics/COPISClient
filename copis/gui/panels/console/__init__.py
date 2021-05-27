@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # This file is part of COPISClient.
 #
 # COPISClient is free software: you can redistribute it and/or modify
@@ -15,21 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
+"""COPIS console package."""
 
-from copis.client import COPISApp
+from .panel import ConsolePanel
 
-
-if __name__ == '__main__':
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    app = COPISApp()
-    try:
-        app.MainLoop()
-    except KeyboardInterrupt:
-        logging.debug('KeyboardInterrupt')
-
-    app.core.terminate_edsdk()
-    app.core.terminate_serial()
-    del app
+__all__ = ["ConsolePanel"]

@@ -15,16 +15,18 @@
 
 """PropertiesPanel class."""
 
-import math
 from typing import List, Union
-from copis.helpers import xyz_units, pt_units
 
+import math
 import wx
 import wx.lib.scrolledpanel as scrolled
-from copis.gui.wxutils import (
-    EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl,
-    create_scaled_bitmap, simple_statictext)
+
 from pydispatch import dispatcher
+
+from copis.helpers import xyz_units, pt_units
+from copis.gui.wxutils import (FancyTextCtrl,
+    EVT_FANCY_TEXT_UPDATED_EVENT,
+    simple_statictext)
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -47,8 +49,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Group': ('transform'),
     }
 
-    def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits PropertiesPanel with constructors."""
+    def __init__(self, parent) -> None:
+        """Initialize PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self.core = self.parent.core
@@ -76,7 +78,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         dispatcher.connect(self.on_deselected, signal='core_p_deselected')
 
     def init_all_property_panels(self) -> None:
-        """Inits all property panels."""
+        """Initialize all property panels."""
         self._property_panels['visualizer'] = _PropVisualizer(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
@@ -137,7 +139,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 class _PropVisualizer(wx.Panel):
 
     def __init__(self, parent) -> None:
-        """Inits _PropVisualizer with constructors."""
+        """Initialize _PropVisualizer with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -188,7 +190,7 @@ class _PropTransform(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropTransform with constructors."""
+        """Initialize _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -482,7 +484,7 @@ class _PropCameraInfo(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropCameraInfo with constructors."""
+        """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -541,7 +543,7 @@ class _PropCameraInfo(wx.Panel):
 class _PropCameraConfig(wx.Panel):
 
     def __init__(self, parent) -> None:
-        """Inits _PropCamera with constructors."""
+        """Initialize _PropCamera with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -612,13 +614,11 @@ class _PropCameraConfig(wx.Panel):
             self.ptp_rbh.Value = False
             self.ptp_rbh.Disable()
 
-            if self.parent.core.edsdk_enabled:
-                self.parent.core.terminate_edsdk()
+            self.parent.core.terminate_edsdk()
         elif rb.Label == 'EDSDK':
             self.parent.core.init_edsdk()
         else:
-            if self.parent.core.edsdk_enabled:
-                self.parent.core.terminate_edsdk()
+            self.parent.core.terminate_edsdk()
 
     def on_take_picture(self, event: wx.CommandEvent) -> None:
         """ Take picture.
@@ -653,7 +653,7 @@ class _PropQuickActions(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropCameraInfo with constructors."""
+        """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 

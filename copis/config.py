@@ -13,17 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 from configparser import ConfigParser
 
 from .enums import DebugEnv
-from .store import Store
-from .settings import Settings
+from .store import Store, load_machine
+from .classes import ConfigSettings, MachineSettings
 
 
 class Config():
-    """Handles application configuration."""
+    """Handle application configuration."""
 
     _DEFAULT_DEBUG_ENV = DebugEnv.PROD
     _DEFAULT_APP_WINDOW_WIDTH = 1400
@@ -33,6 +31,7 @@ class Config():
         self._store = Store()
         self._config_parser = self._ensure_config_exists()
         self._settings = self._populate_settings()
+        self._machine_settings = self._populate_machine_settings()
 
     def _ensure_config_exists(self) -> ConfigParser:
         parser = self._store.load_config()
@@ -53,7 +52,7 @@ class Config():
 
         return parser
 
-    def _populate_settings(self) -> Settings:
+    def _populate_settings(self) -> ConfigSettings:
         app_window_height = self._config_parser.getint('AppWindow',
             'height', fallback=self._DEFAULT_APP_WINDOW_HEIGHT)
 
@@ -66,11 +65,32 @@ class Config():
         if not any(e.value == debug_env for e in DebugEnv):
             debug_env = self._DEFAULT_DEBUG_ENV
 
-        devices = self._config_parser.get('Devices', 'items', fallback='').splitlines()
+        machine_config_path = self._config_parser.get('Machine', 'path', fallback='')
 
-        return Settings(debug_env, app_window_width, app_window_height, devices)
+        return ConfigSettings(debug_env, app_window_width, app_window_height, machine_config_path)
+
+    def _populate_machine_settings(self) -> MachineSettings:
+        machine_parser = load_machine(self._settings.machine_config_path)
+
+        items = []
+        for section in machine_parser.sections():
+            item = {
+                "name": section
+            }
+
+            for option in machine_parser[section]:
+                item[option] = machine_parser[section][option]
+            items.append(item)
+
+        return MachineSettings(items)
+
 
     @property
-    def settings(self) -> Settings:
-        """Settings getter"""
+    def settings(self) -> ConfigSettings:
+        """Configuration settings getter."""
         return self._settings
+
+    @property
+    def machine_settings(self) -> MachineSettings:
+        """Machine configuration settings getter."""
+        return self._machine_settings

@@ -55,7 +55,7 @@ class GLViewCube:
     def __init__(self, parent,
                  position: Union[str, ViewCubePos] = ViewCubePos.TOP_RIGHT,
                  size: Union[int, ViewCubeSize] = ViewCubeSize.MEDIUM) -> None:
-        """Inits GLViewCube with constructors."""
+        """Initializes GLViewCube with constructors."""
         self.parent = parent
         self._position = position if position in ViewCubePos else ViewCubePos.TOP_RIGHT
         self._size = size if size in ViewCubeSize else ViewCubeSize.MEDIUM

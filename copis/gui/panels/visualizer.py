@@ -15,9 +15,9 @@
 
 """VisualizerPanel class."""
 
-from copis.gl.glcanvas import GLCanvas3D
-
 import wx
+
+from copis.gl.glcanvas import GLCanvas3D
 
 
 class VisualizerPanel(wx.Panel):
@@ -35,7 +35,7 @@ class VisualizerPanel(wx.Panel):
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits VisualizerPanel with constructors."""
+        """Initialize VisualizerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent
         self.core = self.parent.core
@@ -43,7 +43,7 @@ class VisualizerPanel(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._selected_cam = NotImplemented
-        self._build_dimensions = [400, 400, 400, 200, 200, 200] # chamberdims
+        self._build_dimensions = parent.chamber_dimensions
         self.zoom_slider = None
 
         self._glcanvas = GLCanvas3D(

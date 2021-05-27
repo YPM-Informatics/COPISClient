@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""COPIS Application Core functions."""
 
 __version__ = ""
 
@@ -23,91 +24,34 @@ if sys.version_info.major < 3:
     sys.exit(-1)
 
 # pylint: disable=wrong-import-position
-from importlib import import_module
 import logging
-
-import os
-import platform
 import threading
 import time
+import warnings
+
+from importlib import import_module
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import List, Optional, Tuple
 
-import glm
 from pydispatch import dispatcher
 
-from .enums import Action, ActionType, Device, Proxy
-from .helpers import Point3, Point5
-from .store import Store
+import copis.coms.serial_controller as serial_controller
+
+from .enums import ActionType, DebugEnv
+from .helpers import Point5
+from .classes import Action, Device, MonitoredList
 
 
-def locked(f):
-    @wraps(f)
+def locked(func):
+    """Provide thread locking mechanism."""
+    @wraps(func)
     def inner(*args, **kw):
         with inner.lock:
-            return f(*args, **kw)
+            return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
-
-
-class MonitoredList(list):
-    """Monitored list. Just a regular list, but sends notifications when
-    changed or modified.
-    """
-
-    def __init__(self, iterable, signal: str) -> None:
-        super().__init__(iterable)
-        self.signal = signal
-
-    def clear(self) -> None:
-        super().clear()
-        self._dispatch()
-
-    def append(self, __object) -> None:
-        super().append(__object)
-        self._dispatch()
-
-    def extend(self, __iterable) -> None:
-        super().extend(__iterable)
-        self._dispatch()
-
-    def pop(self, __index: int):
-        value = super().pop(__index)
-        self._dispatch()
-        return value
-
-    def insert(self, __index: int, __object) -> None:
-        super().insert(__index, __object)
-        self._dispatch()
-
-    def remove(self, __value) -> None:
-        super().remove(__value)
-        self._dispatch()
-
-    def reverse(self) -> None:
-        super().reverse()
-        self._dispatch()
-
-    def __setitem__(self, key, value) -> None:
-        super().__setitem__(key, value)
-        self._dispatch()
-
-    def __delitem__(self, key) -> None:
-        super().__delitem__(key)
-        self._dispatch()
-
-    def _dispatch(self) -> None:
-        """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
-        '__iterable' even before the object's instance attributes are set. This causes dispatching
-        to fail while unpickling the object because 'signal' does not yet exist. But dispatching
-        does not need to happen for an object being unpickled because it's just a monitored list
-        being restored and not technically being actively changed. Besides, there is no need to
-        dispatch if there's no registered signal."""
-
-        if 'signal' in self.__dict__:
-            dispatcher.send(self.signal)
 
 
 class COPISCore:
@@ -130,10 +74,21 @@ class COPISCore:
         core_error: Any copiscore access errors.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Inits a CopisCore instance."""
-        self._baud = None
-        self._port = None
+    def __init__(self, parent) -> None:
+        """Initialize a CopisCore instance."""
+        self.config = parent.config
+
+        self._is_edsdk_enabled = False
+        self._edsdk = None
+        self.evf_thread = None
+
+        self._is_serial_enabled = False
+        self._serial = None
+
+        self.init_edsdk()
+        self.init_serial()
+
+        self._check_configs()
 
         # serial instance connected to the machine, None when disconnected
         self._machine = None
@@ -155,23 +110,55 @@ class COPISCore:
         self.stop_send_thread = False
         self.imaging_thread = None
 
-        self._edsdk_enabled = True
-        self._edsdk = None
-        self.evf_thread = None
-        self.init_edsdk()
-
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
-        # self._proxies: List[Proxy] = MonitoredList([], 'core_proxy_list_changed')
-        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
-        self._devices: List[Device] = MonitoredList([], 'core_d_list_changed')
-        self._store = Store()
+        # TODO: this might not exist after testing machine.
+        # self.offset_devices(*self.config.machine_settings.devices)
 
-        self._update_devices()
+        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
+        self._devices: List[Device] = MonitoredList(
+            self.config.machine_settings.devices, 'core_d_list_changed')
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
+
+    def _check_configs(self) -> None:
+        warn = self.config.settings.debug_env == DebugEnv.DEV.value
+        msg = None
+        machine_config = self.config.machine_settings
+
+        if len(machine_config.chambers) == 0:
+            msg = 'No chambers configured.'
+        elif len(machine_config.chambers) > 2:
+            msg = '2 chambers maximum exceeded.'
+        # TODO:
+        # - Check 3 cameras per chamber max.
+        # - Check all cameras assigned to a chamber.
+        # - Check cameras within chamber bounds.
+
+        if msg is not None:
+            warning = UserWarning(msg)
+            if warn:
+                warnings.warn(warning)
+            else:
+                raise warning
+
+    # TODO: this might not exist after testing machine.
+    # def offset_devices(self, *devices) -> None:
+    #     """Take a list of devices and applies the chamber offsets to their coordinates."""
+
+    #     for device in devices:
+    #         chamber = next(filter(lambda c, d = device : c.name == d.chamber_name,
+    #         self.config.machine_settings.chambers))
+
+    #         new_position = Point5(
+    #             device.position.x + chamber.offsets.x,
+    #             device.position.y + chamber.offsets.y,
+    #             device.position.z + chamber.offsets.z,
+    #             device.position.p, device.position.t)
+
+    #         device.position = new_position
 
     @locked
     def disconnect(self):
@@ -215,7 +202,7 @@ class COPISCore:
     def _listen(self) -> None:
         while self._listen_can_continue():
             time.sleep(0.001)
-            if not self.edsdk.waiting_for_image:
+            if not self.edsdk.is_waiting_for_image:
                 self._clear = True
 
     def _start_sender(self) -> None:
@@ -282,7 +269,7 @@ class COPISCore:
         dispatcher.send('core_message', message='Imaging stopped')
 
     def pause(self) -> bool:
-        """Pauses the current run, saving the current position."""
+        """Pause the current run, saving the current position."""
 
         if not self.imaging:
             return False
@@ -301,7 +288,7 @@ class COPISCore:
         return True
 
     def resume(self) -> bool:
-        """Resumes the current run."""
+        """Resume the current run."""
 
         if not self.paused:
             return False
@@ -407,34 +394,6 @@ class COPISCore:
     # Action and device data methods
     # --------------------------------------------------------------------------
 
-    def _update_devices(self) -> None:
-        self._devices.clear()
-        self._devices.extend([
-            Device(0, 'Camera A', 'Canon EOS 80D', ['RemoteShutter'], Point5(100, 100, 100)),
-            Device(1, 'Camera B', 'Nikon Z50', ['RemoteShutter', 'PC'], Point5(100, 23.222, 100)),
-            Device(2, 'Camera C', 'RED Digital Cinema \n710 DSMC2 DRAGON-X', ['USBHost-PTP'], Point5(-100, 100, 100)),
-            Device(3, 'Camera D', 'Phase One XF IQ4', ['PC', 'PC-External'], Point5(100, -100, 100)),
-            Device(4, 'Camera E', 'Hasselblad H6D-400c MS', ['PC-EDSDK', 'PC-PHP'], Point5(100, 100, -100)),
-            Device(5, 'Camera F', 'Canon EOS 80D', ['PC-EDSDK', 'RemoteShutter'], Point5(0, 100, -100)),
-        ])
-
-    # def add_proxy(self, proxy_type: int, proxy_name: str, position: List, length: int, height: int) -> bool:
-    #     new = Proxy(proxy_type, proxy_name, position, length, height)
-    #     self._proxies.append(new)
-    #     dispatcher.send('core_proxy_list_changed')
-    #     return True
-
-    # def remove_proxy(self, index: int) -> Proxy:
-    #     """Remove a proxy object given its index in the proxy list"""
-    #     proxy = self._proxies.pop(index)
-    #     dispatcher.send('core_proxy_list_changed')
-    #     return proxy
-
-    # def clear_proxy(self) -> None:
-    #     self._proxies.clear()
-    #     dispatcher.send('core_proxy_list_changed')
-
-
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""
         new = Action(atype, device, len(args), list(args))
@@ -531,28 +490,36 @@ class COPISCore:
 
         dispatcher.send('core_a_list_changed')
 
-    def export_actions(self, filename: str) -> None:
+    def export_actions(self, filename: str = None) -> list:
         """Serialize action list and write to file.
 
         TODO: Expand to include not just G0 and C0 actions
         """
-        with open(filename, 'w') as file:
-            # pickle.dump(self._actions, file)
-            for action in self._actions:
-                file.write('>' + str(action.device))
 
-                if action.atype == ActionType.G0:
-                    file.write(f'G0X{action.args[0]:.3f}'
-                               f'Y{action.args[1]:.3f}'
-                               f'Z{action.args[2]:.3f}'
-                               f'P{action.args[3]:.3f}'
-                               f'T{action.args[4]:.3f}')
-                elif action.atype == ActionType.C0:
-                    file.write(f'C0')
-                else:
-                    pass
-                file.write('\n')
+        get_g_code = lambda input: str(input).split('.')[1]
+        lines = []
+
+        for action in self._actions:
+            g_code = get_g_code(action.atype)
+            dest = '' if action.device == 0 else f'>{action.device}'
+            line = f'{dest}{g_code}'
+            g_cmd = ''
+
+            if g_code[0] == 'G':
+                pos = [f'{c:.3f}' for c in action.args]
+                g_cmd = f'X{pos[0]}Y{pos[0]}Z{pos[0]}P{pos[0]}T{pos[0]}'
+            elif g_code[0] == 'C':
+                g_cmd = 'P500'
+
+            line += g_cmd
+            lines.append(line)
+
+        if filename is not None:
+            with open(filename, 'w') as file:
+                file.write('\n'.join(lines))
+
         dispatcher.send('core_a_exported', filename=filename)
+        return lines
 
     # --------------------------------------------------------------------------
     # Canon EDSDK methods
@@ -560,29 +527,50 @@ class COPISCore:
 
     def init_edsdk(self) -> None:
         """Initialize Canon EDSDK connection."""
-        if not self._edsdk_enabled:
+        if self._is_edsdk_enabled:
             return
 
-        try:
-            self._edsdk = import_module('copis.coms.edsdk_object')
-            self._edsdk.initialize(ConsoleOutput())
-            self._edsdk.connect()
+        self._edsdk = import_module('copis.coms.edsdk_controller')
+        self._edsdk.initialize(ConsoleOutput())
 
-        except: # TODO: add better exception perhaps
-            self._edsdk_enabled = False
+        self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
         """Terminate Canon EDSDK connection."""
-        if self._edsdk_enabled and self._edsdk is not None:
+        if self._is_edsdk_enabled:
             self._edsdk.terminate()
+
+    # --------------------------------------------------------------------------
+    # Serial methods
+    # --------------------------------------------------------------------------
+
+    def init_serial(self) -> None:
+        """Initialize serial connection."""
+        if self._is_serial_enabled:
+            return
+        is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
+        self._serial = serial_controller
+        self._serial.initialize(ConsoleOutput(), is_dev_env)
+        self._is_serial_enabled = True
+
+    def terminate_serial(self):
+        """Terminate serial connection."""
+        if self._is_serial_enabled:
+            self._serial.terminate()
 
     @property
     def edsdk(self):
+        """Get EDSDK."""
         return self._edsdk
+
+    @property
+    def serial(self):
+        """Get serial."""
+        return self._serial
 
 
 class ConsoleOutput:
-    """Implements console output operations."""
+    """Implement console output operations."""
 
     def __init__(self):
         return

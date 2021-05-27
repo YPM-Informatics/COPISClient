@@ -15,14 +15,11 @@
 
 """Store all enums."""
 
-from dataclasses import dataclass
 from enum import Enum, IntEnum, auto, unique
-from typing import Any, List, Optional, Tuple
-
-from .helpers import Point3, Point5
 
 
 class ToolIds(Enum):
+    """Toolbar item IDs."""
     PLAY = 1
     PAUSE = 2
     STOP = 3
@@ -31,6 +28,7 @@ class ToolIds(Enum):
 
 
 class PathIds(Enum):
+    """Path type IDs."""
     CYLINDER = auto()
     HELIX = auto()
     SPHERE = auto()
@@ -39,6 +37,7 @@ class PathIds(Enum):
 
 
 class CamAxis(Enum):
+    """Camera axes."""
     X = 'x'
     Y = 'y'
     Z = 'z'
@@ -49,11 +48,13 @@ class CamAxis(Enum):
 
 
 class CamMode(Enum):
+    """Camera modes."""
     NORMAL = 'normal'
     ROTATE = 'rotate'
 
 
 class ViewCubePos(Enum):
+    """View cube positions"""
     TOP_LEFT = 0
     TOP_RIGHT = 1
     BOTTOM_LEFT = 2
@@ -61,6 +62,7 @@ class ViewCubePos(Enum):
 
 
 class ViewCubeSize(IntEnum):
+    """View cube sizes."""
     SMALLER = 90
     SMALL = 105
     MEDIUM = 120
@@ -69,6 +71,7 @@ class ViewCubeSize(IntEnum):
 
 
 class ActionType(Enum):
+    """Action types."""
     NONE = auto()
     G0 = auto()     # rapid positioning
     G1 = auto()     # linear movement
@@ -92,38 +95,6 @@ class ActionType(Enum):
 
 @unique
 class DebugEnv(Enum):
+    """Debug environment flags."""
     PROD = 'prod'
     DEV = 'dev'
-
-
-@dataclass
-class Action:
-    """Action dataclass"""
-    atype: ActionType = ActionType.NONE
-    device: int = -1
-    argc: int = 0
-    args: Optional[List[Any]] = None
-
-
-@dataclass
-class Proxy:
-    """Proxy dataclass"""
-    proxy_type: int = 0
-    proxy_name: str = ''
-    position: Optional[List[Any]] = None
-    length: int = 10
-    height: int = 10
-
-
-@dataclass
-class Device:
-    """Device dataclass"""
-    device_id: int = 0
-    device_name: str = ''
-    device_type: str = ''
-    interfaces: Optional[List[str]] = None
-    position: Point5 = Point5()
-    home_position: Point5 = Point5()
-    max_feed_rates: Point5 = Point5()
-    device_bounds: Tuple[Point3, Point3] = (Point3(), Point3())
-    collision_bounds: Tuple[Point3, Point3] = (Point3(), Point3())

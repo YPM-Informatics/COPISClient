@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # This file is part of COPISClient.
 #
 # COPISClient is free software: you can redistribute it and/or modify
@@ -15,21 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
+"""Provide the COPIS Action Class."""
 
-from copis.client import COPISApp
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
+from copis.enums import ActionType
 
-if __name__ == '__main__':
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
+@dataclass
+class Action:
+    """Data structure that implements a camera action."""
 
-    app = COPISApp()
-    try:
-        app.MainLoop()
-    except KeyboardInterrupt:
-        logging.debug('KeyboardInterrupt')
-
-    app.core.terminate_edsdk()
-    app.core.terminate_serial()
-    del app
+    atype: ActionType = ActionType.NONE
+    device: int = -1
+    argc: int = 0
+    args: Optional[List[Any]] = None

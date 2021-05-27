@@ -15,11 +15,16 @@
 
 """MainWindow class."""
 
-from ctypes import *
-from pathlib import Path
-
 import wx
 import wx.lib.agw.aui as aui
+
+from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
+    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
+    AUI_BUTTON_STATE_PRESSED)
+from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
+    IndentPressedBitmap, StepColour, TakeScreenShot)
+
+import copis.store as store
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -31,13 +36,7 @@ from .panels.timeline import TimelinePanel
 from .panels.visualizer import VisualizerPanel
 from .pref_frame import PreferenceFrame
 from .proxyconfig_frame import ProxyConfigFrame
-from .wxutils import create_scaled_bitmap, set_dialog
-from copis.store import Store
-
-from wx.lib.agw.aui.aui_constants import *
-from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
-                                          IndentPressedBitmap, StepColour,
-                                          TakeScreenShot)
+from .wxutils import create_scaled_bitmap
 
 
 class MainWindow(wx.Frame):
@@ -58,12 +57,15 @@ class MainWindow(wx.Frame):
 
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Inits MainWindow with constructors."""
-        super(MainWindow, self).__init__(*args, **kwargs)
+    def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
+        """Initialize MainWindow with constructors."""
+        super().__init__(*args, **kwargs)
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
+        # pylint: disable=invalid-name
         self.MinSize = wx.Size(800, 575)
+
+        self.chamber_dimensions = chamber_dimensions
 
         # project saving
         self.project_dirty = False
@@ -78,8 +80,6 @@ class MainWindow(wx.Frame):
         self.init_statusbar()
         self.init_menubar()
         self.init_mgr()
-
-        self._store = Store()
 
         # TODO: re-enable liveview
         # self.add_evf_pane()
@@ -296,17 +296,17 @@ class MainWindow(wx.Frame):
                 wx.LogError(f'Could not save in file "{path}".')
 
     def on_export(self, event: wx.CommandEvent) -> None:
-        """Export action list as series of gcode commands"""
+        """Export action list as series of gcode commands."""
         self.core.export_actions("./test.copis")
 
     def do_save_project(self, path) -> None:
-        """Save project to file Path. TODO: Implement"""
+        """Save project to file Path."""
         self.project_dirty = False
-        self._store.save(path, self.core.actions)
+        store.save(path, self.core.actions)
 
-    def do_load_project(self, path) -> None:
-        """Load project from file Path. TODO: Implement"""
-        actions = self._store.load(path, [])
+    def do_load_project(self, path: str) -> None:
+        """Load project from file Path."""
+        actions = store.load(path, [])
 
         self.core.actions.clear()
         self.core.actions.extend(actions)
@@ -397,7 +397,7 @@ class MainWindow(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
-        self.panels['machine_toolbar'] = MachineToolbar(self)
+        self.panels['machine_toolbar'] = MachineToolbar(self, self.panels['console'])
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
         # add visualizer panel
@@ -450,7 +450,7 @@ class MainWindow(wx.Frame):
 
         TODO!
         """
-        if self.core.edsdk.get_camera_count() == 0:
+        if self.core.edsdk.camera_count == 0:
             return
 
         self.panels['evf'] = EvfPanel(self)
@@ -773,7 +773,6 @@ class CustomAuiTabArt(aui.AuiDefaultTabArt):
 
         ypos = drawn_tab_yoff + (drawn_tab_height)/2 - (texty/2) + 1
 
-        offset_focus = text_offset
         if control:
             if control.GetPosition() != wxPoint(text_offset+1, ypos):
                 control.SetPosition(wxPoint(text_offset+1, ypos))

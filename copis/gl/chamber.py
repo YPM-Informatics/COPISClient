@@ -36,7 +36,7 @@ class _Axes():
     origin = (0.0, 0.0, 0.0)
 
     def __init__(self, parent) -> None:
-        """Inits _Axes with constructors."""
+        """Initializes _Axes with constructors."""
         self.parent = parent
 
         self._vao_axes = None
@@ -210,7 +210,7 @@ class GLChamber:
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits GLChamber with constructors.
+        """Initializes GLChamber with constructors.
 
         Raises:
             ValueError: If provided build dimension is invalid.

@@ -17,25 +17,25 @@
 
 import logging
 import math
+import glm
+import wx
+import wx.lib.agw.aui as aui
 import random
 from typing import Tuple
 
-import glm
-import numpy as np
-import wx
-import wx.lib.agw.aui as aui
-from copis.enums import Action, ActionType, PathIds
-from copis.gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
-                               simple_statictext)
+from copis.gui.wxutils import (FancyTextCtrl,
+    create_scaled_bitmap, simple_statictext)
 from copis.helpers import xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
+from copis.enums import ActionType, PathIds
+from copis.classes import Action
 
 
 class PathgenToolbar(aui.AuiToolBar):
     """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
 
-    def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits ToolbarPanel with constructors."""
+    def __init__(self, parent) -> None:
+        """Initializes ToolbarPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
@@ -66,6 +66,15 @@ class PathgenToolbar(aui.AuiToolBar):
         # add single point adder
         _bmp = create_scaled_bitmap('add_circle_outline', 24)
         self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
+
+        self.AddSeparator()
+
+        self.Bind(wx.EVT_BUTTON, self.on_clear_path, self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
+
+    def on_clear_path(self, _) -> None:
+        """On clear button pressed, clear core action list"""
+        if len(self.core.actions) > 0:
+            self.core.actions.clear()
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, create pathgen dialog and process accordingly.
@@ -245,7 +254,7 @@ class _PathgenCylinder(wx.Dialog):
     """Dialog to generate a cylinder path."""
 
     def __init__(self, parent):
-        """Inits _PathgenCylinder with constructors."""
+        """Initializes _PathgenCylinder with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
@@ -342,7 +351,7 @@ class _PathgenHelix(wx.Dialog):
     """Dialog to generate a helix path."""
 
     def __init__(self, parent):
-        """Inits _PathgenHelix with constructors."""
+        """Initializes _PathgenHelix with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
 
@@ -439,7 +448,7 @@ class _PathgenSphere(wx.Dialog):
     """Dialog to generate a sphere path."""
 
     def __init__(self, parent):
-        """Inits _PathgenSphere with constructors."""
+        """Initializes _PathgenSphere with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
 
@@ -519,7 +528,7 @@ class _PathgenLine(wx.Dialog):
     """Dialog to generate a line path."""
 
     def __init__(self, parent):
-        """Inits _PathgenLine with constructors."""
+        """Initializes _PathgenLine with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 
@@ -616,7 +625,7 @@ class _PathgenPoint(wx.Dialog):
     """Dialog to generate a single point."""
 
     def __init__(self, parent):
-        """Inits _PathgenPoint with constructors."""
+        """Initializes _PathgenPoint with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 

@@ -13,22 +13,23 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Manages COPIS EDSDK Communications"""
+"""Manage COPIS EDSDK Communications."""
 
 import os
 import datetime
 
 from ctypes import c_int, c_uint, c_void_p, sizeof, WINFUNCTYPE
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, List
+from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsCapacity, EdsPoint, EdsRect, EdsSaveTo,
+    EDSDK, EdsCapacity, EdsDeviceInfo, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
 
-class LocalEDSDK():
-    """Implement EDSDK Functionalities"""
+class EDSDKController():
+    """Implement EDSDK Functionalities."""
     _object_handler = _property_handler = _state_handler = object
 
     def __init__(self) -> None:
@@ -40,8 +41,13 @@ class LocalEDSDK():
         self._camera = CameraSettings()
         self._image = ImageSettings()
 
+        # Locally aliasing WINFUNCTYPE is required to avoid NameError cause
+        # by the use of @mproperty.
+        # See: https://github.com/josiahcarlson/mprop
+        self._win_func_type = WINFUNCTYPE
+
     def initialize(self, console) -> None:
-        """Initialize the EDSDK object"""
+        """Initialize the EDSDK object."""
         if self._is_connected:
             return
 
@@ -93,11 +99,8 @@ class LocalEDSDK():
             self._console.print(f'Invalid camera index: {index}.')
             return False
 
-        self._is_connected = True
-
         self._camera.index = index
         self._camera.ref = self._edsdk.EdsGetChildAtIndex(cam_items, index)
-        self._console.print(f'Connected to camera {self._camera.index}.')
 
         *_, cam_ref = self._camera
 
@@ -108,25 +111,31 @@ class LocalEDSDK():
         self._edsdk.EdsSetCapacity(cam_ref, EdsCapacity(10000000, 512, 1))
 
         # set handlers
-        object_prototype = WINFUNCTYPE(c_int, c_int, c_void_p, c_void_p)
-        LocalEDSDK._object_handler = object_prototype(self._handle_object)
+        object_prototype = self._win_func_type(c_int, c_int, c_void_p, c_void_p)
+        EDSDKController._object_handler = object_prototype(self._handle_object)
 
-        property_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_int, c_void_p)
-        LocalEDSDK._property_handler = property_prototype(self._handle_property)
+        property_prototype = self._win_func_type(c_int, c_int, c_int, c_int, c_void_p)
+        EDSDKController._property_handler = property_prototype(self._handle_property)
 
-        state_prototype = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
-        LocalEDSDK._state_handler = state_prototype(self._handle_state)
+        state_prototype = self._win_func_type(c_int, c_int, c_int, c_void_p)
+        EDSDKController._state_handler = state_prototype(self._handle_state)
 
         self._edsdk.EdsSetObjectEventHandler(
-            cam_ref, self._edsdk.ObjectEvent_All, LocalEDSDK._object_handler, None)
+            cam_ref, self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
+
         self._edsdk.EdsSetPropertyEventHandler(
-            cam_ref, self._edsdk.PropertyEvent_All, LocalEDSDK._property_handler, cam_ref)
+            cam_ref, self._edsdk.PropertyEvent_All, EDSDKController._property_handler, cam_ref)
+
         self._edsdk.EdsSetCameraStateEventHandler(
-            cam_ref, self._edsdk.StateEvent_All, LocalEDSDK._state_handler, cam_ref)
+            cam_ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, cam_ref)
+
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 
-        return True
+        self._is_connected = True
+        self._console.print(f'Connected to camera {self._camera.index}.')
+
+        return self._is_connected
 
     def disconnect(self) -> bool:
         """Disconnect from camera.
@@ -141,11 +150,12 @@ class LocalEDSDK():
         self._edsdk.EdsCloseSession(self._camera.ref)
         self._console.print(f'Disconnected from camera {self._camera.index}.')
 
-        self._is_connected = False
         self._camera.ref = None
         self._camera.index = -1
 
-        return True
+        self._is_connected = False
+
+        return not self._is_connected
 
     def take_picture(self) -> bool:
         """Take picture on connected camera.
@@ -187,9 +197,38 @@ class LocalEDSDK():
         except Exception as err:
             self._console.print(f'An exception occurred while terminating Canon API: {err.args[0]}')
 
-    def get_camera_count(self) -> int:
-        """Return camera count"""
+    @property
+    def camera_count(self) -> int:
+        """Return camera count."""
         return self._camera.count
+
+    @property
+    def is_waiting_for_image(self) -> bool:
+        """Return a flag indicating whether we are waiting for an image."""
+        return self._is_waiting_for_image
+
+    @property
+    def is_enabled(self) -> bool:
+        """Return a flag indicating whether EDSDK is enabled."""
+        return self._edsdk is not None
+
+    @property
+    def device_list(self) -> List[EdsDeviceInfo]:
+        """Return a list of descriptions of devices connected via edsdk."""
+        devices = []
+        self._update_camera_list()
+
+        cam_count, cam_index, cam_items, *_ = self._camera
+
+        for i in range(cam_count):
+            ref = self._edsdk.EdsGetChildAtIndex(cam_items, i)
+            info = self._edsdk.EdsGetDeviceInfo(ref)
+
+            is_connected = self._is_connected and i == cam_index
+
+            devices.append((info, is_connected))
+
+        return devices
 
     # def step_focus(self) -> bool:
     #     """TODO
@@ -217,7 +256,7 @@ class LocalEDSDK():
         self._camera.count = self._edsdk.EdsGetChildCount(self._camera.items)
 
     def _generate_file_name(self):
-        """Sets the filename for an image."""
+        """Set the filename for an image."""
         now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
         self._image.filename = os.path.abspath(f'./{self._image.PREFIX}_{now}.jpg')
 
@@ -245,7 +284,7 @@ class LocalEDSDK():
             self._console.print(f'An exception occurred while downloading an image: {err.args[0]}')
 
     def _handle_object(self, event, obj, _context):
-        """Handles the group of events where request notifications are issued to
+        """Handle the group of events where request notifications are issued to
         create, delete or transfer image data stored in a camera or image files on
         the memory card.
         """
@@ -254,13 +293,13 @@ class LocalEDSDK():
         return 0
 
     def _handle_property(self, _event, _property, _parameter, _context):
-        """Handles the group of events where notifications are issued regarding
+        """Handle the group of events where notifications are issued regarding
         changes in the properties of a camera.
         """
         return 0
 
     def _handle_state(self, event, _state, context):
-        """Handles the group of events where notifications are issued regarding
+        """Handle the group of events where notifications are issued regarding
         changes in the state of a camera, such as activation of a shut-down timer.
         """
         if event == self._edsdk.StateEvent_WillSoonShutDown:
@@ -275,7 +314,7 @@ class LocalEDSDK():
 
 @dataclass
 class EvfDataSet(Structure):
-    """EVF data structure"""
+    """EVF data structure."""
     _fields_ = [
         ('stream', c_void_p),
         ('zoom', c_uint),
@@ -287,7 +326,7 @@ class EvfDataSet(Structure):
 
 @dataclass
 class CameraSettings():
-    """Data structure to hold the COPIS EDSDK camera settings"""
+    """Data structure to hold the COPIS EDSDK camera settings."""
     def __init__(self) -> None:
         self.count = 0
         self.index = -1
@@ -305,7 +344,7 @@ class CameraSettings():
 
 @dataclass
 class ImageSettings():
-    """Data structure to hold the COPIS EDSDK image settings"""
+    """Data structure to hold the COPIS EDSDK image settings."""
 
     PREFIX: ClassVar[str] = 'COPIS'
 
@@ -322,11 +361,30 @@ class ImageSettings():
         ))
 
 
-_instance = LocalEDSDK()
+_instance = EDSDKController()
 
 connect = _instance.connect
 disconnect = _instance.disconnect
-get_camera_count = _instance.get_camera_count
 initialize = _instance.initialize
 take_picture = _instance.take_picture
 terminate = _instance.terminate
+
+@mproperty
+def camera_count(mod) -> int:
+    """Return camera count from the module."""
+    return mod._instance.camera_count
+
+@mproperty
+def is_waiting_for_image(mod) -> bool:
+    """Return a flag indicating whether we are waiting for an image; from the module."""
+    return mod._instance.is_waiting_for_image
+
+@mproperty
+def is_enabled(mod) -> bool:
+    """Return a flag indicating whether EDSDK is enabled; from the module."""
+    return mod._instance.is_enabled
+
+@mproperty
+def device_list(mod) -> List[EdsDeviceInfo]:
+    """Return a list of descriptions of devices connected via edsdk; from the module."""
+    return mod._instance.device_list

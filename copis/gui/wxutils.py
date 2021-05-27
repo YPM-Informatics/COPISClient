@@ -16,11 +16,11 @@
 """wxPython util functions."""
 
 import re
-from typing import Any, Tuple
-
 import wx
 import wx.lib.newevent
 import wx.svg as svg
+
+from typing import Any, Tuple
 
 from copis.helpers import find_path
 
@@ -74,7 +74,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
     def __init__(self, *args, num_value: float = 1, max_precision: int = 3,
                  default_unit: str, unit_conversions, **kwargs):
-        """Inits FancyTextCtrl with constructors."""
+        """Initialize FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
         self.WindowStyle = wx.TE_PROCESS_ENTER
 

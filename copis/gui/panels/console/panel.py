@@ -15,11 +15,12 @@
 
 """ConsolePanel class."""
 
-import shlex
-
 import wx
-from copis.gui.wxutils import create_scaled_bitmap
+
 from pydispatch import dispatcher
+
+from .command_processor import _CommandProcessor
+from copis.gui.wxutils import create_scaled_bitmap
 
 
 class ConsolePanel(wx.Panel):
@@ -29,8 +30,8 @@ class ConsolePanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits ConsolePanel with constructors."""
+    def __init__(self, parent) -> None:
+        """Initialize ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self.core = self.parent.core
@@ -42,6 +43,7 @@ class ConsolePanel(wx.Panel):
 
         self.init_gui()
         self.Layout()
+        self._cmd_processor = _CommandProcessor(self.core, self)
 
         # bind copiscore listeners
         dispatcher.connect(self.on_notification, signal='core_a_list_changed')
@@ -83,45 +85,9 @@ class ConsolePanel(wx.Panel):
         if not cmd:
             return
 
-        self.print(f'$ {cmd}')
-        self.on_command_cleared()
+        self._cmd_processor.process(cmd)
 
-        try:
-            # try parsing command
-            argv = shlex.split(cmd)
-            argc = len(argv)
-        except Exception as e:
-            self.print(f'invalid command: {e}')
-            return
-
-        # NOTE: this is temporary, just a way to test edsdk functions.
-        if argv[0] == 'connect':
-            if argc == 2 and argv[1].isdigit():
-                self.core.edsdk.connect(int(argv[1]))
-            elif argc == 1:
-                self.core.edsdk.connect()
-            else:
-                self.print('usage: connect [INDEX]')
-
-        elif argv[0] == 'disconnect':
-            if argc == 1:
-                self.core.edsdk.disconnect()
-            else:
-                self.print('usage: disconnect')
-
-        elif argv[0] == 'shoot':
-            if argc == 2 and argv[1].isdigit():
-                if self.core.edsdk.connect(int(argv[1])):
-                    self.core.edsdk.take_picture()
-            elif argc == 1:
-                self.core.edsdk.take_picture()
-            else:
-                self.print('usage: shoot [INDEX]')
-
-        else:
-            self.print(f'invalid command: {argv[0]}')
-
-    def on_command_cleared(self, event: wx.CommandEvent = None) -> None:
+    def on_command_cleared(self, _event: wx.CommandEvent = None) -> None:
         """When the clear button is pressed, clear the console writer."""
         self._console_writer.ChangeValue('')
 
@@ -139,5 +105,7 @@ class ConsolePanel(wx.Panel):
         """Print any pydispatch signals."""
         self.print(f'{signal}: {message}')
 
-    def on_action_export(self, filename: str) -> None:
-        self.print(f'Exported actions to file {filename}')
+    def on_action_export(self, filename: str = None) -> None:
+        """Print action exported message."""
+        location = '' if filename is None else f' to file {filename}'
+        self.print(f'Actions exported{location}')

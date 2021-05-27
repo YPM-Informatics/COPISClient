@@ -20,27 +20,35 @@ TODO: Object collisions via general 3D object class.
 
 import math
 import platform as pf
-from dataclasses import dataclass
-from threading import Lock
-from typing import List, NamedTuple
-
-import copis.gl.shaders as shaderlib
 import glm
 import numpy as np
 import pywavefront
 import wx
 
+from threading import Lock
+from typing import List, NamedTuple
+from wx import glcanvas
+from pydispatch import dispatcher
+from OpenGL.GL import ( shaders,
+    GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW,
+    GL_MULTISAMPLE, GL_FALSE, GL_UNSIGNED_BYTE, GL_FLOAT, GL_AMBIENT_AND_DIFFUSE,
+    GL_BLEND, GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL, GL_CULL_FACE,
+    GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FILL, GL_FRONT_AND_BACK, GL_LESS,
+    GL_LINE_SMOOTH, GL_ONE_MINUS_SRC_ALPHA, GL_RGB, GL_SRC_ALPHA, GL_TRIANGLES,
+    glGenVertexArrays, glUniformMatrix4fv, glDeleteBuffers, glGenBuffers,
+    glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
+    glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
+    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable, 
+    glPolygonMode, glViewport, glReadPixels, glDrawArrays)
+from OpenGL.GLU import ctypes
+
+import copis.gl.shaders as shaderlib
+
+from copis.helpers import find_path
+from copis.mathutils import arcball
 from .actionvis import GLActionVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
-from copis.helpers import find_path, timing
-from copis.mathutils import arcball
-
-from OpenGL.GL import *
-from OpenGL.GL import shaders
-from OpenGL.GLU import *
-from pydispatch import dispatcher
-from wx import glcanvas
 
 
 class _Size(NamedTuple):
@@ -86,7 +94,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits GLCanvas3D with constructors."""
+        """Initializes GLCanvas3D with constructors."""
         self.parent = parent
         self.core = self.parent.core
         display_attrs = glcanvas.GLAttributes()
@@ -112,14 +120,19 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-        self._dist = 0.5 * (self._build_dimensions[2] + \
+
+        # This offset allows us to adjust the chamber's position on the canvas
+        #  when only rending one chamber
+        self._z_offset = 0 if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
+
+        self._dist = 0.5 * (self._build_dimensions[2] + self._z_offset + \
                             max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
 
         # other values
-        self._zoom = 1
+        self._zoom = round(400 / (self._build_dimensions[2] + self._z_offset), 1)
         self._hover_id = -1
         self._inside = False
         self._rot_quat = glm.quat()
@@ -261,8 +274,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         test_vbo = glGenBuffers(1)
 
         bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
-        for name, material in bulldog.materials.items():
-            # print(material.vertex_format)
+        for _, material in bulldog.materials.items():
             vertices = np.array(material.vertices)
             vertices = np.float32(vertices)
 
@@ -275,8 +287,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
             glEnableVertexAttribArray(1)
             glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
             glEnableVertexAttribArray(2)
-
-        # glDeleteBuffers(1, test_vbo)
 
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
@@ -664,8 +674,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def modelview_matrix(self) -> glm.mat4:
         """Returns a glm.mat4 representing the current modelview matrix."""
         mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
-                         glm.vec3(0.0, 0.0, 0.0),               # target
-                         glm.vec3(0.0, 0.0, 1.0))               # up
+                         glm.vec3(0.0, 0.0, self._z_offset),     # target
+                         glm.vec3(0.0, 0.0, 1.0))                # up
         return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:

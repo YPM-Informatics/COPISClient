@@ -20,7 +20,7 @@ class MachineSettingsDialog(wx.Dialog):
     """Dialog TODO"""
 
     def __init__(self, parent, *args, **kwargs):
-        """Inits SettingsDialog with constructors."""
+        """Initialize SettingsDialog with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Settings')
         self.parent = parent
 
