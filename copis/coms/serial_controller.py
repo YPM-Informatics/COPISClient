@@ -197,7 +197,7 @@ class SerialController():
             self._active_port = None
 
     def _read(self) -> list:
-        wait = .09
+        wait = SerialController._READ_TIMEOUT / 2
         active_port = self._active_port
         read_buffer = []
         time.sleep(wait)
@@ -239,7 +239,7 @@ class SerialController():
                 result = '{' + ', '.join(mapped) + '}'
 
                 result_dict = ast.literal_eval(result)
-                result_dict['idle'] = result_dict['ssf'] == 0
+                result_dict['is_idle'] = result_dict['ssf'] == 0
 
                 response_stack.append(result_dict)
             else:
