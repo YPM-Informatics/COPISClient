@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS Application Core functions"""
+"""COPIS Application Core functions."""
 
 __version__ = ""
 
@@ -45,7 +45,7 @@ from .classes import Action, Device, MonitoredList
 
 
 def locked(func):
-    """Provides thread locking mechanism"""
+    """Provide thread locking mechanism."""
     @wraps(func)
     def inner(*args, **kw):
         with inner.lock:
@@ -75,7 +75,7 @@ class COPISCore:
     """
 
     def __init__(self, parent) -> None:
-        """Inits a CopisCore instance."""
+        """Initialize a CopisCore instance."""
         self.config = parent.config
 
         self._is_edsdk_enabled = False
@@ -113,7 +113,8 @@ class COPISCore:
         self._mainqueue = None
         self._sidequeue = Queue(0)
 
-        self.offset_devices(*self.config.machine_settings.devices)
+        # TODO: this might not exist after testing machine.
+        # self.offset_devices(*self.config.machine_settings.devices)
 
         self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
         self._devices: List[Device] = MonitoredList(
@@ -143,20 +144,21 @@ class COPISCore:
             else:
                 raise warning
 
-    def offset_devices(self, *devices) -> None:
-        """Takes a list of devices and applies the chamber offsets to their coordinates"""
+    # TODO: this might not exist after testing machine.
+    # def offset_devices(self, *devices) -> None:
+    #     """Take a list of devices and applies the chamber offsets to their coordinates."""
 
-        for device in devices:
-            chamber = next(filter(lambda c, d = device : c.name == d.chamber_name,
-            self.config.machine_settings.chambers))
+    #     for device in devices:
+    #         chamber = next(filter(lambda c, d = device : c.name == d.chamber_name,
+    #         self.config.machine_settings.chambers))
 
-            new_position = Point5(
-                device.position.x + chamber.offsets.x,
-                device.position.y + chamber.offsets.y,
-                device.position.z + chamber.offsets.z,
-                device.position.p, device.position.t)
+    #         new_position = Point5(
+    #             device.position.x + chamber.offsets.x,
+    #             device.position.y + chamber.offsets.y,
+    #             device.position.z + chamber.offsets.z,
+    #             device.position.p, device.position.t)
 
-            device.position = new_position
+    #         device.position = new_position
 
     @locked
     def disconnect(self):
@@ -267,7 +269,7 @@ class COPISCore:
         dispatcher.send('core_message', message='Imaging stopped')
 
     def pause(self) -> bool:
-        """Pauses the current run, saving the current position."""
+        """Pause the current run, saving the current position."""
 
         if not self.imaging:
             return False
@@ -286,7 +288,7 @@ class COPISCore:
         return True
 
     def resume(self) -> bool:
-        """Resumes the current run."""
+        """Resume the current run."""
 
         if not self.paused:
             return False
@@ -524,7 +526,7 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
-        """Initializes Canon EDSDK connection"""
+        """Initialize Canon EDSDK connection."""
         if self._is_edsdk_enabled:
             return
 
@@ -534,7 +536,7 @@ class COPISCore:
         self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
-        """Terminates Canon EDSDK connection"""
+        """Terminate Canon EDSDK connection."""
         if self._is_edsdk_enabled:
             self._edsdk.terminate()
 
@@ -543,7 +545,7 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_serial(self) -> None:
-        """Initializes serial connection"""
+        """Initialize serial connection."""
         if self._is_serial_enabled:
             return
         is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
@@ -552,22 +554,23 @@ class COPISCore:
         self._is_serial_enabled = True
 
     def terminate_serial(self):
-        """Terminates serial connection"""
+        """Terminate serial connection."""
         if self._is_serial_enabled:
             self._serial.terminate()
 
     @property
     def edsdk(self):
+        """Get EDSDK."""
         return self._edsdk
 
     @property
     def serial(self):
-        """get edsdk"""
+        """Get serial."""
         return self._serial
 
 
 class ConsoleOutput:
-    """Implements console output operations."""
+    """Implement console output operations."""
 
     def __init__(self):
         return

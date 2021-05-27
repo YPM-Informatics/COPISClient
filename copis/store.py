@@ -27,7 +27,7 @@ from .classes import ConfigSettings, MachineSettings
 
 
 class Store():
-    """Handles application-wide data storage operations."""
+    """Handle application-wide data storage operations."""
 
     _PROJECT_FOLDER = 'copis'
 
@@ -50,19 +50,19 @@ class Store():
             os.makedirs(self._config_dir)
 
     def save_config(self, parser: ConfigParser) -> None:
-        """Saves a configuration object to file."""
+        """Save a configuration object to file."""
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
     def save_config_settings(self, settings: ConfigSettings) -> None:
-        """Saves a configuration object to file, via its settings object."""
+        """Save a configuration object to file, via its settings object."""
         parser = ConfigParser()
         parser.read_dict(settings.as_dict())
 
         self.save_config(parser)
 
     def load_config(self) -> Optional[ConfigParser]:
-        """Load a configuration object from file"""
+        """Load a configuration object from file."""
         if os.path.exists(self._config_path):
             parser = ConfigParser()
             parser.read(self._config_path)
@@ -71,7 +71,7 @@ class Store():
         return None
 
 def save_machine(filename: str, settings: MachineSettings) -> None:
-    """Saves a machine configuration settings object to file."""
+    """Save a machine configuration settings object to file."""
     parser = ConfigParser()
     parser.read_dict(settings.as_dict())
 
@@ -79,19 +79,20 @@ def save_machine(filename: str, settings: MachineSettings) -> None:
         parser.write(file)
 
 def load_machine(filename: str) -> ConfigParser:
-    """Parses a machine.ini file and returns instances of the objects within"""
+    """Parse a machine.ini file and returns instances of the objects within."""
     parser = ConfigParser()
     parser.read(filename)
 
     return parser
 
 def save(filename: str, obj: object) -> None:
-    """Saves an object to file"""
+    """Save an object to file."""
     with open(filename, 'wb') as file:
         pickle.dump(obj, file)
 
+
 def load(filename: str, obj: object) -> object:
-    """Loads an object from file"""
+    """Load an object from file."""
     with open(filename, 'rb') as file:
         obj = pickle.load(file)
 

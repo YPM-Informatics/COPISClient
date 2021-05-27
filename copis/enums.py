@@ -19,7 +19,7 @@ from enum import Enum, IntEnum, auto, unique
 
 
 class ToolIds(Enum):
-    """Toolbar item IDs"""
+    """Toolbar item IDs."""
     PLAY = 1
     PAUSE = 2
     STOP = 3
@@ -28,7 +28,7 @@ class ToolIds(Enum):
 
 
 class PathIds(Enum):
-    """Path type IDs"""
+    """Path type IDs."""
     CYLINDER = auto()
     HELIX = auto()
     SPHERE = auto()
@@ -37,7 +37,7 @@ class PathIds(Enum):
 
 
 class CamAxis(Enum):
-    """Camera axes"""
+    """Camera axes."""
     X = 'x'
     Y = 'y'
     Z = 'z'
@@ -48,7 +48,7 @@ class CamAxis(Enum):
 
 
 class CamMode(Enum):
-    """Camera modes"""
+    """Camera modes."""
     NORMAL = 'normal'
     ROTATE = 'rotate'
 
@@ -62,7 +62,7 @@ class ViewCubePos(Enum):
 
 
 class ViewCubeSize(IntEnum):
-    """View cube sizes"""
+    """View cube sizes."""
     SMALLER = 90
     SMALL = 105
     MEDIUM = 120
@@ -71,7 +71,7 @@ class ViewCubeSize(IntEnum):
 
 
 class ActionType(Enum):
-    """Action types"""
+    """Action types."""
     NONE = auto()
     G0 = auto()     # rapid positioning
     G1 = auto()     # linear movement
@@ -95,6 +95,6 @@ class ActionType(Enum):
 
 @unique
 class DebugEnv(Enum):
-    """Debug environment flags"""
+    """Debug environment flags."""
     PROD = 'prod'
     DEV = 'dev'

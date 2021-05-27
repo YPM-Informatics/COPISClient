@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Manages COPIS EDSDK Communications"""
+"""Manage COPIS EDSDK Communications."""
 
 import os
 import datetime
@@ -29,7 +29,7 @@ from canon.EDSDKLib import (
 
 
 class EDSDKController():
-    """Implement EDSDK Functionalities"""
+    """Implement EDSDK Functionalities."""
     _object_handler = _property_handler = _state_handler = object
 
     def __init__(self) -> None:
@@ -47,7 +47,7 @@ class EDSDKController():
         self._win_func_type = WINFUNCTYPE
 
     def initialize(self, console) -> None:
-        """Initialize the EDSDK object"""
+        """Initialize the EDSDK object."""
         if self._is_connected:
             return
 
@@ -199,22 +199,22 @@ class EDSDKController():
 
     @property
     def camera_count(self) -> int:
-        """Returns camera count"""
+        """Return camera count."""
         return self._camera.count
 
     @property
     def is_waiting_for_image(self) -> bool:
-        """Returns a flag indicating whether we are waiting for an image"""
+        """Return a flag indicating whether we are waiting for an image."""
         return self._is_waiting_for_image
 
     @property
     def is_enabled(self) -> bool:
-        """Returns a flag indicating whether EDSDK is enabled"""
+        """Return a flag indicating whether EDSDK is enabled."""
         return self._edsdk is not None
 
     @property
     def device_list(self) -> List[EdsDeviceInfo]:
-        """Returns a list of descriptions of devices connected via edsdk"""
+        """Return a list of descriptions of devices connected via edsdk."""
         devices = []
         self._update_camera_list()
 
@@ -251,12 +251,12 @@ class EDSDKController():
     #     return
 
     def _update_camera_list(self):
-        """Updates camera list and camera count."""
+        """Update camera list and camera count."""
         self._camera.items = self._edsdk.EdsGetCameraList()
         self._camera.count = self._edsdk.EdsGetChildCount(self._camera.items)
 
     def _generate_file_name(self):
-        """Sets the filename for an image."""
+        """Set the filename for an image."""
         now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
         self._image.filename = os.path.abspath(f'./{self._image.PREFIX}_{now}.jpg')
 
@@ -284,7 +284,7 @@ class EDSDKController():
             self._console.print(f'An exception occurred while downloading an image: {err.args[0]}')
 
     def _handle_object(self, event, obj, _context):
-        """Handles the group of events where request notifications are issued to
+        """Handle the group of events where request notifications are issued to
         create, delete or transfer image data stored in a camera or image files on
         the memory card.
         """
@@ -293,13 +293,13 @@ class EDSDKController():
         return 0
 
     def _handle_property(self, _event, _property, _parameter, _context):
-        """Handles the group of events where notifications are issued regarding
+        """Handle the group of events where notifications are issued regarding
         changes in the properties of a camera.
         """
         return 0
 
     def _handle_state(self, event, _state, context):
-        """Handles the group of events where notifications are issued regarding
+        """Handle the group of events where notifications are issued regarding
         changes in the state of a camera, such as activation of a shut-down timer.
         """
         if event == self._edsdk.StateEvent_WillSoonShutDown:
@@ -314,7 +314,7 @@ class EDSDKController():
 
 @dataclass
 class EvfDataSet(Structure):
-    """EVF data structure"""
+    """EVF data structure."""
     _fields_ = [
         ('stream', c_void_p),
         ('zoom', c_uint),
@@ -326,7 +326,7 @@ class EvfDataSet(Structure):
 
 @dataclass
 class CameraSettings():
-    """Data structure to hold the COPIS EDSDK camera settings"""
+    """Data structure to hold the COPIS EDSDK camera settings."""
     def __init__(self) -> None:
         self.count = 0
         self.index = -1
@@ -344,7 +344,7 @@ class CameraSettings():
 
 @dataclass
 class ImageSettings():
-    """Data structure to hold the COPIS EDSDK image settings"""
+    """Data structure to hold the COPIS EDSDK image settings."""
 
     PREFIX: ClassVar[str] = 'COPIS'
 
@@ -371,20 +371,20 @@ terminate = _instance.terminate
 
 @mproperty
 def camera_count(mod) -> int:
-    """Returns camera count from the module"""
+    """Return camera count from the module."""
     return mod._instance.camera_count
 
 @mproperty
 def is_waiting_for_image(mod) -> bool:
-    """Returns a flag indicating whether we are waiting for an image; from the module"""
+    """Return a flag indicating whether we are waiting for an image; from the module."""
     return mod._instance.is_waiting_for_image
 
 @mproperty
 def is_enabled(mod) -> bool:
-    """Returns a flag indicating whether EDSDK is enabled; from the module"""
+    """Return a flag indicating whether EDSDK is enabled; from the module."""
     return mod._instance.is_enabled
 
 @mproperty
 def device_list(mod) -> List[EdsDeviceInfo]:
-    """Returns a list of descriptions of devices connected via edsdk; from the module"""
+    """Return a list of descriptions of devices connected via edsdk; from the module."""
     return mod._instance.device_list

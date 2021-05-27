@@ -24,7 +24,7 @@ from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
 from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
-from copis.store import load as store_load, save as store_save
+import copis.store as store
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -58,7 +58,7 @@ class MainWindow(wx.Frame):
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
 
     def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
-        """Initializes MainWindow with constructors"""
+        """Initialize MainWindow with constructors."""
         super().__init__(*args, **kwargs)
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
@@ -296,17 +296,17 @@ class MainWindow(wx.Frame):
                 wx.LogError(f'Could not save in file "{path}".')
 
     def on_export(self, event: wx.CommandEvent) -> None:
-        """Export action list as series of gcode commands"""
+        """Export action list as series of gcode commands."""
         self.core.export_actions("./test.copis")
 
     def do_save_project(self, path) -> None:
-        """Saves project to file Path"""
+        """Save project to file Path."""
         self.project_dirty = False
-        store_save(path, self.core.actions)
+        store.save(path, self.core.actions)
 
     def do_load_project(self, path: str) -> None:
-        """Loads project from file Path"""
-        actions = store_load(path, [])
+        """Load project from file Path."""
+        actions = store.load(path, [])
 
         self.core.actions.clear()
         self.core.actions.extend(actions)

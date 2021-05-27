@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides the COPIS Device Class"""
+"""Provide the COPIS Device Class."""
 
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -23,7 +23,7 @@ from copis.helpers import Point3, Point5
 
 @dataclass
 class Device:
-    """Data structure that implements a COPIS instrument imaging device"""
+    """Data structure that implements a COPIS instrument imaging device."""
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''
@@ -37,7 +37,7 @@ class Device:
     homing_sequence: str = ''
 
     def as_dict(self):
-        """Returns a dictionary representation of a Device instance."""
+        """Return a dictionary representation of a Device instance."""
         data = {
             f'Camera {self.device_name}': {
                 'x': self.position.x,

@@ -15,14 +15,15 @@
 
 from dataclasses import dataclass
 from typing import List, Dict
+from glm import vec3
 
 from copis.enums import DebugEnv
-from copis.helpers import Point3, Point5
-from . import Device, Chamber, Bounds, Dimensions
+from copis.helpers import Point5
+from . import Device, Chamber, BoundingBox
 
 @dataclass
 class ConfigSettings:
-    """Configuration settings data structure"""
+    """Configuration settings data structure."""
     debug_env: DebugEnv
 
     app_window_width: int
@@ -31,7 +32,7 @@ class ConfigSettings:
     machine_config_path: str
 
     def as_dict(self):
-        """Returns a dictionary representation of a Settings instance."""
+        """Return a dictionary representation of a Settings instance."""
         return {
             'AppWindow': {
                 'width': self.app_window_width,
@@ -47,49 +48,45 @@ class ConfigSettings:
 
 
 class MachineSettings:
-    """Machine configuration settings data structure"""
+    """Machine configuration settings data structure."""
     def __init__(self, data: List[Dict[str, str]]) -> None:
-        chamber_data = [d for d in data if d['name'].lower().startswith('chamber ')]
-        device_data = [d for d in data if d['name'].lower().startswith('camera ')]
+        self._chamber_data = [d for d in data if d['name'].lower().startswith('chamber ')]
+        self._device_data = [d for d in data if d['name'].lower().startswith('camera ')]
 
-        self._parse_chambers(chamber_data)
-        self._parse_devices(device_data)
+        self._parse_chambers()
+        self._parse_devices()
 
     def as_dict(self):
-        """Returns a dictionary representation of a MachineSettings instance."""
+        """Return a dictionary representation of a MachineSettings instance."""
         this = {}
-         # pylint: disable=expression-not-assigned
-        [this.update(chamber.as_dict()) for chamber in self._chambers]
-        [this.update(device.as_dict()) for device in self._devices]
+        for chamber in self._chambers:
+            this.update(chamber.as_dict())
+
+        for device in self._devices:
+            this.update(device.as_dict())
 
         return this
 
-    def _parse_chambers(self, data: List[Dict[str, str]]) -> None:
+    def _parse_chambers(self) -> None:
+        data = self._chamber_data
         self._chambers = []
 
         for i, datum in enumerate(data):
             name = datum['name'].split(' ', maxsplit=1)[1]
-            width = float(datum['width'])
-            depth = float(datum['depth'])
-            height = float(datum['height'])
             min_x = float(datum['min_x'])
             min_y = float(datum['min_y'])
             min_z = float(datum['min_z'])
             max_x = float(datum['max_x'])
             max_y = float(datum['max_y'])
             max_z = float(datum['max_z'])
-            x_offset = 0 if 'x_offset' not in datum.keys() else float(datum['x_offset'])
-            y_offset = 0 if 'y_offset' not in datum.keys() else float(datum['y_offset'])
-            z_offset = 0 if 'z_offset' not in datum.keys() else float(datum['z_offset'])
             port = datum['port']
 
-            dimensions = Dimensions(width, depth, height)
-            offsets = Point3(x_offset, y_offset, z_offset)
-            bounds = Bounds(Point3(min_x, min_y, min_z), Point3(max_x, max_y, max_z))
-            chamber = Chamber(i, name, bounds, dimensions, port, offsets)
+            box = BoundingBox(vec3(min_x, min_y, min_z), vec3(max_x, max_y, max_z))
+            chamber = Chamber(i, name, box, port)
             self._chambers.append(chamber)
 
-    def _parse_devices(self, data: List[Dict[str, str]]) -> None:
+    def _parse_devices(self) -> None:
+        data = self._device_data
         self._devices = []
 
         for i, datum in enumerate(data):
@@ -111,10 +108,10 @@ class MachineSettings:
 
     @property
     def chambers(self) -> List[Chamber]:
-        """Machine configuration settings' chambers getter"""
+        """Machine configuration settings' chambers getter."""
         return self._chambers
 
     @property
     def devices(self) -> List[Device]:
-        """Machine configuration settings' devices getter"""
+        """Machine configuration settings' devices getter."""
         return self._devices

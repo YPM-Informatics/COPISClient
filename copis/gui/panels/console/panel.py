@@ -31,7 +31,7 @@ class ConsolePanel(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits ConsolePanel with constructors."""
+        """Initialize ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self.core = self.parent.core
@@ -102,10 +102,10 @@ class ConsolePanel(wx.Panel):
             print(f'{msg}\n')
 
     def on_notification(self, signal: str, message: str = '') -> None:
-        """Prints any pydispatch signals."""
+        """Print any pydispatch signals."""
         self.print(f'{signal}: {message}')
 
     def on_action_export(self, filename: str = None) -> None:
-        """Prints action exported message."""
+        """Print action exported message."""
         location = '' if filename is None else f' to file {filename}'
         self.print(f'Actions exported{location}')

@@ -28,7 +28,7 @@ class EvfPanel(wx.Panel):
     """
 
     def __init__(self, parent):
-        """Inits EvfPanel with constructors."""
+        """Initializes EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent
         self.core = self.parent.core

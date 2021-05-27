@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS console package"""
+"""COPIS console package."""
 
 from .panel import ConsolePanel
 

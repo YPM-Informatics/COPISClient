@@ -94,7 +94,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
                  every: int = 100,
                  subdivisions: int = 10) -> None:
-        """Inits GLCanvas3D with constructors."""
+        """Initializes GLCanvas3D with constructors."""
         self.parent = parent
         self.core = self.parent.core
         display_attrs = glcanvas.GLAttributes()

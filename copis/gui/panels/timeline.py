@@ -33,7 +33,7 @@ class TimelinePanel(wx.Panel):
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Inits TimelinePanel with constructors."""
+        """Initializes TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self.core = self.parent.core

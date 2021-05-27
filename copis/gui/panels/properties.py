@@ -50,7 +50,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     }
 
     def __init__(self, parent) -> None:
-        """Inits PropertiesPanel with constructors."""
+        """Initialize PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self.core = self.parent.core
@@ -78,7 +78,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         dispatcher.connect(self.on_deselected, signal='core_p_deselected')
 
     def init_all_property_panels(self) -> None:
-        """Inits all property panels."""
+        """Initialize all property panels."""
         self._property_panels['visualizer'] = _PropVisualizer(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
@@ -139,7 +139,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 class _PropVisualizer(wx.Panel):
 
     def __init__(self, parent) -> None:
-        """Inits _PropVisualizer with constructors."""
+        """Initialize _PropVisualizer with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -190,7 +190,7 @@ class _PropTransform(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropTransform with constructors."""
+        """Initialize _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -484,7 +484,7 @@ class _PropCameraInfo(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropCameraInfo with constructors."""
+        """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -543,7 +543,7 @@ class _PropCameraInfo(wx.Panel):
 class _PropCameraConfig(wx.Panel):
 
     def __init__(self, parent) -> None:
-        """Inits _PropCamera with constructors."""
+        """Initialize _PropCamera with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
@@ -653,7 +653,7 @@ class _PropQuickActions(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits _PropCameraInfo with constructors."""
+        """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 

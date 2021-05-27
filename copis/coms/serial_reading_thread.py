@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides COPIS Serial Reading Thread"""
+"""Provide COPIS Serial Reading Thread."""
 
 
 import ast
@@ -22,8 +22,9 @@ import time
 
 from serial import Serial
 
+
 class SerialReadingThread(threading.Thread):
-    """Implements the ability to continuously read a serial connection's output"""
+    """Implement the ability to continuously read a serial connection's output."""
 
     def __init__(self, connection: Serial):
         threading.Thread.__init__(self)

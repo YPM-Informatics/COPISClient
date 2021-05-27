@@ -51,7 +51,7 @@ class GLActionVis:
     ]
 
     def __init__(self, parent):
-        """Inits GLActionVis with constructors."""
+        """Initialize GLActionVis with constructors."""
         self.parent = parent
         self.core = self.parent.core
 

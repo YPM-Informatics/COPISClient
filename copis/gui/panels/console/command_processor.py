@@ -19,7 +19,7 @@ import shlex
 
 
 class _CommandProcessor:
-    """Handles console commands processing and execution.
+    """Handle console commands processing and execution.
 
     Args:
         parent: Pointer to a parent console panel.
@@ -32,7 +32,7 @@ class _CommandProcessor:
         self._protocol = ''
 
     def process(self, cmd_line: str) -> None:
-        """Processes the given command."""
+        """Processe the given command."""
         protocol_prompt = f'<{self._protocol}>' if len(self._protocol) > 0 else ''
         self._print(f'{protocol_prompt}$ {cmd_line}')
 

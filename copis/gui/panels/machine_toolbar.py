@@ -29,7 +29,7 @@ class MachineToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
     def __init__(self, parent, console = None) -> None:
-        """Inits MachineToolbar with constructors."""
+        """Initialize MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self._parent = parent
@@ -53,17 +53,17 @@ class MachineToolbar(aui.AuiToolBar):
         # Add port, baud comboboxes.
         self.AddControl(wx.StaticText(self, label='Port', style=wx.ALIGN_LEFT))
         self.port_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY, size=(75, -1))
-        self.Bind(wx.EVT_COMBOBOX, self.on_select_port, self.AddControl(self.port_cb,
-            label='Port combobox'))
+        self.Bind(wx.EVT_COMBOBOX, self.on_select_port,
+            self.AddControl(self.port_cb, label='Port combobox'))
 
         self.refresh_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('refresh', 20),
             size=(-1, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_refresh_ports, self.AddControl(self.refresh_btn,
-            label='Refresh ports'))
+        self.Bind(wx.EVT_BUTTON, self.on_refresh_ports,
+            self.AddControl(self.refresh_btn, label='Refresh ports'))
         self.AddSpacer(8)
         self.AddControl(wx.StaticText(self, label='Baud', style=wx.ALIGN_LEFT))
-        self.baud_cb = wx.ComboBox(self, choices=[], style=wx.CB_READONLY,
-            size=(75, -1))
+        self.baud_cb = wx.ComboBox(
+            self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.AddControl(self.baud_cb, label='Baud combobox')
         self.AddSpacer(8)
         self.connect_btn = wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))

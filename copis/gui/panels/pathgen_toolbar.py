@@ -35,7 +35,7 @@ class PathgenToolbar(aui.AuiToolBar):
     """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
 
     def __init__(self, parent) -> None:
-        """Inits ToolbarPanel with constructors."""
+        """Initializes ToolbarPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self.parent = parent
@@ -254,7 +254,7 @@ class _PathgenCylinder(wx.Dialog):
     """Dialog to generate a cylinder path."""
 
     def __init__(self, parent):
-        """Inits _PathgenCylinder with constructors."""
+        """Initializes _PathgenCylinder with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
@@ -351,7 +351,7 @@ class _PathgenHelix(wx.Dialog):
     """Dialog to generate a helix path."""
 
     def __init__(self, parent):
-        """Inits _PathgenHelix with constructors."""
+        """Initializes _PathgenHelix with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
 
@@ -448,7 +448,7 @@ class _PathgenSphere(wx.Dialog):
     """Dialog to generate a sphere path."""
 
     def __init__(self, parent):
-        """Inits _PathgenSphere with constructors."""
+        """Initializes _PathgenSphere with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
 
@@ -528,7 +528,7 @@ class _PathgenLine(wx.Dialog):
     """Dialog to generate a line path."""
 
     def __init__(self, parent):
-        """Inits _PathgenLine with constructors."""
+        """Initializes _PathgenLine with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 
@@ -625,7 +625,7 @@ class _PathgenPoint(wx.Dialog):
     """Dialog to generate a single point."""
 
     def __init__(self, parent):
-        """Inits _PathgenPoint with constructors."""
+        """Initializes _PathgenPoint with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 

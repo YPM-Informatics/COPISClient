@@ -24,7 +24,8 @@ import wx.lib.scrolledpanel as scrolled
 
 from pydispatch import dispatcher
 
-from copis.gui.wxutils import (FancyTextCtrl,
+from copis.gui.wxutils import (
+    FancyTextCtrl,
     create_scaled_bitmap, set_dialog, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
 
@@ -37,7 +38,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits ControllerPanel with constructors."""
+        """Initializes ControllerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self._parent = parent
         self._core = self._parent.core
@@ -184,21 +185,21 @@ class ControllerPanel(scrolled.ScrolledPanel):
         for col in (0, 1, 2, 3):
             xyzpt_grid.AddGrowableCol(col)
 
-        arrow_nw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_nw', 20),
-            size=(24, 24), name='nw')
-        arrow_ne_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_ne', 20),
-        size=(24, 24), name='ne')
-        arrow_sw_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_sw', 20), size=(24, 24),
-        name='sw')
-        arrow_se_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('arrow_se', 20), size=(24, 24),
-        name='se')
+        arrow_nw_btn = wx.BitmapButton(jog_sizer.StaticBox,
+            bitmap=create_scaled_bitmap('arrow_nw', 20), size=(24, 24), name='nw')
+        arrow_ne_btn = wx.BitmapButton(jog_sizer.StaticBox,
+            bitmap=create_scaled_bitmap('arrow_ne', 20), size=(24, 24), name='ne')
+        arrow_sw_btn = wx.BitmapButton(jog_sizer.StaticBox,
+            bitmap=create_scaled_bitmap('arrow_sw', 20), size=(24, 24), name='sw')
+        arrow_se_btn = wx.BitmapButton(jog_sizer.StaticBox,
+            bitmap=create_scaled_bitmap('arrow_se', 20), size=(24, 24), name='se')
 
         x_pos_btn = wx.Button(jog_sizer.StaticBox, label='X+', size=(24, 24), name='x+')
         x_neg_btn = wx.Button(jog_sizer.StaticBox, label='X-', size=(24, 24), name='x-')
         y_pos_btn = wx.Button(jog_sizer.StaticBox, label='Y+', size=(24, 24), name='y+')
         y_neg_btn = wx.Button(jog_sizer.StaticBox, label='Y-', size=(24, 24), name='y-')
         xy_btn = wx.BitmapButton(jog_sizer.StaticBox, bitmap=create_scaled_bitmap('keyboard', 24),
-        size=(24, 24), name='xy')
+            size=(24, 24), name='xy')
         xy_btn.Disable() # TODO: implement keyboard jog
         z_pos_btn = wx.Button(jog_sizer.StaticBox, label='Z+', size=(24, 24), name='z+')
         z_neg_btn = wx.Button(jog_sizer.StaticBox, label='Z-', size=(24, 24), name='z-')
@@ -260,7 +261,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.pt_step_ctrl = FancyTextCtrl(
             jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
             max_precision=0, default_unit='dd', unit_conversions=pt_units)
-        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1), style=wx.TE_PROCESS_ENTER, name='feed_rate')
+        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1),
+            style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([
             (simple_statictext(jog_sizer.StaticBox, 'XYZ distance:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),

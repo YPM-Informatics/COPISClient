@@ -13,14 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides the COPIS Bounds Class"""
+"""Provide the COPIS Bounding Box Class."""
 
 from typing import NamedTuple
 
-from copis.helpers import Point3
+from glm import vec3
 
 
-class Bounds(NamedTuple):
-    """Data structure that implements point boundaries in 3D space"""
-    lower: Point3
-    upper: Point3
+
+class BoundingBox(NamedTuple):
+    """Data structure that implements point boundaries in 3D space."""
+    lower: vec3 = vec3()
+    upper: vec3 = vec3()

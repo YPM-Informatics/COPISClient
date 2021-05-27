@@ -13,46 +13,32 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides the COPIS Chamber Class"""
+"""Provide the COPIS Chamber Class."""
 
 from dataclasses import dataclass
 
-from copis.helpers import Point3
-from . import Bounds, Dimensions
+from . import BoundingBox
 
 
 @dataclass
 class Chamber:
-    """Data structure that implements a chamber for the imaging instrument"""
+    """Data structure that implements a chamber for the imaging instrument."""
     chamber_id: int
     name: str
-    bounds: Bounds
-    dimensions: Dimensions
+    box: BoundingBox
     port: str
-    offsets: Point3 = Point3()
 
 
     def as_dict(self):
         """Returns a dictionary representation of a Chamber instance."""
-        data = {
+        return {
             f'Chamber {self.name}': {
-                'width': self.dimensions.width,
-                'depth': self.dimensions.depth,
-                'height': self.dimensions.height,
-                'min_x': self.bounds.lower.x,
-                'max_x': self.bounds.upper.x,
-                'min_y': self.bounds.lower.y,
-                'max_y': self.bounds.upper.y,
-                'min_z': self.bounds.lower.z,
-                'max_z': self.bounds.upper.z,
+                'min_x': self.box.lower.x,
+                'max_x': self.box.upper.x,
+                'min_y': self.box.lower.y,
+                'max_y': self.box.upper.y,
+                'min_z': self.box.lower.z,
+                'max_z': self.box.upper.z,
                 'port': self.port
             }
         }
-
-        offs = Point3() if self.offsets is None else self.offsets
-        if offs.x > 0 or offs.y > 0 or offs.z > 0:
-            data['x_offset'] = offs.x
-            data['y_offset'] = offs.y
-            data['z_offset'] = offs.z
-
-        return data

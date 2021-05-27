@@ -74,7 +74,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
     def __init__(self, *args, num_value: float = 1, max_precision: int = 3,
                  default_unit: str, unit_conversions, **kwargs):
-        """Inits FancyTextCtrl with constructors."""
+        """Initialize FancyTextCtrl with constructors."""
         super().__init__(*args, **kwargs)
         self.WindowStyle = wx.TE_PROCESS_ENTER
 

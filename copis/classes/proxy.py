@@ -13,14 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides the COPIS Proxy Class"""
+"""Provide the COPIS Proxy Class."""
 
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
 @dataclass
 class Proxy:
-    """Data structure that implements an imaging proxy object"""
+    """Data structure that implements an imaging proxy object."""
     proxy_type: int = 0
     proxy_name: str = ''
     position: Optional[List[Any]] = None

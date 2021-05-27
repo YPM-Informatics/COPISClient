@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides the COPIS Action Class"""
+"""Provide the COPIS Action Class."""
 
 from dataclasses import dataclass
 from typing import Any, List, Optional
@@ -22,7 +22,7 @@ from copis.enums import ActionType
 
 @dataclass
 class Action:
-    """Data structure that implements a camera action"""
+    """Data structure that implements a camera action."""
 
     atype: ActionType = ActionType.NONE
     device: int = -1

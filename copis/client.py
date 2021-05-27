@@ -38,10 +38,10 @@ class COPISApp(wx.App):
 
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
-        dims_list = self._parse_chamber_dimensions()
+        dimensions_list = self._parse_chamber_dimensions()
 
         self.mainwindow = MainWindow(
-            dims_list,
+            dimensions_list,
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
@@ -52,13 +52,17 @@ class COPISApp(wx.App):
     def _parse_chamber_dimensions(self) -> list:
         _STACK_INDEX = 2
 
-        sizes = [c.dimensions.to_list() for c in self.config.machine_settings.chambers]
-        origins = [c.dimensions.get_origin() for c in self.config.machine_settings.chambers]
+        sizes = [list(c.box.upper - c.box.lower) for c in self.config.machine_settings.chambers]
+        origins = [list((c.box.upper - c.box.lower)/2) for c in self.config.machine_settings.chambers]
+        print(f'sizes: {sizes}')
+        print(f'origins: {origins}')
 
         size = sizes[0]
         origin = origins[0]
 
         if len(sizes) > 1:
+            # Calculate the final machine dimensions by summing up all chambers' dimensions
+            # and figuring it out the aggregate origin
             size_sum = [sum(s) for s in zip(*sizes)]
             origin_sum = [sum(s) for s in zip(*origins)]
 

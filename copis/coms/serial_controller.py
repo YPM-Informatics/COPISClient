@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Manages COPIS Serial Communications"""
+"""Manage COPIS Serial Communications."""
 
 
 import ast
@@ -30,7 +30,7 @@ from mprop import mproperty
 
 @dataclass
 class SerialPort():
-    """Data structure to hold a COPIS serial port object"""
+    """Data structure to hold a COPIS serial port object."""
     name: str = ''
     connection: serial.Serial = None
     description: str = ''
@@ -46,7 +46,7 @@ class SerialPort():
 
 
 class SerialController():
-    """Implement Serial Functionalities"""
+    """Implement Serial Functionalities."""
 
     _TEST_SERIAL_PORT = 'TEST'
     _READ_TIMEOUT = 1
@@ -60,7 +60,7 @@ class SerialController():
         self._is_dev_env = False
 
     def initialize(self, console = None, is_dev_env: bool = False) -> None:
-        """Initialize the serial object"""
+        """Initialize the serial object."""
         if any(p.is_open for p in self._ports):
             return
 
@@ -70,7 +70,7 @@ class SerialController():
         self.update_port_list()
 
     def select_port(self, name: str) -> SerialPort:
-        """Creates a serial connection with the given port, without opening it"""
+        """Create a serial connection with the given port, without opening it."""
         port = self._get_port(name)
         has_active_port = self._active_port is not None
 
@@ -109,7 +109,7 @@ class SerialController():
             return None
 
     def open_port(self, baud: int = BAUDS[-1]) -> bool:
-        """Opens the active port"""
+        """Open the active port."""
         active_port = self._active_port
         has_active_port = active_port is not None
 
@@ -135,7 +135,7 @@ class SerialController():
         return True
 
     def close_port(self) -> None:
-        """Closes the active port"""
+        """Close the active port."""
         active_port = self._active_port
         has_active_port = active_port is not None
 
@@ -148,7 +148,7 @@ class SerialController():
         response = []
 
         if active_port is not None and active_port.connection is not None \
-            and active_port.connection.is_open:
+                and active_port.connection.is_open:
             data = data.rstrip("\r")
             data = f'{data}\r'.encode()
 
@@ -158,13 +158,13 @@ class SerialController():
         return response
 
     def terminate(self) -> None:
-        """Closes all ports"""
+        """Close all ports."""
         for port in self._ports:
             if port is not None and port.connection is not None and port.connection.is_open:
                 port.connection.close()
 
     def update_port_list(self) -> None:
-        """Updates the serial ports list"""
+        """Update the serial ports list."""
         new_ports = []
         has_active_port = self._active_port is not None
 
@@ -196,14 +196,14 @@ class SerialController():
             any(p.name == self._active_port.name for p in self._ports):
             self._active_port = None
 
-    def _read(self) -> list:
+    def _read(self) -> List:
         wait = SerialController._READ_TIMEOUT / 2
         active_port = self._active_port
         read_buffer = []
         time.sleep(wait)
 
         if active_port is not None and active_port.connection is not None \
-            and active_port.connection.is_open:
+                and active_port.connection.is_open:
             while active_port.connection.is_open and active_port.connection.in_waiting:
                 p_bytes = active_port.connection.readline().decode()
                 read_buffer.append(p_bytes)
@@ -257,13 +257,13 @@ class SerialController():
 
     @property
     def is_port_open(self) -> bool:
-        """Returns open status of the active port"""
+        """Return open status of the active port."""
         return self._active_port.connection.is_open \
             if self._active_port is not None and self._active_port.connection is not None else False
 
     @property
     def port_list(self) -> List[SerialPort]:
-        """Returns a copy of the serial ports list"""
+        """Return a copy of the serial ports list."""
 
         return self._ports.copy()
 
@@ -281,10 +281,10 @@ BAUDS = _instance.BAUDS
 
 @mproperty
 def is_port_open(mod) -> bool:
-    """Returns open status of the active port, from the module"""
+    """Return open status of the active port, from the module."""
     return mod._instance.is_port_open
 
 @mproperty
 def port_list(mod) -> List[SerialPort]:
-    """Returns a copy of the serial ports list, from the module"""
+    """Return a copy of the serial ports list, from the module."""
     return mod._instance.port_list

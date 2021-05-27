@@ -35,7 +35,7 @@ class VisualizerPanel(wx.Panel):
     """
 
     def __init__(self, parent) -> None:
-        """Inits VisualizerPanel with constructors."""
+        """Initializes VisualizerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent
         self.core = self.parent.core

@@ -13,16 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS classes package"""
+"""COPIS classes package."""
 
 from .device import Device
-from .bounds import Bounds
+from .boundind_box import BoundingBox
 from .proxy import Proxy
 from .action import Action
-from .dimensions import Dimensions
 from .chamber import Chamber
 from .monitored_list import MonitoredList
 from .settings import ConfigSettings, MachineSettings
 
-__all__ = ["Device", "Bounds", "Proxy", "Action","Dimensions", "Chamber",
+__all__ = ["Device", "BoundingBox", "Proxy", "Action", "Chamber",
             "MonitoredList", "ConfigSettings", "MachineSettings"]
