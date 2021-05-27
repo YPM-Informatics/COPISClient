@@ -27,7 +27,7 @@ class EvfPanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes EvfPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
         self.parent = parent

@@ -372,6 +372,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def on_key(self, event: wx.KeyEvent) -> None:
         """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
+        pass
 
     def on_mouse_wheel(self, event: wx.MouseEvent) -> None:
         """On mouse wheel change, adjust zoom accordingly."""
@@ -459,6 +460,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
+        pass
 
     def on_paint(self, event: wx.PaintEvent) -> None:
         """On EVT_PAINT, try to refresh canvas."""
@@ -599,6 +601,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_cameras(self) -> None:
         """Render cameras."""
+        pass
 
     def _render_paths(self) -> None:
         """Render paths."""
