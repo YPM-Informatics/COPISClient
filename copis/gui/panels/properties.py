@@ -49,7 +49,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Group': ('transform'),
     }
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Inits PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
