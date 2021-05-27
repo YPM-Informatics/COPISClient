@@ -53,9 +53,8 @@ class COPISApp(wx.App):
         _STACK_INDEX = 2
 
         sizes = [list(c.box.upper - c.box.lower) for c in self.config.machine_settings.chambers]
-        origins = [list((c.box.upper - c.box.lower)/2) for c in self.config.machine_settings.chambers]
-        print(f'sizes: {sizes}')
-        print(f'origins: {origins}')
+        origins = [
+            list((c.box.upper - c.box.lower)/2) for c in self.config.machine_settings.chambers]
 
         size = sizes[0]
         origin = origins[0]

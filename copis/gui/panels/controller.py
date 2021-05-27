@@ -75,12 +75,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
         button = event.EventObject
 
         if button.Name[0] in 'xyzns':
-            step = self.xyz_step_ctrl.Value
+            step = self.xyz_step_ctrl.num_value
         else: # button.Name in 'pt':
-            step = self.pt_step_ctrl.Value
+            step = self.pt_step_ctrl.num_value
 
-        step = float(step.split(' ')[0])
-        feed_rate = float(str(self.feed_rate_ctrl.Value).split(' ')[0])
+        feed_rate = float(self.feed_rate_ctrl.Value)
         serial = self._core.serial
         device_id = self._device.device_id
 
@@ -104,6 +103,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         if (serial is not None and serial.is_port_open):
             data = f'{dest}G91\r{msg.upper()}'
+            print(data.encode())
             serial.write(data)
         else:
             set_dialog('Connect to the machine in order to jog.')

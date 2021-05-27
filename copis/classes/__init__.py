@@ -16,7 +16,7 @@
 """COPIS classes package."""
 
 from .device import Device
-from .boundind_box import BoundingBox
+from .bounding_box import BoundingBox
 from .proxy import Proxy
 from .action import Action
 from .chamber import Chamber
