@@ -39,8 +39,9 @@ class ControllerPanel(scrolled.ScrolledPanel):
     def __init__(self, parent) -> None:
         """Inits ControllerPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.parent = parent
-        self.core = self.parent.core
+        self._parent = parent
+        self._core = self._parent.core
+        self._device = None
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -59,6 +60,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
     def on_device_selected(self, device) -> None:
         """On core_d_selected, update and enable controls."""
+        self._device = device
         self.update_machine_pos(device.position)
         self.Enable()
 
@@ -77,10 +79,11 @@ class ControllerPanel(scrolled.ScrolledPanel):
             step = self.pt_step_ctrl.Value
 
         step = float(step.split(' ')[0])
-
         feed_rate = float(str(self.feed_rate_ctrl.Value).split(' ')[0])
+        serial = self._core.serial
+        device_id = self._device.device_id
 
-        serial = self.core.serial
+        dest = '' if device_id == 0 else f'>{device_id}'
 
         if button.Name == 'xy':
             print('Not implemented.')
@@ -89,7 +92,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         # Ignore feed rate for z axis; screw motor axis doesn't work properly at high speeds.
         fee_rate_msg = '' if button.Name[0] == 'z' else f'F{feed_rate}'
 
-        msg = f'G0{button.Name}{step}{fee_rate_msg}\r'
+        msg = f'{dest}G1{button.Name}{step}{fee_rate_msg}\r'
         msg = msg.replace('+', '')
 
         if button.Name[1] not in '+-':
@@ -99,7 +102,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
             msg = msg.replace('w', 'x-')
 
         if (serial is not None and serial.is_port_open):
-            data = f'G91\r{msg.upper()}'
+            data = f'{dest}G91\r{msg.upper()}'
             serial.write(data)
         else:
             set_dialog('Connect to the machine in order to jog.')
