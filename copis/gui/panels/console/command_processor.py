@@ -120,7 +120,7 @@ class _CommandProcessor:
                 if not self._core.serial.is_port_open:
                     self._print('A serial port needs to be open in order to shoot.')
                 else:
-                    cmd = 'C0S1'
+                    cmd = 'C0P500'
                     if len(opts) < 1:
                         self._core.serial.write(cmd)
                     elif opts[0].isdigit():
