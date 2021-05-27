@@ -2,7 +2,7 @@ numpy==1.18.5
 Pillow==7.1.0
 PyOpenGL==3.1.5
 PyGLM==1.99.3
-pyserial==3.4
+pyserial==3.5
 six==1.14.0
 wxPython>=4.1.0
 PyDispatcher==2.0.5
