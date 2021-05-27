@@ -488,28 +488,36 @@ class COPISCore:
 
         dispatcher.send('core_a_list_changed')
 
-    def export_actions(self, filename: str) -> None:
+    def export_actions(self, filename: str = None) -> list:
         """Serialize action list and write to file.
 
         TODO: Expand to include not just G0 and C0 actions
         """
-        with open(filename, 'w') as file:
-            # pickle.dump(self._actions, file)
-            for action in self._actions:
-                file.write('>' + str(action.device))
 
-                if action.atype == ActionType.G0:
-                    file.write(f'G0X{action.args[0]:.3f}'
-                               f'Y{action.args[1]:.3f}'
-                               f'Z{action.args[2]:.3f}'
-                               f'P{action.args[3]:.3f}'
-                               f'T{action.args[4]:.3f}')
-                elif action.atype == ActionType.C0:
-                    file.write('C0')
-                else:
-                    pass
-                file.write('\n')
+        get_g_code = lambda input: str(input).split('.')[1]
+        lines = []
+
+        for action in self._actions:
+            g_code = get_g_code(action.atype)
+            dest = '' if action.device == 0 else f'>{action.device}'
+            line = f'{dest}{g_code}'
+            g_cmd = ''
+
+            if g_code[0] == 'G':
+                pos = [f'{c:.3f}' for c in action.args]
+                g_cmd = f'X{pos[0]}Y{pos[0]}Z{pos[0]}P{pos[0]}T{pos[0]}'
+            elif g_code[0] == 'C':
+                g_cmd = 'P500'
+
+            line += g_cmd
+            lines.append(line)
+
+        if filename is not None:
+            with open(filename, 'w') as file:
+                file.write('\n'.join(lines))
+
         dispatcher.send('core_a_exported', filename=filename)
+        return lines
 
     # --------------------------------------------------------------------------
     # Canon EDSDK methods

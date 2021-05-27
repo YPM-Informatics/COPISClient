@@ -105,6 +105,7 @@ class ConsolePanel(wx.Panel):
         """Prints any pydispatch signals."""
         self.print(f'{signal}: {message}')
 
-    def on_action_export(self, filename: str) -> None:
+    def on_action_export(self, filename: str = None) -> None:
         """Prints action exported message."""
-        self.print(f'Exported actions to file {filename}')
+        location = '' if filename is None else f' to file {filename}'
+        self.print(f'Actions exported{location}')
