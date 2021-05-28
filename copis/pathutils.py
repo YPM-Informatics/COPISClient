@@ -16,29 +16,29 @@
 """Helper functions for path generation."""
 
 import math
-from math import acos, asin, cos, sin, sqrt, tan
+from math import cos, tan
 from typing import Tuple
 
 import numpy as np
-import glm
+from glm import vec3
 
-from .mathutils import rotate_basis_to
+from .mathutils import orthonormal_basis_of
 
 
-def create_circle(p: glm.vec3,
-                  n: glm.vec3,
+def create_circle(p: vec3,
+                  n: vec3,
                   r: float,
                   sides: int = 36) -> Tuple[np.ndarray, int]:
     """Create circle vertices given point, normal vector, radius, and # sides.
 
     Uses an approximation method to compute vertices versus many trig calls.
     """
-    a, n, _ = rotate_basis_to(n)
+    b1, _ = orthonormal_basis_of(n)
     theta = math.tau / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 
-    x, y, z = a * r
+    x, y, z = b1 * r
     count = sides + 1
     vertices = np.empty(count * 3)
     for i in range(count):
@@ -55,8 +55,8 @@ def create_circle(p: glm.vec3,
     return vertices, count
 
 
-def create_helix(p: glm.vec3,
-                 n: glm.vec3,
+def create_helix(p: vec3,
+                 n: vec3,
                  r: float,
                  pitch: int = 1,
                  turns: float = 1.0,
@@ -66,12 +66,12 @@ def create_helix(p: glm.vec3,
 
     Uses an approximation method rather than trig functions.
     """
-    a, n, _ = rotate_basis_to(n)
+    b2, _ = orthonormal_basis_of(n)
     theta = math.tau / sides
     tangential_factor = tan(theta)
     radial_factor = cos(theta)
 
-    x, y, z = a * r
+    x, y, z = b2 * r
     d = n * pitch / sides
     count = int(sides * turns) + 1
     vertices = np.empty(count * 3)
@@ -89,8 +89,8 @@ def create_helix(p: glm.vec3,
     return vertices, count
 
 
-def create_line(start: glm.vec3,
-                end: glm.vec3,
+def create_line(start: vec3,
+                end: vec3,
                 points: int = 2) -> Tuple[np.ndarray, int]:
     """Create line given start position, end position, and # points."""
     if points < 2:
@@ -105,7 +105,7 @@ def create_line(start: glm.vec3,
 
 
 # def get_circle_trig(p, n, r, sides=36):
-#     a, n, b = rotate_basis_to(glm.vec3(*n))
+#     a, b = orthonormal_basis_of(vec3(*n))
 #     tau = 6.28318530717958647692
 
 #     count = sides + 1
@@ -118,7 +118,7 @@ def create_line(start: glm.vec3,
 
 
 # def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
-#     a, n, b = rotate_basis_to(glm.vec3(*n))
+#     a, b = orthonormal_basis_of(vec3(*n))
 #     tau = 6.28318530717958647692
 
 #     count = int(sides * turns) + 1

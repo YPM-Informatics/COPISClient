@@ -21,6 +21,7 @@ TODO: Signify via color or border when action is selected
 
 from collections import defaultdict
 
+from glm import vec3, vec4, mat4
 import glm
 import numpy as np
 
@@ -78,30 +79,30 @@ class GLActionVis:
         # initialize camera box
         # TODO: update to obj file
         vertices = glm.array(
-            glm.vec3(-1.0, -0.5, -1.0),     # bottom
-            glm.vec3(-1.0, -0.5, 1.0),
-            glm.vec3(-1.0, 0.5, 1.0),
-            glm.vec3(-1.0, 0.5, -1.0),
-            glm.vec3(1.0, -0.5, -1.0),      # right
-            glm.vec3(-1.0, -0.5, -1.0),
-            glm.vec3(-1.0, 0.5, -1.0),
-            glm.vec3(1.0, 0.5, -1.0),
-            glm.vec3(1.0, -0.5, 1.0),       # top
-            glm.vec3(1.0, -0.5, -1.0),
-            glm.vec3(1.0, 0.5, -1.0),
-            glm.vec3(1.0, 0.5, 1.0),
-            glm.vec3(-1.0, -0.5, 1.0),      # left
-            glm.vec3(1.0, -0.5, 1.0),
-            glm.vec3(1.0, 0.5, 1.0),
-            glm.vec3(-1.0, 0.5, 1.0),
-            glm.vec3(1.0, 0.5, -1.0),       # back
-            glm.vec3(-1.0, 0.5, -1.0),
-            glm.vec3(-1.0, 0.5, 1.0),
-            glm.vec3(1.0, 0.5, 1.0),
-            glm.vec3(-1.0, -0.5, -1.0),     # front
-            glm.vec3(1.0, -0.5, -1.0),
-            glm.vec3(1.0, -0.5, 1.0),
-            glm.vec3(-1.0, -0.5, 1.0),
+            vec3(-1.0, -0.5, -1.0),     # bottom
+            vec3(-1.0, -0.5, 1.0),
+            vec3(-1.0, 0.5, 1.0),
+            vec3(-1.0, 0.5, -1.0),
+            vec3(1.0, -0.5, -1.0),      # right
+            vec3(-1.0, -0.5, -1.0),
+            vec3(-1.0, 0.5, -1.0),
+            vec3(1.0, 0.5, -1.0),
+            vec3(1.0, -0.5, 1.0),       # top
+            vec3(1.0, -0.5, -1.0),
+            vec3(1.0, 0.5, -1.0),
+            vec3(1.0, 0.5, 1.0),
+            vec3(-1.0, -0.5, 1.0),      # left
+            vec3(1.0, -0.5, 1.0),
+            vec3(1.0, 0.5, 1.0),
+            vec3(-1.0, 0.5, 1.0),
+            vec3(1.0, 0.5, -1.0),       # back
+            vec3(-1.0, 0.5, -1.0),
+            vec3(-1.0, 0.5, 1.0),
+            vec3(1.0, 0.5, 1.0),
+            vec3(-1.0, -0.5, -1.0),     # front
+            vec3(1.0, -0.5, -1.0),
+            vec3(1.0, -0.5, 1.0),
+            vec3(-1.0, -0.5, 1.0),
         )
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
@@ -128,7 +129,7 @@ class GLActionVis:
             if len(value) <= 1:
                 continue
 
-            points = glm.array([glm.vec3(mat[1][3]) for mat in value])
+            points = glm.array([vec3(mat[1][3]) for mat in value])
 
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
@@ -145,11 +146,11 @@ class GLActionVis:
         # --- bind data for points ---
 
         point_mats = point_colors = point_ids = None
-        scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
+        scale = glm.scale(mat4(), vec3(3, 3, 3))
 
         for key, value in self._items['point'].items():
             new_mats = glm.array([p[1] * scale for p in value])
-            color = shade_color(glm.vec4(self.colors[key % len(self.colors)]), -0.3)
+            color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
 
             new_colors = glm.array([color] * len(value))
 
@@ -184,9 +185,9 @@ class GLActionVis:
         self._num_devices = len(self.core.devices)
 
         if self._num_devices > 0:
-            scale = glm.scale(glm.mat4(), glm.vec3(3, 3, 3))
+            scale = glm.scale(mat4(), vec3(3, 3, 3))
             mats = glm.array([x * scale for x in self._devices])
-            colors = glm.array([glm.vec4(self.colors[i % len(self.colors)])
+            colors = glm.array([vec4(self.colors[i % len(self.colors)])
                 for i in range(self._num_devices)])
             ids = np.array(range(self._num_devices), dtype=np.int32)
 
@@ -253,7 +254,7 @@ class GLActionVis:
 
         proj = self.parent.projection_matrix
         view = self.parent.modelview_matrix
-        model = glm.mat4()
+        model = mat4()
 
         # --- render cameras ---
 
@@ -271,7 +272,7 @@ class GLActionVis:
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         for key, value in self._vaos['line'].items():
-            color = glm.vec4(self.colors[key % len(self.colors)])
+            color = vec4(self.colors[key % len(self.colors)])
             glUniform4fv(3, 1, glm.value_ptr(color))
             glBindVertexArray(value)
             glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))

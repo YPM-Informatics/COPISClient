@@ -25,10 +25,12 @@ from time import time
 from typing import Callable, NamedTuple
 
 import glm
+from glm import mat4, vec3, vec4
 
-# --------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Path finding global logic
-# --------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 _PROJECT_FOLDER = 'copis'
 
 _current = os.path.dirname(__file__)
@@ -37,7 +39,7 @@ _index = _segments.index(_PROJECT_FOLDER)
 _root_segments = _segments[1:_index]
 
 _root = '/' + Path(os.path.join(*_root_segments)).as_posix()
-# --------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 
 xyz_steps = [10, 1, 0.1, 0.01]
@@ -59,10 +61,10 @@ def timing(f: Callable) -> Callable:
     return wrap
 
 
-def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4():
+def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
-    model = glm.translate(glm.mat4(), glm.vec3(x, y, z)) * \
-            glm.mat4(
+    model = glm.translate(mat4(), vec3(x, y, z)) * \
+            mat4(
                 cos(p), -sin(p), 0.0, 0.0,
                 cos(t) * sin(p), cos(t) * cos(p), -sin(t), 0.0,
                 sin(t) * sin(p), sin(t) * cos(p), cos(t), 0.0,
@@ -70,12 +72,12 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> glm.mat4(
     return model
 
 
-def point5_to_mat4(point) -> glm.mat4():
+def point5_to_mat4(point) -> mat4:
     """Convert Point5 into a 4x4 transformation matrix."""
     return xyzpt_to_mat4(point.x, point.y, point.z, point.p, point.t)
 
 
-def shade_color(color: glm.vec4(), shade_factor: float) -> glm.vec4():
+def shade_color(color: vec4, shade_factor: float) -> vec4:
     """Return darker or lighter shade of color by a shade factor."""
     color.x = min(1.0, color.x * (1 - shade_factor))    # red
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
@@ -94,9 +96,3 @@ class Point5(NamedTuple):
     z: float = 0.0
     p: float = 0.0
     t: float = 0.0
-
-
-class Point3(NamedTuple):
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0

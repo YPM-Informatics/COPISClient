@@ -25,11 +25,12 @@ import numpy as np
 import pywavefront
 import wx
 
+from glm import vec3, mat4
 from threading import Lock
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Dict
 from wx import glcanvas
 from pydispatch import dispatcher
-from OpenGL.GL import ( shaders,
+from OpenGL.GL import (shaders,
     GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW,
     GL_MULTISAMPLE, GL_FALSE, GL_UNSIGNED_BYTE, GL_FLOAT, GL_AMBIENT_AND_DIFFUSE,
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL, GL_CULL_FACE,
@@ -38,7 +39,7 @@ from OpenGL.GL import ( shaders,
     glGenVertexArrays, glUniformMatrix4fv, glDeleteBuffers, glGenBuffers,
     glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
     glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
-    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable, 
+    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable,
     glPolygonMode, glViewport, glReadPixels, glDrawArrays)
 from OpenGL.GLU import ctypes
 
@@ -78,9 +79,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         zoom: A float representing zoom level (higher is more zoomed in).
             Zoom is achieved in projection_matrix by modifying the fov.
         build_dimensions: See Args section.
-        projection_matrix: Read only; A glm.mat4 representing the current
+        projection_matrix: Read only; A mat4 representing the current
             projection matrix.
-        modelview_matrix: Read only; A glm.mat4 representing the current
+        modelview_matrix: Read only; A mat4 representing the current
             modelview matrix.
     """
 
@@ -434,15 +435,15 @@ class GLCanvas3D(glcanvas.GLCanvas):
             if id_ == 0:    # front
                 self._rot_quat = glm.quat()
             elif id_ == 1:  # top
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
+                self._rot_quat = glm.quat(glm.radians(vec3(90, 0, 0)))
             elif id_ == 2:  # right
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, -90)))
+                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, -90)))
             elif id_ == 3:  # bottom
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
+                self._rot_quat = glm.quat(glm.radians(vec3(-90, 0, 0)))
             elif id_ == 4:  # left
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 90)))
+                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, 90)))
             elif id_ == 5:  # back
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 180)))
+                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, 180)))
             else:
                 pass
 
@@ -587,13 +588,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         proj = self.projection_matrix
         view = self.modelview_matrix
-        model = glm.mat4()
+        model = mat4()
 
         glUseProgram(self.shaders['test'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
+        model = glm.scale(mat4(), vec3(15, 15, 15))
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         glBindVertexArray(self._vaos['model'])
@@ -618,7 +619,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # --------------------------------------------------------------------------
 
     @property
-    def shaders(self) -> shaders.ShaderProgram:
+    def shaders(self) -> Dict[str, shaders.ShaderProgram]:
         return self._shaders
 
     @property
@@ -662,8 +663,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # --------------------------------------------------------------------------
 
     @property
-    def projection_matrix(self) -> glm.mat4:
-        """Returns a glm.mat4 representing the current projection matrix."""
+    def projection_matrix(self) -> mat4:
+        """Returns a mat4 representing the current projection matrix."""
         canvas_size = self.get_canvas_size()
         aspect_ratio = canvas_size.width / canvas_size.height
         return glm.perspective(
@@ -671,11 +672,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
             aspect_ratio, 0.1, 2000.0)
 
     @property
-    def modelview_matrix(self) -> glm.mat4:
-        """Returns a glm.mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
-                         glm.vec3(0.0, 0.0, self._z_offset),     # target
-                         glm.vec3(0.0, 0.0, 1.0))                # up
+    def modelview_matrix(self) -> mat4:
+        """Returns a mat4 representing the current modelview matrix."""
+        mat = glm.lookAt(vec3(0.0, -self._dist * 1.5, 0.0),  # position
+                         vec3(0.0, 0.0, self._z_offset),     # target
+                         vec3(0.0, 0.0, 1.0))                # up
         return mat * glm.mat4_cast(self._rot_quat)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
@@ -706,8 +707,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 dx = p2y - p1y
                 dy = p2x - p1x
 
-                pitch = glm.angleAxis(dx, glm.vec3(-1.0, 0.0, 0.0))
-                yaw = glm.angleAxis(dy, glm.vec3(0.0, 0.0, 1.0))
+                pitch = glm.angleAxis(dx, vec3(-1.0, 0.0, 0.0))
+                yaw = glm.angleAxis(dy, vec3(0.0, 0.0, 1.0))
                 self._rot_quat = pitch * self._rot_quat * yaw
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)

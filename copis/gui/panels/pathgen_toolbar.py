@@ -17,13 +17,14 @@
 
 import logging
 import math
-import glm
 import wx
 import wx.lib.agw.aui as aui
 import random
 from typing import Tuple
+from glm import vec3
 
-from copis.gui.wxutils import (FancyTextCtrl,
+from copis.gui.wxutils import (
+    FancyTextCtrl,
     create_scaled_bitmap, simple_statictext)
 from copis.helpers import xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
@@ -94,15 +95,15 @@ class PathgenToolbar(aui.AuiToolBar):
                     for i in range(z_div):
                         z = 0 if z_div == 1 else i * (height / (z_div - 1))
                         v, c = create_circle(
-                            glm.vec3(dlg.base_x_ctrl.num_value,
+                            vec3(dlg.base_x_ctrl.num_value,
                                      dlg.base_y_ctrl.num_value,
                                      dlg.base_z_ctrl.num_value + z),
-                            glm.vec3(0, 0, 1 if height > 0 else -1), radius, points)
+                            vec3(0, 0, 1 if height > 0 else -1), radius, points)
 
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -120,12 +121,12 @@ class PathgenToolbar(aui.AuiToolBar):
                     pitch = abs(height) / rotations
 
                     vertices, count = create_helix(
-                        glm.vec3(dlg.base_x_ctrl.num_value,
+                        vec3(dlg.base_x_ctrl.num_value,
                                  dlg.base_y_ctrl.num_value,
                                  dlg.base_z_ctrl.num_value),
-                        glm.vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
+                        vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -148,14 +149,14 @@ class PathgenToolbar(aui.AuiToolBar):
                         num = int(2 * math.pi * r / distance)
 
                         v, c = create_circle(
-                            glm.vec3(dlg.center_x_ctrl.num_value,
+                            vec3(dlg.center_x_ctrl.num_value,
                                      dlg.center_y_ctrl.num_value,
                                      dlg.center_z_ctrl.num_value + z),
-                            glm.vec3(0, 0, 1), r, num)
+                            vec3(0, 0, 1), r, num)
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = glm.vec3(dlg.center_x_ctrl.num_value,
+                    lookat = vec3(dlg.center_x_ctrl.num_value,
                                       dlg.center_y_ctrl.num_value,
                                       dlg.center_z_ctrl.num_value)
 
@@ -168,15 +169,15 @@ class PathgenToolbar(aui.AuiToolBar):
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
-                    start = glm.vec3(dlg.start_x_ctrl.num_value,
+                    start = vec3(dlg.start_x_ctrl.num_value,
                                      dlg.start_y_ctrl.num_value,
                                      dlg.start_z_ctrl.num_value)
-                    end = glm.vec3(dlg.end_x_ctrl.num_value,
+                    end = vec3(dlg.end_x_ctrl.num_value,
                                    dlg.end_y_ctrl.num_value,
                                    dlg.end_z_ctrl.num_value)
                     vertices, count = create_line(start, end, points)
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -190,7 +191,7 @@ class PathgenToolbar(aui.AuiToolBar):
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -199,7 +200,7 @@ class PathgenToolbar(aui.AuiToolBar):
     def _extend_actions(self,
                         vertices,
                         count: int,
-                        lookat: glm.vec3,
+                        lookat: vec3,
                         device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
@@ -208,7 +209,7 @@ class PathgenToolbar(aui.AuiToolBar):
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
             count: An integer representing the number of vertices.
-            lookat: A glm.vec3 representing the lookat point in space.
+            lookat: A vec3 representing the lookat point in space.
         """
         new_actions = []
         for i in range(count):

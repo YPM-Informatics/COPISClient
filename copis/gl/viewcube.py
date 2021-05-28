@@ -21,6 +21,7 @@ TODO: Add text labels to viewcube sides
 
 from typing import Tuple, Union
 
+from glm import vec3
 import glm
 import numpy as np
 
@@ -197,9 +198,9 @@ class GLViewCube:
         glViewport(*self._get_viewport())
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        mat = glm.lookAt(glm.vec3(0.0, -1.0, 0.0),               # position
-                         glm.vec3(0.0, 0.0, 0.0),                # target
-                         glm.vec3(0.0, 0.0, 1.0))                # up
+        mat = glm.lookAt(vec3(0.0, -1.0, 0.0),               # position
+                         vec3(0.0, 0.0, 0.0),                # target
+                         vec3(0.0, 0.0, 1.0))                # up
         modelview = mat * glm.mat4_cast(self.parent.rot_quat)
 
         glUseProgram(self.parent.shaders['default'])
@@ -222,9 +223,9 @@ class GLViewCube:
         glViewport(*self.viewport)
 
         proj = glm.ortho(-2.3, 2.3, -2.3, 2.3, -2.3, 2.3)
-        mat = glm.lookAt(glm.vec3(0.0, -1.0, 0.0),               # position
-                         glm.vec3(0.0, 0.0, 0.0),                # target
-                         glm.vec3(0.0, 0.0, 1.0))                # up
+        mat = glm.lookAt(vec3(0.0, -1.0, 0.0),               # position
+                         vec3(0.0, 0.0, 0.0),                # target
+                         vec3(0.0, 0.0, 1.0))                # up
         modelview = mat * glm.mat4_cast(self.parent.rot_quat)
 
         glUseProgram(self.parent.shaders['default'])

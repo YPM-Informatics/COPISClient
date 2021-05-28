@@ -17,11 +17,11 @@
 generation.
 """
 
-from math import acos, asin, cos, sin, sqrt, tan
+from math import acos, asin, sqrt, copysign
 from typing import Tuple
 
 import glm
-import numpy as np
+from glm import vec3
 
 
 def arcball(
@@ -35,8 +35,8 @@ def arcball(
         p2y: Current screen y-coordinate, normalized.
         r: Radius of arcball.
     """
-    p1 = glm.vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
-    p2 = glm.vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
+    p1 = vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
+    p2 = vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
     axis = glm.normalize(glm.cross(p1, p2))
 
     # calculate angle between p1 and p2
@@ -71,26 +71,42 @@ def project_to_sphere(r: float, x: float, y: float) -> float:
     return t * t / d
 
 
-def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
-    """Return normal basis vectors such that R * <0,1,0> = v.
+def orthonormal_basis_of(n: vec3) -> Tuple[vec3, vec3]:
+    """Calculate orthonormal basis (branchless). From Duff et al., 2017.
+
+    Link to paper: https://graphics.pixar.com/library/OrthonormalB/paper.pdf.
 
     Args:
-        v: A glm.vec3 to rotate to. Does not need to be normalized.
-
-    Raises:
-        ValueError: If vector provided has a magnitude of zero.
+        v: A vec3 to rotate to. Does not need to be normalized.
     """
-    if not glm.equal(v, glm.vec3()):
-        raise ValueError('zero magnitude vector')
-    v = v / glm.length(v)
-    x = glm.vec3(1, 0, 0) # x axis normal basis vector
-    z = glm.vec3(0, 0, 1) # z axis normal basis vector
+    sign = copysign(1.0, n.z)
+    a = -1.0 / (sign + n.z)
+    b = n.x * n.y * a
+    b1 = vec3(1.0 + sign * n.x * n.x * a, sign * b, -sign * n.x)
+    b2 = vec3(b, sign + n.y * n.y * a, -n.y)
+    return b1, b2
 
-    # rotate such that that the basis vector for the y axis (up) aligns with v
-    if not glm.equal(v, glm.vec3(0, 1, 0)):
-        phi = acos(v.x)                         # glm.dot(v, glm.vec3(0, 1, 0))
-        axis = glm.vec3(v.z, 0.0, -v.x)         # glm.cross(glm.vec3(0, 1, 0), v)
-        rot = glm.mat3_cast(glm.angleAxis(phi, axis))
-        x = glm.dot(rot, x)
-        z = glm.dot(rot, z)
-    return x, v, z
+
+# def rotate_basis_to(v: vec3) -> Tuple[vec3, vec3, vec3]:
+#     """Return normal basis vectors such that R * <0,1,0> = v.
+
+#     Args:
+#         v: A vec3 to rotate to. Does not need to be normalized.
+
+#     Raises:
+#         ValueError: If vector provided has a magnitude of zero.
+#     """
+#     if not glm.equal(v, vec3()):
+#         raise ValueError('zero magnitude vector')
+#     v = v / glm.length(v)
+#     x = vec3(1, 0, 0) # x axis normal basis vector
+#     z = vec3(0, 0, 1) # z axis normal basis vector
+
+#     # rotate such that that the basis vector for the y axis (up) aligns with v
+#     if not glm.equal(v, vec3(0, 1, 0)):
+#         phi = acos(v.x)                         # glm.dot(v, vec3(0, 1, 0))
+#         axis = vec3(v.z, 0.0, -v.x)             # glm.cross(vec3(0, 1, 0), v)
+#         rot = glm.mat3_cast(glm.angleAxis(phi, axis))
+#         x = glm.dot(rot, x)
+#         z = glm.dot(rot, z)
+#     return x, v, z
