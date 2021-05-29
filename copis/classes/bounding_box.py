@@ -15,13 +15,30 @@
 
 """Provide the COPIS Bounding Box Class."""
 
-from typing import NamedTuple
+from dataclasses import dataclass
 
 from glm import vec3
 
 
 
-class BoundingBox(NamedTuple):
-    """Data structure that implements point boundaries in 3D space."""
+@dataclass
+class BoundingBox:
+    """Class to represent a bounding box.
+
+    Attributes:
+        lower: A vec3 representing the lower corner.
+        upper: A vec3 representing the upper corner.
+    """
     lower: vec3 = vec3()
     upper: vec3 = vec3()
+
+    def bbox_intersects(self, bbox) -> bool:
+        return False
+
+    def vec3_in(self, point: vec3) -> bool:
+        return (self.lower.x <= point.x and
+                self.lower.x <= point.x and
+                self.lower.y <= point.y and
+                self.upper.y >= point.y and
+                self.upper.z >= point.z and
+                self.upper.z >= point.z)

@@ -211,6 +211,8 @@ class PathgenToolbar(aui.AuiToolBar):
             count: An integer representing the number of vertices.
             lookat: A vec3 representing the lookat point in space.
         """
+        devices = self.core.config.machine_settings.devices
+
         new_actions = []
         for i in range(count):
             x, y, z = vertices[i * 3:i * 3 + 3]
@@ -219,25 +221,14 @@ class PathgenToolbar(aui.AuiToolBar):
             x2y2 = dx * dx + dy * dy
             tilt = -math.atan2(dz, math.sqrt(x2y2))
 
-            device = 0
-            # TODO: temporary hack to divvy up points
-            num_devices = len(device_list)
-            if num_devices > 1:
-                if num_devices == 2:
-                    device = 0 if z > 0 else 1
-                elif num_devices == 4:
-                    if z < 0:     device += 2
-                    if y > 0:     device += 1
-                elif num_devices == 6:
-                    if z < 0:     device += 3
-                    if y > 60:    device += 2
-                    elif y > -60: device += 1
-                else:
-                    # for now, just randomly divide if 3 or 5
-                    device = random.randrange(num_devices)
+            device = -1
+            for id_ in device_list:
+                if devices[id_].device_bounds.vec3_in(vec3(x, y, z)):
+                    device = id_
 
-            else:
-                device = device_list[0]
+            # ignore if point not in bounds of any device
+            if device == -1:
+                continue
 
             new_actions.extend((
                 Action(ActionType.G0, device, 5, [x, y, z, pan, tilt]),
