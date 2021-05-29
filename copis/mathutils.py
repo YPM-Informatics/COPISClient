@@ -13,11 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Helper functions for quaternion math, arcball rotation, and action path
-generation.
+"""Helper math functions: arcball, project_to_sphere, and
+orthonormal_basis_of.
 """
 
-from math import acos, asin, sqrt, copysign
+from math import sin, cos, asin, acos, sqrt, copysign
 from typing import Tuple
 
 import glm
@@ -26,7 +26,9 @@ from glm import vec3
 
 def arcball(
     p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
-    """Return updated quaternion after arcball rotation.
+    """Return quaternion after arcball rotation.
+
+    See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for details.
 
     Args:
         p1x: Previous screen x-coordinate, normalized.
@@ -35,8 +37,8 @@ def arcball(
         p2y: Current screen y-coordinate, normalized.
         r: Radius of arcball.
     """
-    p1 = vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
-    p2 = vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
+    p1 = vec3(p1x, -project_to_sphere(r, p1x, p1y), p1y)
+    p2 = vec3(p2x, -project_to_sphere(r, p2x, p2y), p2y)
     axis = glm.normalize(glm.cross(p1, p2))
 
     # calculate angle between p1 and p2
@@ -54,30 +56,30 @@ def arcball(
 def project_to_sphere(r: float, x: float, y: float) -> float:
     """Return intersection position from screen coords to the arcball.
 
-    See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for how
-    points outside the arcball are handled.
+    Combines a sphere and a hyperbolic sheet for smooth transitions.
+    See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for details.
 
     Args:
         r: A float for radius.
         x: Screen x-coordinate, normalized.
         y: Screen y-coordinate, normalized.
     """
-    d = sqrt(x * x + y * y)
+    xy = x * x + y * y
 
-    # combines a sphere and a hyperbolic sheet for smooth transitions
-    if d < r * 0.70710678118654752440:
-        return sqrt(r * r - d * d)
-    t = r / 1.41421356237309504880
-    return t * t / d
+    r2 = r * r / 2.0
+    if xy <= r2:
+        return sqrt(r * r - xy)
+    return r2 / sqrt(xy)
 
 
 def orthonormal_basis_of(n: vec3) -> Tuple[vec3, vec3]:
-    """Calculate orthonormal basis (branchless). From Duff et al., 2017.
+    """Calculate orthonormal basis (branchless).
 
-    Link to paper: https://graphics.pixar.com/library/OrthonormalB/paper.pdf.
+    From Duff et al., 2017:
+        https://graphics.pixar.com/library/OrthonormalB/paper.pdf.
 
     Args:
-        v: A vec3 to rotate to. Does not need to be normalized.
+        n: A vec3 to rotate to. Does not need to be normalized.
     """
     sign = copysign(1.0, n.z)
     a = -1.0 / (sign + n.z)

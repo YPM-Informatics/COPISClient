@@ -124,7 +124,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # This offset allows us to adjust the chamber's position on the canvas
         #  when only rending one chamber
-        self._z_offset = 0 if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
+        self._z_offset = 0# if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
 
         self._dist = 0.5 * (self._build_dimensions[2] + self._z_offset + \
                             max(self._build_dimensions[0], self._build_dimensions[1]))
@@ -690,6 +690,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             self._mouse_pos = event.Position
             return
+
         last = self._mouse_pos
         cur = event.Position
 
@@ -698,9 +699,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         p1y = 1 - last.y * 2.0 / canvas_size.height
         p2x = cur.x * 2.0 / canvas_size.width - 1.0
         p2y = 1 - cur.y * 2.0 / canvas_size.height
-
-        # if p1x == p2x and p1y == p2y:
-            # self._rot_quat = glm.quat()
 
         with self._rot_lock:
             if orbit:
