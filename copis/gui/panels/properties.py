@@ -49,7 +49,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Group': ['transform', 'viewport'],
     }
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -138,7 +138,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
 class _PropViewport(wx.Panel):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropViewport with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -189,7 +189,7 @@ class _PropTransform(wx.Panel):
         t: A float representing t value in radians.
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -483,7 +483,7 @@ class _PropCameraInfo(wx.Panel):
         device_type:
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -542,7 +542,7 @@ class _PropCameraInfo(wx.Panel):
 
 class _PropCameraConfig(wx.Panel):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCamera with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -652,7 +652,7 @@ class _PropQuickActions(wx.Panel):
         device_type:
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent

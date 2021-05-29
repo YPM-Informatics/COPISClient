@@ -30,7 +30,7 @@ class ConsolePanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
