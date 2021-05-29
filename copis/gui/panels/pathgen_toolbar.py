@@ -17,19 +17,19 @@
 
 import logging
 import math
+from collections import defaultdict
+from typing import Tuple
+
 import wx
 import wx.lib.agw.aui as aui
-import random
-from typing import Tuple
 from glm import vec3
 
-from copis.gui.wxutils import (
-    FancyTextCtrl,
-    create_scaled_bitmap, simple_statictext)
+from copis.classes import Action
+from copis.enums import ActionType, PathIds
+from copis.gui.wxutils import (FancyTextCtrl, create_scaled_bitmap,
+                               simple_statictext)
 from copis.helpers import xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
-from copis.enums import ActionType, PathIds
-from copis.classes import Action
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -212,8 +212,8 @@ class PathgenToolbar(aui.AuiToolBar):
             lookat: A vec3 representing the lookat point in space.
         """
         devices = self.core.config.machine_settings.devices
+        separated_actions = defaultdict(list)
 
-        new_actions = []
         for i in range(count):
             x, y, z = vertices[i * 3:i * 3 + 3]
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
@@ -221,22 +221,32 @@ class PathgenToolbar(aui.AuiToolBar):
             x2y2 = dx * dx + dy * dy
             tilt = -math.atan2(dz, math.sqrt(x2y2))
 
-            device = -1
+            device_id = -1
             for id_ in device_list:
                 if devices[id_].device_bounds.vec3_in(vec3(x, y, z)):
-                    device = id_
+                    device_id = id_
 
             # ignore if point not in bounds of any device
-            if device == -1:
+            if device_id == -1:
                 continue
 
-            new_actions.extend((
-                Action(ActionType.G0, device, 5, [x, y, z, pan, tilt]),
-                Action(ActionType.C0, device),
-            ))
+            separated_actions[device_id].append((
+                Action(ActionType.G0, device_id, 5, [x, y, z, pan, tilt]),
+                Action(ActionType.C0, device_id)))
+
+        # interlace actions
+        interlaced_actions = []
+        empty = False
+        while not empty:
+            empty = True
+            for id_ in device_list:
+                if not separated_actions[id_]:
+                    continue
+                interlaced_actions.extend(separated_actions[id_].pop())
+                empty = False
 
         # extend core actions list
-        self.core.actions.extend(new_actions)
+        self.core.actions.extend(interlaced_actions)
 
     def __del__(self) -> None:
         pass
