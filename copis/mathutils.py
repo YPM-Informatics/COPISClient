@@ -17,15 +17,15 @@
 orthonormal_basis_of.
 """
 
-from math import sin, cos, asin, acos, sqrt, copysign
+from math import asin, sqrt, copysign
 from typing import Tuple
 
 import glm
-from glm import vec3
+from glm import vec3, quat
 
 
 def arcball(
-    p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
+    p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> quat:
     """Return quaternion after arcball rotation.
 
     See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for details.

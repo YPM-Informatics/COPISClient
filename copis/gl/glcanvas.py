@@ -25,7 +25,7 @@ import numpy as np
 import pywavefront
 import wx
 
-from glm import vec3, mat4
+from glm import vec3, mat4, quat
 from threading import Lock
 from typing import List, NamedTuple, Dict
 from wx import glcanvas
@@ -121,24 +121,20 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-
-        # This offset allows us to adjust the chamber's position on the canvas
-        #  when only rending one chamber
-        self._z_offset = 0# if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
-
-        self._dist = 0.5 * (self._build_dimensions[2] + self._z_offset + \
+        self._dist = 0.5 * (self._build_dimensions[2] +
                             max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
 
         # other values
-        self._zoom = round(400 / (self._build_dimensions[2] + self._z_offset), 1)
+        self._zoom = 1.0
         self._hover_id = -1
         self._inside = False
-        self._rot_quat = glm.quat()
+        self._rot_quat = quat()
         self._rot_lock = Lock()
-        self._object_scale = 3
+        self._center = vec3(0.0, 0.0, (self._build_dimensions[5] - self._build_dimensions[2]) / 2.0)
+        self._object_scale = 3.0
 
         # bind core listeners
         dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
@@ -433,17 +429,17 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # id_ belongs to viewcube
         if self._viewcube.hovered:
             if id_ == 0:    # front
-                self._rot_quat = glm.quat()
+                self._rot_quat = quat()
             elif id_ == 1:  # top
-                self._rot_quat = glm.quat(glm.radians(vec3(90, 0, 0)))
+                self._rot_quat = quat(glm.radians(vec3(90, 0, 0)))
             elif id_ == 2:  # right
-                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, -90)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, -90)))
             elif id_ == 3:  # bottom
-                self._rot_quat = glm.quat(glm.radians(vec3(-90, 0, 0)))
+                self._rot_quat = quat(glm.radians(vec3(-90, 0, 0)))
             elif id_ == 4:  # left
-                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, 90)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, 90)))
             elif id_ == 5:  # back
-                self._rot_quat = glm.quat(glm.radians(vec3(0, 0, 180)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, 180)))
             else:
                 pass
 
@@ -623,7 +619,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         return self._shaders
 
     @property
-    def rot_quat(self) -> glm.quat:
+    def rot_quat(self) -> quat:
         return self._rot_quat
 
     @property
@@ -674,10 +670,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
     @property
     def modelview_matrix(self) -> mat4:
         """Returns a mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(vec3(0.0, -self._dist * 1.5, 0.0),  # position
-                         vec3(0.0, 0.0, self._z_offset),     # target
+        mat = glm.lookAt(vec3(0.0, -self._dist * 1.5, 0.0),  # eye
+                         vec3(0.0, 0.0, 0.0),                # center
                          vec3(0.0, 0.0, 1.0))                # up
-        return mat * glm.mat4_cast(self._rot_quat)
+        return glm.translate(mat * glm.mat4_cast(self._rot_quat), self._center)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
         """Update rotate quat to reflect rotation controls.
