@@ -120,6 +120,9 @@ class MainWindow(wx.Frame):
                 - &Preferences
             - &View
                 - [x] &Status Bar
+            - &Camera
+                - (*) &Perspective Projection
+                - ( ) &Orthographic Projection
             - &Tools
                 - &Generate Path...
                 ---

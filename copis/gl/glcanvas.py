@@ -70,6 +70,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         subdivisions: Optional; See GLChamber.
 
     Attributes:
+        orbit_control: A boolean; True: use orbit controls for rotation,
+            False: arcball (trackball) controls for rotation.
+        orthographic: A boolean; True: viewport uses orthographic projection,
+            False: viewport uses perspective projection.
         dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
@@ -85,7 +89,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             modelview matrix.
     """
 
-    orbit_control = True  # True: use arcball controls, False: use orbit controls
+    orbit_control = True  # True: use orbit controls, False: use arcball controls
     orthographic = False  # True: orthographic projection, False: perspective projection
     # background_color = (0.9412, 0.9412, 0.9412, 1.0)
     background_color = (1.0, 1.0, 1.0, 1.0)
@@ -398,8 +402,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         scale = self.get_scale_factor()
-        event.x = int(event.x * scale)
-        event.y = int(event.y * scale)
+        event.x *= scale
+        event.y *= scale
 
         if event.Dragging():
             if event.LeftIsDown():
@@ -717,12 +721,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = cur
 
     def translate_camera(self, event: wx.MouseEvent) -> None:
-        """Translate camera.
+        """Translate camera. Currently only translates along z axis.
 
         Args:
             event: A wx.MouseEvent representing an updated mouse position.
 
-        TODO: implement this!
+        TODO: Make it so you can translate freely?
         """
         if self._mouse_pos is None:
             self._mouse_pos = event.Position
@@ -731,8 +735,20 @@ class GLCanvas3D(glcanvas.GLCanvas):
         last = self._mouse_pos
         cur = event.Position
 
+        canvas_size = self._canvas.get_canvas_size()
+        p1x = last.x * 2.0 / canvas_size.width - 1.0
+        p1y = 1 - last.y * 2.0 / canvas_size.height
+        p2x = cur.x * 2.0 / canvas_size.width - 1.0
+        p2y = 1 - cur.y * 2.0 / canvas_size.height
 
-        # Do stuff
+        dy = p2y - p1y
+        new_z = self._center.z + dy * self._dist / 1.5
+        if new_z < self._build_dimensions[5] - self._build_dimensions[2]:
+            new_z = self._build_dimensions[5] - self._build_dimensions[2]
+        if new_z > self._build_dimensions[5]:
+            new_z = self._build_dimensions[5]
+        self._center.z = new_z
+
         self._mouse_pos = cur
 
     # --------------------------------------------------------------------------
@@ -743,7 +759,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Return scale factor based on display dpi.
 
         Currently very rudimentary; only checks if system is MacOS or not.
+
         TODO: make more robust and actually detect dpi?
+            - check out self.GetContentScaleFactor() and
+              GetDPIScaleFactor(), might be better than this
         """
         # return self.GetContentScaleFactor()
         if self._scale_factor is None:

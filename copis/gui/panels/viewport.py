@@ -74,12 +74,12 @@ class ViewportPanel(wx.Panel):
         # add navbar
         self.Sizer.Add(navbar, 0, wx.EXPAND)
 
-    def set_perspective_projection(self, event: wx.CommandEvent) -> None:
+    def set_perspective_projection(self, _: wx.CommandEvent) -> None:
         """Set to perspective projection."""
         self._glcanvas.orthographic = False
         self.dirty = True
 
-    def set_orthographic_projection(self, event: wx.CommandEvent) -> None:
+    def set_orthographic_projection(self, _: wx.CommandEvent) -> None:
         """Set to orthographic projection."""
         self._glcanvas.orthographic = True
         self.dirty = True
