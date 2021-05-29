@@ -13,15 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""VisualizerPanel class."""
+"""ViewportPanel class."""
 
 import wx
 
 from copis.gl.glcanvas import GLCanvas3D
 
 
-class VisualizerPanel(wx.Panel):
-    """Visualizer panel. Creates a GLCanvas3D OpenGL canvas.
+class ViewportPanel(wx.Panel):
+    """Viewport panel. Creates a GLCanvas3D OpenGL canvas.
 
     Args:
         parent: Pointer to a parent wx.Frame.
@@ -35,7 +35,7 @@ class VisualizerPanel(wx.Panel):
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize VisualizerPanel with constructors."""
+        """Initialize ViewportPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
         self.parent = parent
         self.core = self.parent.core
@@ -57,6 +57,10 @@ class VisualizerPanel(wx.Panel):
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
+
+        # add GLCanvas3D
+        self.Sizer.Add(self._glcanvas, 1, wx.EXPAND|wx.ALL, 0)
+
         navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 23), style=wx.BORDER_DEFAULT)
         navbar.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -67,11 +71,18 @@ class VisualizerPanel(wx.Panel):
         self.zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
         navbar.Sizer.Add(self.zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5)
 
-        # add GLCanvas3D
-        self.Sizer.Add(self._glcanvas, 1, wx.EXPAND|wx.ALL, 0)
-
         # add navbar
         self.Sizer.Add(navbar, 0, wx.EXPAND)
+
+    def set_perspective_projection(self, event: wx.CommandEvent) -> None:
+        """Set to perspective projection."""
+        self._glcanvas.orthographic = False
+        self.dirty = True
+
+    def set_orthographic_projection(self, event: wx.CommandEvent) -> None:
+        """Set to orthographic projection."""
+        self._glcanvas.orthographic = True
+        self.dirty = True
 
     def on_zoom_slider(self, event: wx.ScrollEvent) -> None:
         """Update GLCanvas3D zoom when slider is updated."""

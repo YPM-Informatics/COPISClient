@@ -85,11 +85,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
             modelview matrix.
     """
 
-    orbit_controls = True  # True: use arcball controls, False: use orbit controls
+    orbit_control = True  # True: use arcball controls, False: use orbit controls
+    orthographic = False  # True: orthographic projection, False: perspective projection
     # background_color = (0.9412, 0.9412, 0.9412, 1.0)
     background_color = (1.0, 1.0, 1.0, 1.0)
-    zoom_min = 0.1
-    zoom_max = 7.0
+    zoom_min = 0.5
+    zoom_max = 6.0
 
     def __init__(self, parent,
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
@@ -402,7 +403,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         if event.Dragging():
             if event.LeftIsDown():
-                self.rotate_camera(event, orbit=self.orbit_controls)
+                self.rotate_camera(event, orbit=self.orbit_control)
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
 
@@ -506,7 +507,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
 
-        # update visualizer panel zoom slider
+        # update viewport panel zoom slider
         self.parent.set_zoom_slider(self._zoom)
 
     def _refresh_if_shown_on_screen(self) -> None:
@@ -662,17 +663,23 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def projection_matrix(self) -> mat4:
         """Returns a mat4 representing the current projection matrix."""
         canvas_size = self.get_canvas_size()
-        aspect_ratio = canvas_size.width / canvas_size.height
-        return glm.perspective(
-            math.atan(math.tan(math.radians(45.0)) / self._zoom),
-            aspect_ratio, 0.1, 2000.0)
+        if self.orthographic:
+            return glm.ortho(
+                -canvas_size.width / 2.0 / self._zoom, canvas_size.width / 2.0 / self._zoom,
+                -canvas_size.height / 2.0 / self._zoom, canvas_size.height / 2.0 / self._zoom,
+                -5.0 * self._dist, 5.0 * self._dist)
+        else:
+            aspect_ratio = canvas_size.width / canvas_size.height
+            return glm.perspective(
+                math.atan(math.tan(math.radians(45.0))),
+                aspect_ratio, 0.1, 2000.0)
 
     @property
     def modelview_matrix(self) -> mat4:
         """Returns a mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(vec3(0.0, -self._dist * 1.5, 0.0),  # eye
-                         vec3(0.0, 0.0, 0.0),                # center
-                         vec3(0.0, 0.0, 1.0))                # up
+        mat = glm.lookAt(vec3(0.0, -self._dist * 2.0 / self._zoom, 0.0),  # eye
+                         vec3(0.0, 0.0, 0.0),                             # center
+                         vec3(0.0, 0.0, 1.0))                             # up
         return glm.translate(mat * glm.mat4_cast(self._rot_quat), self._center)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
@@ -720,8 +727,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             self._mouse_pos = event.Position
             return
+
         last = self._mouse_pos
         cur = event.Position
+
+
         # Do stuff
         self._mouse_pos = cur
 
@@ -735,6 +745,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         Currently very rudimentary; only checks if system is MacOS or not.
         TODO: make more robust and actually detect dpi?
         """
+        # return self.GetContentScaleFactor()
         if self._scale_factor is None:
             if pf.system() == 'Darwin': # MacOS
                 self._scale_factor = 2.0

@@ -21,7 +21,7 @@ import wx
 class PreferenceFrame(wx.Frame):
     def __init__(self, parent, *args, **kwargs):
         wx.Frame.__init__(self, parent, wx.ID_ANY, 'Preferences', size=(300, 360))
-        self._glcanvas = parent.visualizer_panel.glcanvas
+        self._glcanvas = parent.viewport_panel.glcanvas
 
         self.init_panel()
         self.Centre()

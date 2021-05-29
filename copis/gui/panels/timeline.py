@@ -115,8 +115,7 @@ class TimelinePanel(wx.Panel):
         """TODO"""
         cmd = self.timeline_writer.Value
         self.add_command(cmd)
-        # self.core.append_point(0, tuple(map(float, cmd.split(', '))))
-        self.parent.visualizer_panel.dirty = True
+        self.parent.viewport_panel.dirty = True
         self.timeline_writer.Value = ''
 
     def add_command(self, cmd: str) -> None:

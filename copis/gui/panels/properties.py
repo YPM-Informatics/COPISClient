@@ -43,10 +43,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """
 
     config = {
-        'Default': ('visualizer'),
-        'Camera': ('camera_info', 'camera_config'),
-        'Point': ('transform'),
-        'Group': ('transform'),
+        'Default': ['viewport'],
+        'Camera': ['camera_info', 'camera_config', 'viewport'],
+        'Point': ['transform', 'viewport'],
+        'Group': ['transform', 'viewport'],
     }
 
     def __init__(self, parent) -> None:
@@ -79,11 +79,11 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
-        self._property_panels['visualizer'] = _PropVisualizer(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
         self._property_panels['camera_config'] = _PropCameraConfig(self)
         self._property_panels['quick_actions'] = _PropQuickActions(self)
+        self._property_panels['viewport'] = _PropViewport(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
@@ -136,15 +136,15 @@ class PropertiesPanel(scrolled.ScrolledPanel):
                 self.update_to_selected('Point')
 
 
-class _PropVisualizer(wx.Panel):
+class _PropViewport(wx.Panel):
 
     def __init__(self, parent) -> None:
-        """Initialize _PropVisualizer with constructors."""
+        """Initialize _PropViewport with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Visualizer'), wx.VERTICAL)
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Viewport'), wx.VERTICAL)
 
         grid_check = wx.CheckBox(self, label='Show chamber &grid', name='grid')
         grid_check.Value = True
@@ -171,11 +171,11 @@ class _PropVisualizer(wx.Panel):
     def on_checkbox(self, event: wx.CommandEvent) -> None:
         name = event.EventObject.Name
         if name == 'grid':
-            self.parent.parent.visualizer_panel.grid_shown = event.Int
+            self.parent.parent.viewport_panel.grid_shown = event.Int
         elif name == 'axes':
-            self.parent.parent.visualizer_panel.axes_shown = event.Int
+            self.parent.parent.viewport_panel.axes_shown = event.Int
         else: # name == 'bbox'
-            self.parent.parent.visualizer_panel.bbox_shown = event.Int
+            self.parent.parent.viewport_panel.bbox_shown = event.Int
 
 
 class _PropTransform(wx.Panel):
@@ -601,7 +601,7 @@ class _PropCameraConfig(wx.Panel):
     def on_remote_usb_radio_group(self, event: wx.CommandEvent) -> None:
         rb = event.EventObject
 
-        # self.visualizer_panel.on_clear_cameras()
+        # self.viewport_panel.on_clear_cameras()
         self.Sizer.Clear()
 
         if rb.Label == 'USB':
