@@ -37,11 +37,6 @@ class Object3D(ABC):
     def __init__(self):
         self._object_id = next(self._ids)
 
-    def __new__(cls, *args, **kwargs):
-        if cls == Object3D or cls.__bases__[0] == Object3D:
-            raise TypeError("Cannot instantiate abstract class.")
-        return super().__new__(cls)
-
     @property
     def object_id(self) -> int:
         """Return id of object."""
@@ -61,6 +56,10 @@ class Object3D(ABC):
     @abstractmethod
     def bbox(self) -> BoundingBox:
         """Return bbox of object."""
+        pass
+
+    @abstractmethod
+    def __repr__(self) -> str:
         pass
 
 
@@ -110,9 +109,17 @@ class CylinderObject3D(Object3D):
     def bbox(self) -> BoundingBox:
         return self._bbox
 
+    def __repr__(self) -> str:
+        return 'CylinderObject3D(' + \
+               f'start={self.start}, ' + \
+               f'end={self.end}, ' + \
+               f'radius={self.radius}, ' + \
+               f'object_id={self.object_id}, ' + \
+               f'bbox={self._bbox})'
+
 
 @dataclass
-class AABBOject3D(Object3D):
+class AABBObject3D(Object3D):
     """Axis-aligned box object."""
 
     def __init__(self, lower: vec3, upper: vec3):
@@ -131,16 +138,24 @@ class AABBOject3D(Object3D):
     def bbox(self) -> BoundingBox:
         return self._bbox
 
+    def __repr__(self) -> str:
+        return 'AABBObject3D(' + \
+               f'lower={repr(self.lower)}, ' + \
+               f'upper={repr(self.upper)}, ' + \
+               f'object_id={self.object_id}, ' + \
+               f'bbox={self._bbox})'
+
 
 @dataclass
-class OBJOject3D(Object3D):
+class OBJObject3D(Object3D):
     """.obj object. TODO"""
 
     def __init__(self, filename: str):
         super().__init__()
-        obj = pywavefront.Wavefront(find_path('filename'), create_materials=True)
-        for _, _ in obj.materials.items():
-            pass
+        self._filename = filename
+        # obj = pywavefront.Wavefront(find_path('filename'), create_materials=True)
+        # for _, _ in obj.materials.items():
+        #     pass
 
         self._bbox = BoundingBox()
 
@@ -153,3 +168,9 @@ class OBJOject3D(Object3D):
     @property
     def bbox(self) -> BoundingBox:
         return self._bbox
+
+    def __repr__(self) -> str:
+        return 'OBJObject3D(' + \
+               f'filename=\'{self._filename}\', ' + \
+               f'object_id={self.object_id}, ' + \
+               f'bbox={self._bbox})'

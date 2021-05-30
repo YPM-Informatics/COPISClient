@@ -34,6 +34,7 @@ from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
 from typing import List, Optional, Tuple
+from glm import vec3
 
 from pydispatch import dispatcher
 
@@ -41,7 +42,11 @@ import copis.coms.serial_controller as serial_controller
 
 from .enums import ActionType, DebugEnv
 from .helpers import Point5
-from .classes import Action, Device, MonitoredList
+from .classes import (
+    Action, Device, MonitoredList, Object3D, CylinderObject3D, AABBObject3D,
+    OBJObject3D)
+
+MAX_ID = 16777215
 
 
 def locked(func):
@@ -123,7 +128,11 @@ class COPISCore:
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
 
-
+        self._objects: List[Object3D] = MonitoredList('core_o_list_changed')
+        test = AABBObject3D(vec3(-20, -20, 0), vec3(20, 20, 50))
+        test2 = OBJObject3D('test')
+        print(test)
+        print(test2)
 
 
     def _check_configs(self) -> None:

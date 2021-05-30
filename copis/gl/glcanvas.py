@@ -51,6 +51,8 @@ from .actionvis import GLActionVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
 
+MAX_ID = 16777215
+
 
 class _Size(NamedTuple):
     width: int
@@ -341,8 +343,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
         # clear buffers and render everything
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         self._render_background()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
         self._render_chamber()
         self._render_objects()
         self._render_cameras()
@@ -529,11 +532,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             return
 
+        glClearColor(1.0, 1.0, 1.0, 1.0)
+
         # disable multisampling and antialiasing
         glDisable(GL_MULTISAMPLE)
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self._render_objects_for_picking()
 
@@ -552,9 +557,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             id_ = (color[0]) + (color[1] << 8) + (color[2] << 16)
 
             # ignore background color
-            if id_ == (int(self.background_color[0] * 255)) + \
-                      (int(self.background_color[1] * 255) << 8) + \
-                      (int(self.background_color[2] * 255) << 16):
+            if id_ == MAX_ID:
                 id_ = -1
 
         # check if mouse is inside viewcube area

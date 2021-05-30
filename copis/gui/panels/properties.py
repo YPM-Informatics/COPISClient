@@ -24,8 +24,8 @@ import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 from copis.helpers import xyz_units, pt_units
-from copis.gui.wxutils import (FancyTextCtrl,
-    EVT_FANCY_TEXT_UPDATED_EVENT,
+from copis.gui.wxutils import (
+    FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
 
 
