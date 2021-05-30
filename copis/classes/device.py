@@ -19,8 +19,8 @@ from dataclasses import dataclass
 from glm import vec3
 from typing import List, Optional
 
-from . import BoundingBox
 from copis.helpers import Point5
+from . import BoundingBox
 
 
 @dataclass

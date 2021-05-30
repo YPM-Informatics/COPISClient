@@ -223,7 +223,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
             device_id = -1
             for id_ in device_list:
-                if devices[id_].device_bounds.vec3_in(vec3(x, y, z)):
+                if devices[id_].device_bounds.vec3_intersect(vec3(x, y, z)):
                     device_id = id_
 
             # ignore if point not in bounds of any device

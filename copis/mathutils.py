@@ -13,8 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Helper math functions: arcball, project_to_sphere, and
-orthonormal_basis_of.
+"""Helper math functions: arcball, project_to_sphere, and orthonormal_basis_of.
 """
 
 from math import asin, sqrt, copysign
@@ -80,6 +79,9 @@ def orthonormal_basis_of(n: vec3) -> Tuple[vec3, vec3]:
 
     Args:
         n: A vec3 to rotate to. Does not need to be normalized.
+
+    TODO: Test if orthonormal_basis_of works as intended. If so, we can remove
+    rotate_basis_to.
     """
     sign = copysign(1.0, n.z)
     a = -1.0 / (sign + n.z)

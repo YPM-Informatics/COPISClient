@@ -742,7 +742,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         p2y = 1 - cur.y * 2.0 / canvas_size.height
 
         dy = p2y - p1y
-        new_z = self._center.z + dy * self._dist / 1.5
+        new_z = self._center.z + dy * self._dist / 1.5 / self._zoom
         if new_z < self._build_dimensions[5] - self._build_dimensions[2]:
             new_z = self._build_dimensions[5] - self._build_dimensions[2]
         if new_z > self._build_dimensions[5]:

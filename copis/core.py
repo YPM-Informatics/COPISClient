@@ -116,12 +116,15 @@ class COPISCore:
         # TODO: this might not exist after testing machine.
         # self.offset_devices(*self.config.machine_settings.devices)
 
-        self._actions: List[Action] = MonitoredList([], 'core_a_list_changed')
-        self._devices: List[Device] = MonitoredList(
-            self.config.machine_settings.devices, 'core_d_list_changed')
+        self._actions: List[Action] = MonitoredList('core_a_list_changed')
+        self._devices: List[Device] = MonitoredList('core_d_list_changed',
+            iterable=self.config.machine_settings.devices)
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
+
+
+
 
     def _check_configs(self) -> None:
         warn = self.config.settings.debug_env == DebugEnv.DEV.value
