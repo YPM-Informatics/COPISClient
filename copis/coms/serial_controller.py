@@ -16,16 +16,18 @@
 """Manage COPIS Serial Communications."""
 
 
-import ast
 import time
 import serial
+import re
 
 from dataclasses import dataclass
 from typing import List
+from mprop import mproperty
 
+from copis.helpers import Point5
+from copis.classes import SerialResponse
 from serial.serialutil import SerialException
 from serial.tools import list_ports
-from mprop import mproperty
 
 
 @dataclass
@@ -50,6 +52,15 @@ class SerialController():
 
     _TEST_SERIAL_PORT = 'TEST'
     _READ_TIMEOUT = 1
+    _KEY_MAP = {
+        'id': 'device_id',
+        'ssf': 'system_status_number',
+        'pos': 'position',
+        'ERR': 'error'
+    }
+    _OBJECT_PATTERN = re.compile(r'^<(.*)>$')
+    _PAIR_PATTERN = re.compile(r'\w+:[-?\d+\.?\d+,]+|\w+:\w+')
+    _KEY_VAL_PATTERN = re.compile(r'(\w+):(.*)')
 
     BAUDS = [9600, 19200, 38400, 57600, 115200]
 
@@ -58,6 +69,7 @@ class SerialController():
         self._active_port = None
         self._console = None
         self._is_dev_env = False
+        self._response = None
 
     def initialize(self, console = None, is_dev_env: bool = False) -> None:
         """Initialize the serial object."""
@@ -129,8 +141,14 @@ class SerialController():
             self._print(err.args[0])
             return False
 
-        self._print('\n' +
-            '\n'.join([line for line in self._read() if isinstance(line, str)]))
+        responses = self._read()
+        for resp in responses:
+            if isinstance(resp, str):
+                self._print(f'{resp}')
+            elif isinstance(resp, SerialResponse):
+                if resp.error is None and resp.is_idle:
+                    self._print(f'Serial port to device {0} is open.')
+
 
         return True
 
@@ -197,19 +215,19 @@ class SerialController():
             self._active_port = None
 
     def _read(self) -> List:
-        wait = SerialController._READ_TIMEOUT / 2
+        wait = .2
         active_port = self._active_port
-        read_buffer = []
+        self._response = []
         time.sleep(wait)
 
         if active_port is not None and active_port.connection is not None \
                 and active_port.connection.is_open:
             while active_port.connection.is_open and active_port.connection.in_waiting:
                 p_bytes = active_port.connection.readline().decode()
-                read_buffer.append(p_bytes)
+                self._response.append(p_bytes)
                 time.sleep(wait)
 
-        return self._parse_output(read_buffer)
+        return self._parse_response()
 
     def _print(self, msg):
         if self._console is None:
@@ -217,43 +235,37 @@ class SerialController():
         else:
             self._console.print(msg)
 
-    def _get_port(self, name: str):
+    def _get_port(self, name):
         if len(self._ports) < 1:
             return None
 
         return next(filter(lambda p, n = name: p.name == n, self._ports), None)
 
-    def _parse_output(self, output: List[str]) -> list:
+    def _parse_response(self):
         response_stack = []
 
-        for data in output:
-            data = data.strip('\r\n')
+        for line in self._response:
+            line = line.strip('\r\n')
+            if self._OBJECT_PATTERN.match(line):
+                result = SerialResponse()
 
-            if data.startswith('<') and data.endswith('>'):
-                data = data.lstrip('<').rstrip('>')
+                for pair in self._PAIR_PATTERN.findall(line):
+                    for key_val in self._KEY_VAL_PATTERN.findall(pair.rstrip(',')):
+                        key = self._KEY_MAP[key_val[0]]
+                        value = key_val[1]
 
-                segments = data.split(',', 2)
-                segments = [tuple(s.split(':')) for s in segments]
-                mapped = map(self._stringify, segments)
+                        if (key in ['device_id', 'system_status_number']):
+                            value = int(value)
+                        elif key == 'position':
+                            x, y, z, p, t = [float(v) for v in [*key_val[1].split(',')]]
+                            value = Point5(x, y, z, p ,t)
 
-                result = '{' + ', '.join(mapped) + '}'
-
-                result_dict = ast.literal_eval(result)
-                result_dict['is_idle'] = result_dict['ssf'] == 0
-
-                response_stack.append(result_dict)
+                        setattr(result, key, value)
+                response_stack.append(result)
             else:
-                response_stack.append(data)
+                response_stack.append(line)
 
         return response_stack
-
-    def _stringify(self, data):
-        if ',' in data[1]:
-            value = '{{"X": {0}, "Y": {1}, "Z": {2}, "P": {3}, "T": {4}}}'\
-                .format(*data[1].split(','))
-            return f'"{data[0]}": {value}'
-
-        return f'"{data[0]}": {data[1]}'
 
     @property
     def is_port_open(self) -> bool:

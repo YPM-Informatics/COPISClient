@@ -20,10 +20,11 @@ from .monitored_list import MonitoredList
 from .device import Device
 from .action import Action
 from .chamber import Chamber
+from .serial_response import SerialResponse
 from .proxy_objects import Object3D, CylinderObject3D, AABBObject3D, OBJObject3D
 from .settings import ConfigSettings, MachineSettings
 
 __all__ = [
     "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABBObject3D",
     "OBJObject3D", "Action", "Chamber", "MonitoredList", "ConfigSettings",
-    "MachineSettings"]
+    "MachineSettings", "SerialResponse"]

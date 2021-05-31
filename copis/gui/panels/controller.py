@@ -103,7 +103,6 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         if (serial is not None and serial.is_port_open):
             data = f'{dest}G91\r{msg.upper()}'
-            print(data.encode())
             serial.write(data)
         else:
             set_dialog('Connect to the machine in order to jog.')
