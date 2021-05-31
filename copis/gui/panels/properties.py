@@ -27,7 +27,7 @@ from copis.helpers import xyz_units, pt_units
 from copis.gui.wxutils import (
     FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
-from copis.enums import ActionType
+from copis.globals import ActionType
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):

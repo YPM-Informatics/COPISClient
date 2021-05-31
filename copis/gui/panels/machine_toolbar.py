@@ -20,7 +20,7 @@ import threading
 import wx
 import wx.lib.agw.aui as aui
 
-from copis.enums import ToolIds
+from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 

@@ -32,7 +32,7 @@ from OpenGL.GL import (
     glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
 
-from copis.enums import ActionType
+from copis.globals import ActionType
 from copis.helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 

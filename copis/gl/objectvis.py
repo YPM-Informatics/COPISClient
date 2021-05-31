@@ -30,8 +30,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import ctypes
 
 from copis.classes import Object3D, CylinderObject3D, OBJObject3D, AABBObject3D
-
-MAX_ID = 16777214
+from copis.globals import MAX_ID
 
 
 @dataclass

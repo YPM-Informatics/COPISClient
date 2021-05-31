@@ -26,7 +26,7 @@ import glm
 import numpy as np
 import ctypes
 
-from copis.enums import ViewCubePos, ViewCubeSize
+from copis.globals import ViewCubePos, ViewCubeSize
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -37,10 +37,10 @@ class GLViewCube:
 
     Args:
         p: Pointer to a p GLCanvas.
-        position: Optional; An enums.ViewCubePos constant representing which
+        position: Optional; A ViewCubePos constant representing which
             corner of the viewport the ViewCube should render in. Defaults to
             ViewCubePos.TOP_RIGHT.
-        size: Optional; An enums.ViewCubeSize constant representing the size in
+        size: Optional; A ViewCubeSize constant representing the size in
             pixels of the ViewCube render area. Defaults to ViewCubeSize.MEDIUM.
 
     Attributes:

@@ -40,13 +40,11 @@ from pydispatch import dispatcher
 
 import copis.coms.serial_controller as serial_controller
 
-from .enums import ActionType, DebugEnv
+from .globals import ActionType, DebugEnv, MAX_ID
 from .helpers import Point5
 from .classes import (
     Action, Device, MonitoredList, Object3D, CylinderObject3D, AABBObject3D,
     OBJObject3D)
-
-MAX_ID = 16777214
 
 
 def locked(func):

@@ -13,9 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Store all enums."""
+"""Store all enums and global constants."""
 
 from enum import Enum, IntEnum, auto, unique
+
+MAX_ID = 16777214
 
 
 class ToolIds(Enum):

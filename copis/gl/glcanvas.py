@@ -46,12 +46,11 @@ from OpenGL.GLU import ctypes
 import copis.gl.shaders as shaderlib
 
 from copis.mathutils import arcball
+from copis.globals import MAX_ID
 from .actionvis import GLActionVis
 from .objectvis import GLObjectVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
-
-MAX_ID = 16777214
 
 
 class _Size(NamedTuple):

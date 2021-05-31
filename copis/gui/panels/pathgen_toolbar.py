@@ -27,7 +27,7 @@ import wx
 import wx.lib.agw.aui as aui
 
 from copis.classes import Action, Object3D
-from copis.enums import ActionType, PathIds
+from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import xyz_units
