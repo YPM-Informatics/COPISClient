@@ -22,9 +22,7 @@ TODO: Signify via color or border when action is selected
 from collections import defaultdict
 
 from glm import vec3, vec4, mat4
-import ctypes
 import glm
-import numpy as np
 
 from OpenGL.GL import (
     GL_FLOAT, GL_INT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP,
@@ -43,14 +41,14 @@ class GLActionVis:
 
     # colors to differentiate devices
     colors = [
-        (0.0000, 0.4088, 0.9486, 1.0),    # blueish
-        (0.4863, 0.0549, 0.3725, 1.0),    # purpleish
-        (0.9255, 0.0588, 0.2784, 1.0),    # reddish
-        (0.9333, 0.4196, 0.2314, 1.0),    # orangeish
-        (0.9804, 0.7016, 0.3216, 1.0),    # yellowish
-        (0.2706, 0.6824, 0.4345, 1.0),    # lightgreenish
-        (0.0314, 0.5310, 0.3255, 1.0),    # greenish
-        (0.0157, 0.3494, 0.3890, 1.0),    # tealish
+        vec4(0.0000, 0.4088, 0.9486, 1.0),    # blueish
+        vec4(0.4863, 0.0549, 0.3725, 1.0),    # purpleish
+        vec4(0.9255, 0.0588, 0.2784, 1.0),    # reddish
+        vec4(0.9333, 0.4196, 0.2314, 1.0),    # orangeish
+        vec4(0.9804, 0.7016, 0.3216, 1.0),    # yellowish
+        vec4(0.2706, 0.6824, 0.4345, 1.0),    # lightgreenish
+        vec4(0.0314, 0.5310, 0.3255, 1.0),    # greenish
+        vec4(0.0157, 0.3494, 0.3890, 1.0),    # tealish
     ]
 
     def __init__(self, parent):
@@ -161,9 +159,9 @@ class GLActionVis:
             for i, v in enumerate(value):
                 # un-offset ids
                 if (v[0] - self._num_devices) in self.core.selected_points:
-                    new_cols[i] = shade_color(new_cols[i], 0.6)
+                    new_cols[i] = shade_color(vec4(new_cols[i]), 0.6)
 
-            new_ids = glm.array(ctypes.c_int, *(p[0] for p in value))
+            new_ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
             point_mats = new_mats if point_mats is None else point_mats.concat(new_mats)
             point_cols = new_cols if point_cols is None else point_cols.concat(new_cols)
@@ -174,7 +172,6 @@ class GLActionVis:
             return
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
-        # point_ids = np.array(point_ids, dtype=np.int32)
 
         self._bind_vao_mat_col_id(self._vaos['box'], point_mats, point_cols, point_ids)
 
@@ -184,8 +181,8 @@ class GLActionVis:
 
         if self._num_devices > 0:
             scale = glm.scale(mat4(), vec3(3, 3, 3))
-            mats = glm.array([matrix * scale for matrix in self._devices])
-            cols = glm.array([vec4(self.colors[i % len(self.colors)])
+            mats = glm.array([mat * scale for mat in self._devices])
+            cols = glm.array([self.colors[i % len(self.colors)]
                 for i in range(self._num_devices)])
             ids = glm.array(ctypes.c_int, *list(range(self._num_devices)))
 
@@ -270,7 +267,7 @@ class GLActionVis:
         glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
 
         for key, value in self._vaos['line'].items():
-            color = vec4(self.colors[key % len(self.colors)])
+            color = self.colors[key % len(self.colors)]
             glUniform4fv(3, 1, glm.value_ptr(color))
             glBindVertexArray(value)
             glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
@@ -321,14 +318,14 @@ class GLActionVis:
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
         glEnableVertexAttribArray(3)
         glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+        glVertexAttribDivisor(3, 1)
         glEnableVertexAttribArray(4)
+        glVertexAttribDivisor(4, 1)
         glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
         glEnableVertexAttribArray(5)
+        glVertexAttribDivisor(5, 1)
         glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
         glEnableVertexAttribArray(6)
-        glVertexAttribDivisor(3, 1)
-        glVertexAttribDivisor(4, 1)
-        glVertexAttribDivisor(5, 1)
         glVertexAttribDivisor(6, 1)
 
         # colors
@@ -341,7 +338,8 @@ class GLActionVis:
         # ids for picking
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, ids.nbytes, ids.ptr, GL_STATIC_DRAW)
-        glVertexAttribPointer(8, 1, GL_INT, GL_FALSE, 0, ctypes.c_void_p(0))
+        # it should be GL_INT here, yet only GL_FLOAT works. huh??
+        glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(8)
         glVertexAttribDivisor(8, 1)
 

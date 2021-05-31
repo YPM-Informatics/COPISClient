@@ -45,9 +45,9 @@ from OpenGL.GLU import ctypes
 
 import copis.gl.shaders as shaderlib
 
-from copis.helpers import find_path
 from copis.mathutils import arcball
 from .actionvis import GLActionVis
+from .objectvis import GLObjectVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
 
@@ -134,6 +134,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
+        self._objectvis = GLObjectVis(self)
 
         # other values
         self._zoom = 1.0
@@ -146,11 +147,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # bind core listeners
         dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
-        dispatcher.connect(self._update_colors, signal='core_p_selected')
-        dispatcher.connect(self._update_colors, signal='core_p_deselected')
+        dispatcher.connect(self._update_colors, signal='core_a_selected')
+        dispatcher.connect(self._update_colors, signal='core_a_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
         dispatcher.connect(self._update_objects, signal='core_o_list_changed')
-
+        dispatcher.connect(self._deselect_object, signal='core_o_deselected')
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
@@ -200,7 +201,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
         self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
         self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
-        self._shaders['test'] = shaderlib.compile_shader(*shaderlib.test)
+        self._shaders['diffuse'] = shaderlib.compile_shader(*shaderlib.diffuse)
+        self._shaders['solid'] = shaderlib.compile_shader(*shaderlib.solid)
 
         self._gl_initialized = True
         return True
@@ -208,7 +210,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vaos['box'], self._vaos['side'], \
-        self._vaos['top'], self._vaos['model'] = glGenVertexArrays(4)
+        self._vaos['top'] = glGenVertexArrays(3)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -244,7 +246,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-        # ---
+        # --- below are unused vaos for rendering a cylinder (for the camerae model)
+        # keep them, but TODO implement general object class
 
         thetas = np.linspace(0, 2 * np.pi, 24, endpoint=True)
         y = np.cos(thetas) * 0.7
@@ -275,24 +278,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
 
         # ---
-
-        glBindVertexArray(self._vaos['model'])
-        test_vbo = glGenBuffers(1)
-
-        bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
-        for _, material in bulldog.materials.items():
-            vertices = np.array(material.vertices)
-            vertices = np.float32(vertices)
-
-            glBindBuffer(GL_ARRAY_BUFFER, test_vbo)
-            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(0)
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 2))
-            glEnableVertexAttribArray(1)
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
-            glEnableVertexAttribArray(2)
 
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
@@ -354,7 +339,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # reset viewport as _picking_pass tends to mess with it
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
-        # clear buffers and render everything
+        # clear buffers and render everything normally
         self._render_background()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -464,16 +449,46 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 pass
 
         else:
-            # id_ belongs to cameras or objects
+            # nothing selected
             if id_ == -1:
                 self.core.select_device(-1)
                 self.core.select_point(-1, clear=True)
+                self.select_object(-1)
+
+            # id_ belongs to camera device
             elif -1 < id_ < self._num_devices:
                 self.core.select_device(id_)
+
+            # id_ belongs to proxy object
+            elif id_ > MAX_ID - self._num_objects:
+                self.select_object(MAX_ID - id_)
+
+            # id_ belongs to action point
             else:
-                self.core.select_device(-1)
                 # un-offset ids
                 self.core.select_point(id_ - self._num_devices, clear=True)
+
+    def select_object(self, id_: int) -> None:
+        """Select proxy object given id."""
+        if id_ < 0:
+            self._deselect_object()
+            dispatcher.send('core_o_deselected')
+
+        elif id_ in (x.picking_id for x in self._objectvis.objects):
+            self.core.select_point(-1)
+            self.core.select_device(-1)
+            for obj in self._objectvis.objects:
+                obj.selected = obj.picking_id == id_
+            dispatcher.send('core_o_selected', object=id_)
+            self._dirty = True
+
+        else:
+            dispatcher.send('core_error', message=f'invalid proxy object id {id_}')
+
+    def _deselect_object(self) -> None:
+        for obj in self._objectvis.objects:
+            obj.selected = False
+        self._dirty = True
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -587,6 +602,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking."""
         self._actionvis.render_for_picking()
+        self._objectvis.render_for_picking()
         self._viewcube.render_for_picking()
 
         glBindVertexArray(0)
@@ -602,21 +618,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._chamber.render()
 
     def _render_objects(self) -> None:
-        """Render objects."""
-
-        proj = self.projection_matrix
-        view = self.modelview_matrix
-        model = mat4()
-
-        glUseProgram(self.shaders['test'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        model = glm.scale(mat4(), vec3(15, 15, 15))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        glBindVertexArray(self._vaos['model'])
-        glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
+        """Render proxy objects."""
+        if self._objectvis is not None:
+            self._objectvis.render()
 
     def _render_cameras(self) -> None:
         """Render cameras."""

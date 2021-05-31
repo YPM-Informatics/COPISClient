@@ -46,7 +46,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Default': ['viewport'],
         'Camera': ['camera_info', 'camera_config', 'viewport'],
         'Point': ['transform', 'viewport'],
-        'Group': ['transform', 'viewport'],
+        'Object': ['viewport'],
     }
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -73,9 +73,11 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_points_selected, signal='core_p_selected')
+        dispatcher.connect(self.on_points_selected, signal='core_a_selected')
+        dispatcher.connect(self.on_object_selected, signal='core_o_selected')
         dispatcher.connect(self.on_deselected, signal='core_d_deselected')
-        dispatcher.connect(self.on_deselected, signal='core_p_deselected')
+        dispatcher.connect(self.on_deselected, signal='core_a_deselected')
+        dispatcher.connect(self.on_deselected, signal='core_o_deselected')
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
@@ -120,13 +122,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['camera_info'].device_type = device.device_type
         self.update_to_selected('Camera')
 
-    def on_deselected(self) -> None:
-        """On core_*_deselected, reset to default view."""
-        self.current = 'No Selection'
-        self.update_to_selected('Default')
-
     def on_points_selected(self, points: List[int]) -> None:
-        """On core_p_selected, set to point view."""
+        """On core_a_selected, set to point view."""
 
         if len(points) == 1:
             action = self.core.actions[points[0]]
@@ -134,6 +131,16 @@ class PropertiesPanel(scrolled.ScrolledPanel):
                 self.current = 'Point'
                 self._property_panels['transform'].set_point(*action.args)
                 self.update_to_selected('Point')
+
+    def on_object_selected(self, object) -> None:
+        """On core_o_selected, set to proxy object view."""
+        self.current = 'Proxy Object'
+        self.update_to_selected('Object')
+
+    def on_deselected(self) -> None:
+        """On core_*_deselected, reset to default view."""
+        self.current = 'No Selection'
+        self.update_to_selected('Default')
 
 
 class _PropViewport(wx.Panel):

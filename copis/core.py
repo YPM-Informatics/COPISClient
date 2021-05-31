@@ -66,17 +66,19 @@ class COPISCore:
         points: A list of points representing a path.
         devices: A list of devices (cameras).
         objects: A list of proxy objects.
-        selected_device: Current selected device. None if not selected.
+        selected_device: Current selected device. -1 if not selected.
         selected_points: A list of integers representing the index of selected
             points.
 
     Emits:
         core_a_list_changed: When the action list has changed.
-        core_p_selected: When a new point (action) has been selected.
-        core_p_deselected: When a point (action) has been deselected.
+        core_a_selected: When a new point (action) has been selected.
+        core_a_deselected: When a point (action) has been deselected.
         core_d_list_changed: When the device list has changed.
-        core_d_selected: When a new device has been selected.
+        core_d_selected: When a device has been selected.
         core_d_deselected: When the current device has been deselected.
+        core_o_selected: When a proxy object has been selected.
+        core_o_deselected: When the current proxy object has been deselected.
         core_error: Any copiscore access errors.
     """
 
@@ -125,16 +127,16 @@ class COPISCore:
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
             iterable=self.config.machine_settings.devices)
-        self._objects: List[Object3D] = MonitoredList('core_o_list_changed')
+
+        self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
+            iterable=[
+                AABBObject3D(vec3(-100, -100, -20), vec3(-50, -60, 50)),
+                OBJObject3D('model/handsome_dan.obj', scale=vec3(20, 20, 20)),
+                CylinderObject3D(vec3(100, 100, 0), vec3(100, -50, 0), 30),
+            ])
 
         self._selected_points: List[int] = []
-        self._selected_device: Optional[int] = -1
-
-        test = AABBObject3D(vec3(-20, -20, 0), vec3(20, 20, 50))
-        test2 = OBJObject3D('test')
-        print(test)
-        print(test2)
-
+        self._selected_device: int = -1
 
     def _check_configs(self) -> None:
         warn = self.config.settings.debug_env == DebugEnv.DEV.value
@@ -441,32 +443,28 @@ class COPISCore:
     def objects(self) -> List[Object3D]:
         return self._objects
 
-    def check_point(self, point: Tuple[int, Point5]) -> bool:
-        """Return if a given point contains a valid device id or not."""
-        if point[0] not in (c.device_id for c in self._devices):
-            dispatcher.send('core_error', message=f'invalid point {point}')
-            return False
-        return True
+    @property
+    def selected_device(self) -> int:
+        return self._selected_device
 
     @property
-    def selected_device(self) -> Optional[int]:
-        return self._selected_device
+    def selected_points(self) -> List[int]:
+        return self._selected_points
 
     def select_device(self, index: int) -> None:
         """Select device given index in devices list."""
         if index < 0:
             self._selected_device = -1
-            dispatcher.send('core_d_deselected', device=self._devices[index])
+            dispatcher.send('core_d_deselected')
+
         elif index < len(self._devices):
             self._selected_device = index
             self.select_point(-1)
+            dispatcher.send('core_o_deselected')
             dispatcher.send('core_d_selected', device=self._devices[index])
+
         else:
             dispatcher.send('core_error', message=f'invalid device index {index}')
-
-    @property
-    def selected_points(self) -> List[int]:
-        return self._selected_points
 
     def select_point(self, index: int, clear: bool = True) -> None:
         """Add point to points list given index in actions list.
@@ -478,7 +476,7 @@ class COPISCore:
         """
         if index == -1:
             self._selected_points.clear()
-            dispatcher.send('core_p_deselected')
+            dispatcher.send('core_a_deselected')
             return
 
         if index >= len(self._actions):
@@ -489,13 +487,15 @@ class COPISCore:
 
         if index not in self._selected_points:
             self._selected_points.append(index)
-            dispatcher.send('core_p_selected', points=self._selected_points)
+            self.select_device(-1)
+            dispatcher.send('core_o_deselected')
+            dispatcher.send('core_a_selected', points=self._selected_points)
 
     def deselect_point(self, index: int) -> None:
         """Remove point from selected points given index in actions list."""
         try:
             self._selected_points.remove(index)
-            dispatcher.send('core_p_deselected')
+            dispatcher.send('core_a_deselected')
         except ValueError:
             return
 

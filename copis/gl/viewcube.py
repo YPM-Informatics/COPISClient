@@ -24,6 +24,7 @@ from typing import Tuple, Union
 from glm import vec3
 import glm
 import numpy as np
+import ctypes
 
 from copis.enums import ViewCubePos, ViewCubeSize
 
@@ -77,7 +78,7 @@ class GLViewCube:
 
         # --- standard viewcube ---
 
-        vertices = np.array([
+        vertices = glm.array.from_numbers(ctypes.c_float,
             1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
             1.0, -1.0, 1.0, 0.7, 0.7, 0.7,
             1.0, -1.0, -1.0, 0.4, 0.4, 0.4,
@@ -86,33 +87,33 @@ class GLViewCube:
             -1.0, 1.0, 1.0, 0.7, 0.7, 0.7,
             -1.0, -1.0, 1.0, 0.7, 0.7, 0.7,
             -1.0, -1.0, -1.0, 0.4, 0.4, 0.4,
-        ], dtype=np.float32)
-        indices = np.array([
+        )
+        indices = glm.array.from_numbers(ctypes.c_uint,
             0, 1, 2, 2, 3, 0,
             0, 3, 4, 4, 5, 0,
             0, 5, 6, 6, 1, 0,
             1, 6, 7, 7, 2, 1,
             7, 4, 3, 3, 2, 7,
             4, 7, 6, 6, 5, 4,
-        ], dtype=np.uint16)
+        )
         glBindVertexArray(self._vao)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
         glEnableVertexAttribArray(1)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2])
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW)
 
         # --- viewcube for picking ---
 
-        vertices = np.array([
+        vertices = glm.array.from_numbers(ctypes.c_float,
             1.0, -1.0, 1.0,     # 1 front  (id = 0)
             -1.0, -1.0, 1.0,    # 6
             -1.0, -1.0, -1.0,   # 7
@@ -126,7 +127,7 @@ class GLViewCube:
             1.0, 1.0, 1.0,      # 0 right  (id = 2)
             1.0, -1.0, 1.0,     # 1
             1.0, -1.0, -1.0,    # 2
-            1.0, 1.0, -1.0,    # 3
+            1.0, 1.0, -1.0,     # 3
 
             -1.0, -1.0, -1.0,   # 7 bottom (id = 3)
             -1.0, 1.0, -1.0,    # 4
@@ -142,13 +143,13 @@ class GLViewCube:
             1.0, 1.0, -1.0,     # 3
             -1.0, 1.0, -1.0,    # 4
             -1.0, 1.0, 1.0,     # 5
-        ], dtype=np.float32)
+        )
         colors = np.zeros(72, dtype=np.float32)
         colors[::3] = np.arange(6).repeat(4) / 255.0
         glBindVertexArray(self._vao_picking)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
@@ -159,7 +160,7 @@ class GLViewCube:
 
         # --- outlined face of viewcube ---
 
-        colors_border = np.tile(np.array([0.0000, 0.4088, 0.9486], dtype=np.float32), 24)
+        border_colors = glm.array.from_numbers(ctypes.c_float, 0.0000, 0.4088, 0.9486).repeat(24)
         glBindVertexArray(self._vao_outline)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[3])
@@ -167,7 +168,7 @@ class GLViewCube:
         glEnableVertexAttribArray(0)
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo[5])
-        glBufferData(GL_ARRAY_BUFFER, colors_border.nbytes, colors_border, GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, border_colors.nbytes, border_colors.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(1)
 
@@ -208,7 +209,7 @@ class GLViewCube:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(modelview))
 
         glBindVertexArray(self._vao)
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         self._render_highlighted()
 

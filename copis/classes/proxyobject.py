@@ -16,11 +16,11 @@
 """Provide the COPIS Proxy Class."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from itertools import count
 
-from glm import mat4, vec3
+from glm import vec3, vec4, mat4, u32vec3
 import glm
+import ctypes
 import pywavefront
 
 from copis.mathutils import orthonormal_basis_of
@@ -28,19 +28,14 @@ from copis.helpers import find_path
 from . import BoundingBox
 
 
-@dataclass
 class Object3D(ABC):
     """Abstract base class for 3D proxy objects."""
 
     _ids = count(0)
 
     def __init__(self):
-        self._object_id = next(self._ids)
-
-    @property
-    def object_id(self) -> int:
-        """Return id of object."""
-        return self._object_id
+        self.object_id: int = next(self._ids)
+        self.selected: bool = False
 
     @abstractmethod
     def bbox_intersect(self, bbox: BoundingBox) -> bool:
@@ -63,62 +58,6 @@ class Object3D(ABC):
         pass
 
 
-@dataclass
-class CylinderObject3D(Object3D):
-    """Cylinder object."""
-
-    def __init__(self, start: vec3, end: vec3, radius: float):
-        super().__init__()
-        self.start: vec3 = start
-        self.end: vec3 = end
-        self.radius: float = radius
-
-        self.height: float = glm.distance(self.start, self.end)
-        self.normal: vec3 = glm.normalize(self.end - self.start)
-
-        self.b1: vec3
-        self.b2: vec3
-        self.b1, self.b2 = orthonormal_basis_of(self.normal)
-
-        # calculate rotation matrix for cylinder
-        self.rot_matrix: mat4 = glm.orientation(vec3(0.0, 0.0, 1.0), self.normal)
-
-        # get corners of OBB
-        points = glm.array(
-            vec3(self.radius, self.radius, 0.0),
-            vec3(-self.radius, self.radius, 0.0),
-            vec3(self.radius, -self.radius, 0.0),
-            vec3(-self.radius, -self.radius, 0.0),
-            vec3(self.radius, self.radius, self.height),
-            vec3(-self.radius, self.radius, self.height),
-            vec3(self.radius, -self.radius, self.height),
-            vec3(-self.radius, -self.radius, self.height))
-
-        # inflate OBB into AABB
-        self._bbox = BoundingBox()
-        for v in points:
-            self._bbox.vec3_extend(v @ self.rot_matrix)
-
-    def bbox_intersect(self, bbox: BoundingBox) -> bool:
-        return self._bbox.bbox_intersect(bbox)
-
-    def vec3_intersect(self, v: vec3) -> bool:
-        return self._bbox.vec3_intersect(v)
-
-    @property
-    def bbox(self) -> BoundingBox:
-        return self._bbox
-
-    def __repr__(self) -> str:
-        return 'CylinderObject3D(' + \
-               f'start={self.start}, ' + \
-               f'end={self.end}, ' + \
-               f'radius={self.radius}, ' + \
-               f'object_id={self.object_id}, ' + \
-               f'bbox={self._bbox})'
-
-
-@dataclass
 class AABBObject3D(Object3D):
     """Axis-aligned box object."""
 
@@ -146,16 +85,89 @@ class AABBObject3D(Object3D):
                f'bbox={self._bbox})'
 
 
-@dataclass
+class CylinderObject3D(Object3D):
+    """Cylinder object."""
+
+    def __init__(self, start: vec3, end: vec3, radius: float):
+        super().__init__()
+        self.start: vec3 = start
+        self.end: vec3 = end
+        self.radius: float = radius
+
+        self.height: float = glm.distance(self.start, self.end)
+        self.normal: vec3 = glm.normalize(self.end - self.start)
+
+        self.b1: vec3
+        self.b2: vec3
+        self.b1, self.b2 = orthonormal_basis_of(self.normal)
+
+        # calculate rotation matrix for cylinder
+        self.trans_matrix: mat4 = glm.orientation(vec3(0.0, 0.0, 1.0), self.normal)
+
+        # add translation to matrix
+        self.trans_matrix[0][3] = start.x
+        self.trans_matrix[1][3] = start.y
+        self.trans_matrix[2][3] = start.z
+
+        # get corners of OBB
+        points = glm.array(
+            vec3(self.radius, self.radius, 0.0),
+            vec3(-self.radius, self.radius, 0.0),
+            vec3(self.radius, -self.radius, 0.0),
+            vec3(-self.radius, -self.radius, 0.0),
+            vec3(self.radius, self.radius, self.height),
+            vec3(-self.radius, self.radius, self.height),
+            vec3(self.radius, -self.radius, self.height),
+            vec3(-self.radius, -self.radius, self.height))
+
+        # inflate OBB into AABB
+        self._bbox = BoundingBox()
+        for v in points:
+            self._bbox.vec3_extend(vec3(vec4(v, 1.0) * self.trans_matrix))
+
+    def bbox_intersect(self, bbox: BoundingBox) -> bool:
+        return self._bbox.bbox_intersect(bbox)
+
+    def vec3_intersect(self, v: vec3) -> bool:
+        return self._bbox.vec3_intersect(v)
+
+    @property
+    def bbox(self) -> BoundingBox:
+        return self._bbox
+
+    def __repr__(self) -> str:
+        return 'CylinderObject3D(' + \
+               f'start={self.start}, ' + \
+               f'end={self.end}, ' + \
+               f'radius={self.radius}, ' + \
+               f'object_id={self.object_id}, ' + \
+               f'bbox={self._bbox})'
+
+
 class OBJObject3D(Object3D):
     """.obj object. TODO"""
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, scale: vec3 = vec3(1.0)):
         super().__init__()
         self._filename = filename
-        # obj = pywavefront.Wavefront(find_path('filename'), create_materials=True)
-        # for _, _ in obj.materials.items():
-        #     pass
+        self._wavefront_vertices: glm.array
+        self.scale = scale
+
+        self.vertices: glm.array
+        self.normals: glm.array
+        self.indices: glm.array
+
+        self.obj = pywavefront.Wavefront(find_path(filename))
+        for _, material in self.obj.materials.items():
+            v = material.vertices
+            v = [v[i:i + 8] for i in range(0, len(v), 8)]
+
+            self.vertices = glm.array([vec3(chunk[5:8]) * scale for chunk in v])
+            self.normals = glm.array([vec3(chunk[2:5]) for chunk in v])
+            self.indices = glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
+
+            # only use first mesh
+            break
 
         self._bbox = BoundingBox()
 
