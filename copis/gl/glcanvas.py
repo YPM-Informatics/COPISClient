@@ -387,10 +387,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # delete selected proxy object if backspace
         elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
-            for obj in self._objectvis.objects:
+            for obj in reversed(self._objectvis.objects):
                 if obj.selected:
-                    index = [i for i, o in enumerate(self.core.objects) if o.object_id == obj.picking_id]
-                    self.core.objects.pop(index[0])
+                    self.core.objects.pop(obj.object_id)
 
         else:
             event.Skip()
@@ -493,12 +492,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._deselect_object()
             dispatcher.send('core_o_deselected')
 
-        elif id_ in (x.picking_id for x in self._objectvis.objects):
+        elif id_ in (x.object_id for x in self._objectvis.objects):
             self.core.select_point(-1)
             self.core.select_device(-1)
             for obj in self._objectvis.objects:
-                obj.selected = obj.picking_id == id_
-            dispatcher.send('core_o_selected', object=id_)
+                obj.selected = obj.object_id == id_
+            dispatcher.send('core_o_selected', object=self.core.objects[id_])
             self._dirty = True
 
         else:

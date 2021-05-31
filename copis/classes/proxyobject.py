@@ -20,7 +20,6 @@ from itertools import count
 
 from glm import vec3, vec4, mat4, u32vec3
 import glm
-import ctypes
 import pywavefront
 
 from copis.mathutils import orthonormal_basis_of
@@ -31,10 +30,7 @@ from . import BoundingBox
 class Object3D(ABC):
     """Abstract base class for 3D proxy objects."""
 
-    _ids = count(0)
-
     def __init__(self):
-        self.object_id: int = next(self._ids)
         self.selected: bool = False
 
     @abstractmethod
@@ -81,7 +77,6 @@ class AABBObject3D(Object3D):
         return 'AABBObject3D(' + \
                f'lower={repr(self.lower)}, ' + \
                f'upper={repr(self.upper)}, ' + \
-               f'object_id={self.object_id}, ' + \
                f'bbox={self._bbox})'
 
 
@@ -140,7 +135,6 @@ class CylinderObject3D(Object3D):
                f'start={self.start}, ' + \
                f'end={self.end}, ' + \
                f'radius={self.radius}, ' + \
-               f'object_id={self.object_id}, ' + \
                f'bbox={self._bbox})'
 
 
@@ -184,5 +178,4 @@ class OBJObject3D(Object3D):
     def __repr__(self) -> str:
         return 'OBJObject3D(' + \
                f'filename=\'{self._filename}\', ' + \
-               f'object_id={self.object_id}, ' + \
                f'bbox={self._bbox})'

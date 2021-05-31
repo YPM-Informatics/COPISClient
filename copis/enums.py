@@ -63,11 +63,11 @@ class ViewCubePos(Enum):
 
 class ViewCubeSize(IntEnum):
     """View cube sizes."""
-    SMALLER = 90
-    SMALL = 105
-    MEDIUM = 120
-    LARGE = 140
-    LARGER = 160
+    SMALLER = 100
+    SMALL = 115
+    MEDIUM = 130
+    LARGE = 150
+    LARGER = 170
 
 
 class ActionType(Enum):

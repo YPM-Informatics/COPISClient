@@ -36,11 +36,11 @@ MAX_ID = 16777214
 
 @dataclass
 class Mesh():
-    """TODO"""
+    """Object mesh."""
     color: glm.vec4
     count: int
     vao: ctypes.c_void_p
-    picking_id: int
+    object_id: int
     selected: bool
 
 
@@ -73,7 +73,7 @@ class GLObjectVis:
         """
         self._meshes.clear()
 
-        for object3d in self.core.objects:
+        for index, object3d in enumerate(self.core.objects):
             vao = glGenVertexArrays(1)
             glBindVertexArray(vao)
 
@@ -117,7 +117,7 @@ class GLObjectVis:
                 color=None,
                 count=indices.length * 3,
                 vao=vao,
-                picking_id=object3d.object_id,
+                object_id=index,
                 selected=False))
             glBindVertexArray(0)
 
@@ -155,7 +155,7 @@ class GLObjectVis:
 
         for mesh in self._meshes:
             glBindVertexArray(mesh.vao)
-            glUniform1i(2, MAX_ID - mesh.picking_id)
+            glUniform1i(2, MAX_ID - mesh.object_id)
             glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         glBindVertexArray(0)
@@ -166,4 +166,5 @@ class GLObjectVis:
 
     @property
     def objects(self) -> List[Mesh]:
+        """List of meshes."""
         return self._meshes
