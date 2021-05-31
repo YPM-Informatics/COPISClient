@@ -189,7 +189,8 @@ diffuse = _Shader(
     fs=cleandoc("""
     #version 450 core
 
-    layout (location = 2) uniform int isSelected;
+    layout (location = 2) uniform vec4 color;
+    layout (location = 3) uniform int isSelected;
 
     in vec3 FragPos;
     in vec3 Normal;
@@ -206,9 +207,9 @@ diffuse = _Shader(
         float diff = dot(norm, lightDir);
         vec3 diffuse = diff * lightColor * 0.9;
 
-        vec3 result = (ambient + diffuse) * vec3(0.8, 0.8, 0.8);
+        vec3 result = (ambient + diffuse) * vec3(color);
         if (isSelected == 1) { result *= vec3(0.7, 0.85, 1.2); }
-        FragColor = vec4(result, 1.0);
+        FragColor = vec4(result, color[3]);
     }
     """)
 )

@@ -22,7 +22,7 @@ from copis.gl.glutils import get_cylinder_vertices, get_aabb_vertices
 from dataclasses import dataclass
 from typing import List
 
-from glm import vec3, u32vec3
+from glm import vec3, vec4
 import glm
 import numpy as np
 
@@ -114,7 +114,7 @@ class GLObjectVis:
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW)
 
             self._meshes.append(Mesh(
-                color=None,
+                color=vec4(0.8, 0.8, 0.8, 0.85),
                 count=indices.length * 3,
                 vao=vao,
                 object_id=index,
@@ -135,7 +135,8 @@ class GLObjectVis:
 
         for mesh in self._meshes:
             glBindVertexArray(mesh.vao)
-            glUniform1i(2, int(mesh.selected))
+            glUniform4fv(2, 1, glm.value_ptr(mesh.color))
+            glUniform1i(3, int(mesh.selected))
             glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         glBindVertexArray(0)

@@ -130,9 +130,9 @@ class COPISCore:
 
         self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
             iterable=[
-                AABBObject3D(vec3(-100, -100, -20), vec3(-50, -60, 50)),
+                AABBObject3D(vec3(-130, -120, -20), vec3(-50, -60, 50)),
                 OBJObject3D('model/handsome_dan.obj', scale=vec3(20, 20, 20)),
-                CylinderObject3D(vec3(100, 100, 0), vec3(100, -50, 0), 30),
+                CylinderObject3D(vec3(100, 100, 0), vec3(100, -50, 0), 35),
             ])
 
         self._selected_points: List[int] = []

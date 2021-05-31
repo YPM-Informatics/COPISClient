@@ -344,9 +344,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self._render_chamber()
-        self._render_objects()
         self._render_cameras()
         self._render_paths()
+        self._render_objects()
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
