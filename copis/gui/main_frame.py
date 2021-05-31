@@ -15,6 +15,7 @@
 
 """MainWindow class."""
 
+from glm import vec3
 import wx
 import wx.lib.agw.aui as aui
 
@@ -25,6 +26,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
+from copis.classes import AABBObject3D, CylinderObject3D, OBJObject3D
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -35,7 +37,7 @@ from .panels.properties import PropertiesPanel
 from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
-from .proxyconfig_frame import ProxyConfigFrame
+from .proxy_dialogs import ProxygenCylinder
 from .wxutils import create_scaled_bitmap
 
 
@@ -124,9 +126,7 @@ class MainWindow(wx.Frame):
                 - (*) &Perspective Projection
                 - ( ) &Orthographic Projection
             - &Tools
-                - &Generate Path...
-                ---
-                - &Preferences
+                - Add &Cylinder Proxy Object
             - &Window
                 - [ ] Camera EVF
                 - [x] Console
@@ -202,7 +202,8 @@ class MainWindow(wx.Frame):
 
         # Tools menu
         tools_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.open_proxyconfig_frame, tools_menu.Append(wx.ID_ANY, '&Configure Proxy...', 'Open proxy object configuration window'))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object', 'Add a cylinder prpoxy object to the chamber')
+        self.Bind(wx.EVT_MENU, self.add_proxy_cylinder, tools_menu.Append(_item))
 
         # Window menu
         window_menu = wx.Menu()
@@ -327,16 +328,28 @@ class MainWindow(wx.Frame):
         self.StatusBar.Show(event.IsChecked())
         self._mgr.Update()
 
+    def add_proxy_cylinder(self, _) -> None:
+        """Update status bar visibility based on menu item.
+
+        # TODO: add other proxy object dialogs.
+        """
+        with ProxygenCylinder(self) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                start = vec3(dlg.start_x_ctrl.num_value,
+                             dlg.start_y_ctrl.num_value,
+                             dlg.start_z_ctrl.num_value)
+                end = vec3(dlg.end_x_ctrl.num_value,
+                           dlg.end_y_ctrl.num_value,
+                           dlg.end_z_ctrl.num_value)
+                radius = dlg.radius_ctrl.num_value
+                self.core.objects.append(CylinderObject3D(start, end, radius))
+
     def update_menubar(self) -> None:
         pass
 
     def open_preferences_frame(self, _) -> None:
         preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
-
-    def open_proxyconfig_frame(self, _) -> None:
-        proxyconfig_frame = ProxyConfigFrame(self)
-        proxyconfig_frame.Show()
 
     def open_copis_website(self, _) -> None:
         wx.LaunchDefaultBrowser('http://www.copis3d.org/')

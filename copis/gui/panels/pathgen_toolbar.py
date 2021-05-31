@@ -30,7 +30,7 @@ from copis.classes import Action, Object3D
 from copis.enums import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
-from copis.helpers import Point5, xyz_units
+from copis.helpers import xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
 
 

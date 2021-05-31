@@ -13,7 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provide the COPIS Proxy Class."""
+"""Define proxy objects. Abstract base class is Object3D.
+
+Classes:
+    AABBObject3D, CylinderObject3D, OBJObject3D.
+"""
 
 from abc import ABC, abstractmethod
 from math import inf
@@ -109,12 +113,11 @@ class CylinderObject3D(Object3D):
 
         # inflate OBB into AABB
         # TODO:
-        #     BoundingBox _should_ have default values.
-        #     something weird is going on with (I presume) glm?
-        #     if we try initializing here it sometimes initializes with
-        #     other values?
+        #     BoundingBox _should_ have default values - we shouldn't have to
+        #     initialize with inf and -inf manually. but if we do that,
+        #     it seems to initialize with other BoundingBox's values.
+        #     Something weird is going on with (I presume) glm pointers?
         self._bbox = BoundingBox(vec3(inf), vec3(-inf))
-        print(self._bbox)
         for v in points:
             self._bbox.vec3_extend(vec3(vec4(v, 1.0) * self.trans_matrix))
 

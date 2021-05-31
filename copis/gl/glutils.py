@@ -15,7 +15,6 @@
 
 """OpenGL viewport util functions."""
 
-from copis.classes.proxyobject import AABBObject3D
 import ctypes
 import math
 from math import cos, tan
