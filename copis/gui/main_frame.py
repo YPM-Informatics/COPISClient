@@ -37,7 +37,7 @@ from .panels.properties import PropertiesPanel
 from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
-from .proxy_dialogs import ProxygenCylinder
+from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
 from .wxutils import create_scaled_bitmap
 
 
@@ -127,6 +127,7 @@ class MainWindow(wx.Frame):
                 - ( ) &Orthographic Projection
             - &Tools
                 - Add &Cylinder Proxy Object
+                - Add &Box Proxy Object
             - &Window
                 - [ ] Camera EVF
                 - [x] Console
@@ -202,8 +203,10 @@ class MainWindow(wx.Frame):
 
         # Tools menu
         tools_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object', 'Add a cylinder prpoxy object to the chamber')
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object', 'Add a cylinder proxy object to the chamber')
         self.Bind(wx.EVT_MENU, self.add_proxy_cylinder, tools_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Box Proxy Object', 'Add a box proxy object to the chamber')
+        self.Bind(wx.EVT_MENU, self.add_proxy_aabb, tools_menu.Append(_item))
 
         # Window menu
         window_menu = wx.Menu()
@@ -329,10 +332,7 @@ class MainWindow(wx.Frame):
         self._mgr.Update()
 
     def add_proxy_cylinder(self, _) -> None:
-        """Update status bar visibility based on menu item.
-
-        # TODO: add other proxy object dialogs.
-        """
+        """Open dialog to generate cylinder proxy object."""
         with ProxygenCylinder(self) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 start = vec3(dlg.start_x_ctrl.num_value,
@@ -343,6 +343,18 @@ class MainWindow(wx.Frame):
                            dlg.end_z_ctrl.num_value)
                 radius = dlg.radius_ctrl.num_value
                 self.core.objects.append(CylinderObject3D(start, end, radius))
+
+    def add_proxy_aabb(self, _) -> None:
+        """Open dialog to generate box proxy object."""
+        with ProxygenAABB(self) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                lower = vec3(dlg.lower_x_ctrl.num_value,
+                             dlg.lower_y_ctrl.num_value,
+                             dlg.lower_z_ctrl.num_value)
+                upper = vec3(dlg.upper_x_ctrl.num_value,
+                             dlg.upper_y_ctrl.num_value,
+                             dlg.upper_z_ctrl.num_value)
+                self.core.objects.append(AABBObject3D(lower, upper))
 
     def update_menubar(self) -> None:
         pass
