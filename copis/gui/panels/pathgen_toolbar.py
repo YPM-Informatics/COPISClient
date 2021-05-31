@@ -206,9 +206,9 @@ class PathgenToolbar(aui.AuiToolBar):
                         device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
-        TODO: Add smart divide between devices
         TODO: #120: move this somewhere else
             https://github.com/YPM-Informatics/COPISClient/issues/120
+        TODO: think of ways to improve path planning
 
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
@@ -221,24 +221,27 @@ class PathgenToolbar(aui.AuiToolBar):
 
         # group points into devices
         for i in range(count):
-            x, y, z = vertices[i * 3:i * 3 + 3]
+            point = vec3(vertices[i * 3:i * 3 + 3])
             device_id = -1
             for id_ in device_list:
-                if devices[id_].device_bounds.vec3_intersect(vec3(x, y, z), 10.0):
+                if devices[id_].device_bounds.vec3_intersect(point, 0.0):
                     device_id = id_
 
             # ignore if point not in bounds of any device
             if device_id != -1:
-                grouped_points[device_id].append(vec3(x, y, z))
+                grouped_points[device_id].append(point)
 
-        # TODO: implement better path planning
-        def cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
+        def _cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
+            """Calculate cost of moving from start to end. Returns math.inf
+            if movement will intersect a proxy object.
+            """
             XY_COST = 1.0
             Z_COST = 10.0
 
             # intersect bad!
             for obj in colliders:
-                if obj.bbox.line_segment_intersect(start, end):
+                if obj.vec3_intersect(end, 10.0) or \
+                        obj.bbox.line_segment_intersect(start, end):
                     return math.inf
 
             return (
@@ -250,9 +253,9 @@ class PathgenToolbar(aui.AuiToolBar):
         # greedily expand path from starting point
         cost_ordered_points = defaultdict(list)
         for device_id, points in grouped_points.items():
-            # choose starting point, currently the last one in the list
-            # TODO: make less arbitrary
-            cost_ordered_points[device_id].append(points.pop())
+            # choose starting point, currently the first one in the list
+            # TODO: make starting point less arbitrary
+            cost_ordered_points[device_id].append(points.pop(0))
 
             # loop until all points used
             while points:
@@ -261,9 +264,9 @@ class PathgenToolbar(aui.AuiToolBar):
                 best_cost = math.inf
                 best_index = -1
                 for index, point in enumerate(points):
-                    cost_ = cost(curr_point, point, self.core.objects)
-                    if cost_ < best_cost:
-                        best_cost = cost_
+                    cost = _cost(curr_point, point, self.core.objects)
+                    if cost < best_cost:
+                        best_cost = cost
                         best_index = index
 
                 # stop if cost is infinite (intersect with objects)
@@ -280,16 +283,17 @@ class PathgenToolbar(aui.AuiToolBar):
                 if not cost_ordered_points[device_id]:
                     continue
                 empty = False
+
                 point = cost_ordered_points[device_id].pop()
                 dx, dy, dz = point.x - lookat.x, point.y - lookat.y, point.z - lookat.z
                 pan = math.atan2(dx, dy)
-                x2y2 = dx * dx + dy * dy
-                tilt = -math.atan2(dz, math.sqrt(x2y2))
+                tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
 
                 # add action
                 interlaced_actions.extend((
                     # TODO: allow user customization of actions at each point
-                    Action(ActionType.G1, device_id, 6, [*point, pan, tilt, 100]),
+                    # https://github.com/YPM-Informatics/COPISClient/issues/102
+                    Action(ActionType.G1, device_id, 6, [point.x, point.y, point.z, pan, tilt, 100]),
                     Action(ActionType.C0, device_id),
                 ))
 

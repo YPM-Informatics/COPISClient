@@ -125,8 +125,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_points_selected(self, points: List[int]) -> None:
         """On core_a_selected, set to point view."""
-        print('heyy')
-        print(points)
 
         if len(points) == 1:
             action = self.core.actions[points[0]]

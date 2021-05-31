@@ -27,10 +27,12 @@ from glm import vec3, vec4, u32vec3, mat3
 from copis.classes import CylinderObject3D, AABBObject3D
 
 
-def get_cylinder_vertices(cylinder: CylinderObject3D, sides: int) -> Tuple[glm.array, glm.array, glm.array]:
-    """Get vertices, normals, and indices for a cylinder box.
+def get_cylinder_vertices(cylinder: CylinderObject3D,
+                          sides: int) -> Tuple[glm.array, glm.array, glm.array]:
+    """Get vertices, normals, and indices for a cylinder object.
 
     Args:
+        cylinder: A CylinderObject3D.
         sides: An int representing the number of sides per circle.
     """
     # faster way to calculate points along a circle
@@ -61,16 +63,20 @@ def get_cylinder_vertices(cylinder: CylinderObject3D, sides: int) -> Tuple[glm.a
     for i in range(0, sides * 2, 2):
         i2 = (i + 2) % (2 * sides)
         i3 = (i + 3) % (2 * sides)
-        indices.append(u32vec3(i, i + 1, i2))
-        indices.append(u32vec3(i + 1, i3, i2))
-        indices.append(u32vec3(2 * sides, i, i2))
-        indices.append(u32vec3(2 * sides + 1, i3, i + 1))
+        indices.extend((u32vec3(i, i + 1, i2),
+                        u32vec3(i + 1, i3, i2),
+                        u32vec3(2 * sides, i, i2),
+                        u32vec3(2 * sides + 1, i3, i + 1)))
 
     return glm.array(vertices), glm.array(normals), glm.array(indices)
 
 
 def get_aabb_vertices(aabb: AABBObject3D) -> Tuple[glm.array, glm.array, glm.array]:
-    """Get vertices, normals, and indices for an axis-aligned box."""
+    """Get vertices, normals, and indices for an axis-aligned box object.
+
+    Args:
+        cylinder: An AABBObject3D.
+    """
     vertices = glm.array(
         vec3(aabb.upper.x, aabb.lower.y, aabb.upper.z), # front
         vec3(aabb.lower.x, aabb.lower.y, aabb.upper.z),
