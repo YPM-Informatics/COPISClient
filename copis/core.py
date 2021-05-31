@@ -46,7 +46,7 @@ from .classes import (
     Action, Device, MonitoredList, Object3D, CylinderObject3D, AABBObject3D,
     OBJObject3D)
 
-MAX_ID = 16777215
+MAX_ID = 16777214
 
 
 def locked(func):
@@ -65,6 +65,7 @@ class COPISCore:
     Attributes:
         points: A list of points representing a path.
         devices: A list of devices (cameras).
+        objects: A list of proxy objects.
         selected_device: Current selected device. None if not selected.
         selected_points: A list of integers representing the index of selected
             points.
@@ -124,11 +125,11 @@ class COPISCore:
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
             iterable=self.config.machine_settings.devices)
+        self._objects: List[Object3D] = MonitoredList('core_o_list_changed')
 
         self._selected_points: List[int] = []
         self._selected_device: Optional[int] = -1
 
-        self._objects: List[Object3D] = MonitoredList('core_o_list_changed')
         test = AABBObject3D(vec3(-20, -20, 0), vec3(20, 20, 50))
         test2 = OBJObject3D('test')
         print(test)
@@ -435,6 +436,10 @@ class COPISCore:
     @property
     def devices(self) -> List[Device]:
         return self._devices
+
+    @property
+    def objects(self) -> List[Object3D]:
+        return self._objects
 
     def check_point(self, point: Tuple[int, Point5]) -> bool:
         """Return if a given point contains a valid device id or not."""

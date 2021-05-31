@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""ActionVis class.
+"""GLActionVis class.
 
 TODO: Add rendering functionality to more than just G0 and C0 actions.
 TODO: Signify via color or border when action is selected
@@ -22,10 +22,12 @@ TODO: Signify via color or border when action is selected
 from collections import defaultdict
 
 from glm import vec3, vec4, mat4
+import ctypes
 import glm
 import numpy as np
 
-from OpenGL.GL import (GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP,
+from OpenGL.GL import (
+    GL_FLOAT, GL_INT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP,
     glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv,
     glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
     glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
@@ -37,7 +39,7 @@ from copis.helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
 
 
 class GLActionVis:
-    """Manage action list visualization in a GLCanvas."""
+    """Manage action list rendering in a GLCanvas."""
 
     # colors to differentiate devices
     colors = [
@@ -105,7 +107,7 @@ class GLActionVis:
             vec3(-1.0, -0.5, 1.0),
         )
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, glm.value_ptr(vertices), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
 
         self._vaos['box'] = glGenVertexArrays(1)
         glBindVertexArray(self._vaos['box'])
@@ -133,7 +135,7 @@ class GLActionVis:
 
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
-            glBufferData(GL_ARRAY_BUFFER, points.nbytes, glm.value_ptr(points), GL_STATIC_DRAW)
+            glBufferData(GL_ARRAY_BUFFER, points.nbytes, points.ptr, GL_STATIC_DRAW)
 
             vao = glGenVertexArrays(1)
             glBindVertexArray(vao)
@@ -145,40 +147,36 @@ class GLActionVis:
 
         # --- bind data for points ---
 
-        point_mats = point_colors = point_ids = None
+        point_mats: glm.array = None
+        point_cols: glm.array = None
+        point_ids: glm.array = None
         scale = glm.scale(mat4(), vec3(3, 3, 3))
 
         for key, value in self._items['point'].items():
             new_mats = glm.array([p[1] * scale for p in value])
             color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
-
-            new_colors = glm.array([color] * len(value))
+            new_cols = glm.array([color] * len(value))
 
             # if point is selected, darken its color
             for i, v in enumerate(value):
                 # un-offset ids
                 if (v[0] - self._num_devices) in self.core.selected_points:
-                    new_colors[i] = shade_color(new_colors[i], 0.6)
+                    new_cols[i] = shade_color(new_cols[i], 0.6)
 
-            new_ids = [p[0] for p in value]
+            new_ids = glm.array(ctypes.c_int, *(p[0] for p in value))
 
-            if not point_mats:
-                point_mats = new_mats
-                point_colors = new_colors
-                point_ids = new_ids
-            else:
-                point_mats += new_mats
-                point_colors += new_colors
-                point_ids += new_ids
+            point_mats = new_mats if point_mats is None else point_mats.concat(new_mats)
+            point_cols = new_cols if point_cols is None else point_cols.concat(new_cols)
+            point_ids  = new_ids  if point_ids is None  else point_ids.concat(new_ids)
 
         # we're done if no points to set
         if not self._items['point']:
             return
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
-        point_ids = np.array(point_ids, dtype=np.int32)
+        # point_ids = np.array(point_ids, dtype=np.int32)
 
-        self._bind_vao_mat_col_id(self._vaos['box'], point_mats, point_colors, point_ids)
+        self._bind_vao_mat_col_id(self._vaos['box'], point_mats, point_cols, point_ids)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -186,12 +184,12 @@ class GLActionVis:
 
         if self._num_devices > 0:
             scale = glm.scale(mat4(), vec3(3, 3, 3))
-            mats = glm.array([x * scale for x in self._devices])
-            colors = glm.array([vec4(self.colors[i % len(self.colors)])
+            mats = glm.array([matrix * scale for matrix in self._devices])
+            cols = glm.array([vec4(self.colors[i % len(self.colors)])
                 for i in range(self._num_devices)])
-            ids = np.array(range(self._num_devices), dtype=np.int32)
+            ids = glm.array(ctypes.c_int, *list(range(self._num_devices)))
 
-            self._bind_vao_mat_col_id(self._vaos['camera'], mats, colors, ids)
+            self._bind_vao_mat_col_id(self._vaos['camera'], mats, cols, ids)
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -313,10 +311,10 @@ class GLActionVis:
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def _bind_vao_mat_col_id(self, vao, mat, col, id) -> None:
+    def _bind_vao_mat_col_id(self, vao, mat: glm.array, col: glm.array, ids: glm.array) -> None:
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, glm.value_ptr(mat), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
         glBindVertexArray(vao)
 
         # modelmats
@@ -335,16 +333,15 @@ class GLActionVis:
 
         # colors
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, col.nbytes, glm.value_ptr(col), GL_STATIC_DRAW)
+        glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
         glVertexAttribDivisor(7, 1)
 
         # ids for picking
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
-        glBufferData(GL_ARRAY_BUFFER, id.nbytes, id, GL_STATIC_DRAW)
-        # huhhhh?????? I must have done something wrong because only GL_FLOAT works
-        glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glBufferData(GL_ARRAY_BUFFER, ids.nbytes, ids.ptr, GL_STATIC_DRAW)
+        glVertexAttribPointer(8, 1, GL_INT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(8)
         glVertexAttribDivisor(8, 1)
 

@@ -51,7 +51,7 @@ from .actionvis import GLActionVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
 
-MAX_ID = 16777215
+MAX_ID = 16777214
 
 
 class _Size(NamedTuple):
@@ -120,7 +120,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vaos = {}
         self._point_lines = None
         self._point_count = None
-        self._id_offset = len(self.core.devices)
+        self._num_devices: int = len(self.core.devices)
+        self._num_objects: int = len(self.core.objects)
 
         self._dirty = False
         self._gl_initialized = False
@@ -148,6 +149,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_colors, signal='core_p_selected')
         dispatcher.connect(self._update_colors, signal='core_p_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
+        dispatcher.connect(self._update_objects, signal='core_o_list_changed')
 
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -303,6 +305,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._actionvis.update_actions()
         self._dirty = True
 
+        # TODO: is this needed?
         glBindVertexArray(0)
 
     def _update_colors(self) -> None:
@@ -310,12 +313,21 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     def _update_devices(self) -> None:
-        """When the device list has changed, update actionvis and _id_offset.
+        """When the device list has changed, update actionvis and _num_devices.
 
         Handles core_d_list_changed signal.
         """
-        self._id_offset = len(self.core.devices)
+        self._num_devices = len(self.core.devices)
         self._actionvis.update_devices()
+        self._dirty = True
+
+    def _update_objects(self) -> None:
+        """When the proxy object list has changed, update objectvis and _num_objects.
+
+        Handles core_o_list_changed signal.
+        """
+        self._num_objects = len(self.core.objects)
+        self._objectvis.update_objects()
         self._dirty = True
 
     # @timing
@@ -456,12 +468,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
             if id_ == -1:
                 self.core.select_device(-1)
                 self.core.select_point(-1, clear=True)
-            elif -1 < id_ < self._id_offset:
+            elif -1 < id_ < self._num_devices:
                 self.core.select_device(id_)
             else:
                 self.core.select_device(-1)
                 # un-offset ids
-                self.core.select_point(id_ - self._id_offset, clear=True)
+                self.core.select_point(id_ - self._num_devices, clear=True)
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -532,6 +544,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             return
 
+        # set background to white during picking pass so it can be ignored
+        # its id will be 16777215 (MAX_ID + 1)
         glClearColor(1.0, 1.0, 1.0, 1.0)
 
         # disable multisampling and antialiasing
@@ -557,7 +571,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             id_ = (color[0]) + (color[1] << 8) + (color[2] << 16)
 
             # ignore background color
-            if id_ == MAX_ID:
+            if id_ == MAX_ID + 1:
                 id_ = -1
 
         # check if mouse is inside viewcube area
