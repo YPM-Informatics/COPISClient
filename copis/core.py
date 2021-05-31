@@ -124,12 +124,17 @@ class COPISCore:
         # TODO: this might not exist after testing machine.
         # self.offset_devices(*self.config.machine_settings.devices)
 
+        # list of actions (paths)
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
+
+        # list of devices (cameras)
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
             iterable=self.config.machine_settings.devices)
 
+        # list of objects (proxy objects)
         self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
             iterable=[
+                # TODO: implement gui to manage these objects
                 AABBObject3D(vec3(-130, -120, -20), vec3(-50, -60, 50)),
                 OBJObject3D('model/handsome_dan.obj', scale=vec3(20, 20, 20)),
                 CylinderObject3D(vec3(100, 100, 0), vec3(100, -50, 0), 35),

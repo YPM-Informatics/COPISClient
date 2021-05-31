@@ -205,6 +205,8 @@ class PathgenToolbar(aui.AuiToolBar):
         """Extend core actions list by given vertices.
 
         TODO: Add smart divide between devices
+        TODO: #120: move this somewhere else
+            https://github.com/YPM-Informatics/COPISClient/issues/120
 
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
@@ -214,6 +216,7 @@ class PathgenToolbar(aui.AuiToolBar):
         devices = self.core.config.machine_settings.devices
         separated_actions = defaultdict(list)
 
+        # group points into devices
         for i in range(count):
             x, y, z = vertices[i * 3:i * 3 + 3]
             dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
@@ -233,6 +236,9 @@ class PathgenToolbar(aui.AuiToolBar):
             separated_actions[device_id].append((
                 Action(ActionType.G0, device_id, 5, [x, y, z, pan, tilt]),
                 Action(ActionType.C0, device_id)))
+
+        # TODO: implement better path planning
+        
 
         # interlace actions
         interlaced_actions = []
