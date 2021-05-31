@@ -155,8 +155,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
-        self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key)
-        self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
+        self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+        self._canvas.Bind(wx.EVT_KEY_UP, self.on_key_up)
         self._canvas.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
         self._canvas.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
         self._canvas.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
@@ -372,9 +372,28 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self._dirty = False
 
-    def on_key(self, event: wx.KeyEvent) -> None:
-        """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
+    def on_key_down(self, event: wx.KeyEvent) -> None:
+        """Handle EVT_KEY_DOWN."""
         pass
+
+    def on_key_up(self, event: wx.KeyEvent) -> None:
+        """Handle EVT_KEY_UP."""
+        keycode = event.KeyCode
+
+        if keycode == wx.WXK_ESCAPE:
+            self.core.select_device(-1)
+            self.core.select_point(-1, clear=True)
+            self.select_object(-1)
+
+        # delete selected proxy object if backspace
+        elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
+            for obj in self._objectvis.objects:
+                if obj.selected:
+                    index = [i for i, o in enumerate(self.core.objects) if o.object_id == obj.picking_id]
+                    self.core.objects.pop(index[0])
+
+        else:
+            event.Skip()
 
     def on_mouse_wheel(self, event: wx.MouseEvent) -> None:
         """On mouse wheel change, adjust zoom accordingly."""
