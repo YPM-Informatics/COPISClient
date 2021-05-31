@@ -344,8 +344,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self._render_chamber()
-        self._render_cameras()
-        self._render_paths()
+        self._render_actions_and_cameras()
         self._render_objects()
         self._render_viewcube()
 
@@ -619,8 +618,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking."""
-        self._actionvis.render_for_picking()
         self._objectvis.render_for_picking()
+        self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
         glBindVertexArray(0)
@@ -640,11 +639,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._objectvis is not None:
             self._objectvis.render()
 
-    def _render_cameras(self) -> None:
-        """Render cameras."""
-        pass
-
-    def _render_paths(self) -> None:
+    def _render_actions_and_cameras(self) -> None:
         """Render paths."""
         if self._actionvis is not None:
             self._actionvis.render()

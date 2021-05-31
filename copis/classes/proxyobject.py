@@ -16,7 +16,7 @@
 """Provide the COPIS Proxy Class."""
 
 from abc import ABC, abstractmethod
-from itertools import count
+from math import inf
 
 from glm import vec3, vec4, mat4, u32vec3
 import glm
@@ -34,13 +34,8 @@ class Object3D(ABC):
         self.selected: bool = False
 
     @abstractmethod
-    def bbox_intersect(self, bbox: BoundingBox) -> bool:
-        """Return whether bbox intersects or not."""
-        pass
-
-    @abstractmethod
-    def vec3_intersect(self, v: vec3) -> bool:
-        """Return whether vec3 is inside or not."""
+    def vec3_intersect(self, v: vec3, episolon: float) -> bool:
+        """Return whether vec3 is inside or not with a buffer (epsilon)."""
         pass
 
     @property
@@ -59,15 +54,12 @@ class AABBObject3D(Object3D):
 
     def __init__(self, lower: vec3, upper: vec3):
         super().__init__()
-        self.lower: vec3 = lower
-        self.upper: vec3 = upper
+        self.lower: vec3 = vec3(lower)
+        self.upper: vec3 = vec3(upper)
         self._bbox = BoundingBox(self.lower, self.upper)
 
-    def bbox_intersect(self, bbox: BoundingBox) -> bool:
-        return self._bbox.bbox_intersect(bbox)
-
-    def vec3_intersect(self, v: vec3) -> bool:
-        return self._bbox.vec3_intersect(v)
+    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+        return self._bbox.vec3_intersect(v, epsilon)
 
     @property
     def bbox(self) -> BoundingBox:
@@ -85,8 +77,8 @@ class CylinderObject3D(Object3D):
 
     def __init__(self, start: vec3, end: vec3, radius: float):
         super().__init__()
-        self.start: vec3 = start
-        self.end: vec3 = end
+        self.start: vec3 = vec3(start)
+        self.end: vec3 = vec3(end)
         self.radius: float = radius
 
         self.height: float = glm.distance(self.start, self.end)
@@ -116,15 +108,19 @@ class CylinderObject3D(Object3D):
             vec3(-self.radius, -self.radius, self.height))
 
         # inflate OBB into AABB
-        self._bbox = BoundingBox()
+        # TODO:
+        #     BoundingBox _should_ have default values.
+        #     something weird is going on with (I presume) glm?
+        #     if we try initializing here it sometimes initializes with
+        #     other values?
+        self._bbox = BoundingBox(vec3(inf), vec3(-inf))
+        print(self._bbox)
         for v in points:
             self._bbox.vec3_extend(vec3(vec4(v, 1.0) * self.trans_matrix))
 
-    def bbox_intersect(self, bbox: BoundingBox) -> bool:
-        return self._bbox.bbox_intersect(bbox)
-
-    def vec3_intersect(self, v: vec3) -> bool:
-        return self._bbox.vec3_intersect(v)
+    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+        return self._bbox.vec3_intersect(v, epsilon)
+        # TODO: rather than use the bbox, compute distance to cylinder
 
     @property
     def bbox(self) -> BoundingBox:
@@ -145,7 +141,7 @@ class OBJObject3D(Object3D):
         super().__init__()
         self._filename = filename
         self._wavefront_vertices: glm.array
-        self.scale = scale
+        self.scale = vec3(scale)
 
         self.vertices: glm.array
         self.normals: glm.array
@@ -163,13 +159,13 @@ class OBJObject3D(Object3D):
             # only use first mesh
             break
 
-        self._bbox = BoundingBox()
+        # create bbox
+        self._bbox = BoundingBox(vec3(inf), vec3(-inf))
+        for v in self.vertices:
+            self._bbox.vec3_extend(v)
 
-    def bbox_intersect(self, bbox: BoundingBox) -> bool:
-        return self._bbox.bbox_intersect(bbox)
-
-    def vec3_intersect(self, v: vec3) -> bool:
-        return self._bbox.vec3_intersect(v)
+    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+        return self._bbox.vec3_intersect(v, epsilon)
 
     @property
     def bbox(self) -> BoundingBox:

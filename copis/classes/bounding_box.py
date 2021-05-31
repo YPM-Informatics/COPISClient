@@ -30,21 +30,21 @@ class BoundingBox:
         lower: A vec3 representing the lower corner.
         upper: A vec3 representing the upper corner.
     """
-    lower: vec3 = vec3(inf, inf, inf)
-    upper: vec3 = vec3(-inf, -inf, -inf)
+    lower: vec3 = vec3(inf)
+    upper: vec3 = vec3(-inf)
 
     def bbox_intersect(self, bbox) -> bool:
         """Return whether bbox intersects bbox or not."""
         return False
 
-    def vec3_intersect(self, point: vec3) -> bool:
-        """Return whether point is in bbox or not."""
-        return (self.lower.x <= point.x and
-                self.lower.x <= point.x and
-                self.lower.y <= point.y and
-                self.upper.y >= point.y and
-                self.upper.z >= point.z and
-                self.upper.z >= point.z)
+    def vec3_intersect(self, point: vec3, epsilon: float) -> bool:
+        """Return whether point is in bbox or not with a buffer (epsilon)."""
+        return (self.lower.x - epsilon <= point.x and
+                self.lower.y - epsilon <= point.y and
+                self.lower.z - epsilon <= point.z and
+                self.upper.x + epsilon >= point.x and
+                self.upper.y + epsilon >= point.y and
+                self.upper.z + epsilon >= point.z)
 
     def line_segment_intersect(self, start: vec3, end: vec3) -> bool:
         """Return whether line segment intersects bbox or not.
@@ -58,7 +58,7 @@ class BoundingBox:
             end: A vec3 representing the end of the line segment.
         """
         direction: vec3 = end - start
-        origin: vec3 = start
+        origin: vec3 = vec3(start)
         coord: vec3 = vec3() # hit point
 
         LEFT, RIGHT, MIDDLE = 0, 1, 2
@@ -111,7 +111,7 @@ class BoundingBox:
                 coord[i] = candidate_plane[i]
 
         # Ray hits box, check length
-        return (glm.distance(start, coord) <= glm.distance(start, end))
+        return 0.0001 <= glm.distance(start, coord) <= glm.distance(start, end)
 
     def vec3_extend(self, point: vec3):
         """Extend bbox by a point."""

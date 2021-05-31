@@ -504,11 +504,11 @@ class COPISCore:
         except ValueError:
             return
 
-    def update_selected_points(self, argc, args) -> None:
+    def update_selected_points(self, args) -> None:
         """Update position of points in selected points list."""
         for id_ in self.selected_points:
-            self.actions[id_].argc = argc
-            self.actions[id_].args = args
+            for i in range(min(len(self.actions[id_].args), len(args))):
+                self.actions[id_].args[i] = args[i]
 
         dispatcher.send('core_a_list_changed')
 

@@ -27,6 +27,7 @@ from copis.helpers import xyz_units, pt_units
 from copis.gui.wxutils import (
     FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
+from copis.enums import ActionType
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -124,12 +125,14 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_points_selected(self, points: List[int]) -> None:
         """On core_a_selected, set to point view."""
+        print('heyy')
+        print(points)
 
         if len(points) == 1:
             action = self.core.actions[points[0]]
-            if action.argc == 5:
+            if action.atype == ActionType.G0 or action.atype == ActionType.G1:
                 self.current = 'Point'
-                self._property_panels['transform'].set_point(*action.args)
+                self._property_panels['transform'].set_point(*action.args[:5])
                 self.update_to_selected('Point')
 
     def on_object_selected(self, object) -> None:
@@ -356,7 +359,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -365,7 +368,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""

@@ -202,7 +202,7 @@ class GLActionVis:
         for i, action in enumerate(self.core.actions):
 
             if action.atype in (ActionType.G0, ActionType.G1):
-                self._items['line'][action.device].append((i + self._num_devices, xyzpt_to_mat4(*action.args)))
+                self._items['line'][action.device].append((i + self._num_devices, xyzpt_to_mat4(*action.args[:5])))
 
             elif action.atype in (ActionType.C0, ActionType.C1):
                 if action.device not in self._items['line'].keys():

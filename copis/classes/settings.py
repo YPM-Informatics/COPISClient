@@ -21,6 +21,7 @@ from copis.enums import DebugEnv
 from copis.helpers import Point5
 from . import Device, Chamber, BoundingBox
 
+
 @dataclass
 class ConfigSettings:
     """Configuration settings data structure."""
