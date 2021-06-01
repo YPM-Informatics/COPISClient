@@ -30,14 +30,12 @@ class Device:
     device_id: int = 0
     device_name: str = ''
     device_type: str = ''
-    chamber_name: str = ''
     interfaces: Optional[List[str]] = None
     position: Point5 = Point5()
     initial_position: Point5 = Point5()
     max_feed_rates: Point5 = Point5()
     device_bounds: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
     collision_bounds: vec3 = vec3()
-    homing_sequence: str = ''
     port: str = ''
 
     def as_dict(self):
@@ -58,15 +56,10 @@ class Device:
                 'size_x': self.collision_bounds.x,
                 'size_y': self.collision_bounds.y,
                 'size_z': self.collision_bounds.z,
-                'chamber': self.chamber_name,
                 'type': self.device_type,
                 'interfaces': '\n'.join(self.interfaces),
                 'port': self.port
             }
         }
-
-        home = '' if self.homing_sequence is None else self.homing_sequence.strip()
-        if len(home) > 0:
-            data['home'] = home
 
         return data

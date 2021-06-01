@@ -33,18 +33,16 @@ from importlib import import_module
 from functools import wraps
 from queue import Empty as QueueEmpty
 from queue import Queue
-from typing import List, Optional, Tuple
+from typing import List
 from glm import vec3
 
 from pydispatch import dispatcher
 
 import copis.coms.serial_controller as serial_controller
 
-from .globals import ActionType, DebugEnv, MAX_ID
-from .helpers import Point5
+from .globals import ActionType, DebugEnv
 from .classes import (
-    Action, Device, MonitoredList, Object3D, CylinderObject3D, AABBObject3D,
-    OBJObject3D)
+    Action, Device, MonitoredList, Object3D,  OBJObject3D)
 
 
 def locked(func):
@@ -144,13 +142,13 @@ class COPISCore:
         msg = None
         machine_config = self.config.machine_settings
 
-        if len(machine_config.chambers) == 0:
-            msg = 'No chambers configured.'
-        elif len(machine_config.chambers) > 2:
-            msg = '2 chambers maximum exceeded.'
+        if machine_config.machine is None:
+            # If the machine is not configured, throw no matter what.
+            warn = False
+            msg = 'The machine is not configured.'
+
         # TODO:
         # - Check 3 cameras per chamber max.
-        # - Check all cameras assigned to a chamber.
         # - Check cameras within chamber bounds.
 
         if msg is not None:
