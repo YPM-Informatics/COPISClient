@@ -16,10 +16,22 @@
 """GLChamber and associated classes."""
 
 from typing import List, Tuple
-
 import numpy as np
-from OpenGL.GL import *
-from OpenGL.GLU import *
+
+from OpenGL.GL import (
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_ELEMENT_ARRAY_BUFFER,
+    GL_UNSIGNED_INT, GL_CCW, GL_CW, GL_LINES, GL_LINE_SMOOTH, GL_TRIANGLE_FAN,
+    glGenVertexArrays, glGenBuffers, glDrawElements, glMultiDrawArrays,
+    glDeleteBuffers, glUniformMatrix4fv,
+    glBindBuffer, glBufferData, glEnableVertexAttribArray, glBindVertexArray,
+    glVertexAttribPointer, glDrawArrays, glUseProgram, glDisable, glEnable, glFrontFace
+)
+
+from OpenGL.GLU import (
+    GLU_FILL,
+    ctypes,
+    gluQuadricDrawStyle, gluNewQuadric
+)
 
 import glm
 

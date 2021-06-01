@@ -18,18 +18,24 @@
 TODO: on core_o_list_changed, update only vao's which have been modified, not everything
 """
 
-from copis.gl.glutils import get_cylinder_vertices, get_aabb_vertices
 from dataclasses import dataclass
 from typing import List
 
-from glm import vec3, vec4
+from glm import vec4
 import glm
-import numpy as np
 
-from OpenGL.GL import *
+from OpenGL.GL import (
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW,
+    GL_UNSIGNED_INT, GL_TRIANGLES, GL_ELEMENT_ARRAY_BUFFER,
+    glGenVertexArrays, glDrawElements, glGenBuffers, glUniform4fv,
+    glUniformMatrix4fv,
+    glBindVertexArray, glBindBuffer, glBufferData, glEnableVertexAttribArray,
+    glVertexAttribPointer, glUniform1i, glUseProgram)
+
 from OpenGL.GLU import ctypes
 
-from copis.classes import Object3D, CylinderObject3D, OBJObject3D, AABBObject3D
+from copis.classes import CylinderObject3D, OBJObject3D, AABBObject3D
+from copis.gl.glutils import get_cylinder_vertices, get_aabb_vertices
 from copis.globals import MAX_ID
 
 

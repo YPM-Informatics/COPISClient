@@ -21,15 +21,21 @@ TODO: Add text labels to viewcube sides
 
 from typing import Tuple, Union
 
-from glm import vec3
-import glm
-import numpy as np
 import ctypes
+import numpy as np
+import glm
+
+from glm import vec3
+
+from OpenGL.GL import (
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_ELEMENT_ARRAY_BUFFER, GL_DEPTH_TEST,
+    GL_FILL, GL_FRONT_AND_BACK, GL_LINE, GL_QUADS, GL_TRIANGLES, GL_UNSIGNED_INT,
+    glGenVertexArrays, glGenBuffers, glDrawElements, glDeleteBuffers, glUniformMatrix4fv,
+    glBindBuffer, glBufferData, glEnableVertexAttribArray, glBindVertexArray, glLineWidth,
+    glPolygonMode, glViewport, glVertexAttribPointer, glDrawArrays, glUseProgram, glDisable,
+    glEnable)
 
 from copis.globals import ViewCubePos, ViewCubeSize
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
 
 
 class GLViewCube:
