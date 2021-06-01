@@ -106,6 +106,8 @@ class MachineSettings:
                         float(datum['size_z']))
             device_type = datum['type']
             interfaces = datum['interfaces'].splitlines()
+            port = datum['port']
+
 
             device = Device(
                 device_id=i,
@@ -116,6 +118,7 @@ class MachineSettings:
                 initial_position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
                 device_bounds=device_bounds,
                 collision_bounds=size,
+                port=port)
 
             self._devices.append(device)
 
