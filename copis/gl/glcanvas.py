@@ -25,11 +25,12 @@ import numpy as np
 import pywavefront
 import wx
 
+from glm import vec3, mat4, quat
 from threading import Lock
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Dict
 from wx import glcanvas
 from pydispatch import dispatcher
-from OpenGL.GL import ( shaders,
+from OpenGL.GL import (shaders,
     GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW,
     GL_MULTISAMPLE, GL_FALSE, GL_UNSIGNED_BYTE, GL_FLOAT, GL_AMBIENT_AND_DIFFUSE,
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL, GL_CULL_FACE,
@@ -38,15 +39,16 @@ from OpenGL.GL import ( shaders,
     glGenVertexArrays, glUniformMatrix4fv, glDeleteBuffers, glGenBuffers,
     glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
     glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
-    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable, 
+    glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable,
     glPolygonMode, glViewport, glReadPixels, glDrawArrays)
 from OpenGL.GLU import ctypes
 
 import copis.gl.shaders as shaderlib
 
-from copis.helpers import find_path
 from copis.mathutils import arcball
+from copis.globals import MAX_ID
 from .actionvis import GLActionVis
+from .objectvis import GLObjectVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
 
@@ -69,6 +71,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         subdivisions: Optional; See GLChamber.
 
     Attributes:
+        orbit_control: A boolean; True: use orbit controls for rotation,
+            False: arcball (trackball) controls for rotation.
+        orthographic: A boolean; True: viewport uses orthographic projection,
+            False: viewport uses perspective projection.
         dirty: A boolean indicating if the canvas needs updating or not.
             Avoids unnecessary work by deferring it until the result is needed.
             See https://gameprogrammingpatterns.com/dirty-flag.html.
@@ -78,17 +84,18 @@ class GLCanvas3D(glcanvas.GLCanvas):
         zoom: A float representing zoom level (higher is more zoomed in).
             Zoom is achieved in projection_matrix by modifying the fov.
         build_dimensions: See Args section.
-        projection_matrix: Read only; A glm.mat4 representing the current
+        projection_matrix: Read only; A mat4 representing the current
             projection matrix.
-        modelview_matrix: Read only; A glm.mat4 representing the current
+        modelview_matrix: Read only; A mat4 representing the current
             modelview matrix.
     """
 
-    orbit_controls = True  # True: use arcball controls, False: use orbit controls
+    orbit_control = True  # True: use orbit controls, False: use arcball controls
+    orthographic = False  # True: orthographic projection, False: perspective projection
     # background_color = (0.9412, 0.9412, 0.9412, 1.0)
     background_color = (1.0, 1.0, 1.0, 1.0)
-    zoom_min = 0.1
-    zoom_max = 7.0
+    zoom_min = 0.5
+    zoom_max = 6.0
 
     def __init__(self, parent,
                  build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
@@ -112,7 +119,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vaos = {}
         self._point_lines = None
         self._point_count = None
-        self._id_offset = len(self.core.devices)
+        self._num_devices: int = len(self.core.devices)
+        self._num_objects: int = len(self.core.objects)
 
         self._dirty = False
         self._gl_initialized = False
@@ -120,36 +128,34 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-
-        # This offset allows us to adjust the chamber's position on the canvas
-        #  when only rending one chamber
-        self._z_offset = 0 if self._build_dimensions[5] > 0 else .5 * self._build_dimensions[2]
-
-        self._dist = 0.5 * (self._build_dimensions[2] + self._z_offset + \
+        self._dist = 0.5 * (self._build_dimensions[2] +
                             max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
+        self._objectvis = GLObjectVis(self)
 
         # other values
-        self._zoom = round(400 / (self._build_dimensions[2] + self._z_offset), 1)
+        self._zoom = 1.0
         self._hover_id = -1
         self._inside = False
-        self._rot_quat = glm.quat()
+        self._rot_quat = quat()
         self._rot_lock = Lock()
-        self._object_scale = 3
+        self._center = vec3(0.0, 0.0, (self._build_dimensions[5] - self._build_dimensions[2]) / 2.0)
+        self._object_scale = 3.0
 
         # bind core listeners
         dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
-        dispatcher.connect(self._update_colors, signal='core_p_selected')
-        dispatcher.connect(self._update_colors, signal='core_p_deselected')
+        dispatcher.connect(self._update_colors, signal='core_a_selected')
+        dispatcher.connect(self._update_colors, signal='core_a_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
-
+        dispatcher.connect(self._update_objects, signal='core_o_list_changed')
+        dispatcher.connect(self._deselect_object, signal='core_o_deselected')
         # bind events
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
-        self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key)
-        self._canvas.Bind(wx.EVT_KEY_UP, self.on_key)
+        self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+        self._canvas.Bind(wx.EVT_KEY_UP, self.on_key_up)
         self._canvas.Bind(wx.EVT_MOUSEWHEEL, self.on_mouse_wheel)
         self._canvas.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
         self._canvas.Bind(wx.EVT_LEFT_DCLICK, self.on_left_dclick)
@@ -194,7 +200,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
         self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
         self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
-        self._shaders['test'] = shaderlib.compile_shader(*shaderlib.test)
+        self._shaders['diffuse'] = shaderlib.compile_shader(*shaderlib.diffuse)
+        self._shaders['solid'] = shaderlib.compile_shader(*shaderlib.solid)
 
         self._gl_initialized = True
         return True
@@ -202,7 +209,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         self._vaos['box'], self._vaos['side'], \
-        self._vaos['top'], self._vaos['model'] = glGenVertexArrays(4)
+        self._vaos['top'] = glGenVertexArrays(3)
         vbo = glGenBuffers(4)
 
         vertices = np.array([
@@ -238,7 +245,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-        # ---
+        # --- below are unused vaos for rendering a cylinder (for the camerae model)
+        # keep them, but TODO implement general object class
 
         thetas = np.linspace(0, 2 * np.pi, 24, endpoint=True)
         y = np.cos(thetas) * 0.7
@@ -270,24 +278,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # ---
 
-        glBindVertexArray(self._vaos['model'])
-        test_vbo = glGenBuffers(1)
-
-        bulldog = pywavefront.Wavefront(find_path('model/handsome_dan.obj'), create_materials=True)
-        for _, material in bulldog.materials.items():
-            vertices = np.array(material.vertices)
-            vertices = np.float32(vertices)
-
-            glBindBuffer(GL_ARRAY_BUFFER, test_vbo)
-            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(0))
-            glEnableVertexAttribArray(0)
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 2))
-            glEnableVertexAttribArray(1)
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 4 * 8, ctypes.c_void_p(4 * 5))
-            glEnableVertexAttribArray(2)
-
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
 
@@ -299,6 +289,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._actionvis.update_actions()
         self._dirty = True
 
+        # TODO: is this needed?
         glBindVertexArray(0)
 
     def _update_colors(self) -> None:
@@ -306,12 +297,21 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     def _update_devices(self) -> None:
-        """When the device list has changed, update actionvis and _id_offset.
+        """When the device list has changed, update actionvis and _num_devices.
 
         Handles core_d_list_changed signal.
         """
-        self._id_offset = len(self.core.devices)
+        self._num_devices = len(self.core.devices)
         self._actionvis.update_devices()
+        self._dirty = True
+
+    def _update_objects(self) -> None:
+        """When the proxy object list has changed, update objectvis and _num_objects.
+
+        Handles core_o_list_changed signal.
+        """
+        self._num_objects = len(self.core.objects)
+        self._objectvis.update_objects()
         self._dirty = True
 
     # @timing
@@ -338,13 +338,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # reset viewport as _picking_pass tends to mess with it
         glViewport(0, 0, canvas_size.width, canvas_size.height)
 
-        # clear buffers and render everything
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        # clear buffers and render everything normally
         self._render_background()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
         self._render_chamber()
+        self._render_actions_and_cameras()
         self._render_objects()
-        self._render_cameras()
-        self._render_paths()
         self._render_viewcube()
 
         self._canvas.SwapBuffers()
@@ -370,9 +370,27 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self._dirty = False
 
-    def on_key(self, event: wx.KeyEvent) -> None:
-        """Handle EVT_KEY_DOWN and EVT_KEY_UP."""
+    def on_key_down(self, event: wx.KeyEvent) -> None:
+        """Handle EVT_KEY_DOWN."""
         pass
+
+    def on_key_up(self, event: wx.KeyEvent) -> None:
+        """Handle EVT_KEY_UP."""
+        keycode = event.KeyCode
+
+        if keycode == wx.WXK_ESCAPE:
+            self.core.select_device(-1)
+            self.core.select_point(-1, clear=True)
+            self.select_object(-1)
+
+        # delete selected proxy object if backspace
+        elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
+            for obj in reversed(self._objectvis.objects):
+                if obj.selected:
+                    self.core.objects.pop(obj.object_id)
+
+        else:
+            event.Skip()
 
     def on_mouse_wheel(self, event: wx.MouseEvent) -> None:
         """On mouse wheel change, adjust zoom accordingly."""
@@ -400,12 +418,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         scale = self.get_scale_factor()
-        event.x = int(event.x * scale)
-        event.y = int(event.y * scale)
+        event.x *= scale
+        event.y *= scale
 
         if event.Dragging():
             if event.LeftIsDown():
-                self.rotate_camera(event, orbit=self.orbit_controls)
+                self.rotate_camera(event, orbit=self.orbit_control)
             elif event.RightIsDown() or event.MiddleIsDown():
                 self.translate_camera(event)
 
@@ -432,31 +450,61 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # id_ belongs to viewcube
         if self._viewcube.hovered:
             if id_ == 0:    # front
-                self._rot_quat = glm.quat()
+                self._rot_quat = quat()
             elif id_ == 1:  # top
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(90, 0, 0)))
+                self._rot_quat = quat(glm.radians(vec3(90, 0, 0)))
             elif id_ == 2:  # right
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, -90)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, -90)))
             elif id_ == 3:  # bottom
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(-90, 0, 0)))
+                self._rot_quat = quat(glm.radians(vec3(-90, 0, 0)))
             elif id_ == 4:  # left
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 90)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, 90)))
             elif id_ == 5:  # back
-                self._rot_quat = glm.quat(glm.radians(glm.vec3(0, 0, 180)))
+                self._rot_quat = quat(glm.radians(vec3(0, 0, 180)))
             else:
                 pass
 
         else:
-            # id_ belongs to cameras or objects
+            # nothing selected
             if id_ == -1:
                 self.core.select_device(-1)
                 self.core.select_point(-1, clear=True)
-            elif -1 < id_ < self._id_offset:
+                self.select_object(-1)
+
+            # id_ belongs to camera device
+            elif -1 < id_ < self._num_devices:
                 self.core.select_device(id_)
+
+            # id_ belongs to proxy object
+            elif id_ > MAX_ID - self._num_objects:
+                self.select_object(MAX_ID - id_)
+
+            # id_ belongs to action point
             else:
-                self.core.select_device(-1)
                 # un-offset ids
-                self.core.select_point(id_ - self._id_offset, clear=True)
+                self.core.select_point(id_ - self._num_devices, clear=True)
+
+    def select_object(self, id_: int) -> None:
+        """Select proxy object given id."""
+        if id_ < 0:
+            self._deselect_object()
+            dispatcher.send('core_o_deselected')
+
+        elif id_ in (x.object_id for x in self._objectvis.objects):
+            self.core.select_point(-1)
+            self.core.select_device(-1)
+            for obj in self._objectvis.objects:
+                obj.selected = obj.object_id == id_
+            dispatcher.send('core_o_selected', object=self.core.objects[id_])
+            self._dirty = True
+
+        else:
+            dispatcher.send('core_error', message=f'invalid proxy object id {id_}')
+
+    def _deselect_object(self) -> None:
+        for obj in self._objectvis.objects:
+            obj.selected = False
+        self._dirty = True
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
@@ -509,7 +557,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._zoom = max(min(zoom, self.zoom_max), self.zoom_min)
         self._dirty = True
 
-        # update visualizer panel zoom slider
+        # update viewport panel zoom slider
         self.parent.set_zoom_slider(self._zoom)
 
     def _refresh_if_shown_on_screen(self) -> None:
@@ -527,11 +575,15 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             return
 
+        # set background to white during picking pass so it can be ignored
+        # its id will be 16777215 (MAX_ID + 1)
+        glClearColor(1.0, 1.0, 1.0, 1.0)
+
         # disable multisampling and antialiasing
         glDisable(GL_MULTISAMPLE)
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self._render_objects_for_picking()
 
@@ -550,9 +602,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             id_ = (color[0]) + (color[1] << 8) + (color[2] << 16)
 
             # ignore background color
-            if id_ == (int(self.background_color[0] * 255)) + \
-                      (int(self.background_color[1] * 255) << 8) + \
-                      (int(self.background_color[2] * 255) << 16):
+            if id_ == MAX_ID + 1:
                 id_ = -1
 
         # check if mouse is inside viewcube area
@@ -567,6 +617,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking."""
+        self._objectvis.render_for_picking()
         self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
@@ -583,27 +634,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._chamber.render()
 
     def _render_objects(self) -> None:
-        """Render objects."""
+        """Render proxy objects."""
+        if self._objectvis is not None:
+            self._objectvis.render()
 
-        proj = self.projection_matrix
-        view = self.modelview_matrix
-        model = glm.mat4()
-
-        glUseProgram(self.shaders['test'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
-        model = glm.scale(glm.mat4(), glm.vec3(15, 15, 15))
-        glUniformMatrix4fv(2, 1, GL_FALSE, glm.value_ptr(model))
-
-        glBindVertexArray(self._vaos['model'])
-        glDrawArrays(GL_TRIANGLES, 0, 1634 * 3)
-
-    def _render_cameras(self) -> None:
-        """Render cameras."""
-        pass
-
-    def _render_paths(self) -> None:
+    def _render_actions_and_cameras(self) -> None:
         """Render paths."""
         if self._actionvis is not None:
             self._actionvis.render()
@@ -618,11 +653,11 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # --------------------------------------------------------------------------
 
     @property
-    def shaders(self) -> shaders.ShaderProgram:
+    def shaders(self) -> Dict[str, shaders.ShaderProgram]:
         return self._shaders
 
     @property
-    def rot_quat(self) -> glm.quat:
+    def rot_quat(self) -> quat:
         return self._rot_quat
 
     @property
@@ -662,21 +697,27 @@ class GLCanvas3D(glcanvas.GLCanvas):
     # --------------------------------------------------------------------------
 
     @property
-    def projection_matrix(self) -> glm.mat4:
-        """Returns a glm.mat4 representing the current projection matrix."""
+    def projection_matrix(self) -> mat4:
+        """Returns a mat4 representing the current projection matrix."""
         canvas_size = self.get_canvas_size()
-        aspect_ratio = canvas_size.width / canvas_size.height
-        return glm.perspective(
-            math.atan(math.tan(math.radians(45.0)) / self._zoom),
-            aspect_ratio, 0.1, 2000.0)
+        if self.orthographic:
+            return glm.ortho(
+                -canvas_size.width / 2.0 / self._zoom, canvas_size.width / 2.0 / self._zoom,
+                -canvas_size.height / 2.0 / self._zoom, canvas_size.height / 2.0 / self._zoom,
+                -5.0 * self._dist, 5.0 * self._dist)
+        else:
+            aspect_ratio = canvas_size.width / canvas_size.height
+            return glm.perspective(
+                math.atan(math.tan(math.radians(45.0))),
+                aspect_ratio, 0.1, 2000.0)
 
     @property
-    def modelview_matrix(self) -> glm.mat4:
-        """Returns a glm.mat4 representing the current modelview matrix."""
-        mat = glm.lookAt(glm.vec3(0.0, -self._dist * 1.5, 0.0),  # position
-                         glm.vec3(0.0, 0.0, self._z_offset),     # target
-                         glm.vec3(0.0, 0.0, 1.0))                # up
-        return mat * glm.mat4_cast(self._rot_quat)
+    def modelview_matrix(self) -> mat4:
+        """Returns a mat4 representing the current modelview matrix."""
+        mat = glm.lookAt(vec3(0.0, -self._dist * 2.0 / self._zoom, 0.0),  # eye
+                         vec3(0.0, 0.0, 0.0),                             # center
+                         vec3(0.0, 0.0, 1.0))                             # up
+        return glm.translate(mat * glm.mat4_cast(self._rot_quat), self._center)
 
     def rotate_camera(self, event: wx.MouseEvent, orbit: bool = True) -> None:
         """Update rotate quat to reflect rotation controls.
@@ -689,6 +730,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if self._mouse_pos is None:
             self._mouse_pos = event.Position
             return
+
         last = self._mouse_pos
         cur = event.Position
 
@@ -698,16 +740,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         p2x = cur.x * 2.0 / canvas_size.width - 1.0
         p2y = 1 - cur.y * 2.0 / canvas_size.height
 
-        # if p1x == p2x and p1y == p2y:
-            # self._rot_quat = glm.quat()
-
         with self._rot_lock:
             if orbit:
                 dx = p2y - p1y
                 dy = p2x - p1x
 
-                pitch = glm.angleAxis(dx, glm.vec3(-1.0, 0.0, 0.0))
-                yaw = glm.angleAxis(dy, glm.vec3(0.0, 0.0, 1.0))
+                pitch = glm.angleAxis(dx, vec3(-1.0, 0.0, 0.0))
+                yaw = glm.angleAxis(dy, vec3(0.0, 0.0, 1.0))
                 self._rot_quat = pitch * self._rot_quat * yaw
             else:
                 quat = arcball(p1x, p1y, p2x, p2y, self._dist / 250.0)
@@ -715,19 +754,34 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = cur
 
     def translate_camera(self, event: wx.MouseEvent) -> None:
-        """Translate camera.
+        """Translate camera. Currently only translates along z axis.
 
         Args:
             event: A wx.MouseEvent representing an updated mouse position.
 
-        TODO: implement this!
+        TODO: Make it so you can translate freely?
         """
         if self._mouse_pos is None:
             self._mouse_pos = event.Position
             return
+
         last = self._mouse_pos
         cur = event.Position
-        # Do stuff
+
+        canvas_size = self._canvas.get_canvas_size()
+        p1x = last.x * 2.0 / canvas_size.width - 1.0
+        p1y = 1 - last.y * 2.0 / canvas_size.height
+        p2x = cur.x * 2.0 / canvas_size.width - 1.0
+        p2y = 1 - cur.y * 2.0 / canvas_size.height
+
+        dy = p2y - p1y
+        new_z = self._center.z + dy * self._dist / 1.5 / self._zoom
+        if new_z < self._build_dimensions[5] - self._build_dimensions[2]:
+            new_z = self._build_dimensions[5] - self._build_dimensions[2]
+        if new_z > self._build_dimensions[5]:
+            new_z = self._build_dimensions[5]
+        self._center.z = new_z
+
         self._mouse_pos = cur
 
     # --------------------------------------------------------------------------
@@ -738,8 +792,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Return scale factor based on display dpi.
 
         Currently very rudimentary; only checks if system is MacOS or not.
+
         TODO: make more robust and actually detect dpi?
+            - check out self.GetContentScaleFactor() and
+              GetDPIScaleFactor(), might be better than this
         """
+        # return self.GetContentScaleFactor()
         if self._scale_factor is None:
             if pf.system() == 'Darwin': # MacOS
                 self._scale_factor = 2.0

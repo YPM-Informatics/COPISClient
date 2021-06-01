@@ -17,24 +17,27 @@
 
 import logging
 import math
+from collections import defaultdict
+from typing import List, Tuple
+
+from glm import vec2, vec3
 import glm
+
 import wx
 import wx.lib.agw.aui as aui
-import random
-from typing import Tuple
 
-from copis.gui.wxutils import (FancyTextCtrl,
-    create_scaled_bitmap, simple_statictext)
+from copis.classes import Action, Object3D
+from copis.globals import ActionType, PathIds
+from copis.gui.wxutils import (
+    FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
-from copis.enums import ActionType, PathIds
-from copis.classes import Action
 
 
 class PathgenToolbar(aui.AuiToolBar):
     """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initializes ToolbarPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
@@ -94,15 +97,15 @@ class PathgenToolbar(aui.AuiToolBar):
                     for i in range(z_div):
                         z = 0 if z_div == 1 else i * (height / (z_div - 1))
                         v, c = create_circle(
-                            glm.vec3(dlg.base_x_ctrl.num_value,
+                            vec3(dlg.base_x_ctrl.num_value,
                                      dlg.base_y_ctrl.num_value,
                                      dlg.base_z_ctrl.num_value + z),
-                            glm.vec3(0, 0, 1 if height > 0 else -1), radius, points)
+                            vec3(0, 0, 1 if height > 0 else -1), radius, points)
 
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -120,12 +123,12 @@ class PathgenToolbar(aui.AuiToolBar):
                     pitch = abs(height) / rotations
 
                     vertices, count = create_helix(
-                        glm.vec3(dlg.base_x_ctrl.num_value,
+                        vec3(dlg.base_x_ctrl.num_value,
                                  dlg.base_y_ctrl.num_value,
                                  dlg.base_z_ctrl.num_value),
-                        glm.vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
+                        vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -148,14 +151,14 @@ class PathgenToolbar(aui.AuiToolBar):
                         num = int(2 * math.pi * r / distance)
 
                         v, c = create_circle(
-                            glm.vec3(dlg.center_x_ctrl.num_value,
+                            vec3(dlg.center_x_ctrl.num_value,
                                      dlg.center_y_ctrl.num_value,
                                      dlg.center_z_ctrl.num_value + z),
-                            glm.vec3(0, 0, 1), r, num)
+                            vec3(0, 0, 1), r, num)
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = glm.vec3(dlg.center_x_ctrl.num_value,
+                    lookat = vec3(dlg.center_x_ctrl.num_value,
                                       dlg.center_y_ctrl.num_value,
                                       dlg.center_z_ctrl.num_value)
 
@@ -168,15 +171,15 @@ class PathgenToolbar(aui.AuiToolBar):
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
-                    start = glm.vec3(dlg.start_x_ctrl.num_value,
+                    start = vec3(dlg.start_x_ctrl.num_value,
                                      dlg.start_y_ctrl.num_value,
                                      dlg.start_z_ctrl.num_value)
-                    end = glm.vec3(dlg.end_x_ctrl.num_value,
+                    end = vec3(dlg.end_x_ctrl.num_value,
                                    dlg.end_y_ctrl.num_value,
                                    dlg.end_z_ctrl.num_value)
                     vertices, count = create_line(start, end, points)
 
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -190,7 +193,7 @@ class PathgenToolbar(aui.AuiToolBar):
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
-                    lookat = glm.vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -199,52 +202,103 @@ class PathgenToolbar(aui.AuiToolBar):
     def _extend_actions(self,
                         vertices,
                         count: int,
-                        lookat: glm.vec3,
+                        lookat: vec3,
                         device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
-        TODO: Add smart divide between devices
+        TODO: #120: move this somewhere else
+            https://github.com/YPM-Informatics/COPISClient/issues/120
+        TODO: think of ways to improve path planning
 
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
             count: An integer representing the number of vertices.
-            lookat: A glm.vec3 representing the lookat point in space.
+            lookat: A vec3 representing the lookat point in space.
         """
-        new_actions = []
+
+        devices = self.core.config.machine_settings.devices
+        grouped_points = defaultdict(list)
+
+        # group points into devices
         for i in range(count):
-            x, y, z = vertices[i * 3:i * 3 + 3]
-            dx, dy, dz = x - lookat.x, y - lookat.y, z - lookat.z
-            pan = math.atan2(dx, dy)
-            x2y2 = dx * dx + dy * dy
-            tilt = -math.atan2(dz, math.sqrt(x2y2))
+            point = vec3(vertices[i * 3:i * 3 + 3])
+            device_id = -1
+            for id_ in device_list:
+                if devices[id_].device_bounds.vec3_intersect(point, 0.0):
+                    device_id = id_
 
-            device = 0
-            # TODO: temporary hack to divvy up points
-            num_devices = len(device_list)
-            if num_devices > 1:
-                if num_devices == 2:
-                    device = 0 if z > 0 else 1
-                elif num_devices == 4:
-                    if z < 0:     device += 2
-                    if y > 0:     device += 1
-                elif num_devices == 6:
-                    if z < 0:     device += 3
-                    if y > 60:    device += 2
-                    elif y > -60: device += 1
-                else:
-                    # for now, just randomly divide if 3 or 5
-                    device = random.randrange(num_devices)
+            # ignore if point not in bounds of any device
+            if device_id != -1:
+                grouped_points[device_id].append(point)
 
-            else:
-                device = device_list[0]
+        def _cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
+            """Calculate cost of moving from start to end. Returns math.inf
+            if movement will intersect a proxy object.
+            """
+            XY_COST = 1.0
+            Z_COST = 10.0
 
-            new_actions.extend((
-                Action(ActionType.G0, device, 5, [x, y, z, pan, tilt]),
-                Action(ActionType.C0, device),
-            ))
+            # intersect bad!
+            for obj in colliders:
+                if obj.vec3_intersect(end, 10.0) or \
+                        obj.bbox.line_segment_intersect(start, end):
+                    return math.inf
+
+            return (
+                # cost of movement along XY
+                XY_COST * glm.distance(vec2(start), vec2(end)) +
+                # cost of movement along Z
+                Z_COST * abs(end.z - start.z))
+
+        # greedily expand path from starting point
+        cost_ordered_points = defaultdict(list)
+        for device_id, points in grouped_points.items():
+            # choose starting point, currently the first one in the list
+            # TODO: make starting point less arbitrary
+            cost_ordered_points[device_id].append(points.pop(0))
+
+            # loop until all points used
+            while points:
+                # get best next point using cost function
+                curr_point = cost_ordered_points[device_id][-1]
+                best_cost = math.inf
+                best_index = -1
+                for index, point in enumerate(points):
+                    cost = _cost(curr_point, point, self.core.objects)
+                    if cost < best_cost:
+                        best_cost = cost
+                        best_index = index
+
+                # stop if cost is infinite (intersect with objects)
+                if best_cost == math.inf:
+                    break
+                cost_ordered_points[device_id].append(points.pop(best_index))
+
+        # interlace actions
+        interlaced_actions = []
+        empty = False
+        while not empty:
+            empty = True
+            for device_id in device_list:
+                if not cost_ordered_points[device_id]:
+                    continue
+                empty = False
+
+                point = cost_ordered_points[device_id].pop()
+                dx, dy, dz = point.x - lookat.x, point.y - lookat.y, point.z - lookat.z
+                pan = math.atan2(dx, dy)
+                tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
+
+                # add action
+                interlaced_actions.extend((
+                    # TODO: allow user customization of actions at each point
+                    # https://github.com/YPM-Informatics/COPISClient/issues/102
+                    Action(ActionType.G1, device_id, 6, [point.x, point.y, point.z, pan, tilt, 0]),
+                    Action(ActionType.C0, device_id, 1, [1000]),
+                ))
 
         # extend core actions list
-        self.core.actions.extend(new_actions)
+        self.core.actions.extend(interlaced_actions)
 
     def __del__(self) -> None:
         pass
@@ -253,7 +307,7 @@ class PathgenToolbar(aui.AuiToolBar):
 class _PathgenCylinder(wx.Dialog):
     """Dialog to generate a cylinder path."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenCylinder with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
@@ -350,7 +404,7 @@ class _PathgenCylinder(wx.Dialog):
 class _PathgenHelix(wx.Dialog):
     """Dialog to generate a helix path."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenHelix with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
@@ -447,7 +501,7 @@ class _PathgenHelix(wx.Dialog):
 class _PathgenSphere(wx.Dialog):
     """Dialog to generate a sphere path."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenSphere with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
@@ -527,7 +581,7 @@ class _PathgenSphere(wx.Dialog):
 class _PathgenLine(wx.Dialog):
     """Dialog to generate a line path."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenLine with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
@@ -624,7 +678,7 @@ class _PathgenLine(wx.Dialog):
 class _PathgenPoint(wx.Dialog):
     """Dialog to generate a single point."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenPoint with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent

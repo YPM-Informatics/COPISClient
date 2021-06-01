@@ -115,8 +115,7 @@ class TimelinePanel(wx.Panel):
         """TODO"""
         cmd = self.timeline_writer.Value
         self.add_command(cmd)
-        # self.core.append_point(0, tuple(map(float, cmd.split(', '))))
-        self.parent.visualizer_panel.dirty = True
+        self.parent.viewport_panel.dirty = True
         self.timeline_writer.Value = ''
 
     def add_command(self, cmd: str) -> None:
@@ -171,7 +170,7 @@ class TimelinePanel(wx.Panel):
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
 
-        Handles core_p_list_changed signal sent by self.core.
+        Handles core_a_list_changed signal sent by self.core.
         """
         self.timeline.Clear()
         for action in self.core.actions:

@@ -17,12 +17,13 @@
 
 from pydispatch import dispatcher
 
+
 class MonitoredList(list):
     """Data structure that implements a monitored list.
-    Just a regular list, but sends notifications when
-    changed or modified.
+
+    Just a regular list, but sends notifications when changed or modified.
     """
-    def __init__(self, iterable, signal: str) -> None:
+    def __init__(self, signal: str, iterable=[]) -> None:
         super().__init__(iterable)
         self.signal = signal
 

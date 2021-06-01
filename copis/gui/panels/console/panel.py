@@ -30,7 +30,7 @@ class ConsolePanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize ConsolePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -48,10 +48,12 @@ class ConsolePanel(wx.Panel):
         # bind copiscore listeners
         dispatcher.connect(self.on_notification, signal='core_a_list_changed')
         dispatcher.connect(self.on_notification, signal='core_d_list_changed')
-        dispatcher.connect(self.on_notification, signal='core_p_selected')
-        dispatcher.connect(self.on_notification, signal='core_p_deselected')
+        dispatcher.connect(self.on_notification, signal='core_a_selected')
+        dispatcher.connect(self.on_notification, signal='core_a_deselected')
         dispatcher.connect(self.on_notification, signal='core_d_selected')
         dispatcher.connect(self.on_notification, signal='core_d_deselected')
+        dispatcher.connect(self.on_notification, signal='core_o_selected')
+        dispatcher.connect(self.on_notification, signal='core_o_deselected')
         dispatcher.connect(self.on_notification, signal='core_error')
         dispatcher.connect(self.on_notification, signal='core_message')
         dispatcher.connect(self.on_action_export, signal='core_a_exported')

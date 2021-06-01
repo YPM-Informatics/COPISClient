@@ -17,9 +17,10 @@ from dataclasses import dataclass
 from typing import List, Dict
 from glm import vec3
 
-from copis.enums import DebugEnv
+from copis.globals import DebugEnv
 from copis.helpers import Point5
 from . import Device, Chamber, BoundingBox
+
 
 @dataclass
 class ConfigSettings:
@@ -96,13 +97,32 @@ class MachineSettings:
             pos_z = float(datum['z'])
             pos_p = float(datum['p'])
             pos_t = float(datum['t'])
-            chamber = datum['chamber']
+            device_bounds = BoundingBox(
+                vec3(float(datum['min_x']),
+                     float(datum['min_y']),
+                     float(datum['min_z'])),
+                vec3(float(datum['max_x']),
+                     float(datum['max_y']),
+                     float(datum['max_z'])))
+            size = vec3(float(datum['size_x']),
+                        float(datum['size_y']),
+                        float(datum['size_z']))
+            chamber_name = datum['chamber']
             device_type = datum['type']
             interfaces = datum['interfaces'].splitlines()
             home = '' if 'home' not in datum.keys() else datum['home']
 
-            device = Device(i, name, device_type, chamber, interfaces,
-                Point5(pos_x, pos_y, pos_z, pos_p, pos_t), homing_sequence = home)
+            device = Device(
+                device_id=i,
+                device_name=name,
+                device_type=device_type,
+                chamber_name=chamber_name,
+                interfaces=interfaces,
+                position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
+                initial_position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
+                device_bounds=device_bounds,
+                collision_bounds=size,
+                homing_sequence=home)
 
             self._devices.append(device)
 

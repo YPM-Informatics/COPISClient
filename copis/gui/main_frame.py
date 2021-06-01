@@ -15,6 +15,7 @@
 
 """MainWindow class."""
 
+from glm import vec3
 import wx
 import wx.lib.agw.aui as aui
 
@@ -25,6 +26,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
+from copis.classes import AABBObject3D, CylinderObject3D, OBJObject3D
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -33,9 +35,9 @@ from .panels.machine_toolbar import MachineToolbar
 from .panels.pathgen_toolbar import PathgenToolbar
 from .panels.properties import PropertiesPanel
 from .panels.timeline import TimelinePanel
-from .panels.visualizer import VisualizerPanel
+from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
-from .proxyconfig_frame import ProxyConfigFrame
+from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
 from .wxutils import create_scaled_bitmap
 
 
@@ -50,7 +52,7 @@ class MainWindow(wx.Frame):
         evf_panel: A pointer to the electronic viewfinder panel.
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
-        visualizer_panel: A pointer to the visualizer panel.
+        viewport_panel: A pointer to the viewport panel.
         machine_toolbar: A pointer to the machine toolbar.
         pathgen_toolbar: A pointer to the pathgen toolbar.
     """
@@ -77,9 +79,9 @@ class MainWindow(wx.Frame):
         self.menuitems = {}
 
         # initialize gui
+        self.init_mgr()
         self.init_statusbar()
         self.init_menubar()
-        self.init_mgr()
 
         # TODO: re-enable liveview
         # self.add_evf_pane()
@@ -120,17 +122,19 @@ class MainWindow(wx.Frame):
                 - &Preferences
             - &View
                 - [x] &Status Bar
+            - &Camera
+                - (*) &Perspective Projection
+                - ( ) &Orthographic Projection
             - &Tools
-                - &Generate Path...
-                ---
-                - &Preferences
+                - Add &Cylinder Proxy Object
+                - Add &Box Proxy Object
             - &Window
                 - [ ] Camera EVF
                 - [x] Console
                 - [x] Controller
                 - [x] Properties
                 - [x] Timeline
-                - [x] Visualizer
+                - [x] Viewport
                 ---
                 - Window &Preferences...
             - Help
@@ -190,9 +194,19 @@ class MainWindow(wx.Frame):
         view_menu.Check(self.statusbar_menuitem.Id, True)
         self.Bind(wx.EVT_MENU, self.update_statusbar, self.statusbar_menuitem)
 
+        # Camera menu
+        camera_menu = wx.Menu()
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Perspective Projection', 'Set viewport projection to perspective', wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_perspective_projection, camera_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Orthographic Projection', 'Set viewport projection to orthographic', wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_orthographic_projection, camera_menu.Append(_item))
+
         # Tools menu
         tools_menu = wx.Menu()
-        self.Bind(wx.EVT_MENU, self.open_proxyconfig_frame, tools_menu.Append(wx.ID_ANY, '&Configure Proxy...', 'Open proxy object configuration window'))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object', 'Add a cylinder proxy object to the chamber')
+        self.Bind(wx.EVT_MENU, self.add_proxy_cylinder, tools_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Box Proxy Object', 'Add a box proxy object to the chamber')
+        self.Bind(wx.EVT_MENU, self.add_proxy_aabb, tools_menu.Append(_item))
 
         # Window menu
         window_menu = wx.Menu()
@@ -211,9 +225,9 @@ class MainWindow(wx.Frame):
         self.menuitems['timeline'] = window_menu.Append(wx.ID_ANY, 'Timeline', 'Show/hide timeline window', wx.ITEM_CHECK)
         self.menuitems['timeline'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_timeline_panel, self.menuitems['timeline'])
-        self.menuitems['visualizer'] = window_menu.Append(wx.ID_ANY, 'Visualizer', 'Show/hide visualizer window', wx.ITEM_CHECK)
-        self.menuitems['visualizer'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_visualizer_panel, self.menuitems['visualizer'])
+        self.menuitems['viewport'] = window_menu.Append(wx.ID_ANY, 'Viewport', 'Show/hide viewport window', wx.ITEM_CHECK)
+        self.menuitems['viewport'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_viewport_panel, self.menuitems['viewport'])
         window_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
@@ -237,6 +251,7 @@ class MainWindow(wx.Frame):
         self._menubar.Append(file_menu, '&File')
         self._menubar.Append(edit_menu, '&Edit')
         self._menubar.Append(view_menu, '&View')
+        self._menubar.Append(camera_menu, '&Camera')
         self._menubar.Append(tools_menu, '&Tools')
         self._menubar.Append(window_menu, '&Window')
         self._menubar.Append(help_menu, '&Help')
@@ -316,16 +331,37 @@ class MainWindow(wx.Frame):
         self.StatusBar.Show(event.IsChecked())
         self._mgr.Update()
 
+    def add_proxy_cylinder(self, _) -> None:
+        """Open dialog to generate cylinder proxy object."""
+        with ProxygenCylinder(self) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                start = vec3(dlg.start_x_ctrl.num_value,
+                             dlg.start_y_ctrl.num_value,
+                             dlg.start_z_ctrl.num_value)
+                end = vec3(dlg.end_x_ctrl.num_value,
+                           dlg.end_y_ctrl.num_value,
+                           dlg.end_z_ctrl.num_value)
+                radius = dlg.radius_ctrl.num_value
+                self.core.objects.append(CylinderObject3D(start, end, radius))
+
+    def add_proxy_aabb(self, _) -> None:
+        """Open dialog to generate box proxy object."""
+        with ProxygenAABB(self) as dlg:
+            if dlg.ShowModal() == wx.ID_OK:
+                lower = vec3(dlg.lower_x_ctrl.num_value,
+                             dlg.lower_y_ctrl.num_value,
+                             dlg.lower_z_ctrl.num_value)
+                upper = vec3(dlg.upper_x_ctrl.num_value,
+                             dlg.upper_y_ctrl.num_value,
+                             dlg.upper_z_ctrl.num_value)
+                self.core.objects.append(AABBObject3D(lower, upper))
+
     def update_menubar(self) -> None:
         pass
 
     def open_preferences_frame(self, _) -> None:
         preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
-
-    def open_proxyconfig_frame(self, _) -> None:
-        proxyconfig_frame = ProxyConfigFrame(self)
-        proxyconfig_frame.Show()
 
     def open_copis_website(self, _) -> None:
         wx.LaunchDefaultBrowser('http://www.copis3d.org/')
@@ -392,7 +428,7 @@ class MainWindow(wx.Frame):
         self._mgr.SetAutoNotebookTabArt(tabart)
 
         # initialize relevant panels
-        self.panels['visualizer'] = VisualizerPanel(self)
+        self.panels['viewport'] = ViewportPanel(self)
         self.panels['console'] = ConsolePanel(self)
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
@@ -400,10 +436,10 @@ class MainWindow(wx.Frame):
         self.panels['machine_toolbar'] = MachineToolbar(self, self.panels['console'])
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
-        # add visualizer panel
+        # add viewport panel
         self._mgr.AddPane(
-            self.panels['visualizer'],
-            aui.AuiPaneInfo().Name('visualizer').Caption('Visualizer').
+            self.panels['viewport'],
+            aui.AuiPaneInfo().Name('viewport').Caption('Viewport').
             Dock().Center().MaximizeButton().MinimizeButton().DefaultPane().MinSize(350, 250))
 
         # add console, timeline panel
@@ -481,9 +517,9 @@ class MainWindow(wx.Frame):
         """Show or hide timeline panel."""
         self._mgr.ShowPane(self.timeline_panel, event.IsChecked())
 
-    def update_visualizer_panel(self, event: wx.CommandEvent) -> None:
-        """Show or hide visualizer panel."""
-        self._mgr.ShowPane(self.visualizer_panel, event.IsChecked())
+    def update_viewport_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide viewport panel."""
+        self._mgr.ShowPane(self.viewport_panel, event.IsChecked())
 
     def on_pane_close(self, event: aui.framemanager.AuiManagerEvent) -> None:
         """Update menu itmes in the Window menu when a pane has been closed."""
@@ -534,8 +570,8 @@ class MainWindow(wx.Frame):
         return self.panels['timeline']
 
     @property
-    def visualizer_panel(self) -> VisualizerPanel:
-        return self.panels['visualizer']
+    def viewport_panel(self) -> ViewportPanel:
+        return self.panels['viewport']
 
     @property
     def machine_toolbar(self) -> MachineToolbar:

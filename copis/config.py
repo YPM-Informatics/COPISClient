@@ -15,7 +15,7 @@
 
 from configparser import ConfigParser
 
-from .enums import DebugEnv
+from .globals import DebugEnv
 from .store import Store, load_machine
 from .classes import ConfigSettings, MachineSettings
 
