@@ -15,13 +15,15 @@
 
 """COPIS classes package."""
 
-from .device import Device
 from .bounding_box import BoundingBox
-from .proxy import Proxy
+from .monitored_list import MonitoredList
+from .device import Device
 from .action import Action
 from .chamber import Chamber
-from .monitored_list import MonitoredList
+from .proxy_objects import Object3D, CylinderObject3D, AABBObject3D, OBJObject3D
 from .settings import ConfigSettings, MachineSettings
 
-__all__ = ["Device", "BoundingBox", "Proxy", "Action", "Chamber",
-            "MonitoredList", "ConfigSettings", "MachineSettings"]
+__all__ = [
+    "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABBObject3D",
+    "OBJObject3D", "Action", "Chamber", "MonitoredList", "ConfigSettings",
+    "MachineSettings"]

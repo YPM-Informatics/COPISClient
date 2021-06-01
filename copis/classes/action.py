@@ -18,7 +18,7 @@
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from copis.enums import ActionType
+from copis.globals import ActionType
 
 @dataclass
 class Action:

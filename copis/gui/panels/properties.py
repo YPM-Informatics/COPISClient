@@ -24,9 +24,10 @@ import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 from copis.helpers import xyz_units, pt_units
-from copis.gui.wxutils import (FancyTextCtrl,
-    EVT_FANCY_TEXT_UPDATED_EVENT,
+from copis.gui.wxutils import (
+    FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
+from copis.globals import ActionType
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -43,13 +44,13 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """
 
     config = {
-        'Default': ('visualizer'),
-        'Camera': ('camera_info', 'camera_config'),
-        'Point': ('transform'),
-        'Group': ('transform'),
+        'Default': ['viewport'],
+        'Camera': ['camera_info', 'camera_config', 'viewport'],
+        'Point': ['transform', 'viewport'],
+        'Object': ['viewport'],
     }
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize PropertiesPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -73,17 +74,19 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         # bind copiscore listeners
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_points_selected, signal='core_p_selected')
+        dispatcher.connect(self.on_points_selected, signal='core_a_selected')
+        dispatcher.connect(self.on_object_selected, signal='core_o_selected')
         dispatcher.connect(self.on_deselected, signal='core_d_deselected')
-        dispatcher.connect(self.on_deselected, signal='core_p_deselected')
+        dispatcher.connect(self.on_deselected, signal='core_a_deselected')
+        dispatcher.connect(self.on_deselected, signal='core_o_deselected')
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
-        self._property_panels['visualizer'] = _PropVisualizer(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['camera_info'] = _PropCameraInfo(self)
         self._property_panels['camera_config'] = _PropCameraConfig(self)
         self._property_panels['quick_actions'] = _PropQuickActions(self)
+        self._property_panels['viewport'] = _PropViewport(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
@@ -120,31 +123,36 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['camera_info'].device_type = device.device_type
         self.update_to_selected('Camera')
 
+    def on_points_selected(self, points: List[int]) -> None:
+        """On core_a_selected, set to point view."""
+
+        if len(points) == 1:
+            action = self.core.actions[points[0]]
+            if action.atype == ActionType.G0 or action.atype == ActionType.G1:
+                self.current = 'Point'
+                self._property_panels['transform'].set_point(*action.args[:5])
+                self.update_to_selected('Point')
+
+    def on_object_selected(self, object) -> None:
+        """On core_o_selected, set to proxy object view."""
+        self.current = 'Proxy Object'
+        self.update_to_selected('Object')
+
     def on_deselected(self) -> None:
         """On core_*_deselected, reset to default view."""
         self.current = 'No Selection'
         self.update_to_selected('Default')
 
-    def on_points_selected(self, points: List[int]) -> None:
-        """On core_p_selected, set to point view."""
 
-        if len(points) == 1:
-            action = self.core.actions[points[0]]
-            if action.argc == 5:
-                self.current = 'Point'
-                self._property_panels['transform'].set_point(*action.args)
-                self.update_to_selected('Point')
+class _PropViewport(wx.Panel):
 
-
-class _PropVisualizer(wx.Panel):
-
-    def __init__(self, parent) -> None:
-        """Initialize _PropVisualizer with constructors."""
+    def __init__(self, parent, *args, **kwargs) -> None:
+        """Initialize _PropViewport with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Visualizer'), wx.VERTICAL)
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Viewport'), wx.VERTICAL)
 
         grid_check = wx.CheckBox(self, label='Show chamber &grid', name='grid')
         grid_check.Value = True
@@ -171,11 +179,11 @@ class _PropVisualizer(wx.Panel):
     def on_checkbox(self, event: wx.CommandEvent) -> None:
         name = event.EventObject.Name
         if name == 'grid':
-            self.parent.parent.visualizer_panel.grid_shown = event.Int
+            self.parent.parent.viewport_panel.grid_shown = event.Int
         elif name == 'axes':
-            self.parent.parent.visualizer_panel.axes_shown = event.Int
+            self.parent.parent.viewport_panel.axes_shown = event.Int
         else: # name == 'bbox'
-            self.parent.parent.visualizer_panel.bbox_shown = event.Int
+            self.parent.parent.viewport_panel.bbox_shown = event.Int
 
 
 class _PropTransform(wx.Panel):
@@ -189,7 +197,7 @@ class _PropTransform(wx.Panel):
         t: A float representing t value in radians.
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -349,7 +357,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -358,7 +366,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_points(5, [self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""
@@ -483,7 +491,7 @@ class _PropCameraInfo(wx.Panel):
         device_type:
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -542,7 +550,7 @@ class _PropCameraInfo(wx.Panel):
 
 class _PropCameraConfig(wx.Panel):
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCamera with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
@@ -601,7 +609,7 @@ class _PropCameraConfig(wx.Panel):
     def on_remote_usb_radio_group(self, event: wx.CommandEvent) -> None:
         rb = event.EventObject
 
-        # self.visualizer_panel.on_clear_cameras()
+        # self.viewport_panel.on_clear_cameras()
         self.Sizer.Clear()
 
         if rb.Label == 'USB':
@@ -652,7 +660,7 @@ class _PropQuickActions(wx.Panel):
         device_type:
     """
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, *args, **kwargs) -> None:
         """Initialize _PropCameraInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent

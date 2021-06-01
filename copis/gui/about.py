@@ -17,7 +17,7 @@ import wx
 
 
 class AboutDialog(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent, *args, **kwargs):
         wx.Dialog.__init__(self, parent, id=wx.ID_ANY, title='About', pos=wx.DefaultPosition, size=wx.DefaultSize, style=wx.DEFAULT_DIALOG_STYLE)
 
         self.SetSizeHints(wx.Size(200, 100), wx.DefaultSize)

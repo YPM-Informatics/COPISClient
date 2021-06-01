@@ -6,268 +6,141 @@
 # (at your option) any later version.
 #
 # COPISClient is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Helper functions for quaternion math, ."""
+"""OpenGL viewport util functions."""
 
-from math import acos, asin, cos, sin, sqrt, tan
+import ctypes
+import math
+from math import cos, tan
 from typing import Tuple
 
-import numpy as np
-
 import glm
+from glm import vec3, vec4, u32vec3, mat3
+
+from copis.classes import CylinderObject3D, AABBObject3D
 
 
-def arcball(
-    p1x: float, p1y: float, p2x: float, p2y: float, r: float) -> glm.quat:
-    """Return updated quaternion after arcball rotation.
-
-    Args:
-        p1x: Previous screen x-coordinate, normalized.
-        p1y: Previous screen y-coordinate, normalized.
-        p2x: Current screen x-coordinate, normalized.
-        p2y: Current screen y-coordinate, normalized.
-        r: Radius of arcball.
-    """
-    p1 = glm.vec3(p1x, p1y, project_to_sphere(r, p1x, p1y))
-    p2 = glm.vec3(p2x, p2y, project_to_sphere(r, p2x, p2y))
-    axis = glm.normalize(glm.cross(p1, p2))
-
-    # calculate angle between p1 and p2
-    d = map(lambda x, y: x - y, p1, p2)
-    t = sqrt(sum(x * x for x in d)) / (2.0 * r)
-    if t > 1.0:
-        t = 1.0
-    if t < -1.0:
-        t = -1.0
-    phi = 2.0 * asin(t)
-
-    return glm.angleAxis(phi, axis)
-
-
-def project_to_sphere(r: float, x: float, y: float) -> float:
-    """Return intersection position from screen coords to the arcball.
-
-    See https://www.khronos.org/opengl/wiki/Object_Mouse_Trackball for how
-    points outside the arcball are handled.
+def get_cylinder_vertices(cylinder: CylinderObject3D,
+                          sides: int) -> Tuple[glm.array, glm.array, glm.array]:
+    """Get vertices, normals, and indices for a cylinder object.
 
     Args:
-        r: A float for radius.
-        x: Screen x-coordinate, normalized.
-        y: Screen y-coordinate, normalized.
+        cylinder: A CylinderObject3D.
+        sides: An int representing the number of sides per circle.
     """
-    d = sqrt(x * x + y * y)
+    # faster way to calculate points along a circle
+    theta = 2.0 * math.pi / sides
+    tan_factor = tan(theta)
+    rad_factor = cos(theta)
 
-    # combines a sphere and a hyperbolic sheet for smooth transitions
-    if d < r * 0.70710678118654752440:
-        return sqrt(r * r - d * d)
-    t = r / 1.41421356237309504880
-    return t * t / d
+    x = vec3(cylinder.radius, 0.0, 0.0)
+
+    vertices = []
+    for i in range(sides):
+        vertices.append(vec3(0.0, 0.0, 0.0) + x)
+        vertices.append(vec3(0.0, 0.0, cylinder.height) + x)
+        delta = vec3(x[1] * tan_factor, -x[0] * tan_factor, 0.0)
+        x = (x + delta) * rad_factor
+    vertices.append(vec3(0.0, 0.0, 0.0))
+    vertices.append(vec3(0.0, 0.0, cylinder.height))
+
+    normals = []
+    for i in range(len(vertices)):
+        n = vec3(vertices[i].x, vertices[i].y, 0.0) * mat3(cylinder.trans_matrix)
+        normals.append(glm.normalize(n))
+        vertices[i] = vec3(vec4(vertices[i], 1.0) * cylinder.trans_matrix)
+    normals[-2] = vec3(0.0, 0.0, -1.0) * mat3(cylinder.trans_matrix)
+    normals[-1] = vec3(0.0, 0.0, 1.0) * mat3(cylinder.trans_matrix)
+
+    indices = []
+    for i in range(0, sides * 2, 2):
+        i2 = (i + 2) % (2 * sides)
+        i3 = (i + 3) % (2 * sides)
+        indices.extend((u32vec3(i, i + 1, i2),
+                        u32vec3(i + 1, i3, i2),
+                        u32vec3(2 * sides, i, i2),
+                        u32vec3(2 * sides + 1, i3, i + 1)))
+
+    return glm.array(vertices), glm.array(normals), glm.array(indices)
 
 
-def rotate_basis_to(v: glm.vec3) -> Tuple[glm.vec3, glm.vec3, glm.vec3]:
-    """Return normal basis vectors such that R * <0,1,0> = v.
+def get_aabb_vertices(aabb: AABBObject3D) -> Tuple[glm.array, glm.array, glm.array]:
+    """Get vertices, normals, and indices for an axis-aligned box object.
 
     Args:
-        v: A glm.vec3 to rotate to. Does not need to be normalized.
-
-    Raises:
-        ValueError: If vector provided has a magnitude of zero.
+        cylinder: An AABBObject3D.
     """
-    if not glm.equal(v, glm.vec3()):
-        raise ValueError('zero magnitude vector')
-    v = v / glm.length(v)
-    x = glm.vec3(1, 0, 0) # x axis normal basis vector
-    z = glm.vec3(0, 0, 1) # z axis normal basis vector
+    vertices = glm.array(
+        vec3(aabb.upper.x, aabb.lower.y, aabb.upper.z), # front
+        vec3(aabb.lower.x, aabb.lower.y, aabb.upper.z),
+        vec3(aabb.lower.x, aabb.lower.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.lower.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.upper.y, aabb.upper.z), # top
+        vec3(aabb.lower.x, aabb.upper.y, aabb.upper.z),
+        vec3(aabb.lower.x, aabb.lower.y, aabb.upper.z),
+        vec3(aabb.upper.x, aabb.lower.y, aabb.upper.z),
+        vec3(aabb.upper.x, aabb.upper.y, aabb.upper.z), # right
+        vec3(aabb.upper.x, aabb.lower.y, aabb.upper.z),
+        vec3(aabb.upper.x, aabb.lower.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.lower.x, aabb.lower.y, aabb.lower.z), # bottom
+        vec3(aabb.lower.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.lower.y, aabb.lower.z),
+        vec3(aabb.lower.x, aabb.lower.y, aabb.lower.z), # left
+        vec3(aabb.lower.x, aabb.lower.y, aabb.upper.z),
+        vec3(aabb.lower.x, aabb.upper.y, aabb.upper.z),
+        vec3(aabb.lower.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.upper.x, aabb.upper.y, aabb.upper.z), # back
+        vec3(aabb.upper.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.lower.x, aabb.upper.y, aabb.lower.z),
+        vec3(aabb.lower.x, aabb.upper.y, aabb.upper.z),
+    )
+    normals = glm.array(
+        vec3(0.0, -1.0, 0.0),   # front
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, 0.0, 1.0),    # top
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(1.0, 0.0, 0.0),    # right
+        vec3(1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, -1.0),   # bottom
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(-1.0, 0.0, 0.0),   # left
+        vec3(-1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0),    # back
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+    )
+    indices = glm.array(
+        u32vec3(0, 1, 2),       # front
+        u32vec3(2, 3, 0),
+        u32vec3(4, 5, 6),       # top
+        u32vec3(6, 7, 4),
+        u32vec3(8, 9, 10),      # right
+        u32vec3(10, 11, 8),
+        u32vec3(12, 13, 14),    # bottom
+        u32vec3(14, 15, 12),
+        u32vec3(16, 17, 18),    # left
+        u32vec3(18, 19, 16),
+        u32vec3(20, 21, 22),    # back
+        u32vec3(22, 23, 20),
+    )
 
-    # rotate such that that the basis vector for the y axis (up) aligns with v
-    if not glm.equal(v, glm.vec3(0, 1, 0)):
-        phi = acos(v.x)                         # glm.dot(v, glm.vec3(0, 1, 0))
-        axis = glm.vec3(v.z, 0.0, -v.x)         # glm.cross(glm.vec3(0, 1, 0), v)
-        rot = glm.mat3_cast(glm.angleAxis(phi, axis))
-        x = glm.dot(rot, x)
-        z = glm.dot(rot, z)
-    return x, v, z
-
-
-def get_circle(p: glm.vec3,
-               n: glm.vec3,
-               r: float,
-               sides: int = 36) -> Tuple[np.ndarray, int]:
-    """Create circle vertices given point, normal vector, radius, and # sides.
-
-    Uses an approximation method to compute vertices versus many trig calls.
-    """
-    a, n, _ = rotate_basis_to(n)
-    theta = 6.28318530717958647692 / sides
-    tangential_factor = tan(theta)
-    radial_factor = cos(theta)
-
-    x, y, z = a * r
-    count = sides + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i * 3] = x + p.x
-        vertices[i * 3 + 1] = y + p.y
-        vertices[i * 3 + 2] = z + p.z
-        tx = (y * n.z - z * n.y) * tangential_factor
-        ty = (z * n.x - x * n.z) * tangential_factor
-        tz = (x * n.y - y * n.x) * tangential_factor
-        x = (x + tx) * radial_factor
-        y = (y + ty) * radial_factor
-        z = (z + tz) * radial_factor
-    return vertices, count
-
-
-def get_helix(p: glm.vec3,
-              n: glm.vec3,
-              r: float,
-              pitch: int = 1,
-              turns: float = 1.0,
-              sides: int = 36) -> Tuple[np.ndarray, int]:
-    """Create helix vertices given point, normal vector, radius, pitch, # turns,
-    and # sides.
-
-    Uses an approximation method rather than trig functions.
-    """
-    a, n, _ = rotate_basis_to(n)
-    theta = 6.28318530717958647692 / sides
-    tangential_factor = tan(theta)
-    radial_factor = cos(theta)
-
-    x, y, z = a * r
-    d = n * pitch / sides
-    count = int(sides * turns) + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i * 3] = x + p.x + d.x * i
-        vertices[i * 3 + 1] = y + p.y + d.y * i
-        vertices[i * 3 + 2] = z + p.z + d.z * i
-        tx = (y * n.z - z * n.y) * tangential_factor
-        ty = (z * n.x - x * n.z) * tangential_factor
-        tz = (x * n.y - y * n.x) * tangential_factor
-        x = (x + tx) * radial_factor
-        y = (y + ty) * radial_factor
-        z = (z + tz) * radial_factor
-    return vertices, count
-
-
-def get_circle_trig(p, n, r, sides=36):
-    a, n, b = rotate_basis_to(glm.vec3(*n))
-    tau = 6.28318530717958647692
-
-    count = sides + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i*3] = p[0] + r*(a[0]*cos(i*tau/sides) + b[0]*sin(i*tau/sides))
-        vertices[i*3 + 1] = p[1] + r*(a[1]*cos(i*tau/sides) + b[1]*sin(i*tau/sides))
-        vertices[i*3 + 2] = p[2] + r*(a[2]*cos(i*tau/sides) + b[2]*sin(i*tau/sides))
-    return vertices, count
-
-
-def get_helix_trig(p, n, r, pitch=1, turns=1.0, sides=36):
-    a, n, b = rotate_basis_to(glm.vec3(*n))
-    tau = 6.28318530717958647692
-
-    count = int(sides * turns) + 1
-    vertices = np.empty(count * 3)
-    for i in range(count):
-        vertices[i*3] = p[0] + n[0]*(i*pitch/sides) + r*(a[0]*cos(i*tau/sides) + b[0]*sin(i*tau/sides))
-        vertices[i*3 + 1] = p[1] + n[1]*(i*pitch/sides) + r*(a[1]*cos(i*tau/sides) + b[1]*sin(i*tau/sides))
-        vertices[i*3 + 2] = p[2] + n[2]*(i*pitch/sides) + r*(a[2]*cos(i*tau/sides) + b[2]*sin(i*tau/sides))
-    return vertices, count
-
-'''
-    def _create_sphere(self, radius, ncircle, pcircle, num_cams) -> None:
-        """Populates action list with a spherical path to specification
-        """
-        jump = 2 * radius / ncircle
-        heights = []
-        level = -radius
-        for i in range(1, ncircle + 1):
-            heights.append(level)
-            level += jump
-
-        num_bottom = int(num_cams // 2)
-        num_top = int(-(num_cams // -2))
-
-        # generate a sphere (for testing)
-        # For each of the nine levels
-        for i in heights:
-            # Compute radius, number of cameras
-            r = math.sqrt(radius * radius - i * i)
-            # Get path containing x,y,z and count for num of cams
-            path, count = get_circle(glm.vec3(0, i, 0), glm.vec3(0, 1, 0), r, pcircle)
-
-            for j in range(count - 1):
-                # Put x,y,z,pan,tilt for camera in point5
-                point5 = [
-                    path[j * 3],
-                    path[j * 3 + 1],
-                    path[j * 3 + 2],
-                    math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                    math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-                # temporary hack to divvy ids
-                rand_device = 0
-                # Is it above or below 0?
-                if path[j * 3 + 1] > 0:
-                    rand_device += num_bottom
-                # Where is its x coord?
-                for i in range(1, num_top):
-                    if (path[j * 3] > (-radius + i*((radius*2)/num_top))):
-                        rand_device += 1
-
-                self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-                self._actions.append(Action(ActionType.C0, rand_device))
-
-    def _create_line(self, startX, startY, startZ, endX, endY, endZ, noPoints, num_cams) -> None:
-        xJump = (endX - startX) / (noPoints - 1)
-        yJump = (endY - startY) / (noPoints - 1)
-        zJump = (endZ - startZ) / (noPoints - 1)
-        cam_num = 0
-        cam_range = noPoints // num_cams
-        for i in range(0, noPoints - 1):
-            point5 = [
-                startX + i*xJump,
-                startY + i*yJump,
-                startZ + i*zJump,
-                math.atan2(startZ + i*zJump, startX + i*xJump) + math.pi,
-                math.atan((startY + i*yJump)/math.sqrt((startX + i*xJump)**2+(startZ + i*zJump)**2))]
-            if (i == (cam_range*(cam_num + 1))):
-                cam_num += 1
-            self._actions.append(Action(ActionType.G0, cam_num, 5, point5))
-            self._actions.append(Action(ActionType.C0, cam_num))
-
-    def _create_helix(self, radius, nturn, pturn, num_cams) -> None:
-        """Populates action list with a spherical path to specification
-        """
-        # generate a sphere (for testing)
-        # For each of the nine levels
-            # Get path containing x,y,z and count for num of cams
-        path, count = get_helix(glm.vec3(0, 0, 0), glm.vec3(0, 1, 0), radius, 10, nturn, pturn)
-
-        for j in range(count - 1):
-            # Put x,y,z,pan,tilt for camera in point5
-            point5 = [
-                path[j * 3],
-                path[j * 3 + 1],
-                path[j * 3 + 2],
-                math.atan2(path[j*3+2], path[j*3]) + math.pi,
-                math.atan(path[j*3+1]/math.sqrt(path[j*3]**2+path[j*3+2]**2))]
-
-            # temporary hack to divvy ids
-            rand_device = 0
-            # Where is its x coord?
-            for i in range(1, num_cams):
-                if (path[j * 3] > (-radius + i*((radius*2)/num_cams))):
-                    rand_device += 1
-
-            self._actions.append(Action(ActionType.G0, rand_device, 5, point5))
-            self._actions.append(Action(ActionType.C0, rand_device))
-'''
+    return vertices, normals, indices

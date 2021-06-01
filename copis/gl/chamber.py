@@ -16,10 +16,22 @@
 """GLChamber and associated classes."""
 
 from typing import List, Tuple
-
 import numpy as np
-from OpenGL.GL import *
-from OpenGL.GLU import *
+
+from OpenGL.GL import (
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_ELEMENT_ARRAY_BUFFER,
+    GL_UNSIGNED_INT, GL_CCW, GL_CW, GL_LINES, GL_LINE_SMOOTH, GL_TRIANGLE_FAN,
+    glGenVertexArrays, glGenBuffers, glDrawElements, glMultiDrawArrays,
+    glDeleteBuffers, glUniformMatrix4fv,
+    glBindBuffer, glBufferData, glEnableVertexAttribArray, glBindVertexArray,
+    glVertexAttribPointer, glDrawArrays, glUseProgram, glDisable, glEnable, glFrontFace
+)
+
+from OpenGL.GLU import (
+    GLU_FILL,
+    ctypes,
+    gluQuadricDrawStyle, gluNewQuadric
+)
 
 import glm
 
@@ -257,7 +269,7 @@ class GLChamber:
         # ---
 
         points, indices = self._get_bounding_box()
-        self._count_bounding_box = indices.size
+        self._count_bounding_box = indices.length
         glBindVertexArray(self._vao_bounding_box)
 
         # bounding box
@@ -272,7 +284,7 @@ class GLChamber:
         glEnableVertexAttribArray(1)
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[4])
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices, GL_STATIC_DRAW)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW)
 
         self._axes.create_vaos()
 
@@ -395,11 +407,11 @@ class GLChamber:
         ], dtype=np.float32)
 
         # 12 edges
-        indices = np.array([
+        indices = glm.array.from_numbers(ctypes.c_uint,
             0, 1, 1, 2, 2, 3, 3, 0,
             0, 5, 1, 6, 2, 7, 3, 4,
             4, 5, 5, 6, 6, 7, 7, 4,
-        ], dtype=np.uint16)
+        )
 
         return points, indices
 
@@ -417,7 +429,7 @@ class GLChamber:
             return
 
         glBindVertexArray(self._vao_bounding_box)
-        glDrawElements(GL_LINES, self._count_bounding_box, GL_UNSIGNED_SHORT, ctypes.c_void_p(0))
+        glDrawElements(GL_LINES, self._count_bounding_box, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
     def _render_axes(self) -> None:
         """Render axes if enabled."""
