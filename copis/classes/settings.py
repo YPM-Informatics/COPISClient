@@ -19,7 +19,7 @@ from glm import vec3
 
 from copis.globals import DebugEnv
 from copis.helpers import Point5
-from . import Device, Chamber, BoundingBox
+from . import Device, Machine, BoundingBox
 
 
 @dataclass
@@ -51,40 +51,37 @@ class ConfigSettings:
 class MachineSettings:
     """Machine configuration settings data structure."""
     def __init__(self, data: List[Dict[str, str]]) -> None:
-        self._chamber_data = [d for d in data if d['name'].lower().startswith('chamber ')]
+        self._machine_data = next(filter(lambda d: d['name'].lower() == 'machine', data), None)
         self._device_data = [d for d in data if d['name'].lower().startswith('camera ')]
 
-        self._parse_chambers()
+        self._parse_machine()
         self._parse_devices()
 
     def as_dict(self):
         """Return a dictionary representation of a MachineSettings instance."""
         this = {}
-        for chamber in self._chambers:
-            this.update(chamber.as_dict())
+
+        this.update(self._machine.as_dict())
 
         for device in self._devices:
             this.update(device.as_dict())
 
         return this
 
-    def _parse_chambers(self) -> None:
-        data = self._chamber_data
-        self._chambers = []
+    def _parse_machine(self) -> None:
+        datum = self._machine_data
+        self._machine = None
 
-        for i, datum in enumerate(data):
-            name = datum['name'].split(' ', maxsplit=1)[1]
-            min_x = float(datum['min_x'])
-            min_y = float(datum['min_y'])
-            min_z = float(datum['min_z'])
-            max_x = float(datum['max_x'])
-            max_y = float(datum['max_y'])
-            max_z = float(datum['max_z'])
-            port = datum['port']
-
-            box = BoundingBox(vec3(min_x, min_y, min_z), vec3(max_x, max_y, max_z))
-            chamber = Chamber(i, name, box, port)
-            self._chambers.append(chamber)
+        if datum is not None:
+            size_x = float(datum['size_x'])
+            size_y = float(datum['size_y'])
+            size_z = float(datum['size_z'])
+            origin_x = float(datum['origin_x'])
+            origin_y = float(datum['origin_y'])
+            origin_z = float(datum['origin_z'])
+            homing_sequence = datum['homing_sequence'].splitlines()
+            self._machine = Machine(vec3(size_x, size_y, size_z),
+                vec3(origin_x, origin_y, origin_z), homing_sequence)
 
     def _parse_devices(self) -> None:
         data = self._device_data
@@ -107,29 +104,25 @@ class MachineSettings:
             size = vec3(float(datum['size_x']),
                         float(datum['size_y']),
                         float(datum['size_z']))
-            chamber_name = datum['chamber']
             device_type = datum['type']
             interfaces = datum['interfaces'].splitlines()
-            home = '' if 'home' not in datum.keys() else datum['home']
 
             device = Device(
                 device_id=i,
                 device_name=name,
                 device_type=device_type,
-                chamber_name=chamber_name,
                 interfaces=interfaces,
                 position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
                 initial_position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
                 device_bounds=device_bounds,
                 collision_bounds=size,
-                homing_sequence=home)
 
             self._devices.append(device)
 
     @property
-    def chambers(self) -> List[Chamber]:
-        """Machine configuration settings' chambers getter."""
-        return self._chambers
+    def machine(self) -> Machine:
+        """Machine configuration settings' machine getter."""
+        return self._machine
 
     @property
     def devices(self) -> List[Device]:
