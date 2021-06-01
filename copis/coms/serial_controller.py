@@ -15,19 +15,20 @@
 
 """Manage COPIS Serial Communications."""
 
-
-import time
-import serial
 import re
+import time
 
 from dataclasses import dataclass
 from typing import List
+
+import serial
+
 from mprop import mproperty
+from serial.serialutil import SerialException
+from serial.tools import list_ports
 
 from copis.helpers import Point5
 from copis.classes import SerialResponse
-from serial.serialutil import SerialException
-from serial.tools import list_ports
 
 
 @dataclass
