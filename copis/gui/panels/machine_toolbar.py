@@ -34,7 +34,6 @@ class MachineToolbar(aui.AuiToolBar):
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self._parent = parent
         self._core = self._parent.core
-        self._serial = self._core.serial
         self._console = console
 
         self.port_cb = None
@@ -107,7 +106,7 @@ class MachineToolbar(aui.AuiToolBar):
         self.connect_btn.Label = 'Connect'
 
         self._print('Refreshing serial ports...')
-        self._serial.update_port_list()
+        self._core.update_serial_ports()
         self._print('Serial ports refreshed.')
 
         self.update_ports()
@@ -120,14 +119,14 @@ class MachineToolbar(aui.AuiToolBar):
             self.baud_cb.Selection = -1
             self.baud_cb.Items = []
         else:
-            self.baud_cb.Items = [str(i) for i in self._serial.BAUDS]
+            self.baud_cb.Items = [str(i) for i in self._core.serial_bauds]
             self.baud_cb.Selection = len(self.baud_cb.Items) - 1
 
             selection = self.port_cb.Selection
-            p_name = self.port_cb.Items[selection]
-            port = self._serial.select_port(p_name)
-            self.connect_btn.Label = 'Disconnect' \
-                if port.connection is not None and port.connection.is_open else 'Connect'
+            selected_port = self.port_cb.Items[selection]
+            if self._core.select_serial_port(selected_port):
+                is_port_connected = self._core.is_serial_port_connected
+                self.connect_btn.Label = 'Disconnect' if is_port_connected else 'Connect'
 
     def on_connect(self, event: wx.CommandEvent) -> None:
         """On connect button pressed, updates serial connection and button text"""
@@ -135,23 +134,23 @@ class MachineToolbar(aui.AuiToolBar):
         if self.port_cb.Selection >= 0:
             selection = self.baud_cb.Selection
             baud = int(self.baud_cb.Items[selection]) \
-                if selection >= 0 else self._serial.BAUDS[-1]
+                if selection >= 0 else self._core.serial_bauds[-1]
 
             if connect_btn.Label == 'Connect':
-                if self._serial.open_port(baud):
+                if self._core.connect(baud):
                     connect_btn.Label = 'Disconnect'
                 else:
                     connect_btn.Label = 'Connect'
                     set_dialog('Unable to connect.')
             else:
-                self._serial.close_port()
+                self._core.disconnect()
                 connect_btn.Label = 'Connect'
         else:
             set_dialog('Please select a port to connect to.')
 
     def update_ports(self) -> None:
         """Set port combobox to serial ports list."""
-        self.port_cb.Items = [p.name for p in self._serial.port_list]
+        self.port_cb.Items = [p.name for p in self._core.serial_port_list]
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, check which and process accordingly.
@@ -164,7 +163,7 @@ class MachineToolbar(aui.AuiToolBar):
             # else:
             #     self.core.start_imaging()
 
-            is_connected = self._serial.is_port_open
+            is_connected = self._core.is_serial_port_connected
             has_path = len(self._core.actions)
             can_image = is_connected and has_path
 
@@ -204,7 +203,7 @@ class MachineToolbar(aui.AuiToolBar):
 
         for i, action in enumerate(actions):
             self._print(f'Sending: {action}')
-            response = self._serial.write(action)
+            response = self._core.start_imaging() # self._serial.write(action)
 
             last = response[-1]
             if isinstance(last, dict):
