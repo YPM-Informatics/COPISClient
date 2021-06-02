@@ -100,3 +100,10 @@ class DebugEnv(Enum):
     """Debug environment flags."""
     PROD = 'prod'
     DEV = 'dev'
+
+class ComStatus(IntEnum):
+    """Communication protocol statuses."""
+    ERROR = 0
+    BUSY = 1
+    UNKNOWN = 2
+    IDLE = 3

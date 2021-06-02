@@ -21,6 +21,7 @@ from typing import List, Optional
 from glm import vec3
 
 from copis.helpers import Point5
+from copis.globals import ComStatus
 from . import BoundingBox
 
 
@@ -37,6 +38,9 @@ class Device:
     device_bounds: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
     collision_bounds: vec3 = vec3()
     port: str = ''
+    edsdk_status: ComStatus = ComStatus.UNKNOWN
+    serial_status: ComStatus = ComStatus.UNKNOWN
+    is_homed: bool = False
 
     def as_dict(self):
         """Return a dictionary representation of a Device instance."""
