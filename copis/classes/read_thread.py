@@ -13,19 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS classes package."""
+"""Provide the COPIS ReadThread Class."""
 
-from .bounding_box import BoundingBox
-from .monitored_list import MonitoredList
-from .device import Device
-from .action import Action
-from .machine import Machine
-from .serial_response import SerialResponse
-from .read_thread import ReadThread
-from .proxy_objects import Object3D, CylinderObject3D, AABBObject3D, OBJObject3D
-from .settings import ConfigSettings, MachineSettings
+import threading
 
-__all__ = [
-    "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABBObject3D",
-    "OBJObject3D", "Action", "Machine", "SerialResponse", "ReadThread",
-    "MonitoredList", "ConfigSettings", "MachineSettings"]
+from dataclasses import dataclass
+
+
+@dataclass
+class ReadThread:
+    """Data structure that implements a COPIS read thread object."""
+    thread: threading.Thread = None
+    stop: bool = False
+    port: str = None

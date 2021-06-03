@@ -31,7 +31,6 @@ import threading
 import time
 import warnings
 
-from dataclasses import dataclass
 from collections import namedtuple
 from importlib import import_module
 from functools import wraps
@@ -46,7 +45,8 @@ import copis.coms.serial_controller as serial_controller
 
 from .globals import ActionType, DebugEnv
 from .classes import (
-    Action, Device, MonitoredList, Object3D, OBJObject3D)
+    Action, Device, MonitoredList, Object3D, OBJObject3D,
+    ReadThread)
 
 
 def locked(func):
@@ -57,12 +57,6 @@ def locked(func):
             return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
-
-@dataclass
-class ReadThread:
-    thread: threading.Thread = None
-    stop: bool = False
-    port: str = None
 
 
 class COPISCore:
