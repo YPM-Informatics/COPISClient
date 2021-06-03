@@ -270,7 +270,6 @@ class SerialController():
     @property
     def port_list(self) -> List[SerialPort]:
         """Returns a copy of the serial ports list."""
-
         return self._ports.copy()
 
 
