@@ -34,8 +34,7 @@ import warnings
 from collections import namedtuple
 from importlib import import_module
 from functools import wraps
-from queue import Empty as QueueEmpty
-from queue import Queue
+from queue import Queue, Empty as QueueEmpty
 from typing import List
 from glm import vec3
 
@@ -101,18 +100,16 @@ class COPISCore:
         self._check_configs()
 
         # clear to send, enabled after responses
-        self._clear = False
+        self._clear_to_send = False
         # True if sending actions, false if paused
-        self.imaging = False
-        self.paused = False
+        self.is_imaging = False
+        self.is_paused = False
 
         # logging
         self.sentlines = {}
         self.sent = []
 
         self.read_threads = []
-        self.read_thread = None
-        self.stop_read_thread = False
         self.send_thread = None
         self.stop_send_thread = False
         self.imaging_thread = None
@@ -194,14 +191,13 @@ class COPISCore:
                     self._stop_sender()
 
             if self.imaging_thread:
-                self.imaging = False
+                self.is_imaging = False
                 self.imaging_thread.join()
-
-
+                self.imaging_thread = None
 
             self._serial.close_port()
 
-        self.imaging = False
+        self.is_imaging = False
 
         dispatcher.send('core_message', message=f'Disconnected from device {port_name}')
 
@@ -218,7 +214,6 @@ class COPISCore:
                         filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
                     ).name
 
-                # self.stop_read_thread = False
                 read_thread = threading.Thread(
                     target=self._listen,
                     name=f'read thread {port_name}')
@@ -246,7 +241,7 @@ class COPISCore:
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
             if not self._edsdk.is_waiting_for_image:
-                self._clear = True
+                self._clear_to_send = True
                 resp = self._serial.read(read_thread.port)
                 if resp:
                     dispatcher.send('core_message', message=resp)
@@ -273,28 +268,28 @@ class COPISCore:
             except QueueEmpty:
                 continue
 
-            while self.is_serial_port_connected and self.imaging and not self._clear:
+            while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
             self._send(command)
 
-            while self.is_serial_port_connected and self.imaging and not self._clear:
+            while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
     def start_imaging(self, startindex=0) -> bool:
         """TODO"""
 
-        if self.imaging or not self.is_serial_port_connected:
+        if self.is_imaging or not self.is_serial_port_connected:
             return False
 
         # TODO: setup machine before starting
 
         self._mainqueue = self._actions.copy()
-        self.imaging = True
+        self.is_imaging = True
 
-        self._clear = False
+        self._clear_to_send = False
         self.imaging_thread = threading.Thread(
-            target=self._image,
+            target=self._do_imaging,
             name='imaging thread',
             kwargs={"resuming": True}
         )
@@ -306,19 +301,19 @@ class COPISCore:
         """TODO"""
 
         self.pause()
-        self.paused = False
+        self.is_paused = False
         self._mainqueue = None
-        self._clear = True
+        self._clear_to_send = True
         dispatcher.send('core_message', message='Imaging stopped')
 
     def pause(self) -> bool:
         """Pause the current run, saving the current position."""
 
-        if not self.imaging:
+        if not self.is_imaging:
             return False
 
-        self.paused = True
-        self.imaging = False
+        self.is_paused = True
+        self.is_imaging = False
 
         # try joining the print thread: enclose it in try/except because we
         # might be calling it from the thread itself
@@ -333,15 +328,15 @@ class COPISCore:
     def resume(self) -> bool:
         """Resume the current run."""
 
-        if not self.paused:
+        if not self.is_paused:
             return False
 
         # send commands to resume printing
 
-        self.paused = False
-        self.imaging = True
+        self.is_paused = False
+        self.is_imaging = True
         self.imaging_thread = threading.Thread(
-            target=self._image,
+            target=self._do_imaging,
             name='imaging thread',
             kwargs={"resuming": True}
         )
@@ -356,19 +351,19 @@ class COPISCore:
         else:
             logging.error("Not connected to device.")
 
-    def _image(self, resuming=False) -> None:
+    def _do_imaging(self, resuming=False) -> None:
         """TODO"""
         self._stop_sender()
 
         try:
-            while self.imaging and self.is_serial_port_connected:
+            while self.is_imaging and self.is_serial_port_connected:
                 self._send_next()
 
             self.sentlines = {}
             self.sent = []
 
         except:
-            logging.error("Print thread died")
+            logging.error("Imaging thread died")
 
         finally:
             self.imaging_thread = None
@@ -379,7 +374,7 @@ class COPISCore:
             return
 
         # wait until we get the ok from listener
-        while self.is_serial_port_connected and self.imaging and not self._clear:
+        while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
             time.sleep(self._YIELD_TIMEOUT)
 
         if not self._sidequeue.empty():
@@ -387,14 +382,14 @@ class COPISCore:
             self._sidequeue.task_done()
             return
 
-        if self.imaging and self._mainqueue:
+        if self.is_imaging and self._mainqueue:
             curr = self._mainqueue.pop(0)
             self._send(curr)
-            self._clear = False
+            self._clear_to_send = False
 
         else:
-            self.imaging = False
-            self._clear = True
+            self.is_imaging = False
+            self._clear_to_send = True
 
     def _send(self, command):
         """Send command to machine."""
@@ -571,7 +566,7 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_edsdk(self) -> None:
-        """Initialize Canon EDSDK connection."""
+        """Initializes the Canon EDSDK controller."""
         if self._is_edsdk_enabled:
             return
 
@@ -581,7 +576,7 @@ class COPISCore:
         self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
-        """Terminate Canon EDSDK connection."""
+        """Disconnects all EDSDK connections; and terminates the Canon EDSDK."""
         if self._is_edsdk_enabled:
             self._edsdk.terminate()
 
@@ -590,16 +585,17 @@ class COPISCore:
     # --------------------------------------------------------------------------
 
     def init_serial(self) -> None:
-        """Initialize serial connection."""
+        """Initializes the serial controller."""
         if self._is_serial_enabled:
             return
+
         is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
         self._serial = serial_controller
         self._serial.initialize(ConsoleOutput(), is_dev_env)
         self._is_serial_enabled = True
 
     def terminate_serial(self):
-        """Terminate serial connection."""
+        """Disconnects all serial connections; and terminates all serial threading activity."""
         if self._is_serial_enabled:
             for read_thread in self.read_threads:
                 read_thread.stop = True
@@ -607,6 +603,11 @@ class COPISCore:
                     read_thread.thread.join()
 
             self.read_threads.clear()
+
+            if self.imaging_thread:
+                self.is_imaging = False
+                self.imaging_thread.join()
+                self.imaging_thread = None
 
             self._stop_sender()
             self._serial.terminate()
@@ -659,17 +660,6 @@ class COPISCore:
     def is_serial_port_connected(self):
         """Return a flag indicating whether the active serial port is connected."""
         return self._serial.is_port_open
-
-
-    # @property
-    # def edsdk(self):
-    #     """Get EDSDK."""
-    #     return self._edsdk
-
-    # @property
-    # def serial(self):
-    #     """Get serial."""
-    #     return self._serial
 
 
 class ConsoleOutput:
