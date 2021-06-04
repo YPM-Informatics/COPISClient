@@ -41,6 +41,7 @@ from glm import vec3
 from pydispatch import dispatcher
 
 import copis.coms.serial_controller as serial_controller
+import copis.command_processor as command_processor
 
 from .globals import ActionType, DebugEnv
 from .classes import (
@@ -248,6 +249,9 @@ class COPISCore:
             self.stop_send_thread = True
             self.send_thread.join()
             self.send_thread = None
+            print('Send thread stopped')
+        else:
+            print('No send thread to stop')
 
     def _sender(self) -> None:
         while not self.stop_send_thread:
@@ -527,22 +531,10 @@ class COPISCore:
         TODO: Expand to include not just G0 and C0 actions
         """
 
-        get_g_code = lambda input: str(input).split('.')[1]
         lines = []
 
         for action in self._actions:
-            g_code = get_g_code(action.atype)
-            dest = '' if action.device == 0 else f'>{action.device}'
-            line = f'{dest}{g_code}'
-            g_cmd = ''
-
-            if g_code[0] == 'G':
-                pos = [f'{c:.3f}' for c in action.args]
-                g_cmd = f'X{pos[0]}Y{pos[0]}Z{pos[0]}P{pos[0]}T{pos[0]}'
-            elif g_code[0] == 'C':
-                g_cmd = 'P500'
-
-            line += g_cmd
+            line = command_processor.serialize_command(action)
             lines.append(line)
 
         if filename is not None:

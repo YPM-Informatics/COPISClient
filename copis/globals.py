@@ -83,6 +83,7 @@ class ActionType(Enum):
     G17 = auto()    # XY plane
     G18 = auto()    # ZX plane
     G19 = auto()    # YZ plane
+    G28 = auto()    # homing
     G90 = auto()    # absolute distance mode
     G91 = auto()    # relative distance mode
     G92 = auto()    # set axis position(s)
