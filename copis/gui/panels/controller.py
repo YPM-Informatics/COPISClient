@@ -121,7 +121,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
                 # Screw motor axis doesn't work properly at high speeds.
                 pos_values = pos_values[0:5]
 
-            action = self._generate_commands('G1', *pos_values)
+            action = self._generate_commands('G1', *zip(pos_names, pos_values))
             self._core.send_now(action)
         else:
             set_dialog('Connect to the machine in order to jog.')
