@@ -290,11 +290,13 @@ class PathgenToolbar(aui.AuiToolBar):
                 tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
 
                 # add action
+                coords = [str(c) for c in [point.x, point.y, point.z, pan, tilt, 2500]]
+                pos = list(zip(list('XYZPTF'), coords))
                 interlaced_actions.extend((
                     # TODO: allow user customization of actions at each point
                     # https://github.com/YPM-Informatics/COPISClient/issues/102
-                    Action(ActionType.G1, device_id, 6, [point.x, point.y, point.z, pan, tilt, 0]),
-                    Action(ActionType.C0, device_id, 1, [1000]),
+                    Action(ActionType.G1, device_id, 6, pos),
+                    Action(ActionType.C0, device_id, 1, [('P', '500')]),
                 ))
 
         # extend core actions list
