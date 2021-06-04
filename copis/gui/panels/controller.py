@@ -75,7 +75,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
     def on_jog_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
-        if (self._core.is_serial_port_connected):
+        if self._core.is_serial_port_connected:
             button = event.EventObject
 
             if button.Name == 'xy':

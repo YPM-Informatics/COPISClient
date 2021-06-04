@@ -82,6 +82,10 @@ class COPISCore:
     """
 
     _YIELD_TIMEOUT = .001
+    _G_COMMANDS = [ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
+            ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
+            ActionType.G90, ActionType.G91, ActionType.G92]
+    _C_COMMANDS = [ActionType.C0, ActionType.C1]
 
     def __init__(self, parent) -> None:
         """Initialize a CopisCore instance."""
@@ -157,22 +161,6 @@ class COPISCore:
                 warnings.warn(warning)
             else:
                 raise warning
-
-    # TODO: this might not exist after testing machine.
-    # def offset_devices(self, *devices) -> None:
-    #     """Take a list of devices and applies the chamber offsets to their coordinates."""
-
-    #     for device in devices:
-    #         chamber = next(filter(lambda c, d = device : c.name == d.chamber_name,
-    #         self.config.machine_settings.chambers))
-
-    #         new_position = Point5(
-    #             device.position.x + chamber.offsets.x,
-    #             device.position.y + chamber.offsets.y,
-    #             device.position.z + chamber.offsets.z,
-    #             device.position.p, device.position.t)
-
-    #         device.position = new_position
 
     @locked
     def disconnect(self):
@@ -346,6 +334,12 @@ class COPISCore:
 
     def send_now(self, command):
         """Send a command to machine ahead of the command queue."""
+        # Don't send now if imaging and G or C commands are sent.
+        # No jogging or homing while imaging is in process.
+        if self.is_imaging and command.atype in self._G_COMMANDS + self._C_COMMANDS:
+            dispatcher.send('core_error', message='Action commands not allowed while imaging.')
+            return
+
         if self.is_serial_port_connected:
             self._sidequeue.put_nowait(command)
         else:
@@ -403,10 +397,7 @@ class COPISCore:
         # debug command
         logging.debug(command)
 
-        if command.atype in (
-            ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
-            ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
-            ActionType.G90, ActionType.G91, ActionType.G92):
+        if command.atype in self._G_COMMANDS:
 
             # try writing to printer
             # ser.write(command.encode())
