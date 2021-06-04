@@ -16,6 +16,7 @@
 """Provide the COPIS Maching Class."""
 
 from dataclasses import dataclass
+from typing import List
 from math import inf
 
 from glm import vec3
@@ -31,7 +32,7 @@ class Machine:
     """
     dimensions: vec3 = vec3(inf)
     origin: vec3 = vec3(inf)
-    homing_sequence: str = ''
+    homing_sequence: List[str] = ''
 
     def as_dict(self):
         """Returns a dictionary representation of a machine instance."""
