@@ -19,6 +19,7 @@ TODO: Currently nonfunctional - needs to be connected to copiscore when
 serial connections are implemented.
 """
 
+
 import wx
 import wx.lib.scrolledpanel as scrolled
 
@@ -28,6 +29,8 @@ from copis.gui.wxutils import (
     FancyTextCtrl,
     create_scaled_bitmap, set_dialog, simple_statictext)
 from copis.helpers import Point5, pt_units, xyz_units
+from copis.globals import ActionType
+from copis.classes import Action
 
 
 class ControllerPanel(scrolled.ScrolledPanel):
@@ -72,40 +75,70 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
     def on_jog_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
-        button = event.EventObject
+        if (self._core.is_serial_port_connected):
+            button = event.EventObject
 
-        if button.Name[0] in 'xyzns':
-            step = self.xyz_step_ctrl.num_value
-        else: # button.Name in 'pt':
-            step = self.pt_step_ctrl.num_value
+            if button.Name == 'xy':
+                return
 
-        feed_rate = float(self.feed_rate_ctrl.Value)
-        serial = self._core.serial
-        device_id = self._device.device_id
+            btn = button.Name
+            cmd_tokens = []
+            xyz_step = 0
+            pt_step = 0
+            feed_rate = float(self.feed_rate_ctrl.Value)
+            pos_names = ['X', 'Y', 'Z', 'P', 'T', 'F']
+            pos_values = [0, 0, 0, 0, 0, feed_rate]
 
-        dest = '' if device_id == 0 else f'>{device_id}'
+            if self._device.is_move_absolute:
+                action = self._generate_commands('G91')
+                self._core.send_now(action)
+                self._device.is_move_absolute = False
 
-        if button.Name == 'xy':
-            print('Not implemented.')
-            return
+            if btn[0] in 'xyzns':
+                xyz_step = self.xyz_step_ctrl.num_value
+            else: # Button name in 'pt':
+                pt_step = self.pt_step_ctrl.num_value
 
-        # Ignore feed rate for z axis; screw motor axis doesn't work properly at high speeds.
-        fee_rate_msg = '' if button.Name[0] == 'z' else f'F{feed_rate}'
 
-        msg = f'{dest}G1{button.Name}{step}{fee_rate_msg}\r'
-        msg = msg.replace('+', '')
+            if btn[0] in 'ns':
+                cmd_tokens = list(btn)
+                cmd_tokens.reverse()
+                cmd_tokens = [ 'X+' if i == 'e' else i for i in cmd_tokens ]
+                cmd_tokens = [ 'Y+' if i == 'n' else i for i in cmd_tokens ]
+                cmd_tokens = [ 'X-' if i == 'w' else i for i in cmd_tokens ]
+                cmd_tokens = [ 'Y-' if i == 's' else i for i in cmd_tokens ]
+            else:
+                cmd_tokens.append(btn.upper())
 
-        if button.Name[1] not in '+-':
-            msg = msg.replace('n', f'y{step}')
-            msg = msg.replace('s', f'y-{step}')
-            msg = msg.replace('e', 'x')
-            msg = msg.replace('w', 'x-')
+            for token in cmd_tokens:
+                sign = int(f'{token[1]}1')
+                step = xyz_step if token[0] in 'XYZ' else pt_step
+                index = pos_names.index(token[0])
+                pos_values[index] = sign * step
 
-        if (serial is not None and serial.is_port_open):
-            data = f'{dest}G91\r{msg.upper()}'
-            serial.write(data)
+            if btn[0] == 'z':
+                # Ignore feed rate for z axis.
+                # Screw motor axis doesn't work properly at high speeds.
+                pos_values = pos_values[0:5]
+
+            action = self._generate_commands('G1', *pos_values)
+            self._core.send_now(action)
         else:
             set_dialog('Connect to the machine in order to jog.')
+
+    def _generate_commands(self, name: str, *args):
+        atype = None
+        device_id = self._device.device_id
+        cmd_args = list(args)
+
+        if name == 'G91':
+            atype = ActionType.G91
+        elif name == 'G1':
+            atype = ActionType.G1
+        else:
+            raise ValueError(f'Unsupported jog command {name}.')
+
+        return Action(atype, device_id, len(cmd_args), cmd_args)
 
     def _add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
