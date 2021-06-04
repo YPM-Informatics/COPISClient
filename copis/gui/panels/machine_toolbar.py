@@ -33,7 +33,10 @@ class MachineToolbar(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self._parent = parent
+
         self._core = self._parent.core
+        self._settings = self._core.config.machine_settings
+
         self._console = console
 
         self.port_cb = None
@@ -67,6 +70,11 @@ class MachineToolbar(aui.AuiToolBar):
         self.AddSpacer(8)
         self.connect_btn = wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(self.connect_btn))
+        self.AddSpacer(8)
+        self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
+
+        #self.home_btn.Enable(self._can_home())
 
         self.AddSeparator()
 
@@ -191,6 +199,23 @@ class MachineToolbar(aui.AuiToolBar):
 
         elif event.Id == ToolIds.EXPORT.value:
             self._core.export_actions('actions.txt')
+
+    def on_home(self, event: wx.CommandEvent) -> None:
+        """On home button pressed, issue homing commands to machine."""
+        home_btn = self.FindControl(event.Id)
+        homing_cmd = self._settings.machine.homing_sequence
+
+        if homing_cmd and len(homing_cmd) > 0:
+            for cmd in homing_cmd:
+                self._core.send_now(cmd)
+
+        for d in self._settings.devices:
+            d.is_homed = True
+        # home_btn.Enable(self._can_home())
+
+    def _can_home(self):
+        return len(self._settings.devices) > 0 and \
+            all(not d.is_homed for d in self._settings.devices)
 
     def _print(self, msg):
         if self._console is None:
