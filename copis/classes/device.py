@@ -41,6 +41,7 @@ class Device:
     edsdk_status: ComStatus = ComStatus.UNKNOWN
     serial_status: ComStatus = ComStatus.UNKNOWN
     is_homed: bool = False
+    is_move_absolute: bool = True
 
     def as_dict(self):
         """Return a dictionary representation of a Device instance."""
