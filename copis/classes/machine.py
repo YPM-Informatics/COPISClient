@@ -15,11 +15,15 @@
 
 """Provide the COPIS Maching Class."""
 
+
 from dataclasses import dataclass
 from typing import List
 from math import inf
 
 from glm import vec3
+
+from copis.command_processor import deserialize_command
+from . import Action
 
 
 @dataclass
@@ -47,3 +51,11 @@ class Machine:
                 'homing_sequence': '\n'.join(self.homing_sequence)
             }
         }
+
+    @property
+    def homing_actions(self) -> List[Action]:
+        """Turns the homing sequence into a list of actions."""
+        if not self.homing_sequence or len(self.homing_sequence) == 0:
+            return []
+
+        return [deserialize_command(cmd) for cmd in self.homing_sequence]

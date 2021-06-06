@@ -15,12 +15,13 @@
 
 """MachineToolbar class."""
 
+
 import logging
-import threading
 import wx
 import wx.lib.agw.aui as aui
 
-from copis.globals import ToolIds
+from copis.classes.action import Action
+from copis.globals import ActionType, ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 
@@ -74,7 +75,7 @@ class MachineToolbar(aui.AuiToolBar):
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
 
-        #self.home_btn.Enable(self._can_home())
+        self.home_btn.Enable(self._can_home())
 
         self.AddSeparator()
 
@@ -181,11 +182,7 @@ class MachineToolbar(aui.AuiToolBar):
                 set_dialog(msg)
                 return
 
-            actions = self._core.export_actions()
-
-            imaging_thread = threading.Thread(name='imaging thread', target=self._run_imaging,
-                kwargs={'actions': actions}, daemon=True)
-            imaging_thread.start()
+            self._core.start_imaging()
 
         elif event.Id == ToolIds.PAUSE.value:
             self._core.pause()
@@ -202,47 +199,35 @@ class MachineToolbar(aui.AuiToolBar):
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""
+        if not self._core.is_serial_port_connected:
+            set_dialog('Connect to the machine in order to home it.')
+            return
+
         home_btn = self.FindControl(event.Id)
-        homing_cmd = self._settings.machine.homing_sequence
+        homing_cmd = self._settings.machine.homing_actions
 
         if homing_cmd and len(homing_cmd) > 0:
+            # Ensure we are in absolute motion mode.
+            for dvc in self._settings.devices:
+                self._core.send_now(Action(ActionType.G90, dvc.device_id))
+
             for cmd in homing_cmd:
                 self._core.send_now(cmd)
 
-        for d in self._settings.devices:
-            d.is_homed = True
-        # home_btn.Enable(self._can_home())
+        for dvc in self._settings.devices:
+            dvc.is_homed = True
+        home_btn.Enable(self._can_home())
 
     def _can_home(self):
-        return len(self._settings.devices) > 0 and \
-            all(not d.is_homed for d in self._settings.devices)
+        return True
+        # return len(self._settings.devices) > 0 and \
+        #     all(not d.is_homed for d in self._settings.devices)
 
     def _print(self, msg):
         if self._console is None:
             print(msg)
         else:
             self._console.print(msg)
-
-    def _run_imaging(self, actions):
-        self._print('Imaging started')
-
-        for i, action in enumerate(actions):
-            self._print(f'Sending: {action}')
-            response = self._core.start_imaging() # self._serial.write(action)
-
-            last = response[-1]
-            if isinstance(last, dict):
-                if last['is_idle']:
-                    self._print(
-                        f'Received OK.{"" if i == len(actions) - 1 else " Ready for next command."}'
-                    )
-                else:
-                    self._print('Idle not detected. imaging stopped.')
-                    break
-            else:
-                self._print(f'Received: {response}')
-
-        self._print('Imaging ended')
 
     def __del__(self) -> None:
         pass
