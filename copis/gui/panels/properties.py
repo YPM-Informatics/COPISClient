@@ -23,7 +23,7 @@ import wx.lib.scrolledpanel as scrolled
 
 from pydispatch import dispatcher
 
-from copis.helpers import xyz_units, pt_units
+from copis.helpers import get_action_args_values, xyz_units, pt_units
 from copis.gui.wxutils import (
     FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
@@ -130,7 +130,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
             action = self.core.actions[points[0]]
             if action.atype == ActionType.G0 or action.atype == ActionType.G1:
                 self.current = 'Point'
-                self._property_panels['transform'].set_point(*action.args[:5])
+                args = get_action_args_values(action.args)
+                self._property_panels['transform'].set_point(*args[:5])
                 self.update_to_selected('Point')
 
     def on_object_selected(self, object) -> None:

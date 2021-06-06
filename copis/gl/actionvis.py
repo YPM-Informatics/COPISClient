@@ -33,7 +33,8 @@ from OpenGL.GL import (
 from OpenGL.GLU import ctypes
 
 from copis.globals import ActionType
-from copis.helpers import point5_to_mat4, shade_color, xyzpt_to_mat4
+from copis.helpers import (
+    get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
 
 
 class GLActionVis:
@@ -202,7 +203,7 @@ class GLActionVis:
         for i, action in enumerate(self.core.actions):
 
             if action.atype in (ActionType.G0, ActionType.G1):
-                args = [float(a[1]) for a in action.args]
+                args = get_action_args_values(action.args)
                 self._items['line'][action.device].append((i + self._num_devices, xyzpt_to_mat4(*args[:5])))
 
             elif action.atype in (ActionType.C0, ActionType.C1):

@@ -30,7 +30,7 @@ from copis.classes import Action, Object3D
 from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
-from copis.helpers import xyz_units
+from copis.helpers import create_action_args, xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
 
 
@@ -289,14 +289,14 @@ class PathgenToolbar(aui.AuiToolBar):
                 pan = math.atan2(dx, dy)
                 tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
 
-                # add action
-                coords = [str(c) for c in [point.x, point.y, point.z, pan, tilt, 2500]]
-                pos = list(zip(list('XYZPTF'), coords))
+                # Add action. skip feed rate for now.
+                g_args = create_action_args([point.x, point.y, point.z, pan, tilt])
+                c_args = create_action_args([500.0], 'P')
                 interlaced_actions.extend((
                     # TODO: allow user customization of actions at each point
                     # https://github.com/YPM-Informatics/COPISClient/issues/102
-                    Action(ActionType.G1, device_id, 6, pos),
-                    Action(ActionType.C0, device_id, 1, [('P', '500')]),
+                    Action(ActionType.G1, device_id, len(g_args), g_args),
+                    Action(ActionType.C0, device_id, len(c_args), c_args),
                 ))
 
         # extend core actions list
