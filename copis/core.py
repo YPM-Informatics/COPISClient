@@ -40,9 +40,9 @@ from glm import vec3
 
 from pydispatch import dispatcher
 
-import copis.coms.serial_controller as serial_controller
-import copis.command_processor as command_processor
-
+from .command_processor import serialize_command
+from .coms import serial_controller
+from .helpers import create_action_args
 from .globals import ActionType, DebugEnv
 from .classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D,
@@ -235,8 +235,6 @@ class COPISCore:
                 if resp:
                     dispatcher.send('core_message', message=resp)
 
-        print(f'exiting read thread {read_thread.port}')
-
     def _start_sender(self) -> None:
         self.stop_send_thread = False
         self.send_thread = threading.Thread(
@@ -249,9 +247,6 @@ class COPISCore:
             self.stop_send_thread = True
             self.send_thread.join()
             self.send_thread = None
-            print('Send thread stopped')
-        else:
-            print('No send thread to stop')
 
     def _sender(self) -> None:
         while not self.stop_send_thread:
@@ -398,30 +393,34 @@ class COPISCore:
         # log sent command
         self.sent.append(command)
 
+        cmd = serialize_command(command)
+        if self._serial.is_port_open:
+            self._serial.write(cmd)
+
         # debug command
-        logging.debug(command)
+        # logging.debug(command)
 
-        if command.atype in self._G_COMMANDS:
+        # if command.atype in self._G_COMMANDS:
 
-            # try writing to printer
-            # ser.write(command.encode())
-            pass
+        #     # try writing to printer
+        #     # ser.write(command.encode())
+        #     pass
 
-        elif command.atype == ActionType.C0:
-            if self._edsdk.connect(command.device):
-                self._edsdk.take_picture()
+        # elif command.atype == ActionType.C0:
+        #     if self._edsdk.connect(command.device):
+        #         self._edsdk.take_picture()
 
-        elif command.atype == ActionType.C1:
-            pass
+        # elif command.atype == ActionType.C1:
+        #     pass
 
-        elif command.atype == ActionType.M24:
-            pass
+        # elif command.atype == ActionType.M24:
+        #     pass
 
-        elif command.atype == ActionType.M17:
-            pass
+        # elif command.atype == ActionType.M17:
+        #     pass
 
-        elif command.atype == ActionType.M18:
-            pass
+        # elif command.atype == ActionType.M18:
+        #     pass
 
     # --------------------------------------------------------------------------
     # Action and device data methods
@@ -519,6 +518,7 @@ class COPISCore:
 
     def update_selected_points(self, args) -> None:
         """Update position of points in selected points list."""
+        args = create_action_args(args)
         for id_ in self.selected_points:
             for i in range(min(len(self.actions[id_].args), len(args))):
                 self.actions[id_].args[i] = args[i]
@@ -534,7 +534,7 @@ class COPISCore:
         lines = []
 
         for action in self._actions:
-            line = command_processor.serialize_command(action)
+            line = serialize_command(action)
             lines.append(line)
 
         if filename is not None:
