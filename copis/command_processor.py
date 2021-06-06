@@ -22,6 +22,7 @@ from itertools import chain
 
 from .classes.action import Action
 from .globals import ActionType
+from .helpers import rad_to_dd, is_number
 
 
 def deserialize_command(cmd: str) -> Action:
@@ -45,14 +46,25 @@ def deserialize_command(cmd: str) -> Action:
 
 def serialize_command(action: Action) -> str:
     """Serialize an Action object into a string."""
-
     get_g_code = lambda input: str(input).split('.')[1]
 
     g_code = get_g_code(action.atype)
     dest = '' if action.device == 0 else f'>{action.device}'
-    cmd = f'{dest}{g_code}'
-    g_cmd =  ''.join(chain.from_iterable(action.args))
 
-    cmd += g_cmd
+    args = action.args.copy() if action.args else []
 
-    return cmd
+    if args and len(args) > 0:
+        for i, arg in enumerate(args):
+            value = str(arg[1])
+
+            if is_number(value):
+                value = float(arg[1])
+
+                if g_code[0] == 'G' and arg[0] in 'PT':
+                    value = rad_to_dd(value)
+
+                args[i] = (arg[0], f'{value:.3f}')
+
+    g_cmd = ''.join(chain.from_iterable(args))
+
+    return f'{dest}{g_code}{g_cmd}'
