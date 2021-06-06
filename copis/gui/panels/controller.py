@@ -28,7 +28,7 @@ from pydispatch import dispatcher
 from copis.gui.wxutils import (
     FancyTextCtrl,
     create_scaled_bitmap, set_dialog, simple_statictext)
-from copis.helpers import Point5, pt_units, xyz_units
+from copis.helpers import Point5, create_action_args, dd_to_rad, pt_units, xyz_units
 from copis.globals import ActionType
 from copis.classes import Action
 
@@ -86,8 +86,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
             xyz_step = 0
             pt_step = 0
             feed_rate = float(self.feed_rate_ctrl.Value)
-            pos_names = ['X', 'Y', 'Z', 'P', 'T', 'F']
-            pos_values = [0, 0, 0, 0, 0, feed_rate]
+            pos_names = ''
+            pos_values = []
 
             if self._device.is_move_absolute:
                 action = self._generate_commands('G91')
@@ -96,8 +96,9 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
             if btn[0] in 'xyzns':
                 xyz_step = self.xyz_step_ctrl.num_value
-            else: # Button name in 'pt':
-                pt_step = self.pt_step_ctrl.num_value
+            else: # Button name in 'pt'.
+                # Convert to radians before sending to command processor.
+                pt_step = dd_to_rad(self.pt_step_ctrl.num_value)
 
 
             if btn[0] in 'ns':
@@ -113,23 +114,27 @@ class ControllerPanel(scrolled.ScrolledPanel):
             for token in cmd_tokens:
                 sign = int(f'{token[1]}1')
                 step = xyz_step if token[0] in 'XYZ' else pt_step
-                index = pos_names.index(token[0])
-                pos_values[index] = sign * step
+                pos_names += token[0]
+                pos_values.append(sign * step)
 
-            if btn[0] == 'z':
+            if 'Z' not in pos_names:
                 # Ignore feed rate for z axis.
                 # Screw motor axis doesn't work properly at high speeds.
-                pos_values = pos_values[0:5]
+                pos_values.append(feed_rate)
+                pos_names += 'F'
 
-            action = self._generate_commands('G1', *zip(pos_names, pos_values))
+            args = create_action_args(pos_values, pos_names)
+            action = self._generate_commands('G1', args)
             self._core.send_now(action)
         else:
             set_dialog('Connect to the machine in order to jog.')
 
-    def _generate_commands(self, name: str, *args):
+    def _generate_commands(self, name, args = None):
+        if args == None:
+            args = []
+
         atype = None
         device_id = self._device.device_id
-        cmd_args = list(args)
 
         if name == 'G91':
             atype = ActionType.G91
@@ -138,7 +143,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         else:
             raise ValueError(f'Unsupported jog command {name}.')
 
-        return Action(atype, device_id, len(cmd_args), cmd_args)
+        return Action(atype, device_id, len(args), args)
 
     def _add_state_controls(self) -> None:
         """Initialize controller state sizer and setup child elements."""
@@ -287,13 +292,13 @@ class ControllerPanel(scrolled.ScrolledPanel):
         step_feedrate_grid.AddGrowableCol(0, 2)
         step_feedrate_grid.AddGrowableCol(1, 1)
 
-        self.xyz_step_ctrl = FancyTextCtrl(
-            jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='xyz_step',
-            max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.pt_step_ctrl = FancyTextCtrl(
-            jog_sizer.StaticBox, size=(48, -1), style=wx.TE_PROCESS_ENTER, name='pt_step',
-            max_precision=0, default_unit='dd', unit_conversions=pt_units)
-        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1", size=(48, -1),
+        self.xyz_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=50, size=(48, -1),
+            style=wx.TE_PROCESS_ENTER, name='xyz_step', max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
+        self.pt_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=5, size=(48, -1),
+            style=wx.TE_PROCESS_ENTER, name='pt_step', max_precision=0,
+            default_unit='dd', unit_conversions=pt_units)
+        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="500", size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([
