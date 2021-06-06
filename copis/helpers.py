@@ -17,12 +17,13 @@
 
 import math
 import os
+import re
 from collections import OrderedDict
 from functools import wraps
 from math import cos, sin
 from pathlib import Path
 from time import time
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, List
 
 import glm
 from glm import mat4, vec3, vec4
@@ -46,6 +47,8 @@ xyz_steps = [10, 1, 0.1, 0.01]
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/math.pi)])
+
+_NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
 
 
 def timing(f: Callable) -> Callable:
@@ -86,9 +89,34 @@ def shade_color(color: vec4, shade_factor: float) -> vec4:
 
 
 def find_path(filename: str = '') -> str:
+    """Finds the given file names full path relative to the COPIS root folder."""
     paths = list(Path(_root).rglob(filename))
     return str(paths[0]) if len(paths) > 0 else ''
 
+def get_action_args_values(args: List[tuple]) -> List[float]:
+    """Extracts and returns the values for an action arguments' list of tuples."""
+    return [float(a[1]) if isinstance(a, tuple) else a for a in args]
+
+def create_action_args(values: List[float], keys: str = 'XYZPTFSV'):
+    """Given a list of values in the same order as the default keys,
+    generates a list of tuples suitable for an action's arguments.
+    A custom ordered string of keys can be provided.
+    Note that zip matches only up to the number of values."""
+    return list(zip(keys, [str(c) for c in values]))
+
+def rad_to_dd(value: float) -> float:
+    """Convers radians to decimal degrees."""
+    return value * pt_units['rad']
+
+def dd_to_rad(value: float) -> float:
+    """Convers decimal degrees to radians."""
+    return value / pt_units['rad']
+
+def is_number(value: str) -> bool:
+    """Checks to see if a string is a number (signed int of float).
+    Because apparently that's a foreign concept to python -_-"""
+    matched = _NUMBER_PATTERN.match(value) is not None
+    return len(value) > 0 and matched
 
 class Point5(NamedTuple):
     x: float = 0.0
