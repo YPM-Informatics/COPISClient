@@ -15,6 +15,8 @@
 
 """Provide the COPIS Device Class."""
 
+
+from copis.classes.serial_response import SerialResponse
 from dataclasses import dataclass
 from math import inf
 from typing import List, Optional
@@ -38,10 +40,36 @@ class Device:
     device_bounds: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
     collision_bounds: vec3 = vec3()
     port: str = ''
-    edsdk_status: ComStatus = ComStatus.UNKNOWN
-    serial_status: ComStatus = ComStatus.UNKNOWN
+
+    edsdk_response = None
+    serial_response: SerialResponse = None
     is_homed: bool = False
     is_move_absolute: bool = True
+
+    @property
+    def edsdk_status(self) -> ComStatus:
+        """TODO: Returns the devices EDSDK status based on its last EDSDK response."""
+        return ComStatus.UNKNOWN
+
+    @property
+    def serial_status(self) -> ComStatus:
+        """Returns the devices serial status based on its last serial response."""
+        if not self.is_homed:
+            return ComStatus.UNKNOWN
+
+        if self.serial_response is None:
+            if self.is_homed:
+                return ComStatus.IDLE
+
+            return ComStatus.UNKNOWN
+
+        if self.serial_response.error:
+            return ComStatus.ERROR
+
+        if self.serial_response.is_idle:
+            return ComStatus.IDLE
+
+        return ComStatus.BUSY
 
     def as_dict(self):
         """Return a dictionary representation of a Device instance."""

@@ -18,7 +18,7 @@
 __version__ = ""
 
 # pylint: disable=using-constant-test
-
+from copis.classes import device
 import sys
 
 if sys.version_info.major < 3:
@@ -43,10 +43,10 @@ from pydispatch import dispatcher
 from .command_processor import serialize_command
 from .coms import serial_controller
 from .helpers import create_action_args
-from .globals import ActionType, DebugEnv
+from .globals import ActionType, ComStatus, DebugEnv
 from .classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D,
-    ReadThread)
+    ReadThread, SerialResponse)
 
 
 def locked(func):
@@ -108,6 +108,7 @@ class COPISCore:
         self._clear_to_send = False
         # True if sending actions, false if paused
         self.is_imaging = False
+        self.is_homing = False
         self.is_paused = False
 
         # logging
@@ -118,12 +119,10 @@ class COPISCore:
         self.send_thread = None
         self.stop_send_thread = False
         self.imaging_thread = None
+        self.homing_thread = None
 
         self._mainqueue = None
         self._sidequeue = Queue(0)
-
-        # TODO: this might not exist after testing machine.
-        # self.offset_devices(*self.config.machine_settings.devices)
 
         # list of actions (paths)
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
@@ -184,9 +183,15 @@ class COPISCore:
                 self.imaging_thread.join()
                 self.imaging_thread = None
 
+            if self.homing_thread:
+                self.is_homing = False
+                self.homing_thread.join()
+                self.homing_thread = None
+
             self._serial.close_port()
 
         self.is_imaging = False
+        self.is_homing = False
 
         dispatcher.send('core_message', message=f'Disconnected from device {port_name}')
 
@@ -218,10 +223,6 @@ class COPISCore:
 
         return connected
 
-    def reset(self) -> None:
-        """Reset the machine."""
-        return
-
     def _listen(self) -> None:
         read_thread = \
             next(filter(lambda t: t.thread == threading.current_thread(), self.read_threads))
@@ -229,11 +230,50 @@ class COPISCore:
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
-            if not self._edsdk.is_waiting_for_image:
-                self._clear_to_send = True
-                resp = self._serial.read(read_thread.port)
-                if resp:
+            #if not self._edsdk.is_waiting_for_image:
+            resp = self._serial.read(read_thread.port)
+
+            self._clear_to_send = self.is_machine_idle or \
+                self.is_homing and resp and resp.is_idle
+
+            if resp:
+                print(f'Is serial response> {isinstance(resp, SerialResponse)}')
+                if isinstance(resp, SerialResponse):
+                    device_id = resp.device_id
+                    dvc = next(filter(lambda d: d.device_id == device_id, self.devices), None)
+                    print(f'before: {dvc}')
+                    print(f'before - is machine idle> {self.is_machine_idle}')
+                    if dvc:
+                        dvc.serial_response = resp
+                        print(f'after: {dvc}')
+                        print(f'after - serial response is idle> {resp.is_idle}')
+                        print(f'after - device serial status> {dvc.serial_status}')
+                        print(f'after - is machine idle> {self.is_machine_idle}')
+                else:
+                    if resp == 'COPIS_READY':
+                        for dvc in self.devices:
+                            dvc.is_homed = False
+                            print(f'reset: {dvc}')
+                            print(f'reset - device serial status> {dvc.serial_status}')
+                            print(f'reset - is machine idle> {self.is_machine_idle}')
+
                     dispatcher.send('core_message', message=resp)
+
+    @property
+    def is_machine_idle(self):
+        """Returns a value indicating whether the machine is idle."""
+        return all(dvc.serial_status == ComStatus.IDLE for dvc in self.devices)
+
+    @property
+    def is_machine_homed(self):
+        """Returns a value indicating whether the machine is homed."""
+        return all(dvc.is_homed for dvc in self.devices)
+
+    @property
+    def is_machine_busy(self):
+        """Returns a value indicating whether the machine is busy
+        (imaging or homing)."""
+        return self.is_homing or self.is_imaging
 
     def _start_sender(self) -> None:
         self.stop_send_thread = False
@@ -255,26 +295,43 @@ class COPISCore:
             except QueueEmpty:
                 continue
 
-            while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
+            while self.is_serial_port_connected and self.is_machine_busy \
+                and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
             self._send(command)
 
-            while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
+            while self.is_serial_port_connected and self.is_machine_busy \
+                and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
     def start_imaging(self, startindex=0) -> bool:
-        """TODO"""
+        """Starts the imaging sequence, following the define action path."""
 
-        if self.is_imaging or not self.is_serial_port_connected:
+        if not self.is_serial_port_connected:
+            dispatcher.send('core_error',
+                message='The machine needs to be connected before imaging can start.')
             return False
 
-        # TODO: setup machine before starting
+        if self.is_homing:
+            dispatcher.send('core_error',
+                message='Cannot image while homing the machine.')
+            return False
+
+        if self.is_imaging:
+            dispatcher.send('core_error',
+                message='Imaging already in progress.')
+            return False
+
+        if not self.is_machine_idle:
+            dispatcher.send('core_error',
+                message='The machine needs to be homed before imaging can start.')
+            return False
 
         self._mainqueue = self._actions.copy()
         self.is_imaging = True
 
-        self._clear_to_send = False
+        self._clear_to_send = True
         self.imaging_thread = threading.Thread(
             target=self._do_imaging,
             name='imaging thread',
@@ -284,8 +341,57 @@ class COPISCore:
         dispatcher.send('core_message', message='Imaging started')
         return True
 
+    def start_homing(self) -> bool:
+        """Start the homing sequence, following the steps in the configuration."""
+        if not self.is_serial_port_connected:
+            dispatcher.send('core_error',
+                message='The machine needs to be connected before homing can start.')
+            return False
+
+        if self.is_imaging:
+            dispatcher.send('core_error',
+                message='Cannot home the machine while imaging.')
+            return False
+
+        if self.is_homing:
+            dispatcher.send('core_error',
+                message='Homing already in progress.')
+            return False
+
+        homing_actions = self.config.machine_settings.machine.homing_actions.copy()
+
+        if not homing_actions or len(homing_actions) == 0:
+            dispatcher.send('core_error',
+                message='No homing sequence to provided.')
+            return False
+
+        device_ids = []
+        homing_cmds = []
+
+        for dvc in self.devices:
+            homing_cmds.append(Action(ActionType.G90, dvc.device_id))
+            device_ids.append(dvc.device_id)
+
+        # Only send homing commands for connected devices.
+        homing_actions = filter(lambda c: c.device in device_ids, homing_actions)
+
+        # Ensure we are in absolute motion mode.
+        homing_cmds.extend(homing_actions)
+
+        self._mainqueue = homing_cmds
+        self.is_homing = True
+
+        self._clear_to_send = True
+        self.homing_thread = threading.Thread(
+            target=self._do_homing,
+            name='homing thread'
+        )
+        self.homing_thread.start()
+        dispatcher.send('core_message', message='Homing started')
+        return True
+
     def cancel_imaging(self) -> None:
-        """TODO"""
+        """Stops the imaging sequence."""
 
         self.pause()
         self.is_paused = False
@@ -334,8 +440,8 @@ class COPISCore:
     def send_now(self, command):
         """Send a command to machine ahead of the command queue."""
         # Don't send now if imaging and G or C commands are sent.
-        # No jogging or homing while imaging is in process.
-        if self.is_imaging and command.atype in self._G_COMMANDS + self._C_COMMANDS:
+        # No jogging while homing or imaging is in process.
+        if self.is_machine_busy and command.atype in self._G_COMMANDS + self._C_COMMANDS:
             dispatcher.send('core_error', message='Action commands not allowed while imaging.')
             return
 
@@ -345,7 +451,6 @@ class COPISCore:
             logging.error("Not connected to device.")
 
     def _do_imaging(self, resuming=False) -> None:
-        """TODO"""
         self._stop_sender()
 
         try:
@@ -360,6 +465,31 @@ class COPISCore:
 
         finally:
             self.imaging_thread = None
+            self.is_imaging = False
+            dispatcher.send('core_message', message='Imaging ended')
+            self._start_sender()
+
+    def _do_homing(self) -> None:
+        self._stop_sender()
+
+        try:
+            while self.is_homing and self.is_serial_port_connected:
+                self._send_next()
+
+            self.sentlines = {}
+            self.sent = []
+
+            for dvc in self.devices:
+                dvc.is_homed = True
+            print(f'devices: {self.devices}')
+
+        except:
+            logging.error("Homing thread died")
+
+        finally:
+            self.homing_thread = None
+            self.is_homing = False
+            dispatcher.send('core_message', message='Homing ended')
             self._start_sender()
 
     def _send_next(self):
@@ -367,7 +497,8 @@ class COPISCore:
             return
 
         # wait until we get the ok from listener
-        while self.is_serial_port_connected and self.is_imaging and not self._clear_to_send:
+        while self.is_serial_port_connected and self.is_machine_busy \
+            and not self._clear_to_send:
             time.sleep(self._YIELD_TIMEOUT)
 
         if not self._sidequeue.empty():
@@ -375,13 +506,14 @@ class COPISCore:
             self._sidequeue.task_done()
             return
 
-        if self.is_imaging and self._mainqueue:
+        if self.is_machine_busy and self._mainqueue:
             curr = self._mainqueue.pop(0)
             self._send(curr)
             self._clear_to_send = False
 
         else:
             self.is_imaging = False
+            self.is_homing = False
             self._clear_to_send = True
 
     def _send(self, command):
@@ -395,6 +527,7 @@ class COPISCore:
 
         cmd = serialize_command(command)
         if self._serial.is_port_open:
+            print(f'Writing: {cmd}')
             self._serial.write(cmd)
 
         # debug command
@@ -591,6 +724,11 @@ class COPISCore:
                 self.is_imaging = False
                 self.imaging_thread.join()
                 self.imaging_thread = None
+
+            if self.homing_thread:
+                self.is_homing = False
+                self.homing_thread.join()
+                self.homing_thread = None
 
             self._stop_sender()
             self._serial.terminate()

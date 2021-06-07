@@ -102,7 +102,7 @@ class DebugEnv(Enum):
     PROD = 'prod'
     DEV = 'dev'
 
-class ComStatus(IntEnum):
+class ComStatus(Enum):
     """Communication protocol statuses."""
     ERROR = 0
     BUSY = 1
