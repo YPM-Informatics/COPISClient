@@ -20,8 +20,7 @@ import logging
 import wx
 import wx.lib.agw.aui as aui
 
-from copis.classes.action import Action
-from copis.globals import ActionType, ToolIds
+from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 
@@ -36,7 +35,6 @@ class MachineToolbar(aui.AuiToolBar):
         self._parent = parent
 
         self._core = self._parent.core
-        self._settings = self._core.config.machine_settings
 
         self._console = console
 
@@ -174,11 +172,16 @@ class MachineToolbar(aui.AuiToolBar):
 
             is_connected = self._core.is_serial_port_connected
             has_path = len(self._core.actions)
-            can_image = is_connected and has_path
+            is_homed = self._core.is_machine_homed
+            can_image = is_connected and has_path and is_homed
 
             if not can_image:
-                msg = 'The machine needs to be connected for imaging.' \
-                    if not is_connected else 'The machine needs a path for imaging.'
+                msg = 'The machine needs to be homed before imaging.'
+                if not is_connected:
+                    msg = 'The machine needs to be connected for imaging.'
+                elif not has_path:
+                    msg = 'The machine needs a path for imaging.'
+
                 set_dialog(msg)
                 return
 
@@ -204,24 +207,13 @@ class MachineToolbar(aui.AuiToolBar):
             return
 
         home_btn = self.FindControl(event.Id)
-        homing_cmd = self._settings.machine.homing_actions
-
-        if homing_cmd and len(homing_cmd) > 0:
-            # Ensure we are in absolute motion mode.
-            for dvc in self._settings.devices:
-                self._core.send_now(Action(ActionType.G90, dvc.device_id))
-
-            for cmd in homing_cmd:
-                self._core.send_now(cmd)
-
-        for dvc in self._settings.devices:
-            dvc.is_homed = True
+        self._core.start_homing()
         home_btn.Enable(self._can_home())
 
     def _can_home(self):
-        return True
-        # return len(self._settings.devices) > 0 and \
-        #     all(not d.is_homed for d in self._settings.devices)
+        # TODO figure this out: disable homing button when homed
+        # enable when not; dynamically.
+        return True # self._core.is_machine_homed
 
     def _print(self, msg):
         if self._console is None:
