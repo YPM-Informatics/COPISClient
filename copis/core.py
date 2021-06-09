@@ -239,8 +239,7 @@ class COPISCore:
             if resp:
                 print(f'Is serial response> {isinstance(resp, SerialResponse)}')
                 if isinstance(resp, SerialResponse):
-                    device_id = resp.device_id
-                    dvc = next(filter(lambda d: d.device_id == device_id, self.devices), None)
+                    dvc = self._get_device(resp.device_id)
                     print(f'before: {dvc}')
                     print(f'before - is machine idle> {self.is_machine_idle}')
                     if dvc:
@@ -258,6 +257,9 @@ class COPISCore:
                             print(f'reset - is machine idle> {self.is_machine_idle}')
 
                     dispatcher.send('core_message', message=resp)
+
+    def _get_device(self, device_id):
+        return next(filter(lambda d: d.device_id == device_id, self.devices), None)
 
     @property
     def is_machine_idle(self):
@@ -525,10 +527,13 @@ class COPISCore:
         # log sent command
         self.sent.append(command)
 
+        dvc = self._get_device(command.device)
         cmd = serialize_command(command)
+
         if self._serial.is_port_open:
-            print(f'Writing: {cmd}')
+            dvc.is_writing = True
             self._serial.write(cmd)
+            dvc.is_writing = False
 
         # debug command
         # logging.debug(command)
