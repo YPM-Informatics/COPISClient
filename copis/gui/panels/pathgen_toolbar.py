@@ -291,7 +291,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
                 # Add action. skip feed rate for now.
                 g_args = create_action_args([point.x, point.y, point.z, pan, tilt])
-                c_args = create_action_args([500.0], 'P')
+                c_args = create_action_args([1.5], 'S')
                 interlaced_actions.extend((
                     # TODO: allow user customization of actions at each point
                     # https://github.com/YPM-Informatics/COPISClient/issues/102
