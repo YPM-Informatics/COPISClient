@@ -45,6 +45,7 @@ class Device:
     serial_response: SerialResponse = None
     is_homed: bool = False
     is_move_absolute: bool = True
+    is_writing: bool = False
 
     @property
     def edsdk_status(self) -> ComStatus:
@@ -66,7 +67,7 @@ class Device:
         if self.serial_response.error:
             return ComStatus.ERROR
 
-        if self.serial_response.is_idle:
+        if self.serial_response.is_idle and not self.is_writing:
             return ComStatus.IDLE
 
         return ComStatus.BUSY
