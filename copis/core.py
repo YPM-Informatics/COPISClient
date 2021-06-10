@@ -43,7 +43,7 @@ from pydispatch import dispatcher
 
 from .command_processor import deserialize_command, serialize_command
 from .coms import serial_controller
-from .helpers import create_action_args
+from .helpers import create_action_args, get_timestamp
 from .globals import ActionType, ComStatus, DebugEnv
 from .classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D,
@@ -256,9 +256,9 @@ class COPISCore:
                         for dvc in self.devices:
                             # TODO: send G90 and set device.is_move_absolute
                             dvc.is_homed = False
-                            print(f'reset: {dvc}')
-                            print(f'reset - device serial status> {dvc.serial_status}')
-                            print(f'reset - is machine idle> {self.is_machine_idle}')
+                            # print(f'reset: {dvc}')
+                            # print(f'reset - device serial status> {dvc.serial_status}')
+                            # print(f'reset - is machine idle> {self.is_machine_idle}')
 
                     dispatcher.send('core_message', message=resp)
 
@@ -523,10 +523,10 @@ class COPISCore:
             for dvc in self.devices:
                 dvc.is_homed = True
                 dvc.is_move_absolute = True
-            print(f'devices: {self.devices}')
+            # print(f'devices: {self.devices}')
 
-        except:
-            logging.error("Homing thread died")
+        except AttributeError as err:
+            logging.error(f"Homing thread died {err.args[0]}")
 
         finally:
             self.homing_thread = None
@@ -572,7 +572,7 @@ class COPISCore:
         cmd = serialize_command(command)
 
         if self._serial.is_port_open:
-            print(f'Writing: {cmd} to {dvc}')
+            print(f'({get_timestamp()}) Writing: {cmd} to device {dvc.device_id}')
             dvc.is_writing = True
             self._serial.write(cmd)
             dvc.is_writing = False

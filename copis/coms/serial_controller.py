@@ -26,7 +26,7 @@ from mprop import mproperty
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
-from copis.helpers import Point5
+from copis.helpers import Point5, get_timestamp
 from copis.classes import SerialResponse
 
 
@@ -77,6 +77,7 @@ class SerialController():
         self._console = None
         self._is_dev_env = False
         self._filter_serials = _filter_serials
+        self.get_timestamp = get_timestamp
 
     def initialize(self, console = None, is_dev_env: bool = False) -> None:
         """Initializes the serial object."""
@@ -218,6 +219,9 @@ class SerialController():
         if port and self._is_port_open(port):
             p_bytes = port.connection.readline()
             resp = p_bytes.decode()
+
+            if resp:
+                print(f'({self.get_timestamp()}) {resp}')
             response = self._parse_response(resp) if resp else None
 
         return response

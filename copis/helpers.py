@@ -15,6 +15,7 @@
 
 """Util functions."""
 
+import datetime
 import math
 import os
 import re
@@ -117,6 +118,10 @@ def is_number(value: str) -> bool:
     Because apparently that's a foreign concept to python -_-"""
     matched = _NUMBER_PATTERN.match(value) is not None
     return len(value) > 0 and matched
+
+def get_timestamp() -> str:
+    now = datetime.datetime.now()
+    return now.strftime('%H:%M:%S.%f')[:-3]
 
 class Point5(NamedTuple):
     x: float = 0.0
