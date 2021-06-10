@@ -55,9 +55,6 @@ class Device:
     @property
     def serial_status(self) -> ComStatus:
         """Returns the devices serial status based on its last serial response."""
-        if not self.is_homed:
-            return ComStatus.UNKNOWN
-
         if self.serial_response is None:
             if self.is_homed:
                 return ComStatus.IDLE
@@ -70,7 +67,11 @@ class Device:
         if self.serial_response.is_idle and not self.is_writing:
             return ComStatus.IDLE
 
-        return ComStatus.BUSY
+        if self.serial_response and not self.serial_response.is_idle:
+            return ComStatus.BUSY
+
+        if not self.is_homed:
+            return ComStatus.UNKNOWN
 
     def as_dict(self):
         """Return a dictionary representation of a Device instance."""
