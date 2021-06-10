@@ -18,7 +18,8 @@
 __version__ = ""
 
 # pylint: disable=using-constant-test
-from copis.classes import device
+from re import S
+from copis.classes import action, device
 import sys
 
 if sys.version_info.major < 3:
@@ -40,7 +41,7 @@ from glm import vec3
 
 from pydispatch import dispatcher
 
-from .command_processor import serialize_command
+from .command_processor import deserialize_command, serialize_command
 from .coms import serial_controller
 from .helpers import create_action_args
 from .globals import ActionType, ComStatus, DebugEnv
@@ -232,25 +233,28 @@ class COPISCore:
             time.sleep(self._YIELD_TIMEOUT)
             #if not self._edsdk.is_waiting_for_image:
             resp = self._serial.read(read_thread.port)
-
-            self._clear_to_send = self.is_machine_idle or \
-                self.is_homing and resp and resp.is_idle
+            try:
+                self._clear_to_send = self.is_machine_idle
+            except AttributeError:
+                print(f'Response is: {resp}')
+                raise
 
             if resp:
-                print(f'Is serial response> {isinstance(resp, SerialResponse)}')
+                # print(f'Is serial response> {isinstance(resp, SerialResponse)}')
                 if isinstance(resp, SerialResponse):
                     dvc = self._get_device(resp.device_id)
-                    print(f'before: {dvc}')
-                    print(f'before - is machine idle> {self.is_machine_idle}')
+                    # print(f'before: {dvc}')
+                    # print(f'before - is machine idle> {self.is_machine_idle}')
                     if dvc:
                         dvc.serial_response = resp
-                        print(f'after: {dvc}')
-                        print(f'after - serial response is idle> {resp.is_idle}')
-                        print(f'after - device serial status> {dvc.serial_status}')
-                        print(f'after - is machine idle> {self.is_machine_idle}')
+                        # print(f'after: {dvc}')
+                        # print(f'after - serial response is idle> {resp.is_idle}')
+                        # print(f'after - device serial status> {dvc.serial_status}')
+                        # print(f'after - is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
                         for dvc in self.devices:
+                            # TODO: send G90 and set device.is_move_absolute
                             dvc.is_homed = False
                             print(f'reset: {dvc}')
                             print(f'reset - device serial status> {dvc.serial_status}')
@@ -367,17 +371,13 @@ class COPISCore:
                 message='No homing sequence to provided.')
             return False
 
-        device_ids = []
         homing_cmds = []
-
-        for dvc in self.devices:
-            homing_cmds.append(Action(ActionType.G90, dvc.device_id))
-            device_ids.append(dvc.device_id)
+        # Ensure we are in absolute motion mode.
+        device_ids = self._ensure_absolute_move_mode(homing_cmds)
 
         # Only send homing commands for connected devices.
         homing_actions = filter(lambda c: c.device in device_ids, homing_actions)
 
-        # Ensure we are in absolute motion mode.
         homing_cmds.extend(homing_actions)
 
         self._mainqueue = homing_cmds
@@ -391,6 +391,34 @@ class COPISCore:
         self.homing_thread.start()
         dispatcher.send('core_message', message='Homing started')
         return True
+
+    def set_ready(self):
+        """Send the gentries to their ready positions;
+        which is the position they are in after homing."""
+        cmds = []
+        actions = []
+        device_ids = self._ensure_absolute_move_mode(cmds)
+
+        for device_id in device_ids:
+            cmd_str = ''
+
+            if device_id == 0:
+                cmd_str = 'G1X-280Y-364.5Z0P0T0'
+            elif device_id == 1:
+                cmd_str = f'>{device_id}G1X0Y0Z300P0T0'
+            elif device_id == 2:
+                cmd_str = f'>{device_id}G1X300Y320Z300P0T0'
+
+            actions.append(deserialize_command(cmd_str))
+
+        actions.reverse()
+        cmds.extend(actions)
+
+        for cmd in cmds:
+            self.send_now(cmd)
+            if cmd.atype == ActionType.G90:
+                dvc = self._get_device(cmd.device)
+                dvc.is_move_absolute = True
 
     def cancel_imaging(self) -> None:
         """Stops the imaging sequence."""
@@ -444,13 +472,24 @@ class COPISCore:
         # Don't send now if imaging and G or C commands are sent.
         # No jogging while homing or imaging is in process.
         if self.is_machine_busy and command.atype in self._G_COMMANDS + self._C_COMMANDS:
-            dispatcher.send('core_error', message='Action commands not allowed while imaging.')
+            dispatcher.send('core_error', message='Action commands not allowed when busy.')
             return
 
         if self.is_serial_port_connected:
             self._sidequeue.put_nowait(command)
         else:
             logging.error("Not connected to device.")
+
+    def _ensure_absolute_move_mode(self, cmd_list):
+        device_ids = []
+
+        for dvc in self.devices:
+            if not dvc.is_move_absolute:
+                cmd_list.append(Action(ActionType.G90, dvc.device_id))
+
+            device_ids.append(dvc.device_id)
+
+        return device_ids
 
     def _do_imaging(self, resuming=False) -> None:
         self._stop_sender()
@@ -483,6 +522,7 @@ class COPISCore:
 
             for dvc in self.devices:
                 dvc.is_homed = True
+                dvc.is_move_absolute = True
             print(f'devices: {self.devices}')
 
         except:
@@ -491,6 +531,7 @@ class COPISCore:
         finally:
             self.homing_thread = None
             self.is_homing = False
+
             dispatcher.send('core_message', message='Homing ended')
             self._start_sender()
 
@@ -531,9 +572,12 @@ class COPISCore:
         cmd = serialize_command(command)
 
         if self._serial.is_port_open:
+            print(f'Writing: {cmd} to {dvc}')
             dvc.is_writing = True
             self._serial.write(cmd)
             dvc.is_writing = False
+            # print('continue>')
+            # intake = input()
 
         # debug command
         # logging.debug(command)
