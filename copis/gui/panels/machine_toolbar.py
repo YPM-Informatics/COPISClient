@@ -72,6 +72,9 @@ class MachineToolbar(aui.AuiToolBar):
         self.AddSpacer(8)
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
+        self.AddSpacer(8)
+        self.set_ready_btn = wx.Button(self, wx.ID_ANY, label='Set ready', size=(75, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_set_ready, self.AddControl(self.set_ready_btn))
 
         self.home_btn.Enable(self._can_home())
 
@@ -209,6 +212,21 @@ class MachineToolbar(aui.AuiToolBar):
         home_btn = self.FindControl(event.Id)
         self._core.start_homing()
         home_btn.Enable(self._can_home())
+
+    def on_set_ready(self, event: wx.CommandEvent) -> None:
+        """On set ready button pressed, issue commands to send
+        gentries to their ready positions;
+        which is the position they are in after homing."""
+
+        # if not self._core.is_serial_port_connected:
+        #     set_dialog('Connect to the machine in order to set ready.')
+        #     return
+
+        # if not self._core.is_machine_homed:
+        #     set_dialog('Home the machine before setting ready.')
+        #     return
+
+        self._core.set_ready()
 
     def _can_home(self):
         # TODO figure this out: disable homing button when homed
