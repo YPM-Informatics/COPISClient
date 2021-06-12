@@ -163,8 +163,11 @@ class COPISCore:
 
     @locked
     def disconnect(self):
-        """disconnects to the active serial port."""
+        """disconnects from the active serial port."""
         if self.is_serial_port_connected:
+            self._serial.close_port()
+            time.sleep(self._YIELD_TIMEOUT * 5)
+
             port_name = self._get_active_serial_port_name()
             read_thread = next(filter(lambda t: t.port == port_name, self.read_threads))
 
@@ -174,8 +177,6 @@ class COPISCore:
                     read_thread.thread.join()
 
                 self.read_threads.remove(read_thread)
-                if len(self.read_threads) == 0:
-                    self._stop_sender()
 
             if self.imaging_thread:
                 self.is_imaging = False
@@ -187,7 +188,8 @@ class COPISCore:
                 self.homing_thread.join()
                 self.homing_thread = None
 
-            self._serial.close_port()
+            if len(self.read_threads) == 0:
+                self._stop_sender()
 
         self.is_imaging = False
         self.is_homing = False
@@ -762,6 +764,9 @@ class COPISCore:
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
         if self._is_serial_enabled:
+            self._serial.terminate()
+            time.sleep(self._YIELD_TIMEOUT)
+
             for read_thread in self.read_threads:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
@@ -780,7 +785,9 @@ class COPISCore:
                 self.homing_thread = None
 
             self._stop_sender()
-            self._serial.terminate()
+
+        self.is_imaging = False
+        self.is_homing = False
 
     @locked
     def select_serial_port(self, name: str) -> bool:
