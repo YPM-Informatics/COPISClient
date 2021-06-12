@@ -221,7 +221,7 @@ class SerialController():
             resp = p_bytes.decode()
 
             if resp:
-                print(f'({self.get_timestamp()}) {resp}')
+                print(f'({self.get_timestamp()}) serial bytes read: {resp}')
             response = self._parse_response(resp) if resp else None
 
         return response

@@ -45,7 +45,6 @@ class Device:
     serial_response: SerialResponse = None
     is_homed: bool = False
     is_move_absolute: bool = True
-    is_writing: bool = False
 
     @property
     def edsdk_status(self) -> ComStatus:
@@ -64,14 +63,22 @@ class Device:
         if self.serial_response.error:
             return ComStatus.ERROR
 
-        if self.serial_response.is_idle and not self.is_writing:
+        if self.serial_response.is_idle:
             return ComStatus.IDLE
 
         if self.serial_response and not self.serial_response.is_idle:
             return ComStatus.BUSY
 
-        if not self.is_homed:
-            return ComStatus.UNKNOWN
+        # if not self.is_homed:
+        return ComStatus.UNKNOWN
+
+    def clear_serial_response(self) -> None:
+        """Clears the serial response. Use before a write."""
+        self.serial_response = None
+
+    def clear_edsdk_response(self) -> None:
+        """Clears the edsdk response. Use before a write."""
+        self.edsdk_response = None
 
     def as_dict(self):
         """Return a dictionary representation of a Device instance."""

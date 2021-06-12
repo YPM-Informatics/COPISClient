@@ -231,24 +231,19 @@ class COPISCore:
             time.sleep(self._YIELD_TIMEOUT)
             #if not self._edsdk.is_waiting_for_image:
             resp = self._serial.read(read_thread.port)
-            try:
-                self._clear_to_send = self.is_machine_idle
-            except AttributeError:
-                print(f'Response is: {resp}')
-                raise
 
             if resp:
                 # print(f'Is serial response> {isinstance(resp, SerialResponse)}')
                 if isinstance(resp, SerialResponse):
                     dvc = self._get_device(resp.device_id)
                     # print(f'before: {dvc}')
-                    # print(f'before - is machine idle> {self.is_machine_idle}')
+                    print(f'({get_timestamp()}) before - is machine idle> {self.is_machine_idle}')
                     if dvc:
                         dvc.serial_response = resp
                         # print(f'after: {dvc}')
                         # print(f'after - serial response is idle> {resp.is_idle}')
                         # print(f'after - device serial status> {dvc.serial_status}')
-                        # print(f'after - is machine idle> {self.is_machine_idle}')
+                        print(f'({get_timestamp()}) after - is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
                         for dvc in self.devices:
@@ -256,9 +251,15 @@ class COPISCore:
                             dvc.is_homed = False
                             # print(f'reset: {dvc}')
                             # print(f'reset - device serial status> {dvc.serial_status}')
-                            # print(f'reset - is machine idle> {self.is_machine_idle}')
+                            print(f'({get_timestamp()}) reset - is machine idle> {self.is_machine_idle}')
+
+                    elif read_thread.port == 'TEST':
+                         self._clear_to_send = True
 
                     dispatcher.send('core_message', message=resp)
+
+                if read_thread.port != 'TEST':
+                    self._clear_to_send = self.is_machine_idle
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -299,14 +300,12 @@ class COPISCore:
             except QueueEmpty:
                 continue
 
-            while self.is_serial_port_connected and self.is_machine_busy \
-                and not self._clear_to_send:
+            while self.is_serial_port_connected and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
             self._send(command)
 
-            while self.is_serial_port_connected and self.is_machine_busy \
-                and not self._clear_to_send:
+            while self.is_serial_port_connected and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
     def start_imaging(self, startindex=0) -> bool:
@@ -499,14 +498,16 @@ class COPISCore:
             self.sentlines = {}
             self.sent = []
 
-        except:
-            logging.error("Imaging thread died")
+        except AttributeError as err:
+            logging.error(f"Imaging thread died. {err.args[0]}")
 
         finally:
             self.imaging_thread = None
             self.is_imaging = False
             dispatcher.send('core_message', message='Imaging ended')
-            self._start_sender()
+
+            if len(self.read_threads) > 0:
+                self._start_sender()
 
     def _do_homing(self) -> None:
         self._stop_sender()
@@ -519,27 +520,29 @@ class COPISCore:
             self.sent = []
 
             for dvc in self.devices:
-                dvc.is_homed = True
+                resp = dvc.serial_response
+                dvc.is_homed = isinstance(resp, SerialResponse) and resp.is_idle
+
                 dvc.is_move_absolute = True
-            # print(f'devices: {self.devices}')
 
         except AttributeError as err:
-            logging.error(f"Homing thread died {err.args[0]}")
+            logging.error(f"Homing thread died. {err.args[0]}")
 
         finally:
             self.homing_thread = None
             self.is_homing = False
-
             dispatcher.send('core_message', message='Homing ended')
-            self._start_sender()
+
+            if len(self.read_threads) > 0:
+                self._start_sender()
 
     def _send_next(self):
         if not self.is_serial_port_connected:
             return
 
         # wait until we get the ok from listener
-        while self.is_serial_port_connected and self.is_machine_busy \
-            and not self._clear_to_send:
+        print(f'({get_timestamp()}) [send next - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}]')
+        while self.is_serial_port_connected and not self._clear_to_send:
             time.sleep(self._YIELD_TIMEOUT)
 
         if not self._sidequeue.empty():
@@ -549,6 +552,7 @@ class COPISCore:
 
         if self.is_machine_busy and self._mainqueue:
             curr = self._mainqueue.pop(0)
+            print(f'({get_timestamp()}) [send next - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}] current: {curr}')
             self._send(curr)
             self._clear_to_send = False
 
@@ -570,12 +574,10 @@ class COPISCore:
         cmd = serialize_command(command)
 
         if self._serial.is_port_open:
-            print(f'({get_timestamp()}) Writing: {cmd} to device {dvc.device_id}')
-            dvc.is_writing = True
+            print(f'({get_timestamp()}) [before write - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}] Writing: {cmd} to device {dvc.device_id}')
+            dvc.clear_serial_response()
+            print(f'({get_timestamp()}) [before write - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}]')
             self._serial.write(cmd)
-            dvc.is_writing = False
-            # print('continue>')
-            # intake = input()
 
         # debug command
         # logging.debug(command)
