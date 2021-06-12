@@ -18,8 +18,6 @@
 __version__ = ""
 
 # pylint: disable=using-constant-test
-from re import S
-from copis.classes import action, device
 import sys
 
 if sys.version_info.major < 3:
