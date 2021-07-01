@@ -120,8 +120,13 @@ def is_number(value: str) -> bool:
     return len(value) > 0 and matched
 
 def get_timestamp() -> str:
+    """Returns a formatted string representation of the current date and time."""
     now = datetime.datetime.now()
     return now.strftime('%H:%M:%S.%f')[:-3]
+
+def print_timestamped(msg) -> None:
+    """Prints a timestamped message."""
+    return print(f'({get_timestamp()}) {msg}')
 
 class Point5(NamedTuple):
     x: float = 0.0
