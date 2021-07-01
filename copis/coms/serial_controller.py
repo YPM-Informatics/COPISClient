@@ -114,7 +114,7 @@ class SerialController():
         try:
             connection = None
             if name == SerialController._TEST_SERIAL_PORT:
-                connection = serial.serial_for_url('loop://', do_not_open=True)
+                connection = MockSerial() # serial.serial_for_url('loop://', do_not_open=True)
             else:
                 connection = serial.Serial()
                 connection.port = name
