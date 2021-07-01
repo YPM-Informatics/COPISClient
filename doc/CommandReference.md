@@ -51,7 +51,7 @@ COPIS represents a generic hardware/software framework for multi-view 360 degree
   * Notes: G28 without parameters auto-homes all axes. Any distances defined by axis will determine direction and max distance to scan for homing. Generally these should be left out unless a given setup requires overriding defaults. A Feed rate may be provided to alter speed of homing. 
 * *Define a home offset*
   * Command: M428X[##]Y[##]Z[##]P[##]T[##]
-  * Notes: Sets current position to zero and defines a persistant offset from previous zero position (ie home). During homing - once limit is found, a move defined by the offset is made and zero reset.  
+  * Notes: Sets current position to zero and defines a persistent offset from previous zero position (ie home). During homing - once limit is found, a move defined by the offset is made and zero reset.  
 * *Set Position of one or more axis*
   * Command: G92X[##]Y[##]Z[##]P[##]T[##]
   * Notes: Can be called after homing to define what known position other than 0, for the home position. Client config should store home coordinates for each axis (determined during machine setup) and set after homing.  
