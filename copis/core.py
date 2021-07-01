@@ -81,7 +81,7 @@ class COPISCore:
         core_error: Any copiscore access errors.
     """
 
-    _YIELD_TIMEOUT = .001
+    _YIELD_TIMEOUT = .001 # 1 millisecond
     _G_COMMANDS = [ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
             ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
             ActionType.G90, ActionType.G91, ActionType.G92]
@@ -90,6 +90,7 @@ class COPISCore:
     def __init__(self, parent) -> None:
         """Initialize a CopisCore instance."""
         self.config = parent.config
+        self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
 
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -141,7 +142,7 @@ class COPISCore:
         self._selected_device: int = -1
 
     def _check_configs(self) -> None:
-        warn = self.config.settings.debug_env == DebugEnv.DEV.value
+        warn = self._is_dev_env
         msg = None
         machine_config = self.config.machine_settings
 
@@ -165,9 +166,6 @@ class COPISCore:
     def disconnect(self):
         """disconnects from the active serial port."""
         if self.is_serial_port_connected:
-            self._serial.close_port()
-            time.sleep(self._YIELD_TIMEOUT * 5)
-
             port_name = self._get_active_serial_port_name()
             read_thread = next(filter(lambda t: t.port == port_name, self.read_threads))
 
@@ -193,6 +191,10 @@ class COPISCore:
 
         self.is_imaging = False
         self.is_homing = False
+
+        if self.is_serial_port_connected:
+            self._serial.close_port()
+            time.sleep(self._YIELD_TIMEOUT * 5)
 
         dispatcher.send('core_message', message=f'Disconnected from device {port_name}')
 
@@ -585,10 +587,21 @@ class COPISCore:
         cmd = serialize_command(command)
 
         if self._serial.is_port_open:
-            print(f'({get_timestamp()}) [before write - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}] Writing: {cmd} to device {dvc.device_id}')
-            dvc.clear_serial_response()
-            print(f'({get_timestamp()}) [before write - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}]')
+
+            self._print_debug_msg('Before write, setting is_writing - clear to send> ' +
+                f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
+                    f'Writing> [{cmd}] to device {dvc.device_id}')
+
+            dvc.is_writing = True
+
+            self._print_debug_msg('Before write, is_writing set - clear to send> ' +
+                f'{self._clear_to_send} - is machine idle: {self.is_machine_idle}')
+
             self._serial.write(cmd)
+
+            # Give the controller time to spit out a response.
+            time.sleep(self._YIELD_TIMEOUT * 100)
+            dvc.is_writing = False
 
         # debug command
         # logging.debug(command)
@@ -765,17 +778,13 @@ class COPISCore:
         if self._is_serial_enabled:
             return
 
-        is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
         self._serial = serial_controller
-        self._serial.initialize(ConsoleOutput(), is_dev_env)
+        self._serial.initialize(ConsoleOutput(), self._is_dev_env)
         self._is_serial_enabled = True
 
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
         if self._is_serial_enabled:
-            self._serial.terminate()
-            time.sleep(self._YIELD_TIMEOUT)
-
             for read_thread in self.read_threads:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
@@ -798,6 +807,10 @@ class COPISCore:
         self.is_imaging = False
         self.is_homing = False
 
+        if self._is_serial_enabled:
+            self._serial.terminate()
+            time.sleep(self._YIELD_TIMEOUT * 5)
+
     @locked
     def select_serial_port(self, name: str) -> bool:
         """Sets the active serial port to the provided one."""
@@ -816,6 +829,10 @@ class COPISCore:
                 filter(lambda p: p.is_active, self.serial_port_list), None
             )
         return port.name if port else None
+
+    def _print_debug_msg(self, msg):
+        if self._is_dev_env:
+            print_timestamped(msg)
 
 
     @property
