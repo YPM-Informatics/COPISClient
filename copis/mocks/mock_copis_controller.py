@@ -190,7 +190,7 @@ class MockCopisController():
                     self._is_absolute_move_mode = action.atype == ActionType.G90
                 elif action.atype in self._RESET_COMMANDS:
                     for key in pos:
-                        if data[key]:
+                        if data[key] is not None:
                             position[key] = data[key]
                 elif action.atype in self._CAMERA_COMMANDS:
                     if data['p']:
@@ -214,7 +214,7 @@ class MockCopisController():
                         feedrate = min(data['f'], self._MAX_FEEDRATE)
 
                     for key in pos:
-                        if data[key]:
+                        if data[key] is not None:
                             low_bound = self._BOUNDS[key][0]
                             hi_bound = self._BOUNDS[key][1]
                             start = random.randrange(low_bound, 0)
@@ -233,7 +233,7 @@ class MockCopisController():
 
                 if action.atype == ActionType.G28:
                     for key in pos:
-                        if data[key]:
+                        if data[key] is not None:
                             position[key] = 0.0
 
                 x, y, z, p, t = position.values()
