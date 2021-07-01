@@ -400,33 +400,24 @@ class COPISCore:
         dispatcher.send('core_message', message='Homing started')
         return True
 
+    def go_to_ready(self):
+        """Sends the gentries to their initial positions."""
+        dispatcher.send('core_message', message='Go to ready started')
+
+        self._initialize_gentries(ActionType.G1)
+
+        dispatcher.send('core_message', message='Go to ready ended')
+
     def set_ready(self):
-        """Send the gentries to their ready positions;
-        which is the position they are in after homing."""
-        cmds = []
-        actions = []
-        device_ids = self._ensure_absolute_move_mode(cmds)
+        """Initializes the gentries to their current positions."""
+        dispatcher.send('core_message', message='Set ready started')
 
-        for device_id in device_ids:
-            cmd_str = ''
+        self._initialize_gentries(ActionType.G92)
 
-            if device_id == 0:
-                cmd_str = 'G1X-280Y-364.5Z300P0T0'
-            elif device_id == 1:
-                cmd_str = f'>{device_id}G1X0Y0Z300P0T0'
-            elif device_id == 2:
-                cmd_str = f'>{device_id}G1X300Y364.5Z300P0T0'
+        for dvc in self.devices:
+            dvc.is_homed = True
 
-            actions.append(deserialize_command(cmd_str))
-
-        actions.reverse()
-        cmds.extend(actions)
-
-        for cmd in cmds:
-            self.send_now(cmd)
-            if cmd.atype == ActionType.G90:
-                dvc = self._get_device(cmd.device)
-                dvc.is_move_absolute = True
+        dispatcher.send('core_message', message='Set ready ended')
 
     def cancel_imaging(self) -> None:
         """Stops the imaging sequence."""
@@ -488,6 +479,36 @@ class COPISCore:
         else:
             logging.error("Not connected to device.")
 
+    def _initialize_gentries(self, atype: ActionType):
+        cmds = []
+        actions = []
+        g_code = str(atype).split('.')[1]
+        device_ids = self._ensure_absolute_move_mode(cmds)
+
+        for device_id in device_ids:
+            cmd_str = ''
+            x, y, z, p, t = self._get_device(device_id).initial_position
+
+            if device_id == 0:
+                cmd_str = f'{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+            elif device_id == 1:
+                cmd_str = f'>{device_id}{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+            elif device_id == 2:
+                cmd_str = f'>{device_id}{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+
+            actions.append(deserialize_command(cmd_str))
+
+        actions.reverse()
+        cmds.extend(actions)
+
+        print(cmds)
+
+        for cmd in cmds:
+            self.send_now(cmd)
+            if cmd.atype == ActionType.G90:
+                dvc = self._get_device(cmd.device)
+                dvc.is_move_absolute = True
+
     def _ensure_absolute_move_mode(self, cmd_list):
         device_ids = []
 
@@ -523,6 +544,8 @@ class COPISCore:
     def _do_homing(self) -> None:
         self._stop_sender()
 
+        has_error = False
+
         try:
             while self.is_homing and self.is_serial_port_connected:
                 self._send_next()
@@ -537,6 +560,7 @@ class COPISCore:
                 dvc.is_move_absolute = True
 
         except AttributeError as err:
+            has_error = True
             logging.error(f"Homing thread died. {err.args[0]}")
 
         finally:
@@ -546,6 +570,9 @@ class COPISCore:
 
             if len(self.read_threads) > 0:
                 self._start_sender()
+
+            if not has_error:
+                self.go_to_ready()
 
     def _send_next(self):
         if not self.is_serial_port_connected:
