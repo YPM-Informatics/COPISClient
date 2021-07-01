@@ -41,7 +41,7 @@ from pydispatch import dispatcher
 
 from .command_processor import deserialize_command, serialize_command
 from .coms import serial_controller
-from .helpers import create_action_args, get_timestamp
+from .helpers import create_action_args, print_timestamped
 from .globals import ActionType, ComStatus, DebugEnv
 from .classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D,
@@ -235,25 +235,22 @@ class COPISCore:
             resp = self._serial.read(read_thread.port)
 
             if resp:
-                # print(f'Is serial response> {isinstance(resp, SerialResponse)}')
                 if isinstance(resp, SerialResponse):
                     dvc = self._get_device(resp.device_id)
-                    # print(f'before: {dvc}')
-                    print(f'({get_timestamp()}) before - is machine idle> {self.is_machine_idle}')
+
+                    self._print_debug_msg('Before setting device response - ' +
+                        f'is machine idle> {self.is_machine_idle}')
+
                     if dvc:
                         dvc.serial_response = resp
-                        # print(f'after: {dvc}')
-                        # print(f'after - serial response is idle> {resp.is_idle}')
-                        # print(f'after - device serial status> {dvc.serial_status}')
-                        print(f'({get_timestamp()}) after - is machine idle> {self.is_machine_idle}')
+
+                        self._print_debug_msg('After setting device response - ' +
+                            f'is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
                         for dvc in self.devices:
                             # TODO: send G90 and set device.is_move_absolute
                             dvc.is_homed = False
-                            # print(f'reset: {dvc}')
-                            # print(f'reset - device serial status> {dvc.serial_status}')
-                            print(f'({get_timestamp()}) reset - is machine idle> {self.is_machine_idle}')
 
                     elif read_thread.port == 'TEST':
                          self._clear_to_send = True
@@ -262,6 +259,9 @@ class COPISCore:
 
                 if read_thread.port != 'TEST':
                     self._clear_to_send = self.is_machine_idle
+
+                self._print_debug_msg('Set clear to send - is machine idle> ' +
+                    f'{self.is_machine_idle} - clear to send> {self._clear_to_send}')
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -542,10 +542,15 @@ class COPISCore:
         if not self.is_serial_port_connected:
             return
 
-        # wait until we get the ok from listener
-        print(f'({get_timestamp()}) [send next - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}]')
+        self._print_debug_msg('Waiting in send next - clear to send> ' +
+            f'{self._clear_to_send} - is machine idle> {self.is_machine_idle}')
+
+        # Wait until we get the ok from listener.
         while self.is_serial_port_connected and not self._clear_to_send:
             time.sleep(self._YIELD_TIMEOUT)
+
+        self._print_debug_msg('Done waiting in send next - clear to send> ' +
+            f'{self._clear_to_send} - is machine idle> {self.is_machine_idle}')
 
         if not self._sidequeue.empty():
             self._send(self._sidequeue.get_nowait())
@@ -554,7 +559,11 @@ class COPISCore:
 
         if self.is_machine_busy and self._mainqueue:
             curr = self._mainqueue.pop(0)
-            print(f'({get_timestamp()}) [send next - clear to send: {self._clear_to_send} - idle: {self.is_machine_idle}] current: {curr}')
+
+            self._print_debug_msg('In send next, sending current - clear to send> ' +
+                f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
+                    f'- current> {curr}')
+
             self._send(curr)
             self._clear_to_send = False
 
