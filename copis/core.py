@@ -250,17 +250,24 @@ class COPISCore:
                             f'is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
-                        for dvc in self.devices:
-                            # TODO: send G90 and set device.is_move_absolute
-                            dvc.is_homed = False
+                        cmds = []
+                        self._ensure_absolute_move_mode(cmds)
 
-                    elif read_thread.port == 'TEST':
-                         self._clear_to_send = True
+                        for cmd in cmds:
+                            self.send_now(cmd)
+                            if cmd.atype == ActionType.G90:
+                                dvc = self._get_device(cmd.device)
+                                dvc.is_move_absolute = True
+                                dvc.is_homed = False
+
+                                self._print_debug_msg('Reset - device serial status> ' +
+                                    f'{dvc.serial_status}')
+
+                        self._print_debug_msg(f'Reset - is machine idle> {self.is_machine_idle}')
 
                     dispatcher.send('core_message', message=resp)
 
-                if read_thread.port != 'TEST':
-                    self._clear_to_send = self.is_machine_idle
+                self._clear_to_send = self.is_machine_idle
 
                 self._print_debug_msg('Set clear to send - is machine idle> ' +
                     f'{self.is_machine_idle} - clear to send> {self._clear_to_send}')
@@ -404,11 +411,11 @@ class COPISCore:
             cmd_str = ''
 
             if device_id == 0:
-                cmd_str = 'G1X-280Y-364.5Z0P0T0'
+                cmd_str = 'G1X-280Y-364.5Z300P0T0'
             elif device_id == 1:
                 cmd_str = f'>{device_id}G1X0Y0Z300P0T0'
             elif device_id == 2:
-                cmd_str = f'>{device_id}G1X300Y320Z300P0T0'
+                cmd_str = f'>{device_id}G1X300Y364.5Z300P0T0'
 
             actions.append(deserialize_command(cmd_str))
 
