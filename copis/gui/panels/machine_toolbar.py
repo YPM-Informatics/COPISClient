@@ -218,13 +218,13 @@ class MachineToolbar(aui.AuiToolBar):
         gentries to their ready positions;
         which is the position they are in after homing."""
 
-        # if not self._core.is_serial_port_connected:
-        #     set_dialog('Connect to the machine in order to set ready.')
-        #     return
+        if not self._core.is_serial_port_connected:
+            set_dialog('Connect to the machine in order to set ready.')
+            return
 
-        # if not self._core.is_machine_homed:
-        #     set_dialog('Home the machine before setting ready.')
-        #     return
+        if not self._core.is_machine_homed:
+            set_dialog('Home the machine before setting ready.')
+            return
 
         self._core.set_ready()
 
