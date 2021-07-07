@@ -18,6 +18,7 @@
 __version__ = ""
 
 import os
+import io
 import pickle
 from configparser import ConfigParser
 from pathlib import PurePath
@@ -70,6 +71,18 @@ class Store():
 
         return None
 
+
+class _RemoduleUnpickler(pickle.Unpickler):
+    """Extends the pickle unpickler so that we can provided the correct module
+    when unpickling an object pickled with an outdated version of the module."""
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == "copis.enums":
+            renamed_module = "copis.globals"
+
+        return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
+
+
 def save_machine(filename: str, settings: MachineSettings) -> None:
     """Save a machine configuration settings object to file."""
     parser = ConfigParser()
@@ -94,6 +107,15 @@ def save(filename: str, obj: object) -> None:
 def load(filename: str, obj: object) -> object:
     """Load an object from file."""
     with open(filename, 'rb') as file:
-        obj = pickle.load(file)
+        obj = _pickle_remodule_load(file) # pickle.load(file)
 
     return obj
+
+
+def _pickle_remodule_load(file_obj):
+    return _RemoduleUnpickler(file_obj).load()
+
+
+def _pickle_remodule_loads(pickled_bytes):
+    file_obj = io.BytesIO(pickled_bytes)
+    return _pickle_remodule_loads(file_obj)
