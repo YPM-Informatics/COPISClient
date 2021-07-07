@@ -17,7 +17,7 @@
 
 from dataclasses import dataclass
 
-from copis.helpers import Point5
+from copis.globals import Point5
 
 
 @dataclass

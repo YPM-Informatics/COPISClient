@@ -24,7 +24,8 @@ from functools import wraps
 from math import cos, sin
 from pathlib import Path
 from time import time
-from typing import Callable, NamedTuple, List
+from typing import Callable, List
+from itertools import zip_longest
 
 import glm
 from glm import mat4, vec3, vec4
@@ -64,7 +65,6 @@ def timing(f: Callable) -> Callable:
         return result
     return wrap
 
-
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
     model = glm.translate(mat4(), vec3(x, y, z)) * \
@@ -75,11 +75,9 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
                 0.0, 0.0, 0.0, 1.0)
     return model
 
-
 def point5_to_mat4(point) -> mat4:
     """Convert Point5 into a 4x4 transformation matrix."""
     return xyzpt_to_mat4(point.x, point.y, point.z, point.p, point.t)
-
 
 def shade_color(color: vec4, shade_factor: float) -> vec4:
     """Return darker or lighter shade of color by a shade factor."""
@@ -87,7 +85,6 @@ def shade_color(color: vec4, shade_factor: float) -> vec4:
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
-
 
 def find_path(filename: str = '') -> str:
     """Finds the given file names full path relative to the COPIS root folder."""
@@ -128,9 +125,3 @@ def print_timestamped(msg) -> None:
     """Prints a timestamped message."""
     return print(f'({get_timestamp()}) {msg}')
 
-class Point5(NamedTuple):
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0
-    p: float = 0.0
-    t: float = 0.0

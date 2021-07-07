@@ -22,8 +22,7 @@ from math import inf
 from typing import List, Optional
 from glm import vec3
 
-from copis.helpers import Point5
-from copis.globals import ComStatus
+from copis.globals import ComStatus, Point5
 from . import BoundingBox
 
 

@@ -25,8 +25,8 @@ from typing import Any
 from collections import namedtuple
 
 from copis.command_processor import deserialize_command
-from copis.helpers import Point5, is_number
-from copis.globals import ActionType
+from copis.helpers import is_number
+from copis.globals import ActionType, Point5
 
 
 class MockSerialControllerMeta(type):
