@@ -28,8 +28,8 @@ from pydispatch import dispatcher
 from copis.gui.wxutils import (
     FancyTextCtrl,
     create_scaled_bitmap, set_dialog, simple_statictext)
-from copis.helpers import Point5, create_action_args, dd_to_rad, pt_units, xyz_units
-from copis.globals import ActionType
+from copis.helpers import create_action_args, dd_to_rad, pt_units, xyz_units
+from copis.globals import ActionType, Point5
 from copis.classes import Action
 
 

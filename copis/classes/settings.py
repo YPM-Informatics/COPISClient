@@ -17,8 +17,7 @@ from dataclasses import dataclass
 from typing import List, Dict
 from glm import vec3
 
-from copis.globals import DebugEnv
-from copis.helpers import Point5
+from copis.globals import DebugEnv, Point5
 from . import Device, Machine, BoundingBox
 
 
