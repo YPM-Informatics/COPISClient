@@ -125,3 +125,6 @@ def print_timestamped(msg) -> None:
     """Prints a timestamped message."""
     return print(f'({get_timestamp()}) {msg}')
 
+def interleave_lists(*args):
+    """Interleaves items from provided lists into one list."""
+    return [val for tup in zip_longest(*args) for val in tup if val is not None]
