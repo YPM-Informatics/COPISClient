@@ -344,7 +344,8 @@ class COPISCore:
 
         self._mainqueue = self._actions.copy()
         self.is_imaging = True
-
+# TODO: Send batch size to _do_imaging from here.
+# Batch size: 2 x number of distinct devices in action list.
         self._clear_to_send = True
         self.imaging_thread = threading.Thread(
             target=self._do_imaging,
@@ -390,7 +391,10 @@ class COPISCore:
 
         self._mainqueue = homing_cmds
         self.is_homing = True
-
+# TODO: Send batch size to _do_homing from here.
+# Batch size: number of distinct devices in action list.
+# Most likely need to revise homing sequence to send one command
+# to each gentry at the same time in one batch.
         self._clear_to_send = True
         self.homing_thread = threading.Thread(
             target=self._do_homing,
@@ -465,7 +469,8 @@ class COPISCore:
         self.imaging_thread.start()
         dispatcher.send('core_message', message='Imaging resumed')
         return True
-
+# TODO: allow sending multiple commands from here as well;
+# so that all cameras go to ready simultaneously.
     def send_now(self, command):
         """Send a command to machine ahead of the command queue."""
         # Don't send now if imaging and G or C commands are sent.
@@ -501,8 +506,6 @@ class COPISCore:
         actions.reverse()
         cmds.extend(actions)
 
-        print(cmds)
-
         for cmd in cmds:
             self.send_now(cmd)
             if cmd.atype == ActionType.G90:
@@ -525,7 +528,7 @@ class COPISCore:
 
         try:
             while self.is_imaging and self.is_serial_port_connected:
-                self._send_next()
+                self._send_next(2)
 
             self.sentlines = {}
             self.sent = []
@@ -574,7 +577,7 @@ class COPISCore:
             if not has_error:
                 self.go_to_ready()
 
-    def _send_next(self):
+    def _send_next(self, batch_size=1):
         if not self.is_serial_port_connected:
             return
 
@@ -594,13 +597,15 @@ class COPISCore:
             return
 
         if self.is_machine_busy and self._mainqueue:
-            curr = self._mainqueue.pop(0)
+            currents = []
+            for _ in range(batch_size):
+                currents.append(self._mainqueue.pop(0))
 
             self._print_debug_msg('In send next, sending current - clear to send> ' +
                 f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
-                    f'- current> {curr}')
+                    f'- currents> {currents}')
 
-            self._send(curr)
+            self._send(*currents)
             self._clear_to_send = False
 
         else:
@@ -608,34 +613,46 @@ class COPISCore:
             self.is_homing = False
             self._clear_to_send = True
 
-    def _send(self, command):
+    def _send(self, *commands):
         """Send command to machine."""
 
         if not self.is_serial_port_connected:
             return
 
-        # log sent command
-        self.sent.append(command)
+        dvcs = []
+        cmds = []
+        for command in commands:
+            # log sent command
+            self.sent.append(command)
 
-        dvc = self._get_device(command.device)
-        cmd = serialize_command(command)
+            if not any(d.device_id == command.device for d in dvcs):
+                dvcs.append(self._get_device(command.device))
+
+            cmds.append(serialize_command(command))
+
+        cmd_lines = '\r'.join(cmds)
 
         if self._serial.is_port_open:
 
             self._print_debug_msg('Before write, setting is_writing - clear to send> ' +
                 f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
-                    f'Writing> [{cmd}] to device {dvc.device_id}')
+                '- Writing> [{0}] to device{1} '
+                    .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
+                f'{", ".join([str(d.device_id) for d in dvcs])}')
 
-            dvc.is_writing = True
+            for dvc in dvcs:
+                dvc.is_writing = True
 
             self._print_debug_msg('Before write, is_writing set - clear to send> ' +
                 f'{self._clear_to_send} - is machine idle: {self.is_machine_idle}')
 
-            self._serial.write(cmd)
+            self._serial.write(cmd_lines)
 
             # Give the controller time to spit out a response.
             time.sleep(self._YIELD_TIMEOUT * 100)
-            dvc.is_writing = False
+
+            for dvc in dvcs:
+                dvc.is_writing = False
 
         # debug command
         # logging.debug(command)
