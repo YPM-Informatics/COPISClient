@@ -19,6 +19,7 @@ import logging
 import math
 from collections import defaultdict
 from typing import List, Tuple
+from itertools import groupby
 
 from glm import vec2, vec3
 import glm
@@ -30,7 +31,7 @@ from copis.classes import Action, Object3D
 from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
-from copis.helpers import create_action_args, xyz_units
+from copis.helpers import create_action_args, interleave_lists, xyz_units
 from copis.pathutils import create_circle, create_helix, create_line
 
 
@@ -72,7 +73,33 @@ class PathgenToolbar(aui.AuiToolBar):
 
         self.AddSeparator()
 
-        self.Bind(wx.EVT_BUTTON, self.on_clear_path, self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
+        self.Bind(wx.EVT_BUTTON, self.on_interleave_paths,
+            self.AddControl(wx.Button(self, wx.ID_ANY, label='Interleave pathes', size=(110, -1))))
+        self.AddSpacer(8)
+        self.Bind(wx.EVT_BUTTON, self.on_clear_path,
+            self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
+
+    def on_interleave_paths(self, _) -> None:
+        """On interleave paths button pressed, rearrange actions to alternate by
+        camera.
+        This allows us to simultaneously play paths that have be created sequentially."""
+        get_device = lambda a: a.device
+
+        actions = sorted(self.core.actions, key=get_device)
+
+        if actions and len(actions):
+            grouped  = groupby(actions, get_device)
+            groups = []
+
+            for _, g in grouped:
+                tuples = zip(g, g)
+                groups.append(list(tuples))
+
+            interleaved_tuples = interleave_lists(*groups)
+            interleaved = [val for tup in interleaved_tuples for val in tup]
+
+            self.core.actions.clear()
+            self.core.actions.extend(interleaved)
 
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
