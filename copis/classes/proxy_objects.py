@@ -27,7 +27,7 @@ import glm
 import pywavefront
 
 from copis.mathutils import orthonormal_basis_of
-from copis.helpers import find_path
+from copis.store import Store
 from . import BoundingBox
 
 
@@ -150,7 +150,9 @@ class OBJObject3D(Object3D):
         self.normals: glm.array
         self.indices: glm.array
 
-        self.obj = pywavefront.Wavefront(find_path(filename))
+        self._store = Store()
+
+        self.obj = pywavefront.Wavefront(self._store.find_path(filename))
         for _, material in self.obj.materials.items():
             v = material.vertices
             v = [v[i:i + 8] for i in range(0, len(v), 8)]
