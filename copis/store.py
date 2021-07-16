@@ -21,7 +21,7 @@ import os
 import io
 import pickle
 from configparser import ConfigParser
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Optional
 
 from .classes import ConfigSettings, MachineSettings
@@ -70,6 +70,11 @@ class Store():
             return parser
 
         return None
+
+    def find_path(self, filename: str = '') -> str:
+        """Finds the given file names full path relative to the COPIS root folder."""
+        paths = list(Path(self._root_dir).rglob(filename))
+        return str(paths[0]) if len(paths) > 0 else ''
 
 
 class _RemoduleUnpickler(pickle.Unpickler):

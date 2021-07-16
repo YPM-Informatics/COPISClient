@@ -17,32 +17,16 @@
 
 import datetime
 import math
-import os
 import re
 from collections import OrderedDict
 from functools import wraps
 from math import cos, sin
-from pathlib import Path
 from time import time
 from typing import Callable, List
 from itertools import zip_longest
 
 import glm
 from glm import mat4, vec3, vec4
-
-
-# ------------------------------------------------------------------------------
-# Path finding global logic
-# ------------------------------------------------------------------------------
-_PROJECT_FOLDER = 'copis'
-
-_current = os.path.dirname(__file__)
-_segments = _current.split(os.sep)
-_index = _segments.index(_PROJECT_FOLDER)
-_root_segments = _segments[1:_index]
-
-_root = '/' + Path(os.path.join(*_root_segments)).as_posix()
-# ------------------------------------------------------------------------------
 
 
 xyz_steps = [10, 1, 0.1, 0.01]
@@ -85,11 +69,6 @@ def shade_color(color: vec4, shade_factor: float) -> vec4:
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
-
-def find_path(filename: str = '') -> str:
-    """Finds the given file names full path relative to the COPIS root folder."""
-    paths = list(Path(_root).rglob(filename))
-    return str(paths[0]) if len(paths) > 0 else ''
 
 def get_action_args_values(args: List[tuple]) -> List[float]:
     """Extracts and returns the values for an action arguments' list of tuples."""

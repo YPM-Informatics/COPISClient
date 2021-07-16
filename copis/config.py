@@ -70,7 +70,8 @@ class Config():
         return ConfigSettings(debug_env, app_window_width, app_window_height, machine_config_path)
 
     def _populate_machine_settings(self) -> MachineSettings:
-        machine_parser = load_machine(self._settings.machine_config_path)
+        machine_path = self._store.find_path(self._settings.machine_config_path)
+        machine_parser = load_machine(machine_path)
 
         items = []
         for section in machine_parser.sections():
