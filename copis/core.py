@@ -123,6 +123,7 @@ class COPISCore:
 
         self._mainqueue = None
         self._sidequeue = Queue(0)
+        self._sidequeue_batch_size = 1
 
         # list of actions (paths)
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
@@ -253,15 +254,19 @@ class COPISCore:
                         cmds = []
                         self._ensure_absolute_move_mode(cmds)
 
-                        for cmd in cmds:
-                            self.send_now(cmd)
-                            if cmd.atype == ActionType.G90:
-                                dvc = self._get_device(cmd.device)
-                                dvc.is_move_absolute = True
-                                dvc.is_homed = False
+                        sent = False
+                        if cmds:
+                            sent = self.send_now(*cmds)
 
-                                self._print_debug_msg('Reset - device serial status> ' +
-                                    f'{dvc.serial_status}')
+                        if sent:
+                            for cmd in cmds:
+                                if cmd.atype == ActionType.G90:
+                                    dvc = self._get_device(cmd.device)
+                                    dvc.is_move_absolute = True
+                                    dvc.is_homed = False
+
+                                    self._print_debug_msg('Reset - device serial status> ' +
+                                        f'{dvc.serial_status}')
 
                         self._print_debug_msg(f'Reset - is machine idle> {self.is_machine_idle}')
 
@@ -307,14 +312,20 @@ class COPISCore:
     def _sender(self) -> None:
         while not self.stop_send_thread:
             try:
-                command = self._sidequeue.get(True, 0.1)
+                commands = []
+
+                for _ in range(self._sidequeue_batch_size):
+                    command = self._sidequeue.get(True, 0.1)
+                    self._sidequeue.task_done()
+                    commands.append(command)
             except QueueEmpty:
-                continue
+                if not commands:
+                    continue
 
             while self.is_serial_port_connected and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
-            self._send(command)
+            self._send(*commands)
 
             while self.is_serial_port_connected and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
@@ -343,14 +354,19 @@ class COPISCore:
             return False
 
         self._mainqueue = self._actions.copy()
+        device_count = len(set(a.device for a in self._mainqueue))
+
+        self._print_debug_msg(f'**** imaging batch size is: {2 * device_count}')
+
         self.is_imaging = True
-# TODO: Send batch size to _do_imaging from here.
-# Batch size: 2 x number of distinct devices in action list.
         self._clear_to_send = True
         self.imaging_thread = threading.Thread(
             target=self._do_imaging,
             name='imaging thread',
-            kwargs={"resuming": True}
+            kwargs={
+                "resuming": True,
+                "batch_size": 2 * device_count
+            }
         )
         self.imaging_thread.start()
         dispatcher.send('core_message', message='Imaging started')
@@ -390,15 +406,16 @@ class COPISCore:
         homing_cmds.extend(homing_actions)
 
         self._mainqueue = homing_cmds
+        batch_size = len(set(a.device for a in self._mainqueue))
+
+        self._print_debug_msg(f'**** homing batch size is: {batch_size}')
+
         self.is_homing = True
-# TODO: Send batch size to _do_homing from here.
-# Batch size: number of distinct devices in action list.
-# Most likely need to revise homing sequence to send one command
-# to each gentry at the same time in one batch.
         self._clear_to_send = True
         self.homing_thread = threading.Thread(
             target=self._do_homing,
-            name='homing thread'
+            name='homing thread',
+            kwargs={"batch_size": batch_size}
         )
         self.homing_thread.start()
         dispatcher.send('core_message', message='Homing started')
@@ -458,7 +475,8 @@ class COPISCore:
             return False
 
         # send commands to resume printing
-
+# TODO: When resuming is enabled, send batch size to _do_imaging from here.
+# Batch size: 2 x number of distinct devices in action list.
         self.is_paused = False
         self.is_imaging = True
         self.imaging_thread = threading.Thread(
@@ -469,20 +487,27 @@ class COPISCore:
         self.imaging_thread.start()
         dispatcher.send('core_message', message='Imaging resumed')
         return True
-# TODO: allow sending multiple commands from here as well;
-# so that all cameras go to ready simultaneously.
-    def send_now(self, command):
+
+    def send_now(self, *commands) -> bool:
         """Send a command to machine ahead of the command queue."""
         # Don't send now if imaging and G or C commands are sent.
         # No jogging while homing or imaging is in process.
-        if self.is_machine_busy and command.atype in self._G_COMMANDS + self._C_COMMANDS:
+        excluded = self._G_COMMANDS + self._C_COMMANDS
+        if self.is_machine_busy and any(cmd.atype in excluded for cmd in commands):
             dispatcher.send('core_error', message='Action commands not allowed when busy.')
-            return
+            return False
 
         if self.is_serial_port_connected:
-            self._sidequeue.put_nowait(command)
-        else:
-            logging.error("Not connected to device.")
+            self._sidequeue_batch_size = len(commands)
+
+            self._print_debug_msg(f'**** side queue batch size is: {self._sidequeue_batch_size}')
+
+            for command in commands:
+                self._sidequeue.put_nowait(command)
+            return True
+
+        logging.error("Not connected to device.")
+        return False
 
     def _initialize_gentries(self, atype: ActionType):
         cmds = []
@@ -504,13 +529,18 @@ class COPISCore:
             actions.append(deserialize_command(cmd_str))
 
         actions.reverse()
-        cmds.extend(actions)
+        sent = True
 
-        for cmd in cmds:
-            self.send_now(cmd)
-            if cmd.atype == ActionType.G90:
-                dvc = self._get_device(cmd.device)
-                dvc.is_move_absolute = True
+        if cmds:
+            sent = self.send_now(*cmds)
+        if sent:
+            sent = self.send_now(*actions)
+
+        if sent:
+            for cmd in cmds:
+                if cmd.atype == ActionType.G90:
+                    dvc = self._get_device(cmd.device)
+                    dvc.is_move_absolute = True
 
     def _ensure_absolute_move_mode(self, cmd_list):
         device_ids = []
@@ -523,12 +553,12 @@ class COPISCore:
 
         return device_ids
 
-    def _do_imaging(self, resuming=False) -> None:
+    def _do_imaging(self, batch_size=2, resuming=False) -> None:
         self._stop_sender()
 
         try:
             while self.is_imaging and self.is_serial_port_connected:
-                self._send_next(2)
+                self._send_next(batch_size)
 
             self.sentlines = {}
             self.sent = []
@@ -544,14 +574,14 @@ class COPISCore:
             if len(self.read_threads) > 0:
                 self._start_sender()
 
-    def _do_homing(self) -> None:
+    def _do_homing(self, batch_size=1) -> None:
         self._stop_sender()
 
         has_error = False
 
         try:
             while self.is_homing and self.is_serial_port_connected:
-                self._send_next()
+                self._send_next(batch_size)
 
             self.sentlines = {}
             self.sent = []
@@ -592,14 +622,25 @@ class COPISCore:
             f'{self._clear_to_send} - is machine idle> {self.is_machine_idle}')
 
         if not self._sidequeue.empty():
-            self._send(self._sidequeue.get_nowait())
-            self._sidequeue.task_done()
+            commands = []
+            for _ in range(self._sidequeue_batch_size):
+                command = self._sidequeue.get_nowait()
+                self._sidequeue.task_done()
+                commands.append(command)
+
+                if self._sidequeue.empty():
+                    break
+
+            self._send(*commands)
+            # Maybe don't return from here so that the command in the main
+            # queue can still be sent?
             return
 
         if self.is_machine_busy and self._mainqueue:
             currents = []
             for _ in range(batch_size):
-                currents.append(self._mainqueue.pop(0))
+                if len(self._mainqueue) > 0:
+                    currents.append(self._mainqueue.pop(0))
 
             self._print_debug_msg('In send next, sending current - clear to send> ' +
                 f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
@@ -696,12 +737,13 @@ class COPISCore:
         return True
 
     def remove_action(self, index: int) -> Action:
-        """Remove an action given action list index."""
+        """Removes an action given action list index."""
         action = self._actions.pop(index)
         dispatcher.send('core_a_list_changed')
         return action
 
     def clear_action(self) -> None:
+        """Removes all actions from actions list."""
         self._actions.clear()
         dispatcher.send('core_a_list_changed')
 
