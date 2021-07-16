@@ -24,8 +24,6 @@ from configparser import ConfigParser
 from pathlib import Path, PurePath
 from typing import Optional
 
-from .classes import ConfigSettings, MachineSettings
-
 
 class Store():
     """Handle application-wide data storage operations."""
@@ -55,7 +53,7 @@ class Store():
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
-    def save_config_settings(self, settings: ConfigSettings) -> None:
+    def save_config_settings(self, settings) -> None:
         """Save a configuration object to file, via its settings object."""
         parser = ConfigParser()
         parser.read_dict(settings.as_dict())
@@ -88,7 +86,7 @@ class _RemoduleUnpickler(pickle.Unpickler):
         return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
 
 
-def save_machine(filename: str, settings: MachineSettings) -> None:
+def save_machine(filename: str, settings) -> None:
     """Save a machine configuration settings object to file."""
     parser = ConfigParser()
     parser.read_dict(settings.as_dict())
