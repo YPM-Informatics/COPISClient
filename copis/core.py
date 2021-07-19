@@ -251,6 +251,7 @@ class COPISCore:
                             f'is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
+                        self._unlock_controllers()
                         cmds = []
                         self._ensure_absolute_move_mode(cmds)
 
@@ -272,13 +273,27 @@ class COPISCore:
 
                     dispatcher.send('core_message', message=resp)
 
-                self._clear_to_send = self.is_machine_idle
+                if self.is_machine_busy and self._is_machine_locked():
+                    self._print_debug_msg('**** The machine is still fucking locked!!!')
+                    self.cancel_imaging()
+                else:
+                    self._clear_to_send = self.is_machine_idle
 
                 self._print_debug_msg('Set clear to send - is machine idle> ' +
                     f'{self.is_machine_idle} - clear to send> {self._clear_to_send}')
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
+
+    def _is_machine_locked(self):
+        for dvc in self.devices:
+            if dvc.serial_response:
+                flags = dvc.serial_response.system_status_flags
+
+                if flags and len(flags) == 8 and int(flags[0]):
+                    return True
+
+        return False
 
     @property
     def is_machine_idle(self):
@@ -314,8 +329,8 @@ class COPISCore:
             try:
                 commands = []
 
-                for _ in range(self._sidequeue_batch_size):
-                    command = self._sidequeue.get(True, 0.1)
+                while len(commands) < self._sidequeue_batch_size:
+                    command = self._sidequeue.get(True, .1)
                     self._sidequeue.task_done()
                     commands.append(command)
             except QueueEmpty:
@@ -553,6 +568,22 @@ class COPISCore:
 
         return device_ids
 
+    def _unlock_controllers(self):
+        self._clear_to_send = True
+
+        cmds = []
+
+        for dvc in self.devices:
+            if dvc.serial_response:
+                flags = dvc.serial_response.system_status_flags
+
+                if flags and len(flags) == 8 and int(flags[0]):
+                    cmd = Action(ActionType.M511, dvc.device_id)
+                    cmds.append(cmd)
+
+        if cmds:
+            self.send_now(*cmds)
+
     def _do_imaging(self, batch_size=2, resuming=False) -> None:
         self._stop_sender()
 
@@ -623,7 +654,7 @@ class COPISCore:
 
         if not self._sidequeue.empty():
             commands = []
-            for _ in range(self._sidequeue_batch_size):
+            while len(commands) < self._sidequeue_batch_size:
                 command = self._sidequeue.get_nowait()
                 self._sidequeue.task_done()
                 commands.append(command)
