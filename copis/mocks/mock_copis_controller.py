@@ -82,7 +82,8 @@ class MockCopisController():
 
     def __init__(self):
         self._is_running = False
-        self._is_absolute_move_mode = True
+        self._is_absolute_move_mode = []
+        self._is_locked = []
         self._response_buffer = []
         self._output_buffer = []
 
@@ -97,6 +98,8 @@ class MockCopisController():
             name = 'response thread'
         )
 
+        self._is_absolute_move_mode = [True] * 3
+        self._is_locked = [True] * 3
         self._last_positions = [Point5()] * 3
 
         now = datetime.datetime.now()
@@ -124,7 +127,7 @@ class MockCopisController():
 
         for i in range(len(self._last_positions)):
             resp = self._COPIS_RESPONSE(
-                payload=self._get_formatted_response(i, True),
+                payload=self._get_formatted_response(i),
                 report_on=now
             )
             self._response_buffer.append(resp)
@@ -186,8 +189,10 @@ class MockCopisController():
                 action_timespan = self._DEFAULT_ACTION_TIMESPAN
                 data = None if action.argc == 0 else to_dict(action.args)
 
-                if action.atype in self._MODE_COMMANDS:
-                    self._is_absolute_move_mode = action.atype == ActionType.G90
+                if self._is_locked[action.device] and action.atype != ActionType.M511:
+                    pass
+                elif action.atype in self._MODE_COMMANDS:
+                    self._is_absolute_move_mode[action.device] = action.atype == ActionType.G90
                 elif action.atype in self._RESET_COMMANDS:
                     for key in pos:
                         if data[key] is not None:
@@ -205,7 +210,7 @@ class MockCopisController():
                             if data['f'] is None else min(data['f'], self._MAX_FEEDRATE)
                     for key in pos:
                         if data[key] is not None:
-                            if self._is_absolute_move_mode:
+                            if self._is_absolute_move_mode[action.device]:
                                 position[key] = data[key]
                             else:
                                 position[key] = position[key] + data[key]
@@ -220,38 +225,49 @@ class MockCopisController():
                             start = random.randrange(low_bound, 0)
                             finish = random.randrange(0, hi_bound)
                             position[key] = finish - start
+                elif action.atype == ActionType.M511:
+                    self._is_locked[action.device] = not self._is_locked[action.device]
                 else:
                     raise NotImplementedError(f'Action {action.atype} not implemented.')
 
-                delta = list(map(lambda start, end: abs(end - start), \
-                    prev_position.values(), position.values()))
-                max_delta = max(delta)
-                travel_time = action_timespan
-
-                if feedrate and max_delta > 0:
-                    travel_time = self._MINS_TO_SECS_RATIO * max_delta / feedrate
-
-                if action.atype == ActionType.G28:
-                    for key in pos:
-                        if data[key] is not None:
-                            position[key] = 0.0
-
-                x, y, z, p, t = position.values()
                 now = datetime.datetime.now()
 
-                start_resp = self._COPIS_RESPONSE(
-                    payload=self._get_formatted_response(action.device),
-                    report_on=now
-                )
+                if self._is_locked[action.device]:
+                    resp = self._COPIS_RESPONSE(
+                        payload=self._get_formatted_response(action.device),
+                        report_on=now
+                    )
 
-                self._last_positions[action.device] = Point5(x, y, z, p, t)
+                    self._response_buffer.append(resp)
+                else:
+                    delta = list(map(lambda start, end: abs(end - start), \
+                        prev_position.values(), position.values()))
+                    max_delta = max(delta)
+                    travel_time = action_timespan
 
-                end_resp = self._COPIS_RESPONSE(
-                    payload=self._get_formatted_response(action.device, True),
-                    report_on=now+datetime.timedelta(0, travel_time)
-                )
+                    if feedrate and max_delta > 0:
+                        travel_time = self._MINS_TO_SECS_RATIO * max_delta / feedrate
 
-                self._response_buffer.extend([start_resp, end_resp])
+                    if action.atype == ActionType.G28:
+                        for key in pos:
+                            if data[key] is not None:
+                                position[key] = 0.0
+
+                    x, y, z, p, t = position.values()
+
+                    start_resp = self._COPIS_RESPONSE(
+                        payload=self._get_formatted_response(action.device, False),
+                        report_on=now
+                    )
+
+                    self._last_positions[action.device] = Point5(x, y, z, p, t)
+
+                    end_resp = self._COPIS_RESPONSE(
+                        payload=self._get_formatted_response(action.device, True),
+                        report_on=now+datetime.timedelta(0, travel_time)
+                    )
+
+                    self._response_buffer.extend([start_resp, end_resp])
 
         return sys.getsizeof(cmd)
 
@@ -263,8 +279,8 @@ class MockCopisController():
 
         return packet
 
-    def _get_formatted_response(self, device_id, is_idle = False):
-        ssf = int(not is_idle)
+    def _get_formatted_response(self, device_id, is_idle = None):
+        ssf = 128 if is_idle is None else int(not is_idle)
         pos = self._last_positions[device_id]
         return (f'<id:{device_id},ssf:{ssf},pos:{pos.x:.3f},' +
             f'{pos.y:.3f},{pos.z:.3f},{pos.p:.3f},{pos.t:.3f}>')
