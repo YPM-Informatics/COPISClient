@@ -274,7 +274,7 @@ class COPISCore:
                     dispatcher.send('core_message', message=resp)
 
                 if self.is_machine_busy and self._is_machine_locked():
-                    self._print_debug_msg('**** The machine is still fucking locked!!!')
+                    self._print_debug_msg('**** Machine error-locked. stoping imaging!!')
                     self.cancel_imaging()
                 else:
                     self._clear_to_send = self.is_machine_idle
