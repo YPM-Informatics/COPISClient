@@ -181,7 +181,11 @@ class _CommandProcessor:
                     self._print(f'{opts[0]} {"not " if port is None else ""}selected.')
 
         def default():
-            self._print("Command not implemented.")
+            # self._print("Command not implemented.")
+            if not self._core.is_serial_port_connected:
+                self._print('A serial port needs to be open in order to shoot.')
+            else:
+                self._core._serial.write(cmd)
 
         cmds = {
             'use': use,
