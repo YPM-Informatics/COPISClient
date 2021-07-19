@@ -100,10 +100,12 @@ class ActionType(Enum):
 
     C0 = auto()     # press shutter
     C1 = auto()     # press auto focus
+
     M0 = auto()     # pause processing
     M24 = auto()    # resume processing
     M17 = auto()    # enable all motors
     M18 = auto()    # disable all motors
+    M511 = auto()   # toggle device locked
 
 
 @unique
