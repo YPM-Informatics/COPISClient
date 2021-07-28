@@ -93,6 +93,8 @@ class COPISCore:
         self.config = parent.config if parent else Config()
         self.evf_thread = None
 
+        self.console = ConsoleOutput(parent)
+
         self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -885,7 +887,7 @@ class COPISCore:
             return
 
         self._edsdk = import_module('copis.coms.edsdk_controller')
-        self._edsdk.initialize(ConsoleOutput())
+        self._edsdk.initialize(self.console)
 
         self._is_edsdk_enabled = self._edsdk.is_enabled
 
@@ -904,7 +906,7 @@ class COPISCore:
             return
 
         self._serial = serial_controller
-        self._serial.initialize(ConsoleOutput(), self._is_dev_env)
+        self._serial.initialize(self.console, self._is_dev_env)
         self._is_serial_enabled = True
 
     def terminate_serial(self):
@@ -993,9 +995,33 @@ class COPISCore:
 class ConsoleOutput:
     """Implement console output operations."""
 
-    def __init__(self):
-        return
+    def __init__(self, client):
+        self._client = client
 
     def print(self, msg: str) -> None:
         """Dispatch a message to the console."""
-        dispatcher.send('core_message', message=msg)
+        client = self._client
+        signal = 'core_message'
+
+        if client:
+            if client.is_gui_loaded:
+                dispatcher.send(signal, message=msg)
+            else:
+                dispatch_thread = threading.Thread(
+                    target=self._dispatch_on_gui_loaded,
+                    name='console output thread',
+                    daemon=True,
+                    kwargs={
+                        "signal": signal,
+                        "message": msg
+                    })
+
+                dispatch_thread.start()
+        else:
+            print(f'{signal}: {msg}')
+
+    def _dispatch_on_gui_loaded(self, signal, message):
+        while not self._client.is_gui_loaded:
+            time.sleep(.001)
+
+        dispatcher.send(signal, message=message)

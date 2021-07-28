@@ -58,15 +58,9 @@ class EDSDKController():
             self._edsdk.EdsInitializeSDK()
             self._update_camera_list()
 
-        # TODO: Check everywhere messages are dispatched to the console.
-        # Because it is part of the main frame and that doesn't get loaded (in client) till
-        # after Core, messages dispatched in parts of Core and its descendants (like here) don't get
-        # printed because the console doesn't exist yet.
-        # That causes a lot of errors to get swallowed up.
         except FileNotFoundError as err:
             msg = f'An exception occurred while initializing Canon API: {err.args[0]}'
             self._console.print(msg)
-            print(msg)
 
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.

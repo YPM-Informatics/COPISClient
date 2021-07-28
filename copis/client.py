@@ -33,6 +33,8 @@ class COPISApp(wx.App):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.is_gui_loaded = False
+
         self.config = Config()
         self.core = COPISCore(self)
 
@@ -48,6 +50,8 @@ class COPISApp(wx.App):
             size=(self.config.settings.app_window_width, self.config.settings.app_window_height)
         )
         self.mainwindow.Show()
+
+        self.is_gui_loaded = True
 
     def _parse_chamber_dimensions(self) -> list:
         size = list(self.config.machine_settings.machine.dimensions)
