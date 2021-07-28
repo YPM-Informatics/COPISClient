@@ -96,8 +96,6 @@ class ConsolePanel(wx.Panel):
     def print(self, msg: str) -> None:
         """Add message to console."""
 
-        # TODO: Is there a better way to handle this?
-        # Like first finding out if _console (wx.TxtCtrl) is disposed of?
         try:
             self._console.AppendText(f'{msg}\n')
         except RuntimeError:
