@@ -43,6 +43,7 @@ from .command_processor import deserialize_command, serialize_command
 from .coms import serial_controller
 from .helpers import create_action_args, print_timestamped
 from .globals import ActionType, ComStatus, DebugEnv
+from .config import Config
 from .classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D,
     ReadThread, SerialResponse)
@@ -87,15 +88,14 @@ class COPISCore:
             ActionType.G90, ActionType.G91, ActionType.G92]
     _C_COMMANDS = [ActionType.C0, ActionType.C1]
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent=None) -> None:
         """Initialize a CopisCore instance."""
-        self.config = parent.config
-        self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
-
-        self._is_edsdk_enabled = False
-        self._edsdk = None
+        self.config = parent.config if parent else Config()
         self.evf_thread = None
 
+        self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
+        self._is_edsdk_enabled = False
+        self._edsdk = None
         self._is_serial_enabled = False
         self._serial = None
 
@@ -106,6 +106,7 @@ class COPISCore:
 
         # clear to send, enabled after responses
         self._clear_to_send = False
+
         # True if sending actions, false if paused
         self.is_imaging = False
         self.is_homing = False
