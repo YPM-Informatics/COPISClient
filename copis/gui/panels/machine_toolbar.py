@@ -28,15 +28,13 @@ from copis.gui.wxutils import create_scaled_bitmap, set_dialog
 class MachineToolbar(aui.AuiToolBar):
     """Manage AUI toolbar panel."""
 
-    def __init__(self, parent, console = None) -> None:
+    def __init__(self, parent) -> None:
         """Initialize MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
         self._parent = parent
 
         self._core = self._parent.core
-
-        self._console = console
 
         self.port_cb = None
         self.baud_cb = None
@@ -119,9 +117,9 @@ class MachineToolbar(aui.AuiToolBar):
         self.baud_cb.Items = []
         self.connect_btn.Label = 'Connect'
 
-        self._print('Refreshing serial ports...')
+        self._core.console.log('Refreshing serial ports...')
         self._core.update_serial_ports()
-        self._print('Serial ports refreshed.')
+        self._core.console.log('Serial ports refreshed.')
 
         self.update_ports()
         self.port_cb.Popup()
@@ -245,12 +243,6 @@ class MachineToolbar(aui.AuiToolBar):
         # TODO figure this out: disable homing button when homed
         # enable when not; dynamically.
         return True # self._core.is_machine_homed
-
-    def _print(self, msg):
-        if self._console is None:
-            print(msg)
-        else:
-            self._console.print(msg)
 
     def __del__(self) -> None:
         pass

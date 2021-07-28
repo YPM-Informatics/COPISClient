@@ -81,7 +81,7 @@ class SerialController():
         self._filter_serials = _filter_serials
         self.print_timestamped = print_timestamped
 
-    def initialize(self, console = None, is_dev_env: bool = False) -> None:
+    def initialize(self, console, is_dev_env: bool = False) -> None:
         """Initializes the serial object."""
         if any(p.is_open for p in self._ports):
             return
@@ -97,12 +97,12 @@ class SerialController():
         has_active_port = self._active_port is not None
 
         if port is None:
-            self._print('Invalid attempt to select unknown port.')
+            self._console.log('Invalid attempt to select unknown port.')
             return False
 
         if has_active_port and port.name == self._active_port.name \
             and self._active_port is not None:
-            self._print('Port already selected.')
+            self._console.log('Port already selected.')
             return True
 
         if has_active_port:
@@ -127,7 +127,7 @@ class SerialController():
 
             return True
         except serial.SerialException as err:
-            self._print(f'Error instantiating serial connection: {err.args[0]}')
+            self._console.log(f'Error instantiating serial connection: {err.args[0]}')
             return False
 
     def open_port(self, baud: int = BAUDS[-1]) -> bool:
@@ -136,11 +136,11 @@ class SerialController():
         has_active_port = active_port is not None
 
         if not has_active_port:
-            self._print('No port selected.')
+            self._console.log('No port selected.')
             return False
 
         if active_port.connection.is_open:
-            self._print('Port connection already open.')
+            self._console.log('Port connection already open.')
             return True
 
         try:
@@ -148,7 +148,7 @@ class SerialController():
             active_port.connection.timeout = self._READ_TIMEOUT
             active_port.connection.open()
         except SerialException as err:
-            self._print(err.args[0])
+            self._console.log(err.args[0])
             return False
 
         return True
@@ -228,12 +228,6 @@ class SerialController():
             response = self._parse_response(resp) if resp else None
 
         return response
-
-    def _print(self, msg):
-        if self._console is None:
-            print(msg)
-        else:
-            self._console.print(msg)
 
     def _get_port(self, name):
         if len(self._ports) < 1:
