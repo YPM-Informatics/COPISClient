@@ -26,18 +26,14 @@ class _CommandProcessor:
     """
     _PROTOCOLS = ['edsdk', 'serial']
 
-    def __init__(self, core, console = None) -> None:
+    def __init__(self, core) -> None:
         self._core = core
-        self._console = console
         self._protocol = ''
 
     def process(self, cmd_line: str) -> None:
         """Processe the given command."""
         protocol_prompt = f'<{self._protocol}>' if len(self._protocol) > 0 else ''
         self._print(f'{protocol_prompt}$ {cmd_line}')
-
-        if self._console is not None:
-            self._console.on_command_cleared()
 
         argv = shlex.split(cmd_line)
 
@@ -202,7 +198,4 @@ class _CommandProcessor:
 
     def _print(self, *msgs):
         msg = ''.join(msgs)
-        if self._console is None:
-            print(msg)
-        else:
-            self._console.print(msg)
+        self._core.console.log(msg)

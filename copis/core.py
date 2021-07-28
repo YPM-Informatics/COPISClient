@@ -998,7 +998,7 @@ class ConsoleOutput:
     def __init__(self, client):
         self._client = client
 
-    def print(self, msg: str) -> None:
+    def log(self, msg: str) -> None:
         """Dispatch a message to the console."""
         client = self._client
         signal = 'core_message'
