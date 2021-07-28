@@ -244,14 +244,8 @@ class COPISCore:
                 if isinstance(resp, SerialResponse):
                     dvc = self._get_device(resp.device_id)
 
-                    self._print_debug_msg('Before setting device response - ' +
-                        f'is machine idle> {self.is_machine_idle}')
-
                     if dvc:
                         dvc.serial_response = resp
-
-                        self._print_debug_msg('After setting device response - ' +
-                            f'is machine idle> {self.is_machine_idle}')
                 else:
                     if resp == 'COPIS_READY':
                         self._unlock_controllers()
@@ -269,21 +263,18 @@ class COPISCore:
                                     dvc.is_move_absolute = True
                                     dvc.is_homed = False
 
-                                    self._print_debug_msg('Reset - device serial status> ' +
-                                        f'{dvc.serial_status}')
-
-                        self._print_debug_msg(f'Reset - is machine idle> {self.is_machine_idle}')
-
                     dispatcher.send('core_message', message=resp)
 
                 if self.is_machine_busy and self._is_machine_locked():
-                    self._print_debug_msg('**** Machine error-locked. stoping imaging!!')
+
+                    self._print_debug_msg('**** Machine error-locked. stoping imaging!! ****')
+
                     self.cancel_imaging()
                 else:
                     self._clear_to_send = self.is_machine_idle
 
-                self._print_debug_msg('Set clear to send - is machine idle> ' +
-                    f'{self.is_machine_idle} - clear to send> {self._clear_to_send}')
+                if self.is_machine_idle:
+                    self._print_debug_msg('**** Machine is idle ****')
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -373,8 +364,9 @@ class COPISCore:
 
         self._mainqueue = self._actions.copy()
         device_count = len(set(a.device for a in self._mainqueue))
+        batch_size = 2 * device_count
 
-        self._print_debug_msg(f'**** imaging batch size is: {2 * device_count}')
+        self._print_debug_msg(f'Imaging batch size is: {batch_size}')
 
         self.is_imaging = True
         self._clear_to_send = True
@@ -383,7 +375,7 @@ class COPISCore:
             name='imaging thread',
             kwargs={
                 "resuming": True,
-                "batch_size": 2 * device_count
+                "batch_size": batch_size
             }
         )
         self.imaging_thread.start()
@@ -426,7 +418,7 @@ class COPISCore:
         self._mainqueue = homing_cmds
         batch_size = len(set(a.device for a in self._mainqueue))
 
-        self._print_debug_msg(f'**** homing batch size is: {batch_size}')
+        self._print_debug_msg(f'Homing batch size is: {batch_size}')
 
         self.is_homing = True
         self._clear_to_send = True
@@ -518,7 +510,7 @@ class COPISCore:
         if self.is_serial_port_connected:
             self._sidequeue_batch_size = len(commands)
 
-            self._print_debug_msg(f'**** side queue batch size is: {self._sidequeue_batch_size}')
+            self._print_debug_msg(f'Side queue batch size is: {self._sidequeue_batch_size}')
 
             for command in commands:
                 self._sidequeue.put_nowait(command)
@@ -645,15 +637,9 @@ class COPISCore:
         if not self.is_serial_port_connected:
             return
 
-        self._print_debug_msg('Waiting in send next - clear to send> ' +
-            f'{self._clear_to_send} - is machine idle> {self.is_machine_idle}')
-
         # Wait until we get the ok from listener.
         while self.is_serial_port_connected and not self._clear_to_send:
             time.sleep(self._YIELD_TIMEOUT)
-
-        self._print_debug_msg('Done waiting in send next - clear to send> ' +
-            f'{self._clear_to_send} - is machine idle> {self.is_machine_idle}')
 
         if not self._sidequeue.empty():
             commands = []
@@ -675,10 +661,6 @@ class COPISCore:
             for _ in range(batch_size):
                 if len(self._mainqueue) > 0:
                     currents.append(self._mainqueue.pop(0))
-
-            self._print_debug_msg('In send next, sending current - clear to send> ' +
-                f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
-                    f'- currents> {currents}')
 
             self._send(*currents)
             self._clear_to_send = False
@@ -709,17 +691,12 @@ class COPISCore:
 
         if self._serial.is_port_open:
 
-            self._print_debug_msg('Before write, setting is_writing - clear to send> ' +
-                f'{self._clear_to_send} - is machine idle> {self.is_machine_idle} ' +
-                '- Writing> [{0}] to device{1} '
+            self._print_debug_msg('Writing> [{0}] to device{1} '
                     .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
                 f'{", ".join([str(d.device_id) for d in dvcs])}')
 
             for dvc in dvcs:
                 dvc.is_writing = True
-
-            self._print_debug_msg('Before write, is_writing set - clear to send> ' +
-                f'{self._clear_to_send} - is machine idle: {self.is_machine_idle}')
 
             self._serial.write(cmd_lines)
 
