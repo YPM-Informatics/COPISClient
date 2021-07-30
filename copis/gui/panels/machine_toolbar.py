@@ -117,7 +117,6 @@ class MachineToolbar(aui.AuiToolBar):
         self.baud_cb.Items = []
         self.connect_btn.Label = 'Connect'
 
-        self._core.console.log('Refreshing serial ports...')
         self._core.update_serial_ports()
         self._core.console.log('Serial ports refreshed.')
 
