@@ -100,9 +100,9 @@ def get_timestamp() -> str:
     now = datetime.datetime.now()
     return now.strftime('%H:%M:%S.%f')[:-3]
 
-def print_timestamped(msg) -> None:
-    """Prints a timestamped message."""
-    return print(f'({get_timestamp()}) {msg}')
+def get_timestamped(msg) -> None:
+    """Returns given messages with a timestamp."""
+    return f'({get_timestamp()}) {msg}'
 
 def interleave_lists(*args):
     """Interleaves items from provided lists into one list."""

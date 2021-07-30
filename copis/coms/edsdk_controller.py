@@ -46,7 +46,7 @@ class EDSDKController():
         # See: https://github.com/josiahcarlson/mprop
         self._win_func_type = WINFUNCTYPE
 
-    def initialize(self, console) -> None:
+    def initialize(self, console = None) -> None:
         """Initialize the EDSDK object."""
         if self._is_connected:
             return

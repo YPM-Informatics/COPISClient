@@ -41,7 +41,7 @@ from pydispatch import dispatcher
 
 from .command_processor import deserialize_command, serialize_command
 from .coms import serial_controller
-from .helpers import create_action_args, print_timestamped
+from .helpers import create_action_args, get_timestamped
 from .globals import ActionType, ComStatus, DebugEnv
 from .config import Config
 from .classes import (
@@ -936,7 +936,7 @@ class COPISCore:
 
     def _print_debug_msg(self, msg):
         if self._is_dev_env:
-            print_timestamped(msg)
+            self.console.log(get_timestamped(msg))
 
 
     @property
