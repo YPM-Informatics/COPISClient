@@ -87,6 +87,7 @@ class ConsolePanel(wx.Panel):
         if not cmd:
             return
 
+        self.on_command_cleared()
         self._cmd_processor.process(cmd)
 
     def on_command_cleared(self, _event: wx.CommandEvent = None) -> None:
@@ -98,8 +99,12 @@ class ConsolePanel(wx.Panel):
 
         try:
             self._console.AppendText(f'{msg}\n')
-        except RuntimeError:
-            print(f'{msg}\n')
+        except Exception as err:
+            print(f'intended to print: {msg}')
+            print(f'instead, got error : {err.args[0]}')
+            raise
+        # except RuntimeError:
+        #     print(f'{msg}\n')
 
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
