@@ -26,7 +26,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
-from copis.classes import AABBObject3D, CylinderObject3D, OBJObject3D
+from copis.classes import AABBObject3D, CylinderObject3D
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
