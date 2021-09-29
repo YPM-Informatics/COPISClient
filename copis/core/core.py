@@ -39,6 +39,8 @@ from glm import vec3
 
 from pydispatch import dispatcher
 
+from .console_output import _ConsoleOutput
+
 from copis.command_processor import deserialize_command, serialize_command
 from copis.coms import serial_controller
 from copis.helpers import create_action_args, get_timestamped
@@ -93,7 +95,7 @@ class COPISCore:
         self.config = parent.config if parent else Config()
         self.evf_thread = None
 
-        self.console = ConsoleOutput(parent)
+        self.console = _ConsoleOutput(parent)
 
         self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
         self._is_edsdk_enabled = False
@@ -967,38 +969,3 @@ class COPISCore:
     def is_serial_port_connected(self):
         """Return a flag indicating whether the active serial port is connected."""
         return self._serial.is_port_open
-
-
-class ConsoleOutput:
-    """Implement console output operations."""
-
-    def __init__(self, client):
-        self._client = client
-
-    def log(self, msg: str) -> None:
-        """Dispatch a message to the console."""
-        client = self._client
-        signal = 'core_message'
-
-        if client:
-            if client.is_gui_loaded:
-                dispatcher.send(signal, message=msg)
-            else:
-                dispatch_thread = threading.Thread(
-                    target=self._dispatch_on_gui_loaded,
-                    name='console output thread',
-                    daemon=True,
-                    kwargs={
-                        "signal": signal,
-                        "message": msg
-                    })
-
-                dispatch_thread.start()
-        else:
-            print(f'{signal}: {msg}')
-
-    def _dispatch_on_gui_loaded(self, signal, message):
-        while not self._client.is_gui_loaded:
-            time.sleep(.001)
-
-        dispatcher.send(signal, message=message)
