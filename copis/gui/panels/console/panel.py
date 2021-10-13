@@ -63,10 +63,10 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_o_deselected')
         dispatcher.connect(self.on_action_export, signal='core_a_exported')
 
-        dispatcher.connect(self.on_notification, signal='core_error')
-        dispatcher.connect(self.on_notification, signal='core_info')
-        dispatcher.connect(self.on_notification, signal='core_debug')
-        dispatcher.connect(self.on_notification, signal='core_raw')
+        dispatcher.connect(self.on_notification, signal='msg_error')
+        dispatcher.connect(self.on_notification, signal='msg_info')
+        dispatcher.connect(self.on_notification, signal='msg_debug')
+        dispatcher.connect(self.on_notification, signal='msg_raw')
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -113,13 +113,31 @@ class ConsolePanel(wx.Panel):
             print(f'intended to print: {msg}')
             print(f'instead, got error : {err.args[0]}')
             raise
-        # except RuntimeError:
-        #     print(f'{msg}\n')
 
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
-        notification = get_notification_msg(signal, message)
-        self.print(notification)
+        notification = message
+
+        if signal.startswith('core_'):
+            if self.core.is_dev_env:
+                parts = signal.split('_')
+                signal = 'msg_debug'
+
+                if parts[1] == 'a':
+                    message = 'Action'
+                elif parts[1] == 'd':
+                    message = 'Device'
+                elif parts[1] == 'o':
+                    message = 'Proxy object'
+
+                for i in range(2, len(parts)):
+                    message = f'{message} {parts[i]}'
+
+                notification = get_notification_msg(signal, message)
+                self.print(notification)
+        else:
+            notification = get_notification_msg(signal, message)
+            self.print(notification)
 
     def on_action_export(self, filename: str = None) -> None:
         """Print action exported message."""

@@ -216,7 +216,7 @@ class MachineToolbar(aui.AuiToolBar):
 
     def on_set_ready(self, event: wx.CommandEvent) -> None:
         """On set ready button pressed, issue commands to initializes
-        the gentries to their current positions."""
+        the gantries to their current positions."""
 
         if not self._core.is_serial_port_connected:
             set_dialog('Connect to the machine in order to set ready.')
@@ -226,7 +226,7 @@ class MachineToolbar(aui.AuiToolBar):
 
     def on_go_to_ready(self, event: wx.CommandEvent) -> None:
         """On go to ready button pressed, issue commands to send
-        gentries to their initial positions."""
+        gantries to their initial positions."""
 
         if not self._core.is_serial_port_connected:
             set_dialog('Connect to the machine in order to go to ready.')
