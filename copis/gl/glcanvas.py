@@ -22,7 +22,6 @@ import math
 import platform as pf
 import glm
 import numpy as np
-import pywavefront
 import wx
 
 from glm import vec3, mat4, quat
@@ -47,6 +46,7 @@ import copis.gl.shaders as shaderlib
 
 from copis.mathutils import arcball
 from copis.globals import MAX_ID
+from copis.helpers import print_error_msg
 from .actionvis import GLActionVis
 from .objectvis import GLObjectVis
 from .chamber import GLChamber
@@ -107,7 +107,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
         super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                         size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
+            size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
         self._build_dimensions = build_dimensions
@@ -499,7 +499,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._dirty = True
 
         else:
-            dispatcher.send('core_error', message=f'invalid proxy object id {id_}')
+            print_error_msg(self.core.console, f'invalid proxy object id {id_}')
 
     def _deselect_object(self) -> None:
         for obj in self._objectvis.objects:

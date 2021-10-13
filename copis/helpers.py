@@ -109,8 +109,34 @@ def interleave_lists(*args):
     return [val for tup in zip_longest(*args) for val in tup if val is not None]
 
 def get_notification_msg(signal, msg) -> str:
-    """Return a notification message tagged based on the signal."""
-    tag = signal.split('_')[1] if signal.count('_') == 1 else signal
+    """Returns a notification message tagged based on the signal."""
+    tag = signal.split('_')[1] if signal.startswith('msg_') else signal
     padded_tag = f'{tag}:'
     padded_tag = padded_tag.ljust(6, ' ')
+
     return f'{padded_tag} {msg}'.strip()
+
+def print_debug_msg(console, msg, is_dev_env) -> None:
+    """Prints a debug message to the console, if we are in a dev environment."""
+    if is_dev_env:
+        dispatch_msg(console, 'msg_debug', msg)
+
+def print_error_msg(console, msg) -> None:
+    """Prints an error message to the console."""
+    dispatch_msg(console, 'msg_error', msg)
+
+def print_info_msg(console, msg):
+    """Prints an info message to the console."""
+    dispatch_msg(console, 'msg_info', msg)
+
+def print_raw_msg(console, msg):
+    """Echos COPIS controller output to the console."""
+    dispatch_msg(console, 'msg_raw', msg.strip('\r\n'))
+
+def dispatch_msg(console, signal, msg):
+    """Dispatches a message to the GUI console or standard console if no GUI."""
+    ts_msg = get_timestamped(msg)
+    if console:
+        console.log(signal, ts_msg)
+    else:
+        print(get_notification_msg(signal, ts_msg))

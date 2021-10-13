@@ -27,6 +27,8 @@ from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsDeviceInfo, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
+from copis.helpers import print_error_msg, print_info_msg
+
 
 class EDSDKController():
     """Implement EDSDK Functionalities."""
@@ -37,6 +39,8 @@ class EDSDKController():
         self._console = None
         self._is_connected = False
         self._is_waiting_for_image = False
+        self._print_error_msg = print_error_msg
+        self._print_info_msg = print_info_msg
 
         self._camera = CameraSettings()
         self._image = ImageSettings()
@@ -60,7 +64,7 @@ class EDSDKController():
 
         except FileNotFoundError as err:
             msg = f'An exception occurred while initializing Canon API: {err.args[0]}'
-            self._console.log(msg)
+            self._print_error_msg(self._console, msg)
 
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.
@@ -77,7 +81,7 @@ class EDSDKController():
 
         # already connected
         if self._is_connected and index == cam_index:
-            self._console.log(f'Already connected to camera {cam_index}.')
+            self._print_error_msg(self._console, f'Already connected to camera {cam_index}.')
             return True
 
         # disconnect from previously connected camera
@@ -85,12 +89,12 @@ class EDSDKController():
             self.disconnect()
 
         if cam_count == 0:
-            self._console.log('No cameras detected.')
+            self._print_error_msg(self._console, 'No cameras detected.')
             return False
 
         # invalid index
         if index < 0 or index >= cam_count:
-            self._console.log(f'Invalid camera index: {index}.')
+            self._print_error_msg(self._console, f'Invalid camera index: {index}.')
             return False
 
         self._camera.index = index
@@ -127,7 +131,7 @@ class EDSDKController():
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 
         self._is_connected = True
-        self._console.log(f'Connected to camera {self._camera.index}.')
+        self._print_info_msg(self._console, f'Connected to camera {self._camera.index}.')
 
         return self._is_connected
 
@@ -138,11 +142,11 @@ class EDSDKController():
             True if successful, False otherwise.
         """
         if not self._is_connected:
-            self._console.log('No cameras currently connected.')
+            self._print_error_msg(self._console, 'No cameras currently connected.')
             return False
 
         self._edsdk.EdsCloseSession(self._camera.ref)
-        self._console.log(f'Disconnected from camera {self._camera.index}.')
+        self._print_info_msg(self._console, f'Disconnected from camera {self._camera.index}.')
 
         self._camera.ref = None
         self._camera.index = -1
@@ -158,7 +162,7 @@ class EDSDKController():
             True if successful, False otherwise.
         """
         if not self._is_connected:
-            self._console.log('No cameras currently connected.')
+            self._print_error_msg(self._console, 'No cameras currently connected.')
             return False
 
         try:
@@ -178,7 +182,8 @@ class EDSDKController():
             return True
 
         except Exception as err:
-            self._console.log('An exception occurred while taking a photo with camera '
+            self._print_error_msg(self._console,
+                'An exception occurred while taking a photo with camera '
                 f'{self._camera.index}: {err.args[0]}')
             return False
 
@@ -189,7 +194,9 @@ class EDSDKController():
             self._edsdk.EdsTerminateSDK()
 
         except Exception as err:
-            self._console.log(f'An exception occurred while terminating Canon API: {err.args[0]}')
+            self._print_error_msg(self._console,
+                'An exception occurred while terminating Canon API: '
+                f'{err.args[0]}')
 
     @property
     def camera_count(self) -> int:
@@ -272,10 +279,11 @@ class EDSDKController():
 
             self._is_waiting_for_image = False
 
-            self._console.log(f'Image saved at {self._image.filename}.')
+            self._print_info_msg(self._console, f'Image saved at {self._image.filename}.')
 
         except Exception as err:
-            self._console.log(f'An exception occurred while downloading an image: {err.args[0]}')
+            self._print_error_msg(self._console,
+                f'An exception occurred while downloading an image: {err.args[0]}')
 
     def _handle_object(self, event, obj, _context):
         """Handle the group of events where request notifications are issued to
@@ -300,7 +308,7 @@ class EDSDKController():
             try:
                 self._edsdk.EdsSendCommand(context, 1, 0)
             except Exception as err:
-                self._console.log(
+                self._print_error_msg(self._console,
                     f'An exception occurred while handling the state change event: {err.args[0]}')
 
         return 0
