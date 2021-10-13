@@ -69,7 +69,7 @@ class Store():
 
         return None
 
-    def find_path(self, filename: str = '') -> str:
+    def find_path(self, filename: str='') -> str:
         """Finds the given file names full path relative to the COPIS root folder."""
         paths = list(Path(self._root_dir).rglob(filename))
         return str(paths[0]) if len(paths) > 0 else ''
