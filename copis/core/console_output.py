@@ -20,20 +20,22 @@ import time
 
 from pydispatch import dispatcher
 
+from copis.helpers import get_timestamped, get_notification_msg
+
 class _ConsoleOutput:
     """Implement console output operations."""
 
     def __init__(self, client):
         self._client = client
 
-    def log(self, msg: str) -> None:
+    def log(self, msg: str, signal: str='core_info') -> None:
         """Dispatch a message to the console."""
         client = self._client
-        signal = 'core_message'
+        ts_msg = get_timestamped(msg)
 
         if client:
             if client.is_gui_loaded:
-                dispatcher.send(signal, message=msg)
+                dispatcher.send(signal, message=ts_msg)
             else:
                 dispatch_thread = threading.Thread(
                     target=self._dispatch_on_gui_loaded,
@@ -41,12 +43,12 @@ class _ConsoleOutput:
                     daemon=True,
                     kwargs={
                         "signal": signal,
-                        "message": msg
+                        "message": ts_msg
                     })
 
                 dispatch_thread.start()
         else:
-            print(f'{signal}: {msg}')
+            print(get_notification_msg(signal, ts_msg))
 
     def _dispatch_on_gui_loaded(self, signal, message):
         while not self._client.is_gui_loaded:
