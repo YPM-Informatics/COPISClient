@@ -100,10 +100,17 @@ def get_timestamp() -> str:
     now = datetime.datetime.now()
     return now.strftime('%H:%M:%S.%f')[:-3]
 
-def get_timestamped(msg) -> None:
+def get_timestamped(msg) -> str:
     """Returns given messages with a timestamp."""
     return f'({get_timestamp()}) {msg}'
 
 def interleave_lists(*args):
     """Interleaves items from provided lists into one list."""
     return [val for tup in zip_longest(*args) for val in tup if val is not None]
+
+def get_notification_msg(signal, msg) -> str:
+    """Return a notification message tagged based on the signal."""
+    tag = signal.split('_')[1] if signal.count('_') == 1 else signal
+    padded_tag = f'{tag}:'
+    padded_tag = padded_tag.ljust(6, ' ')
+    return f'{padded_tag} {msg}'.strip()

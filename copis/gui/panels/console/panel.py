@@ -19,7 +19,10 @@ import wx
 
 from pydispatch import dispatcher
 
+from copis import console
+
 from .command_processor import _CommandProcessor
+from copis.helpers import get_notification_msg
 from copis.gui.wxutils import create_scaled_bitmap
 
 
@@ -38,6 +41,10 @@ class ConsolePanel(wx.Panel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
+        font = wx.Font(9, family = wx.FONTFAMILY_MODERN, style = 0, weight = 90,
+            underline = False, faceName ='Consolas', encoding = wx.FONTENCODING_DEFAULT)
+        self.SetFont(font)
+
         self._console = None
         self._console_writer = None
 
@@ -54,9 +61,12 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='core_d_deselected')
         dispatcher.connect(self.on_notification, signal='core_o_selected')
         dispatcher.connect(self.on_notification, signal='core_o_deselected')
-        dispatcher.connect(self.on_notification, signal='core_error')
-        dispatcher.connect(self.on_notification, signal='core_message')
         dispatcher.connect(self.on_action_export, signal='core_a_exported')
+
+        dispatcher.connect(self.on_notification, signal='core_error')
+        dispatcher.connect(self.on_notification, signal='core_info')
+        dispatcher.connect(self.on_notification, signal='core_debug')
+        dispatcher.connect(self.on_notification, signal='core_raw')
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -108,7 +118,8 @@ class ConsolePanel(wx.Panel):
 
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
-        self.print(f'{signal}: {message}')
+        notification = get_notification_msg(signal, message)
+        self.print(notification)
 
     def on_action_export(self, filename: str = None) -> None:
         """Print action exported message."""

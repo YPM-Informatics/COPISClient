@@ -27,7 +27,7 @@ from serial.serialutil import SerialException
 from serial.tools import list_ports
 
 from copis.globals import Point5
-from copis.helpers import get_timestamped
+from copis.helpers import get_timestamped, get_notification_msg
 from copis.classes import SerialResponse
 from copis.mocks.mock_serial import MockSerial
 
@@ -80,6 +80,7 @@ class SerialController():
         self._is_dev_env = False
         self._filter_serials = _filter_serials
         self.get_timestamped = get_timestamped
+        self.get_notification_msg = get_notification_msg
 
     def initialize(self, console = None, is_dev_env: bool = False) -> None:
         """Initializes the serial object."""
@@ -97,12 +98,12 @@ class SerialController():
         has_active_port = self._active_port is not None
 
         if port is None:
-            self._console.log('Invalid attempt to select unknown port.')
+            self._print_error_msg('Invalid attempt to select unknown port.')
             return False
 
         if has_active_port and port.name == self._active_port.name \
             and self._active_port is not None:
-            self._console.log('Port already selected.')
+            self._print_error_msg('Port already selected.')
             return True
 
         if has_active_port:
@@ -127,7 +128,7 @@ class SerialController():
 
             return True
         except serial.SerialException as err:
-            self._console.log(f'Error instantiating serial connection: {err.args[0]}')
+            self._print_error_msg(f'Cannot instantiate serial connection: {err.args[0]}')
             return False
 
     def open_port(self, baud: int = BAUDS[-1]) -> bool:
@@ -136,11 +137,11 @@ class SerialController():
         has_active_port = active_port is not None
 
         if not has_active_port:
-            self._console.log('No port selected.')
+            self._print_error_msg('No port selected.')
             return False
 
         if active_port.connection.is_open:
-            self._console.log('Port connection already open.')
+            self._print_error_msg('Port connection already open.')
             return True
 
         try:
@@ -148,7 +149,7 @@ class SerialController():
             active_port.connection.timeout = self._READ_TIMEOUT
             active_port.connection.open()
         except SerialException as err:
-            self._console.log(err.args[0])
+            self._print_error_msg(f'Cannot open serial connection: {err.args[0]}')
             return False
 
         return True
@@ -223,7 +224,7 @@ class SerialController():
             resp = p_bytes.decode()
 
             if resp:
-                self._print_debug_msg(f'serial bytes read: {resp}')
+                self._print_raw_msg(resp)
 
             response = self._parse_response(resp) if resp else None
 
@@ -262,14 +263,18 @@ class SerialController():
         return port.connection.is_open \
             if port is not None and port.connection is not None else False
 
-    def _print_debug_msg(self, msg):
-        if self._is_dev_env:
-            timed_msg = self.get_timestamped(msg)
+    def _print_error_msg(self, msg):
+        self._dispatch_msg('core_error', msg)
 
-            if self._console:
-                self._console.log(timed_msg)
-            else:
-                print(timed_msg)
+    def _print_raw_msg(self, msg):
+        self._dispatch_msg('core_raw', msg.strip('\r\n'))
+
+    def _dispatch_msg(self, signal, msg):
+        if self._console:
+            self._console.log(msg, signal)
+        else:
+            ts_msg = self.get_timestamped(msg)
+            print(self.get_notification_msg(signal, ts_msg))
 
 
     @property
