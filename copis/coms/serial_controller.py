@@ -128,7 +128,8 @@ class SerialController():
 
             return True
         except serial.SerialException as err:
-            self._print_error_msg(self._console, f'Cannot instantiate serial connection: {err.args[0]}')
+            self._print_error_msg(self._console,
+                f'Cannot instantiate serial connection: {err.args[0]}')
             return False
 
     def open_port(self, baud: int = BAUDS[-1]) -> bool:
