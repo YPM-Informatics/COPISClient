@@ -23,6 +23,7 @@ import wx.lib.agw.aui as aui
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.helpers import print_info_msg
 
 
 class MachineToolbar(aui.AuiToolBar):
@@ -118,7 +119,7 @@ class MachineToolbar(aui.AuiToolBar):
         self.connect_btn.Label = 'Connect'
 
         self._core.update_serial_ports()
-        self._core.console.log('Serial ports refreshed.')
+        print_info_msg(self._core.console, 'Serial ports refreshed.')
 
         self.update_ports()
         self.port_cb.Popup()
