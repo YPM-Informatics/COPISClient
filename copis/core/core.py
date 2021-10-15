@@ -235,7 +235,10 @@ class COPISCore:
     def _listen(self) -> None:
         read_thread = \
             next(filter(lambda t: t.thread == threading.current_thread(), self.read_threads))
+
         continue_listening = lambda t = read_thread: not t.stop
+
+        print_debug_msg(self.console, f'{read_thread.thread.name} started', self._is_dev_env)
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
@@ -277,6 +280,8 @@ class COPISCore:
                 if self.is_machine_idle:
                     print_debug_msg(self.console,
                         '**** Machine is idle ****', self._is_dev_env)
+
+        print_debug_msg(self.console, f'{read_thread.thread.name} stopped', self._is_dev_env)
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
