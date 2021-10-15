@@ -120,10 +120,6 @@ class COPISCore:
         self.is_homing = False
         self.is_paused = False
 
-        # logging
-        self.sentlines = {}
-        self.sent = []
-
         self.read_threads = []
         self.send_thread = None
         self.stop_send_thread = False
@@ -585,9 +581,6 @@ class COPISCore:
             while self.is_imaging and self.is_serial_port_connected:
                 self._send_next(batch_size)
 
-            self.sentlines = {}
-            self.sent = []
-
         except AttributeError as err:
             logging.error(f"Imaging thread died. {err.args[0]}")
 
@@ -607,9 +600,6 @@ class COPISCore:
         try:
             while self.is_homing and self.is_serial_port_connected:
                 self._send_next(batch_size)
-
-            self.sentlines = {}
-            self.sent = []
 
             for dvc in self.devices:
                 resp = dvc.serial_response
@@ -678,9 +668,6 @@ class COPISCore:
         dvcs = []
         cmds = []
         for command in commands:
-            # log sent command
-            self.sent.append(command)
-
             if not any(d.device_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
 
