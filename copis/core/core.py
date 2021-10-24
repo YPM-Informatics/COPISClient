@@ -217,6 +217,8 @@ class COPISCore:
                         filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
                     ).name
 
+                print_info_msg(self.console, f'Connected to device {port_name}')
+
                 read_thread = threading.Thread(
                     target=self._listen,
                     name=f'read thread {port_name}')
@@ -225,8 +227,6 @@ class COPISCore:
                 read_thread.start()
 
                 self._start_sender()
-
-                print_info_msg(self.console, f'Connected to device {port_name}')
             else:
                 print_error_msg(self.console, 'Unable to connect to device')
 
