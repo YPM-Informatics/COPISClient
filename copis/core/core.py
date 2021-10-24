@@ -326,6 +326,8 @@ class COPISCore:
             self.send_thread = None
 
     def _sender(self) -> None:
+        print_debug_msg(self.console, 'Send thread started', self._is_dev_env)
+
         while not self.stop_send_thread:
             try:
                 commands = []
@@ -346,11 +348,14 @@ class COPISCore:
             while self.is_serial_port_connected and not self._clear_to_send:
                 time.sleep(self._YIELD_TIMEOUT)
 
+        print_debug_msg(self.console, 'Send thread stopped', self._is_dev_env)
+
     def start_imaging(self, startindex=0) -> bool:
         """Starts the imaging sequence, following the define action path."""
 
         if not self.is_serial_port_connected:
-            print_error_msg(self.console, 'The machine needs to be connected before imaging can start.')
+            print_error_msg(self.console,
+                'The machine needs to be connected before imaging can start.')
             return False
 
         if self.is_homing:
