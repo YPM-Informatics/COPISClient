@@ -109,13 +109,12 @@ class ConsolePanel(wx.Panel):
 
         try:
             if self._console:
-                self._console.AppendText(f'{msg}\n')
+                wx.CallAfter(self._console.AppendText, f'{msg}\n')
             else:
                 print(msg)
         except Exception as err:
             print(f'intended to print: {msg}')
             print(f'instead, got error : {err.args[0]}')
-            raise
 
     def on_notification(self, signal: str, message: str = '') -> None:
         """Print any pydispatch signals."""
