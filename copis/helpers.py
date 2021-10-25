@@ -133,6 +133,10 @@ def print_raw_msg(console, msg):
     """Echos COPIS controller output to the console."""
     dispatch_msg(console, 'msg_raw', msg.strip('\r\n'))
 
+def print_echo_msg(console, msg):
+    """Echos console command to the console."""
+    dispatch_msg(console, 'msg_echo', msg)
+
 def dispatch_msg(console, signal, msg):
     """Dispatches a message to the GUI console or standard console if no GUI."""
     ts_msg = get_timestamped(msg)
