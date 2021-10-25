@@ -238,12 +238,14 @@ class COPISCore:
 
         continue_listening = lambda t = read_thread: not t.stop
 
-        print_debug_msg(self.console, f'{read_thread.thread.name} started', self._is_dev_env)
+        print_debug_msg(self.console,
+            f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
             #if not self._edsdk.is_waiting_for_image:
             resp = self._serial.read(read_thread.port)
+            controllers_unlocked = False
 
             if resp:
                 if isinstance(resp, SerialResponse):
@@ -253,7 +255,7 @@ class COPISCore:
                         dvc.serial_response = resp
                 else:
                     if resp == 'COPIS_READY':
-                        self._unlock_controllers()
+                        controllers_unlocked = self._unlock_controllers()
                         cmds = []
                         self._ensure_absolute_move_mode(cmds)
 
@@ -275,13 +277,14 @@ class COPISCore:
 
                     self.cancel_imaging()
                 else:
-                    self._clear_to_send = self.is_machine_idle
+                    self._clear_to_send = controllers_unlocked or self.is_machine_idle
 
                 if self.is_machine_idle:
                     print_debug_msg(self.console,
                         '**** Machine is idle ****', self._is_dev_env)
 
-        print_debug_msg(self.console, f'{read_thread.thread.name} stopped', self._is_dev_env)
+        print_debug_msg(self.console,
+            f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -569,8 +572,6 @@ class COPISCore:
         return device_ids
 
     def _unlock_controllers(self):
-        self._clear_to_send = True
-
         cmds = []
 
         for dvc in self.devices:
@@ -582,7 +583,9 @@ class COPISCore:
                     cmds.append(cmd)
 
         if cmds:
-            self.send_now(*cmds)
+            return self.send_now(*cmds)
+
+        return False
 
     def _do_imaging(self, batch_size=2, resuming=False) -> None:
         self._stop_sender()
