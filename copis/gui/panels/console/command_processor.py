@@ -17,6 +17,8 @@
 
 import shlex
 
+from copis.helpers import print_echo_msg
+
 # pylint: disable=protected-access
 class _CommandProcessor:
     """Handle console commands processing and execution.
@@ -198,4 +200,4 @@ class _CommandProcessor:
 
     def _print(self, *msgs):
         msg = ''.join(msgs)
-        self._core.console.log(msg)
+        print_echo_msg(self._core.console, msg)

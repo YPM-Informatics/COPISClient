@@ -67,6 +67,7 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='msg_info')
         dispatcher.connect(self.on_notification, signal='msg_debug')
         dispatcher.connect(self.on_notification, signal='msg_raw')
+        dispatcher.connect(self.on_notification, signal='msg_echo')
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
