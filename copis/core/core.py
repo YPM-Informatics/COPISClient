@@ -586,6 +586,8 @@ class COPISCore:
         return False
 
     def _do_imaging(self, batch_size=2, resuming=False) -> None:
+        print_debug_msg(self.console, 'Imaging thread started', self._is_dev_env)
+
         self._stop_sender()
 
         try:
@@ -603,7 +605,11 @@ class COPISCore:
             if len(self.read_threads) > 0:
                 self._start_sender()
 
+        print_debug_msg(self.console, 'Imaging thread stopped', self._is_dev_env)
+
     def _do_homing(self, batch_size=1) -> None:
+        print_debug_msg(self.console, 'Homing thread started', self._is_dev_env)
+
         self._stop_sender()
 
         has_error = False
@@ -630,15 +636,23 @@ class COPISCore:
             if len(self.read_threads) > 0:
                 self._start_sender()
 
-            if not has_error:
+            port_name = self._get_active_serial_port_name()
+            read_thread = next(filter(lambda t: t.port == port_name, self.read_threads)) \
+                if self.read_threads and len(self.read_threads) > 0 \
+                    else None
+
+            if not has_error and read_thread:
                 self.go_to_ready()
+
+        print_debug_msg(self.console, 'Homing thread stopped', self._is_dev_env)
 
     def _send_next(self, batch_size=1):
         if not self.is_serial_port_connected:
             return
 
         # Wait until we get the ok from listener.
-        while self.is_serial_port_connected and not self._clear_to_send:
+        while self.is_serial_port_connected and not self._clear_to_send \
+            and self.is_machine_busy:
             time.sleep(self._YIELD_TIMEOUT)
 
         if not self._sidequeue.empty():
