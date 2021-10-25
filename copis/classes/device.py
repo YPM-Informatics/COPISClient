@@ -40,30 +40,34 @@ class Device:
     collision_bounds: vec3 = vec3()
     port: str = ''
 
-    edsdk_response = None
-    serial_response: SerialResponse = None
+    _serial_response: SerialResponse = None
     is_homed: bool = False
     is_move_absolute: bool = True
-    is_writing: bool = False
+    _is_writing: bool = False
 
     @property
-    def edsdk_status(self) -> ComStatus:
-        """TODO: Returns the devices EDSDK status based on its last EDSDK response."""
-        return ComStatus.UNKNOWN
+    def is_writing(self) -> bool:
+        """Returns the device's IsWriting flag."""
+        return self._is_writing
+
+    @property
+    def serial_response(self) -> SerialResponse:
+        """Returns the device's last serial response."""
+        return self._serial_response
 
     @property
     def serial_status(self) -> ComStatus:
-        """Returns the devices serial status based on its last serial response."""
+        """Returns the device's serial status based on its last serial response."""
         if self.serial_response is None:
             if self.is_homed:
                 return ComStatus.IDLE
 
-            return ComStatus.BUSY if self.is_writing else ComStatus.UNKNOWN
+            return ComStatus.BUSY if self._is_writing else ComStatus.UNKNOWN
 
         if self.serial_response.error:
             return ComStatus.ERROR
 
-        if not self.is_writing and self.serial_response.is_idle:
+        if not self._is_writing and self.serial_response.is_idle:
             return ComStatus.IDLE
 
         if not self.serial_response.is_idle:
@@ -71,8 +75,17 @@ class Device:
 
         return ComStatus.UNKNOWN
 
+    def set_is_writing(self) -> None:
+        """Sets the device's IsWriting flag."""
+        self._is_writing = True
+
+    def set_serial_response(self, response: SerialResponse) -> None:
+        """Sets the device's serial response."""
+        self._serial_response = response
+        self._is_writing = False
+
     def as_dict(self):
-        """Return a dictionary representation of a Device instance."""
+        """Returns a dictionary representation of a Device instance."""
         data = {
             f'Camera {self.device_name}': {
                 'x': self.position.x,

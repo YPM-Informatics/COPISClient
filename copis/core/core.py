@@ -252,7 +252,7 @@ class COPISCore:
                     dvc = self._get_device(resp.device_id)
 
                     if dvc:
-                        dvc.serial_response = resp
+                        dvc.set_serial_response(resp)
                 else:
                     if resp == 'COPIS_READY':
                         controllers_unlocked = self._unlock_controllers()
@@ -693,15 +693,9 @@ class COPISCore:
                 f'{", ".join([str(d.device_id) for d in dvcs])}', self._is_dev_env)
 
             for dvc in dvcs:
-                dvc.is_writing = True
+                dvc.set_is_writing()
 
             self._serial.write(cmd_lines)
-
-            # Give the controller time to spit out a response.
-            time.sleep(self._YIELD_TIMEOUT * 100)
-
-            for dvc in dvcs:
-                dvc.is_writing = False
 
         # debug command
         # logging.debug(command)
