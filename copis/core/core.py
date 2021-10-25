@@ -343,13 +343,11 @@ class COPISCore:
                 if not commands:
                     continue
 
-            while self.is_serial_port_connected and not self._clear_to_send:
+            while self.is_serial_port_connected and not self._clear_to_send \
+                and not self.stop_send_thread:
                 time.sleep(self._YIELD_TIMEOUT)
 
             self._send(*commands)
-
-            while self.is_serial_port_connected and not self._clear_to_send:
-                time.sleep(self._YIELD_TIMEOUT)
 
         print_debug_msg(self.console, 'Send thread stopped', self._is_dev_env)
 
