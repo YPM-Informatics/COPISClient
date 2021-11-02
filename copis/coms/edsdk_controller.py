@@ -62,8 +62,8 @@ class EDSDKController():
             self._edsdk.EdsInitializeSDK()
             self._update_camera_list()
 
-        except FileNotFoundError as err:
-            msg = f'An exception occurred while initializing Canon API: {err.args[0]}'
+        except Exception as err:
+            msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
 
     def connect(self, index: int = 0) -> bool:
