@@ -16,11 +16,10 @@
 """Util functions."""
 
 import datetime
-import math
 import re
 from collections import OrderedDict
 from functools import wraps
-from math import cos, sin
+from math import cos, sin, pi
 from time import time
 from typing import Callable, List
 from itertools import zip_longest
@@ -32,7 +31,7 @@ from glm import mat4, vec3, vec4
 xyz_steps = [10, 1, 0.1, 0.01]
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_steps = [10, 5, 1, 0.1, 0.01]
-pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/math.pi)])
+pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
 
@@ -82,11 +81,11 @@ def create_action_args(values: List[float], keys: str = 'XYZPTFSV'):
     return list(zip(keys, [str(c) for c in values]))
 
 def rad_to_dd(value: float) -> float:
-    """Convers radians to decimal degrees."""
+    """Converts radians to decimal degrees."""
     return value * pt_units['rad']
 
 def dd_to_rad(value: float) -> float:
-    """Convers decimal degrees to radians."""
+    """Converts decimal degrees to radians."""
     return value / pt_units['rad']
 
 def is_number(value: str) -> bool:
