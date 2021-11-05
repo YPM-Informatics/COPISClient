@@ -145,4 +145,5 @@ class ConsolePanel(wx.Panel):
     def on_action_export(self, filename: str = None) -> None:
         """Print action exported message."""
         location = '' if filename is None else f' to file {filename}'
-        self.print(f'Actions exported{location}')
+        notification = get_notification_msg('msg_info', f'Actions exported{location}') 
+        self.print(notification)
