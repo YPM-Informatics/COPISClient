@@ -499,7 +499,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self._dirty = True
 
         else:
-            print_error_msg(self.core.console, f'invalid proxy object id {id_}')
+            print_error_msg(self.core.console, f'invalid proxy object id {id_}.')
 
     def _deselect_object(self) -> None:
         for obj in self._objectvis.objects:

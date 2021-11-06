@@ -25,7 +25,6 @@ if sys.version_info.major < 3:
     sys.exit(-1)
 
 # pylint: disable=wrong-import-position
-import logging
 import threading
 import time
 import warnings
@@ -202,7 +201,7 @@ class COPISCore:
             self._serial.close_port()
             time.sleep(self._YIELD_TIMEOUT * 5)
 
-        print_info_msg(self.console, f'Disconnected from device {port_name}')
+        print_info_msg(self.console, f'Disconnected from device {port_name}.')
 
     @locked
     def connect(self, baud: int = serial_controller.BAUDS[-1]) -> bool:
@@ -217,7 +216,7 @@ class COPISCore:
                         filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
                     ).name
 
-                print_info_msg(self.console, f'Connected to device {port_name}')
+                print_info_msg(self.console, f'Connected to device {port_name}.')
 
                 read_thread = threading.Thread(
                     target=self._listen,
@@ -228,7 +227,7 @@ class COPISCore:
 
                 self._start_sender()
             else:
-                print_error_msg(self.console, 'Unable to connect to device')
+                print_error_msg(self.console, 'Unable to connect to device.')
 
         return connected
 
@@ -239,7 +238,7 @@ class COPISCore:
         continue_listening = lambda t = read_thread: not t.stop
 
         print_debug_msg(self.console,
-            f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
+            f'{read_thread.thread.name.capitalize()} started.', self._is_dev_env)
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
@@ -284,7 +283,7 @@ class COPISCore:
                         '**** Machine is idle ****', self._is_dev_env)
 
         print_debug_msg(self.console,
-            f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
+            f'{read_thread.thread.name.capitalize()} stopped.', self._is_dev_env)
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -329,7 +328,7 @@ class COPISCore:
             self.send_thread = None
 
     def _sender(self) -> None:
-        print_debug_msg(self.console, 'Send thread started', self._is_dev_env)
+        print_debug_msg(self.console, 'Send thread started.', self._is_dev_env)
 
         while not self.stop_send_thread:
             try:
@@ -349,7 +348,7 @@ class COPISCore:
 
             self._send(*commands)
 
-        print_debug_msg(self.console, 'Send thread stopped', self._is_dev_env)
+        print_debug_msg(self.console, 'Send thread stopped.', self._is_dev_env)
 
     def start_imaging(self, startindex=0) -> bool:
         """Starts the imaging sequence, following the define action path."""
@@ -375,7 +374,7 @@ class COPISCore:
         device_count = len(set(a.device for a in self._mainqueue))
         batch_size = 2 * device_count
 
-        print_debug_msg(self.console, f'Imaging batch size is: {batch_size}', self._is_dev_env)
+        print_debug_msg(self.console, f'Imaging batch size is: {batch_size}.', self._is_dev_env)
 
         self.is_imaging = True
         self._clear_to_send = True
@@ -388,13 +387,14 @@ class COPISCore:
             }
         )
         self.imaging_thread.start()
-        print_info_msg(self.console, 'Imaging started')
+        print_info_msg(self.console, 'Imaging started.')
         return True
 
     def start_homing(self) -> bool:
         """Start the homing sequence, following the steps in the configuration."""
         if not self.is_serial_port_connected:
-            print_error_msg(self.console, 'The machine needs to be connected before homing can start.')
+            print_error_msg(self.console,
+                'The machine needs to be connected before homing can start.')
             return False
 
         if self.is_imaging:
@@ -423,7 +423,7 @@ class COPISCore:
         self._mainqueue = homing_cmds
         batch_size = len(set(a.device for a in self._mainqueue))
 
-        print_debug_msg(self.console, f'Homing batch size is: {batch_size}', self._is_dev_env)
+        print_debug_msg(self.console, f'Homing batch size is: {batch_size}.', self._is_dev_env)
 
         self.is_homing = True
         self._clear_to_send = True
@@ -433,27 +433,27 @@ class COPISCore:
             kwargs={"batch_size": batch_size}
         )
         self.homing_thread.start()
-        print_info_msg(self.console, 'Homing started')
+        print_info_msg(self.console, 'Homing started.')
         return True
 
     def go_to_ready(self):
         """Sends the gantries to their initial positions."""
-        print_info_msg(self.console, 'Go to ready started')
+        print_info_msg(self.console, 'Go to ready started.')
 
         self._initialize_gantries(ActionType.G1)
 
-        print_info_msg(self.console, 'Go to ready ended')
+        print_info_msg(self.console, 'Go to ready ended.')
 
     def set_ready(self):
         """Initializes the gantries to their current positions."""
-        print_info_msg(self.console, 'Set ready started')
+        print_info_msg(self.console, 'Set ready started.')
 
         self._initialize_gantries(ActionType.G92)
 
         for dvc in self.devices:
             dvc.is_homed = True
 
-        print_info_msg(self.console, 'Set ready ended')
+        print_info_msg(self.console, 'Set ready ended.')
 
     def cancel_imaging(self) -> None:
         """Stops the imaging sequence."""
@@ -462,7 +462,7 @@ class COPISCore:
         self.is_paused = False
         self._mainqueue = None
         self._clear_to_send = True
-        print_info_msg(self.console, 'Imaging stopped')
+        print_info_msg(self.console, 'Imaging stopped.')
 
     def pause(self) -> bool:
         """Pause the current run, saving the current position."""
@@ -500,7 +500,7 @@ class COPISCore:
             kwargs={"resuming": True}
         )
         self.imaging_thread.start()
-        print_info_msg(self.console, 'Imaging resumed')
+        print_info_msg(self.console, 'Imaging resumed.')
         return True
 
     def send_now(self, *commands) -> bool:
@@ -515,14 +515,14 @@ class COPISCore:
         if self.is_serial_port_connected:
             self._sidequeue_batch_size = len(commands)
 
-            print_debug_msg(self.console, f'Side queue batch size is: {self._sidequeue_batch_size}',
+            print_debug_msg(self.console, f'Side queue batch size is: {self._sidequeue_batch_size}.',
                 self._is_dev_env)
 
             for command in commands:
                 self._sidequeue.put_nowait(command)
             return True
 
-        logging.error("Not connected to device.")
+        print_error_msg(self.console, 'Not connected to device.')
         return False
 
     def _initialize_gantries(self, atype: ActionType):
@@ -595,20 +595,20 @@ class COPISCore:
                 self._send_next(batch_size)
 
         except AttributeError as err:
-            logging.error(f"Imaging thread died. {err.args[0]}")
+            print_error_msg(self.console, f'Imaging thread stopped unexpectedly: {err.args[0]}')
 
         finally:
             self.imaging_thread = None
             self.is_imaging = False
-            print_info_msg(self.console, 'Imaging ended')
+            print_info_msg(self.console, 'Imaging ended.')
 
             if len(self.read_threads) > 0:
                 self._start_sender()
 
-        print_debug_msg(self.console, 'Imaging thread stopped', self._is_dev_env)
+        print_debug_msg(self.console, 'Imaging thread stopped.', self._is_dev_env)
 
     def _do_homing(self, batch_size=1) -> None:
-        print_debug_msg(self.console, 'Homing thread started', self._is_dev_env)
+        print_debug_msg(self.console, 'Homing thread started.', self._is_dev_env)
 
         self._stop_sender()
 
@@ -626,12 +626,12 @@ class COPISCore:
 
         except AttributeError as err:
             has_error = True
-            logging.error(f"Homing thread died. {err.args[0]}")
+            print_error_msg(self.console, f'Homing thread stopped unexpectedly: {err.args[0]}')
 
         finally:
             self.homing_thread = None
             self.is_homing = False
-            print_info_msg(self.console, 'Homing ended')
+            print_info_msg(self.console, 'Homing ended.')
 
             if len(self.read_threads) > 0:
                 self._start_sender()
@@ -644,7 +644,7 @@ class COPISCore:
             if not has_error and read_thread:
                 self.go_to_ready()
 
-        print_debug_msg(self.console, 'Homing thread stopped', self._is_dev_env)
+        print_debug_msg(self.console, 'Homing thread stopped.', self._is_dev_env)
 
     def _send_next(self, batch_size=1):
         if not self.is_serial_port_connected:
@@ -704,7 +704,7 @@ class COPISCore:
 
             print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
                     .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                f'{", ".join([str(d.device_id) for d in dvcs])}', self._is_dev_env)
+                f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
             for dvc in dvcs:
                 dvc.set_is_writing()
@@ -796,7 +796,7 @@ class COPISCore:
             dispatcher.send('core_d_selected', device=self._devices[index])
 
         else:
-            print_error_msg(self.console, f'invalid device index {index}')
+            print_error_msg(self.console, f'invalid device index {index}.')
 
     def select_point(self, index: int, clear: bool = True) -> None:
         """Add point to points list given index in actions list.
@@ -925,7 +925,7 @@ class COPISCore:
         """Sets the active serial port to the provided one."""
         selected = self._serial.select_port(name)
         if not selected:
-            print_error_msg(self.console, 'Unable to select serial port')
+            print_error_msg(self.console, 'Unable to select serial port.')
 
         return selected
 

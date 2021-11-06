@@ -16,14 +16,13 @@
 """MachineToolbar class."""
 
 
-import logging
 import wx
 import wx.lib.agw.aui as aui
 
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import create_scaled_bitmap, set_dialog
-from copis.helpers import print_info_msg
+from copis.helpers import print_debug_msg, print_info_msg
 
 
 class MachineToolbar(aui.AuiToolBar):
@@ -200,7 +199,7 @@ class MachineToolbar(aui.AuiToolBar):
 
         elif event.Id == ToolIds.SETTINGS.value:
             with MachineSettingsDialog(self) as dlg:
-                logging.debug('Machine Settings opened')
+                print_debug_msg(self._core.console, 'Machine Settings opened.', self._core.is_dev_env)
 
         elif event.Id == ToolIds.EXPORT.value:
             self._core.export_actions('actions.txt')

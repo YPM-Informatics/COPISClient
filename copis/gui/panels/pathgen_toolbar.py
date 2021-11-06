@@ -15,7 +15,6 @@
 
 """PathgenToolbar class."""
 
-import logging
 import math
 from collections import defaultdict
 from typing import List, Tuple
@@ -114,7 +113,7 @@ class PathgenToolbar(aui.AuiToolBar):
         if event.Id == PathIds.CYLINDER.value:
             with _PathgenCylinder(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    print_debug_msg(self.core.console, 'CYLINDER added', self.core.is_dev_env)
+                    print_debug_msg(self.core.console, 'Cylinder path added.', self.core.is_dev_env)
                     selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
@@ -143,7 +142,7 @@ class PathgenToolbar(aui.AuiToolBar):
         elif event.Id == PathIds.HELIX.value:
             with _PathgenHelix(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    print_debug_msg(self.core.console, 'HELIX added', self.core.is_dev_env)
+                    print_debug_msg(self.core.console, 'Helix path added.', self.core.is_dev_env)
                     selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     height = dlg.height_ctrl.num_value
@@ -166,7 +165,7 @@ class PathgenToolbar(aui.AuiToolBar):
         elif event.Id == PathIds.SPHERE.value:
             with _PathgenSphere(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    print_debug_msg(self.core.console, 'SPHERE added', self.core.is_dev_env)
+                    print_debug_msg(self.core.console, 'Sphere path added.', self.core.is_dev_env)
                     selected_devices = dlg.device_checklist.CheckedItems
                     radius = dlg.radius_ctrl.num_value
                     z_div = int(dlg.z_div_ctrl.GetValue())
@@ -196,8 +195,9 @@ class PathgenToolbar(aui.AuiToolBar):
         elif event.Id == PathIds.LINE.value:
             with _PathgenLine(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    print_debug_msg(self.core.console, 'LINE added', self.core.is_dev_env)
-                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
+                    print_debug_msg(self.core.console, 'Line path added.', self.core.is_dev_env)
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
+                        .split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
                     start = vec3(dlg.start_x_ctrl.num_value,
@@ -217,8 +217,9 @@ class PathgenToolbar(aui.AuiToolBar):
         elif event.Id == PathIds.POINT.value:
             with _PathgenPoint(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
-                    print_debug_msg(self.core.console, 'POINT added', self.core.is_dev_env)
-                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
+                    print_debug_msg(self.core.console, 'Point path added.', self.core.is_dev_env)
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
+                        .split(' ')[0])
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
