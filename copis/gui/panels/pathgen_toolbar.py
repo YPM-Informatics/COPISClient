@@ -32,6 +32,7 @@ from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import (create_action_args, interleave_lists, print_debug_msg,
+    sanitize_number, sanitize_point,
     xyz_units)
 from copis.pathutils import create_circle, create_helix, create_line
 
@@ -318,7 +319,10 @@ class PathgenToolbar(aui.AuiToolBar):
                 tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
 
                 # Add action. skip feed rate for now.
-                g_args = create_action_args([point.x, point.y, point.z, pan, tilt])
+                s_point = sanitize_point(point)
+                s_pan = sanitize_number(pan)
+                s_tilt = sanitize_number(tilt)
+                g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
                 c_args = create_action_args([1.5], 'S')
                 interlaced_actions.extend((
                     # TODO: allow user customization of actions at each point

@@ -34,6 +34,7 @@ pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
+_SCIENTIFIC_NOTATION_PATTERN = re.compile('[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')
 
 
 def timing(f: Callable) -> Callable:
@@ -93,6 +94,18 @@ def is_number(value: str) -> bool:
     Because apparently that's a foreign concept to python -_-"""
     matched = _NUMBER_PATTERN.match(value) is not None
     return len(value) > 0 and matched
+
+def sanitize_number(value: float) -> float:
+    """Sanitizes a number approaching zero:
+    signed zero and tiny number at 5 or more decimal places."""
+    if _SCIENTIFIC_NOTATION_PATTERN.match(str(value)):
+        value = float(f'{value:.4f}')
+
+    return value if value != 0.0 else 0.0
+
+def sanitize_point(value: vec3) -> vec3:
+    """Sanitizes a vec3 point with coordinates approaching zero."""
+    return vec3(list(map(sanitize_number, list(value))))
 
 def get_timestamp() -> str:
     """Returns a formatted string representation of the current date and time."""
