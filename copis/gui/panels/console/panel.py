@@ -22,7 +22,7 @@ from pydispatch import dispatcher
 from copis import console
 
 from .command_processor import _CommandProcessor
-from copis.helpers import get_notification_msg
+from copis.helpers import get_notification_msg, get_timestamped
 from copis.gui.wxutils import create_scaled_bitmap
 
 
@@ -136,7 +136,7 @@ class ConsolePanel(wx.Panel):
                 for i in range(2, len(parts)):
                     message = f'{message} {parts[i]}'
 
-                notification = get_notification_msg(signal, message)
+                notification = get_notification_msg(signal, get_timestamped(message))
                 self.print(notification)
         else:
             notification = get_notification_msg(signal, message)
@@ -145,5 +145,7 @@ class ConsolePanel(wx.Panel):
     def on_action_export(self, filename: str = None) -> None:
         """Print action exported message."""
         location = '' if filename is None else f' to file {filename}'
-        notification = get_notification_msg('msg_info', f'Actions exported{location}') 
+        notification = get_notification_msg('msg_info',
+            get_timestamped(f'Actions exported{location}'))
+
         self.print(notification)
