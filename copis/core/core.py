@@ -245,6 +245,8 @@ class COPISCore:
 
         continue_listening = lambda t = read_thread: not t.stop
 
+        machine_queried = False
+
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} started.', self._is_dev_env)
 
@@ -295,25 +297,49 @@ class COPISCore:
                         self._clear_to_send = controllers_unlocked or self.is_machine_idle
                         self._connected_on = None
                         self._is_new_connection = False
+                        machine_queried = False
                     else:
                         # if this connection happened after the devices last reported, query them.
-                        if self._connected_on >= self._machine_last_reported_on():
+                        if not machine_queried and \
+                            self._connected_on >= self._machine_last_reported_on():
+                            print_debug_msg(self.console,
+                            f'Machine status stale (last: {self._get_machine_status()}).',
+                            self._is_dev_env)
+
                             self._query_devices()
-                        else:
+                            machine_queried = True
+                        elif self.is_machine_idle:
                             self._connected_on = None
                             self._is_new_connection = False
+                            machine_queried = False
                 else:
                     no_report_span = (datetime.now() - self._connected_on).total_seconds()
-                    print_debug_msg(self.console,
-                        f'Machine status unknown for {round(no_report_span, 2)} seconds.',
-                        self._is_dev_env)
+
+                    if not self._machine_last_reported_on() or \
+                        self._connected_on >= self._machine_last_reported_on():
+                        print_debug_msg(self.console,
+                            'Machine status stale (last: {0}) for {1} seconds.'
+                                .format(self._get_machine_status(), round(no_report_span, 2)),
+                            self._is_dev_env)
 
                     # If no device has reported for 1 second since connecting, query the devices.
-                    if no_report_span > 1:
+                    if not machine_queried and no_report_span > 1:
                         self._query_devices()
+                        machine_queried = True
 
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped.', self._is_dev_env)
+
+    def _get_machine_status(self):
+        status = 'unknown'
+        statuses = list(set(dvc.serial_status for dvc in self.devices))
+
+        if len(statuses) == 1 and statuses[0]:
+            status = str(statuses[0]).split('.')[1].lower()
+        elif len(statuses) > 1:
+            status = 'mixed'
+
+        return status
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.devices), None)
@@ -329,10 +355,14 @@ class COPISCore:
         return False
 
     def _has_machine_reported(self):
+        if any(not dvc.serial_response for dvc in self.devices):
+            return False
+
         return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.devices)
 
     def _machine_last_reported_on(self):
-        return max([dvc.last_reported_on for dvc in self.devices])
+        reports = [dvc.last_reported_on for dvc in self.devices if dvc.last_reported_on]
+        return max(reports) if len(reports) > 0 else None
 
     @property
     def is_machine_idle(self):
