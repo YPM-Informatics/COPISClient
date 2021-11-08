@@ -74,13 +74,13 @@ class Device:
         if self.serial_response.error:
             return ComStatus.ERROR
 
-        if not self._is_writing and self.serial_response.is_idle:
-            return ComStatus.IDLE
-
-        if not self.serial_response.is_idle:
+        if self._is_writing or not self.serial_response.is_idle:
             return ComStatus.BUSY
 
-        return ComStatus.UNKNOWN
+        if self.serial_response.is_idle:
+            return ComStatus.IDLE
+
+        raise ValueError('Unsupported device serial status code path.')
 
     def set_is_writing(self) -> None:
         """Sets the device's IsWriting flag."""
