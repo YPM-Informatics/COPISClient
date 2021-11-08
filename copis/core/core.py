@@ -18,6 +18,7 @@
 __version__ = ""
 
 # pylint: disable=using-constant-test
+from datetime import datetime
 import sys
 
 if sys.version_info.major < 3:
@@ -105,6 +106,8 @@ class COPISCore:
         self._edsdk = None
         self._is_serial_enabled = False
         self._serial = None
+        self._is_new_connection = False
+        self._connected_on = None
 
         self.init_edsdk()
         self.init_serial()
@@ -201,6 +204,8 @@ class COPISCore:
             self._serial.close_port()
             time.sleep(self._YIELD_TIMEOUT * 5)
 
+        self._is_new_connection = False
+        self._connected_on = None
         print_info_msg(self.console, f'Disconnected from device {port_name}.')
 
     @locked
@@ -212,6 +217,8 @@ class COPISCore:
             connected = self._serial.open_port(baud)
 
             if connected:
+                self._connected_on = datetime.now()
+
                 port_name = next(
                         filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
                     ).name
@@ -229,6 +236,7 @@ class COPISCore:
             else:
                 print_error_msg(self.console, 'Unable to connect to device.')
 
+        self._is_new_connection = connected
         return connected
 
     def _listen(self) -> None:
@@ -252,8 +260,23 @@ class COPISCore:
 
                     if dvc:
                         dvc.set_serial_response(resp)
+
+                if self.is_machine_busy and self._is_machine_locked():
+
+                    print_debug_msg(self.console,
+                        '**** Machine error-locked. stoping imaging!! ****', self._is_dev_env)
+
+                    self.cancel_imaging()
                 else:
-                    if resp == 'COPIS_READY':
+                    self._clear_to_send = controllers_unlocked or self.is_machine_idle
+
+                if self.is_machine_idle:
+                    print_debug_msg(self.console,
+                        '**** Machine is idle ****', self._is_dev_env)
+
+            if self._is_new_connection:
+                if self._has_machine_reported():
+                    if self._is_machine_locked() and not controllers_unlocked:
                         controllers_unlocked = self._unlock_controllers()
                         cmds = []
                         self._ensure_absolute_move_mode(cmds)
@@ -269,18 +292,25 @@ class COPISCore:
                                     dvc.is_move_absolute = True
                                     dvc.is_homed = False
 
-                if self.is_machine_busy and self._is_machine_locked():
-
-                    print_debug_msg(self.console,
-                        '**** Machine error-locked. stoping imaging!! ****', self._is_dev_env)
-
-                    self.cancel_imaging()
+                        self._clear_to_send = controllers_unlocked or self.is_machine_idle
+                        self._connected_on = None
+                        self._is_new_connection = False
+                    else:
+                        # if this connection happened after the devices last reported, query them.
+                        if self._connected_on >= self._machine_last_reported_on():
+                            self._query_devices()
+                        else:
+                            self._connected_on = None
+                            self._is_new_connection = False
                 else:
-                    self._clear_to_send = controllers_unlocked or self.is_machine_idle
-
-                if self.is_machine_idle:
+                    no_report_span = (datetime.now() - self._connected_on).total_seconds()
                     print_debug_msg(self.console,
-                        '**** Machine is idle ****', self._is_dev_env)
+                        f'Machine status unknown for {round(no_report_span, 2)} seconds.',
+                        self._is_dev_env)
+
+                    # If no device has reported for 1 second since connecting, query the devices.
+                    if no_report_span > 1:
+                        self._query_devices()
 
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped.', self._is_dev_env)
@@ -297,6 +327,12 @@ class COPISCore:
                     return True
 
         return False
+
+    def _has_machine_reported(self):
+        return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.devices)
+
+    def _machine_last_reported_on(self):
+        return max([dvc.last_reported_on for dvc in self.devices])
 
     @property
     def is_machine_idle(self):
@@ -569,7 +605,18 @@ class COPISCore:
 
         return device_ids
 
+    def _query_devices(self):
+        print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
+        cmd_list = []
+
+        for dvc in self.devices:
+            cmd_list.append(Action(ActionType.G0, dvc.device_id))
+
+        self.send_now(*cmd_list)
+        self._clear_to_send = True
+
     def _unlock_controllers(self):
+        print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
         cmds = []
 
         for dvc in self.devices:

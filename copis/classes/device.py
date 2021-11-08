@@ -16,12 +16,13 @@
 """Provide the COPIS Device Class."""
 
 
-from copis.classes.serial_response import SerialResponse
 from dataclasses import dataclass
+from datetime import datetime
 from math import inf
 from typing import List, Optional
 from glm import vec3
 
+from copis.classes.serial_response import SerialResponse
 from copis.globals import ComStatus, Point5
 from . import BoundingBox
 
@@ -44,6 +45,7 @@ class Device:
     is_homed: bool = False
     is_move_absolute: bool = True
     _is_writing: bool = False
+    _last_reported_on: datetime = None
 
     @property
     def is_writing(self) -> bool:
@@ -54,6 +56,11 @@ class Device:
     def serial_response(self) -> SerialResponse:
         """Returns the device's last serial response."""
         return self._serial_response
+
+    @property
+    def last_reported_on(self) -> datetime:
+        """Returns the device's last serial response date."""
+        return self._last_reported_on
 
     @property
     def serial_status(self) -> ComStatus:
@@ -82,6 +89,12 @@ class Device:
     def set_serial_response(self, response: SerialResponse) -> None:
         """Sets the device's serial response."""
         self._serial_response = response
+
+        if response:
+            self._last_reported_on = datetime.now()
+        else:
+            self._last_reported_on = None
+
         self._is_writing = False
 
     def as_dict(self):
