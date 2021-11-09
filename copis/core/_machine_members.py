@@ -29,7 +29,7 @@ class MachineMembersMixin:
         statuses = list(set(dvc.serial_status for dvc in self.devices))
 
         if len(statuses) == 1 and statuses[0]:
-            status = str(statuses[0]).split('.')[1].lower()
+            status = statuses[0].name.lower()
         elif len(statuses) > 1:
             status = 'mixed'
 
