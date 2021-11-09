@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS Core component (actions, points, devices) related class members."""
+"""COPIS Core component (actions, points, devices, proxy objects) related class members."""
 
 from typing import List
 from pydispatch import dispatcher
@@ -27,7 +27,7 @@ from copis.helpers import create_action_args, print_error_msg
 
 
 class ComponentMembersMixin:
-    """Implement COPIS Core component (actions, points, devices)
+    """Implement COPIS Core component (actions, points, devices, proxy objects)
         related class members using mixins."""
     @property
     def actions(self) -> List[Action]:
