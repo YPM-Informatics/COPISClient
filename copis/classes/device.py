@@ -101,6 +101,7 @@ class Device:
         """Returns a dictionary representation of a Device instance."""
         data = {
             f'Camera {self.device_name}': {
+                'id': self.device_id,
                 'x': self.position.x,
                 'y': self.position.y,
                 'z': self.position.z,

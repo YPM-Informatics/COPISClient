@@ -86,7 +86,8 @@ class MachineSettings:
         data = self._device_data
         self._devices = []
 
-        for i, datum in enumerate(data):
+        for datum in data:
+            device_id = int(datum['id'])
             name = datum['name'].split(' ', maxsplit=1)[1]
             pos_x = float(datum['x'])
             pos_y = float(datum['y'])
@@ -107,9 +108,8 @@ class MachineSettings:
             interfaces = datum['interfaces'].splitlines()
             port = datum['port']
 
-
             device = Device(
-                device_id=i,
+                device_id=device_id,
                 device_name=name,
                 device_type=device_type,
                 interfaces=interfaces,
