@@ -22,7 +22,7 @@ from pydispatch import dispatcher
 
 from copis.helpers import dispatch_msg
 
-class _ConsoleOutput:
+class ConsoleOutput:
     """Implement console output operations."""
 
     def __init__(self, client):

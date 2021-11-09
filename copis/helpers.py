@@ -17,6 +17,8 @@
 
 import datetime
 import re
+import threading
+
 from collections import OrderedDict
 from functools import wraps
 from math import cos, sin, pi
@@ -156,3 +158,12 @@ def dispatch_msg(console, signal, msg):
         console.log(signal, ts_msg)
     else:
         print(get_notification_msg(signal, ts_msg))
+
+def locked(func):
+    """Provides thread locking mechanism."""
+    @wraps(func)
+    def inner(*args, **kw):
+        with inner.lock:
+            return func(*args, **kw)
+    inner.lock = threading.Lock()
+    return inner
