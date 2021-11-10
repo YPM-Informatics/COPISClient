@@ -98,28 +98,19 @@ class CommunicationMembersMixin:
 
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
+        self._keep_working = False
+
         if self._is_serial_enabled:
-            for read_thread in self.read_threads:
+            for read_thread in self._read_threads:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
                     read_thread.thread.join()
 
-            self.read_threads.clear()
+            self._read_threads.clear()
 
-            if self.imaging_thread:
-                self.is_imaging = False
-                self.imaging_thread.join()
-                self.imaging_thread = None
-
-            if self.homing_thread:
-                self.is_homing = False
-                self.homing_thread.join()
-                self.homing_thread = None
-
-            self._stop_sender()
-
-        self.is_imaging = False
-        self.is_homing = False
+            if self._working_thread:
+                self._working_thread.join()
+                self._working_thread = None
 
         if self._is_serial_enabled:
             self._serial.terminate()
@@ -156,13 +147,11 @@ class CommunicationMembersMixin:
                 print_info_msg(self.console, f'Connected to device {port_name}.')
 
                 read_thread = threading.Thread(
-                    target=self.listener,
+                    target=self._listener,
                     name=f'read thread {port_name}')
 
-                self.read_threads.append(ReadThread(thread=read_thread, port=port_name))
+                self._read_threads.append(ReadThread(thread=read_thread, port=port_name))
                 read_thread.start()
-
-                self._start_sender()
             else:
                 print_error_msg(self.console, 'Unable to connect to device.')
 
@@ -172,32 +161,22 @@ class CommunicationMembersMixin:
     @locked
     def disconnect(self):
         """disconnects from the active serial port."""
+        self._keep_working = False
+
         if self.is_serial_port_connected:
             port_name = self._get_active_serial_port_name()
-            read_thread = next(filter(lambda t: t.port == port_name, self.read_threads))
+            read_thread = next(filter(lambda t: t.port == port_name, self._read_threads))
 
             if read_thread:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
                     read_thread.thread.join()
 
-                self.read_threads.remove(read_thread)
+                self._read_threads.remove(read_thread)
 
-            if self.imaging_thread:
-                self.is_imaging = False
-                self.imaging_thread.join()
-                self.imaging_thread = None
-
-            if self.homing_thread:
-                self.is_homing = False
-                self.homing_thread.join()
-                self.homing_thread = None
-
-            if len(self.read_threads) == 0:
-                self._stop_sender()
-
-        self.is_imaging = False
-        self.is_homing = False
+            if self._working_thread:
+                self._working_thread.join()
+                self._working_thread = None
 
         if self.is_serial_port_connected:
             self._serial.close_port()

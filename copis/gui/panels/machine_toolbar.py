@@ -74,9 +74,6 @@ class MachineToolbar(aui.AuiToolBar):
         self.set_ready_btn = wx.Button(self, wx.ID_ANY, label='Set ready', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_set_ready, self.AddControl(self.set_ready_btn))
         self.AddSpacer(8)
-        self.go_to_ready_btn = wx.Button(self, wx.ID_ANY, label='Go to ready', size=(75, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_go_to_ready, self.AddControl(self.go_to_ready_btn))
-
 
         self.home_btn.Enable(self._can_home())
 
@@ -170,7 +167,7 @@ class MachineToolbar(aui.AuiToolBar):
         """
         if event.Id == ToolIds.PLAY.value:
             # if self.core.paused:
-            #     self.core.resume()
+            #     self.core.resume_work()
             # else:
             #     self.core.start_imaging()
 
@@ -192,10 +189,10 @@ class MachineToolbar(aui.AuiToolBar):
             self._core.start_imaging()
 
         elif event.Id == ToolIds.PAUSE.value:
-            self._core.pause()
+            self._core.pause_work()
 
         elif event.Id == ToolIds.STOP.value:
-            self._core.cancel_imaging()
+            self._core.stop_work()
 
         elif event.Id == ToolIds.SETTINGS.value:
             with MachineSettingsDialog(self) as dlg:
@@ -223,20 +220,6 @@ class MachineToolbar(aui.AuiToolBar):
             return
 
         self._core.set_ready()
-
-    def on_go_to_ready(self, event: wx.CommandEvent) -> None:
-        """On go to ready button pressed, issue commands to send
-        gantries to their initial positions."""
-
-        if not self._core.is_serial_port_connected:
-            set_dialog('Connect to the machine in order to go to ready.')
-            return
-
-        if not self._core.is_machine_homed:
-            set_dialog('Home the machine before going to ready.')
-            return
-
-        self._core.go_to_ready()
 
     def _can_home(self):
         # TODO figure this out: disable homing button when homed

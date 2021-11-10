@@ -120,3 +120,10 @@ class ComStatus(Enum):
     BUSY = 1
     UNKNOWN = 2
     IDLE = 3
+
+class WorkType(Enum):
+    """Thread work types."""
+    IMAGING = 0
+    HOMING = 1
+    JOGGING = 2
+    SET_READY = 3

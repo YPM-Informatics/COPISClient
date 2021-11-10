@@ -43,7 +43,6 @@ class Device:
 
     _serial_response: SerialResponse = None
     is_homed: bool = False
-    is_move_absolute: bool = True
     _is_writing: bool = False
     _last_reported_on: datetime = None
 

@@ -18,7 +18,6 @@
 __version__ = ""
 
 # pylint: disable=using-constant-test
-from datetime import datetime
 import sys
 
 if sys.version_info.major < 3:
@@ -37,7 +36,7 @@ from glm import vec3
 from copis.command_processor import serialize_command
 from copis.helpers import (print_error_msg, print_debug_msg,
     print_info_msg)
-from copis.globals import ActionType, DebugEnv
+from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
 from copis.classes import (
     Action, Device, MonitoredList, Object3D, OBJObject3D)
@@ -89,7 +88,7 @@ class COPISCore(
     def __init__(self, parent=None) -> None:
         """Initializes a CopisCore instance."""
         self.config = parent.config if parent else Config()
-        self.evf_thread = None
+        self._evf_thread = None
 
         self.console = ConsoleOutput(parent)
 
@@ -110,17 +109,13 @@ class COPISCore(
         self._clear_to_send = False
 
         # True if sending actions, false if paused
-        self.is_imaging = False
-        self.is_homing = False
-        self.is_paused = False
+        self._keep_working = False
+        self._is_paused = False
 
-        self.read_threads = []
-        self.send_thread = None
-        self.stop_send_thread = False
-        self.imaging_thread = None
-        self.homing_thread = None
+        self._read_threads = []
+        self._working_thread = None
 
-        self._mainqueue = None
+        self._mainqueue = []
         self._sidequeue = Queue(0)
         self._sidequeue_batch_size = 1
 
@@ -167,53 +162,26 @@ class COPISCore(
             else:
                 raise warning
 
-    def _ensure_absolute_move_mode(self, cmd_list):
-        device_ids = []
-
-        for dvc in self.devices:
-            if not dvc.is_move_absolute:
-                cmd_list.append(Action(ActionType.G90, dvc.device_id))
-
-            device_ids.append(dvc.device_id)
-
-        return device_ids
-
-    def _send_next(self, batch_size=1):
+    def _send_next(self):
         if not self.is_serial_port_connected:
             return
 
         # Wait until we get the ok from listener.
         while self.is_serial_port_connected and not self._clear_to_send \
-            and self.is_machine_busy:
+            and self._keep_working:
             time.sleep(self._YIELD_TIMEOUT)
 
-        if not self._sidequeue.empty():
-            commands = []
-            while len(commands) < self._sidequeue_batch_size:
-                command = self._sidequeue.get_nowait()
-                self._sidequeue.task_done()
-                commands.append(command)
+        if self._keep_working and len(self._mainqueue) > 0:
+            packet = self._mainqueue.pop(0)
 
-                if self._sidequeue.empty():
-                    break
+            print_debug_msg(self.console, f'Packet size is: {len(packet)}',
+                self._is_dev_env)
 
-            self._send(*commands)
-            # Maybe don't return from here so that the command in the main
-            # queue can still be sent?
-            return
-
-        if self.is_machine_busy and self._mainqueue:
-            currents = []
-            for _ in range(batch_size):
-                if len(self._mainqueue) > 0:
-                    currents.append(self._mainqueue.pop(0))
-
-            self._send(*currents)
+            self._send(*packet)
             self._clear_to_send = False
 
         else:
-            self.is_imaging = False
-            self.is_homing = False
+            self._keep_working = False
             self._clear_to_send = True
 
     def _send(self, *commands):
@@ -268,72 +236,59 @@ class COPISCore(
         # elif command.atype == ActionType.M18:
         #     pass
 
-    def _start_sender(self) -> None:
-        self.stop_send_thread = False
-        self.send_thread = threading.Thread(
-            target=self.sender,
-            name='send thread')
-        self.send_thread.start()
-
-    def _stop_sender(self) -> None:
-        if self.send_thread:
-            self.stop_send_thread = True
-            self.send_thread.join()
-            self.send_thread = None
-
-    def start_imaging(self, startindex=0) -> bool:
+    def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the define action path."""
-
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before imaging can start.')
             return False
 
-        if self.is_homing:
-            print_error_msg(self.console, 'Cannot image while homing the machine.')
-            return False
-
-        if self.is_imaging:
-            print_error_msg(self.console, 'Imaging already in progress.')
+        if self._working_thread:
+            print_error_msg(self.console, 'The machine is busy.')
             return False
 
         if not self.is_machine_idle:
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
 
-        self._mainqueue = self._actions.copy()
-        device_count = len(set(a.device for a in self._mainqueue))
+        device_count = len(set(a.device for a in self._actions))
         batch_size = 2 * device_count
 
-        print_debug_msg(self.console, f'Imaging batch size is: {batch_size}.', self._is_dev_env)
+        header = self._absolute_move_commands
+        body = self._chunk_actions(batch_size)
+        footer = self._get_initialization_commands(ActionType.G1)
+        footer.extend(self._disengage_motors_commands)
 
-        self.is_imaging = True
+        self._mainqueue = []
+        self._mainqueue.extend(header)
+        self._mainqueue.extend(body)
+        self._mainqueue.extend(footer)
+
+        self._keep_working = True
         self._clear_to_send = True
-        self.imaging_thread = threading.Thread(
-            target=self.imager,
-            name='imaging thread',
+        self._working_thread = threading.Thread(
+            target=self._worker,
+            name='working thread',
             kwargs={
-                "resuming": True,
-                "batch_size": batch_size
+                "work_type": WorkType.IMAGING
             }
         )
-        self.imaging_thread.start()
-        print_info_msg(self.console, 'Imaging started.')
+        self._working_thread.start()
         return True
 
     def start_homing(self) -> bool:
         """Start the homing sequence, following the steps in the configuration."""
+        def homing_callback():
+            for dvc in self.devices:
+                dvc.is_homed = True
+
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before homing can start.')
             return False
 
-        if self.is_imaging:
-            print_error_msg(self.console, 'Cannot home the machine while imaging.')
-            return False
-
-        if self.is_homing:
-            print_error_msg(self.console, 'Homing already in progress.')
+        if self._working_thread:
+            print_error_msg(self.console, 'The machine is busy.')
             return False
 
         homing_actions = self.config.machine_settings.machine.homing_actions.copy()
@@ -342,77 +297,91 @@ class COPISCore(
             print_error_msg(self.console, 'No homing sequence to provided.')
             return False
 
-        homing_cmds = []
-        # Ensure we are in absolute motion mode.
-        device_ids = self._ensure_absolute_move_mode(homing_cmds)
-
         # Only send homing commands for connected devices.
-        homing_actions = filter(lambda c: c.device in device_ids, homing_actions)
+        device_ids = [d.device_id for d in self.devices]
+        homing_actions = list(filter(lambda c: c.device in device_ids, homing_actions))
 
-        homing_cmds.extend(homing_actions)
+        batch_size = len(set(a.device for a in homing_actions))
 
-        self._mainqueue = homing_cmds
-        batch_size = len(set(a.device for a in self._mainqueue))
+        header = self._absolute_move_commands
+        body = self._chunk_actions(batch_size, homing_actions)
+        footer = self._get_initialization_commands(ActionType.G1)
+        footer.extend(self._disengage_motors_commands)
 
-        print_debug_msg(self.console, f'Homing batch size is: {batch_size}.', self._is_dev_env)
+        self._mainqueue = []
+        self._mainqueue.extend(header)
+        self._mainqueue.extend(body)
+        self._mainqueue.extend(footer)
 
-        self.is_homing = True
+        self._keep_working = True
         self._clear_to_send = True
-        self.homing_thread = threading.Thread(
-            target=self.homer,
-            name='homing thread',
-            kwargs={"batch_size": batch_size}
+        self._working_thread = threading.Thread(
+            target=self._worker,
+            name='working thread',
+            kwargs={
+                "work_type": WorkType.HOMING,
+                "extra_callback": homing_callback
+            }
         )
-        self.homing_thread.start()
+        self._working_thread.start()
         print_info_msg(self.console, 'Homing started.')
         return True
 
-    def cancel_imaging(self) -> None:
-        """Stops the imaging sequence."""
+    def stop_work(self) -> None:
+        """Stops work in progress."""
 
-        self.pause()
-        self.is_paused = False
-        self._mainqueue = None
-        self._clear_to_send = True
-        print_info_msg(self.console, 'Imaging stopped.')
+        if self.pause_work():
+            self._mainqueue = []
+            self._is_paused = False
+            self._clear_to_send = True
+            print_info_msg(self.console, 'Work stopped.')
 
-    def pause(self) -> bool:
-        """Pause the current run, saving the current position."""
+    def pause_work(self) -> bool:
+        """Pause work in progress, saving the current position."""
 
-        if not self.is_imaging:
+        if not self._working_thread:
+            print_error_msg(self.console, 'No working thread to pause.')
             return False
 
-        self.is_paused = True
-        self.is_imaging = False
+        self._is_paused = True
+        self._keep_working = False
 
         # try joining the print thread: enclose it in try/except because we
         # might be calling it from the thread itself
         try:
-            self.imaging_thread.join()
-        except RuntimeError as e:
-            pass
-
-        self.imaging_thread = None
-        return True
-
-    def resume(self) -> bool:
-        """Resume the current run."""
-
-        if not self.is_paused:
+            self._working_thread.join()
+            self._working_thread = None
+            print_info_msg(self.console, 'Work paused.')
+            return True
+        except RuntimeError as err:
+            print_error_msg(self.console, f'Cannot join working thread: {err.args[0]}')
             return False
 
-        # send commands to resume printing
-# TODO: When resuming is enabled, send batch size to _do_imaging from here.
-# Batch size: 2 x number of distinct devices in action list.
-        self.is_paused = False
-        self.is_imaging = True
-        self.imaging_thread = threading.Thread(
-            target=self.imager,
-            name='imaging thread',
-            kwargs={"resuming": True}
+    def resume_work(self) -> bool:
+        """Resume the current run."""
+
+        if not self._is_paused:
+            print_error_msg(self.console, 'Work is not paused.')
+            return False
+
+        # send commands to resume work
+        device_count = len(set(a.device for a in self._mainqueue))
+        batch_size = 2 * device_count
+
+        self._is_paused = False
+        self._keep_working = True
+        self._working_thread = threading.Thread(
+            target=self._worker,
+            name='working thread',
+            kwargs={
+                # TODO: Figure out how to retrieve this on resumption.
+                "work_type": WorkType.IMAGING,
+                "batch_size": batch_size,
+                "resume": True
+            }
         )
-        self.imaging_thread.start()
-        print_info_msg(self.console, 'Imaging resumed.')
+        self._working_thread.start()
+        print_info_msg(self.console, 'Work resumed.')
         return True
 
     def send_now(self, *commands) -> bool:
@@ -420,7 +389,7 @@ class COPISCore(
         # Don't send now if imaging and G or C commands are sent.
         # No jogging while homing or imaging is in process.
         excluded = self._G_COMMANDS + self._C_COMMANDS
-        if self.is_machine_busy and any(cmd.atype in excluded for cmd in commands):
+        if self._keep_working and any(cmd.atype in excluded for cmd in commands):
             print_error_msg(self.console, 'Action commands not allowed when busy.')
             return False
 

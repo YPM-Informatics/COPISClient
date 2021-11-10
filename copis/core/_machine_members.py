@@ -15,10 +15,12 @@
 
 """COPIS Core machine related class members."""
 
+import threading
+
 from copis.classes.action import Action
 from copis.command_processor import deserialize_command
-from copis.globals import ActionType, ComStatus
-from copis.helpers import print_debug_msg, print_info_msg
+from copis.globals import ActionType, ComStatus, WorkType
+from copis.helpers import print_debug_msg, print_error_msg
 
 
 class MachineMembersMixin:
@@ -59,6 +61,26 @@ class MachineMembersMixin:
         return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.devices)
 
     @property
+    def _absolute_move_commands(self):
+        cmds = []
+        for dvc in self.devices:
+            cmds.append(Action(ActionType.G90, dvc.device_id))
+
+        actions = []
+        actions.append(cmds)
+        return actions
+
+    @property
+    def _disengage_motors_commands(self):
+        cmds = []
+        for dvc in self.devices:
+            cmds.append(Action(ActionType.M18, dvc.device_id))
+
+        actions = []
+        actions.append(cmds)
+        return actions
+
+    @property
     def is_machine_idle(self):
         """Returns a value indicating whether the machine is idle."""
         return all(dvc.serial_status == ComStatus.IDLE for dvc in self.devices)
@@ -68,25 +90,36 @@ class MachineMembersMixin:
         """Returns a value indicating whether the machine is homed."""
         return all(dvc.is_homed for dvc in self.devices)
 
-    @property
-    def is_machine_busy(self):
-        """Returns a value indicating whether the machine is busy
-        (imaging or homing)."""
-        return self.is_homing or self.is_imaging
-
-    def _query_devices(self):
+    def _query_machine(self):
         print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
-        cmd_list = []
+        cmds = []
+
+        if self._working_thread:
+            print_error_msg(self.console, 'Cannot query; the machine is busy.')
+            return
 
         for dvc in self.devices:
-            cmd_list.append(Action(ActionType.G0, dvc.device_id))
+            cmds.append(Action(ActionType.G0, dvc.device_id))
 
-        self.send_now(*cmd_list)
-        self._clear_to_send = True
+        if cmds:
+            self._keep_working = True
+            self._clear_to_send = True
+            self._mainqueue = []
+            self._mainqueue.append(cmds)
+            self._send_next()
+            self._keep_working = False
 
-    def _unlock_controllers(self):
+    def _chunk_actions(self, batch_size, actions=None):
+        cmds = actions if actions else self._actions
+        return [cmds[i:i + batch_size] for i in range(0, len(cmds), batch_size)]
+
+    def _unlock_machine(self):
         print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
         cmds = []
+
+        if self._working_thread:
+            print_error_msg(self.console, 'Cannot unlock; the machine is busy.')
+            return False
 
         for dvc in self.devices:
             if dvc.serial_response:
@@ -97,59 +130,70 @@ class MachineMembersMixin:
                     cmds.append(cmd)
 
         if cmds:
-            return self.send_now(*cmds)
+            self._keep_working = True
+            self._clear_to_send = True
+            self._mainqueue = []
+            self._mainqueue.append(cmds)
+            self._send_next()
+            self._keep_working = False
+            return True
 
         return False
 
-
-    def _initialize_gantries(self, atype: ActionType):
-        cmds = []
+    def _get_initialization_commands(self, atype: ActionType):
+        step_1 = []
+        step_2 = []
         actions = []
         g_code = str(atype).split('.')[1]
-        device_ids = self._ensure_absolute_move_mode(cmds)
 
-        for device_id in device_ids:
-            cmd_str = ''
+        for dvc in self.devices:
+            device_id = dvc.device_id
+            cmd_str_1 = ''
+            cmd_str_2 = ''
             x, y, z, p, t = self._get_device(device_id).initial_position
 
             if device_id == 0:
-                cmd_str = f'{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+                cmd_str_1 = f'{g_code}Z{z}'
+                cmd_str_2 = f'{g_code}X{x}Y{y}P{p}T{t}'
             elif device_id == 1:
-                cmd_str = f'>{device_id}{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
+                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
             elif device_id == 2:
-                cmd_str = f'>{device_id}{g_code}X{x}Y{y}Z{z}P{p}T{t}'
+                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
+                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
 
-            actions.append(deserialize_command(cmd_str))
+            step_1.append(deserialize_command(cmd_str_1))
+            step_2.append(deserialize_command(cmd_str_2))
 
-        actions.reverse()
-        sent = True
-
-        if cmds:
-            sent = self.send_now(*cmds)
-        if sent:
-            sent = self.send_now(*actions)
-
-        if sent:
-            for cmd in cmds:
-                if cmd.atype == ActionType.G90:
-                    dvc = self._get_device(cmd.device)
-                    dvc.is_move_absolute = True
-
-    def go_to_ready(self):
-        """Sends the gantries to their initial positions."""
-        print_info_msg(self.console, 'Go to ready started.')
-
-        self._initialize_gantries(ActionType.G1)
-
-        print_info_msg(self.console, 'Go to ready ended.')
+        actions.append(step_1)
+        actions.append(step_2)
+        return actions
 
     def set_ready(self):
         """Initializes the gantries to their current positions."""
-        print_info_msg(self.console, 'Set ready started.')
+        def set_ready_callback():
+            for dvc in self.devices:
+                dvc.is_homed = True
 
-        self._initialize_gantries(ActionType.G92)
+        if self._working_thread:
+            print_error_msg(self.console, 'Cannot set ready; the machine is busy.')
+            return
 
-        for dvc in self.devices:
-            dvc.is_homed = True
+        cmds = self._get_initialization_commands(ActionType.G92)
 
-        print_info_msg(self.console, 'Set ready ended.')
+        if cmds:
+            self._mainqueue = []
+            self._mainqueue.extend(cmds)
+            self._mainqueue.extend(self._disengage_motors_commands)
+
+            self._keep_working = True
+            self._clear_to_send = True
+            self._working_thread = threading.Thread(
+                target=self._worker,
+                name='working thread',
+                kwargs={
+                    "work_type": WorkType.SET_READY,
+                    "extra_callback": set_ready_callback
+                }
+            )
+            self._working_thread.start()
