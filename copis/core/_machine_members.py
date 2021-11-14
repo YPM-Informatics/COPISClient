@@ -182,7 +182,8 @@ class MachineMembersMixin:
             print_error_msg(self.console, 'Cannot set or go to ready. The machine is busy.')
             return
 
-        cmds = self._get_initialization_commands(ActionType.G92)
+        init_code = ActionType.G1 if self.is_machine_homed else ActionType.G92
+        cmds = self._get_initialization_commands(init_code)
 
         if cmds:
             self._mainqueue = []

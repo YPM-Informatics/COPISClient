@@ -71,8 +71,8 @@ class MachineToolbar(aui.AuiToolBar):
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
         self.AddSpacer(8)
-        self.set_ready_btn = wx.Button(self, wx.ID_ANY, label='Set ready', size=(75, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_set_ready, self.AddControl(self.set_ready_btn))
+        self.set_ready_btn = wx.Button(self, wx.ID_ANY, label='Ready', size=(75, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_ready, self.AddControl(self.set_ready_btn))
         self.AddSpacer(8)
 
         self.home_btn.Enable(self._can_home())
@@ -87,14 +87,14 @@ class MachineToolbar(aui.AuiToolBar):
         # TODO: implement pause and stop, uncomment below
         # _bmp = create_scaled_bitmap('pause', 24)
         # self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL,
-        #     short_help_string='Pause simulation')
+        #     short_help_string=f'Pause {self._core.work_type_name}')
         # _bmp = create_scaled_bitmap('stop', 24)
         # self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL,
-        #     short_help_string='Stop and reset simulation')
+        #     short_help_string=f'Abort {self._core.work_type_name}')
 
         _bmp = create_scaled_bitmap('get_app', 24)
-        self.AddTool(ToolIds.EXPORT.value, 'Export', _bmp, _bmp, aui.ITEM_NORMAL,
-            short_help_string='Export actions as text')
+        self.AddTool(ToolIds.EXPORT.value, 'Export actions', _bmp, _bmp, aui.ITEM_NORMAL,
+            short_help_string='Export actions')
 
         # TODO: implement settings dialog, uncomment below
 
@@ -211,8 +211,8 @@ class MachineToolbar(aui.AuiToolBar):
         self._core.start_homing()
         home_btn.Enable(self._can_home())
 
-    def on_set_ready(self, event: wx.CommandEvent) -> None:
-        """On set ready button pressed, issue commands to initializes
+    def on_ready(self, event: wx.CommandEvent) -> None:
+        """On ready button pressed, issue commands to initializes
         the gantries to their current positions."""
 
         if not self._core.is_serial_port_connected:
