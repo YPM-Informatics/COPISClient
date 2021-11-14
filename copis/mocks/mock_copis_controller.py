@@ -222,11 +222,14 @@ class MockCopisController():
                         if data[key] is not None:
                             low_bound = self._BOUNDS[key][0]
                             hi_bound = self._BOUNDS[key][1]
-                            start = random.randrange(low_bound, 0)
+                            start = 0 if low_bound == 0 else random.randrange(low_bound, 0)
                             finish = random.randrange(0, hi_bound)
                             position[key] = finish - start
                 elif action.atype == ActionType.M511:
                     self._is_locked[action.device] = not self._is_locked[action.device]
+                elif action.atype == ActionType.M18:
+                    # Disengage motors.
+                    pass
                 else:
                     raise NotImplementedError(f'Action {action.atype} not implemented.')
 
