@@ -179,6 +179,11 @@ class COPISCore(
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
 
+            #TODO: implement back off
+            dvc_360s = self._get_imminent_360s(packet)
+            for did in dvc_360s:
+                print_info_msg(self.console, f'**** DEVICE: {did} IS ABOUT TO TURN!!! ****')
+
             print_debug_msg(self.console, f'Packet size is: {len(packet)}',
                 self._is_dev_env)
 

@@ -20,7 +20,7 @@ import threading
 from copis.classes.action import Action
 from copis.command_processor import deserialize_command
 from copis.globals import ActionType, ComStatus, WorkType
-from copis.helpers import print_debug_msg, print_error_msg
+from copis.helpers import print_debug_msg, print_error_msg, rad_to_dd
 
 
 class MachineMembersMixin:
@@ -83,6 +83,25 @@ class MachineMembersMixin:
         """Returns a value indicating whether the machine is homed."""
         return all(dvc.is_homed for dvc in self.devices)
 
+    def _get_imminent_360s(self, actions):
+        device_ids = list(set(a.device for a in actions))
+        move_codes = [ActionType.G0, ActionType.G1]
+
+        results = []
+        for did in device_ids:
+            dvc = self._get_device(did)
+            move_actions = [a for a in actions if a.device == did and a.atype in move_codes]
+            move_action = move_actions[0] if len(move_actions) > 0 else None
+
+            if move_action and dvc.serial_response:
+                last_pan = dvc.serial_response.position.p
+                pan_arg = [a for a in move_action.args if a[0].lower() == 'p']
+                next_pan = rad_to_dd(float(pan_arg[0][1])) if pan_arg else None
+
+                if next_pan is not None and abs(next_pan - last_pan) > 180:
+                    results.append(did)
+
+        return results
 
     def _get_move_commands(self, is_absolute, *device_ids):
         actions = []
