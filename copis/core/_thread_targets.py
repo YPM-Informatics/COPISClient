@@ -108,11 +108,12 @@ class ThreadTargetsMixin:
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped.', self._is_dev_env)
 
-    def _worker(self, work_type: WorkType, resuming=False, extra_callback=None) -> None:
+    def _worker(self, resuming=False, extra_callback=None) -> None:
         """Implements a worker thread."""
-        t_name = work_type.name.lower().capitalize().replace('_', ' ')
+        t_name = self.work_type_name
 
-        print_debug_msg(self.console, f'{t_name} thread started', self._is_dev_env)
+        state = "resumed" if resuming else "started"
+        print_debug_msg(self.console, f'{t_name} thread {state}', self._is_dev_env)
 
         def callback():
             if extra_callback:
@@ -123,15 +124,21 @@ class ThreadTargetsMixin:
 
         print_info_msg(self.console, f'{t_name} started.')
 
+        had_error = False
         try:
             while self._keep_working and self.is_serial_port_connected:
                 self._send_next()
 
         except AttributeError as err:
             print_error_msg(self.console, f'{t_name} thread stopped unexpectedly: {err.args[0]}')
+            had_error = True
 
         finally:
             self._working_thread = None
             self._keep_working = False
 
-            print_debug_msg(self.console, f'{t_name} thread stopped.', self._is_dev_env)
+            if not self._is_machine_paused:
+                self._work_type = None
+
+            if not had_error:
+                print_debug_msg(self.console, f'{t_name} thread stopped.', self._is_dev_env)

@@ -64,16 +64,6 @@ class MachineMembersMixin:
         return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.devices)
 
     @property
-    def _absolute_move_commands(self):
-        cmds = []
-        for dvc in self.devices:
-            cmds.append(Action(ActionType.G90, dvc.device_id))
-
-        actions = []
-        actions.append(cmds)
-        return actions
-
-    @property
     def _disengage_motors_commands(self):
         cmds = []
         for dvc in self.devices:
@@ -92,6 +82,22 @@ class MachineMembersMixin:
     def is_machine_homed(self):
         """Returns a value indicating whether the machine is homed."""
         return all(dvc.is_homed for dvc in self.devices)
+
+
+    def _get_move_commands(self, is_absolute, *device_ids):
+        actions = []
+        all_device_ids = [dvc.device_id for dvc in self.devices]
+
+        if device_ids and all(did in all_device_ids for did in device_ids):
+            atype = ActionType.G90 if is_absolute else ActionType.G91
+            cmds = []
+
+            for did in device_ids:
+                cmds.append(Action(atype, did))
+
+            actions.append(cmds)
+
+        return actions
 
     def _query_machine(self):
         print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
@@ -189,6 +195,7 @@ class MachineMembersMixin:
             self._mainqueue = []
             self._mainqueue.extend(cmds)
             self._mainqueue.extend(self._disengage_motors_commands)
+            self._work_type = WorkType.SET_READY
 
             self._keep_working = True
             self._clear_to_send = True
@@ -196,7 +203,6 @@ class MachineMembersMixin:
                 target=self._worker,
                 name='working thread',
                 kwargs={
-                    "work_type": WorkType.SET_READY,
                     "extra_callback": set_ready_callback
                 }
             )
