@@ -207,3 +207,27 @@ class MachineMembersMixin:
                 }
             )
             self._working_thread.start()
+
+    def jog(self, action: Action):
+        """Jogs the machine according to the provided action."""
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot jog. The machine is busy.')
+            return
+
+        header = self._get_move_commands(False, action.device)
+        body = [action]
+        footer = self._get_move_commands(True, action.device)
+
+        self._mainqueue = []
+        self._mainqueue.extend(header)
+        self._mainqueue.append(body)
+        self._mainqueue.extend(footer)
+        self._work_type = WorkType.JOGGING
+
+        self._keep_working = True
+        self._clear_to_send = True
+        self._working_thread = threading.Thread(
+            target=self._worker,
+            name='working thread'
+        )
+        self._working_thread.start()

@@ -89,11 +89,6 @@ class ControllerPanel(scrolled.ScrolledPanel):
             pos_names = ''
             pos_values = []
 
-            if self._device.is_move_absolute:
-                action = self._generate_commands('G91')
-                self._core.send_now(action)
-                self._device.is_move_absolute = False
-
             if btn[0] in 'xyzns':
                 xyz_step = self.xyz_step_ctrl.num_value
             else: # Button name in 'pt'.
@@ -125,7 +120,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
             args = create_action_args(pos_values, pos_names)
             action = self._generate_commands('G1', args)
-            self._core.send_now(action)
+            self._core.jog(action)
         else:
             set_dialog('Connect to the machine in order to jog.')
 
@@ -298,7 +293,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.pt_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=5, size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='pt_step', max_precision=0,
             default_unit='dd', unit_conversions=pt_units)
-        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="500", size=(48, -1),
+        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1000", size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([

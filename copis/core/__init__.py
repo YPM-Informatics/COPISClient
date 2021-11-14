@@ -359,26 +359,3 @@ class COPISCore(
         )
         self._working_thread.start()
         return True
-
-    def send_now(self, *commands) -> bool:
-        """Send a command to machine ahead of the command queue."""
-        # Don't send now if imaging and G or C commands are sent.
-        # No jogging while homing or imaging is in process.
-        excluded = self._G_COMMANDS + self._C_COMMANDS
-        if self._keep_working and any(cmd.atype in excluded for cmd in commands):
-            print_error_msg(self.console, 'Action commands not allowed when busy.')
-            return False
-
-        if self.is_serial_port_connected:
-            self._sidequeue_batch_size = len(commands)
-
-            print_debug_msg(self.console,
-                f'Side queue batch size is: {self._sidequeue_batch_size}.',
-                self._is_dev_env)
-
-            for command in commands:
-                self._sidequeue.put_nowait(command)
-            return True
-
-        print_error_msg(self.console, 'Not connected to device.')
-        return False
