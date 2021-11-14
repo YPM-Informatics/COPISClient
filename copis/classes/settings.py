@@ -68,6 +68,11 @@ class MachineSettings:
         return this
 
     def _parse_machine(self) -> None:
+        def get_boolean(value: str):
+            trues = ['yes', 'on', 'true', '1']
+
+            return value.lower() in trues
+
         datum = self._machine_data
         self._machine = None
 
@@ -81,6 +86,10 @@ class MachineSettings:
             homing_sequence = datum['homing_sequence'].splitlines()
             self._machine = Machine(vec3(size_x, size_y, size_z),
                 vec3(origin_x, origin_y, origin_z), homing_sequence)
+
+            if 'is_parallel_execution' in datum.keys():
+                is_parallel_execution = get_boolean(datum['is_parallel_execution'])
+                self._machine.is_parallel_execution = is_parallel_execution
 
     def _parse_devices(self) -> None:
         data = self._device_data

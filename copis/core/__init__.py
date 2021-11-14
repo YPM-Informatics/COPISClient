@@ -251,8 +251,11 @@ class COPISCore(
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
 
-        device_count = len(set(a.device for a in self._actions))
-        batch_size = 2 * device_count
+        device_ids = list(set(a.device for a in self._actions))
+        # 1 move command * 1 shutter command.
+        batch_size = 2
+        if self.config.machine_settings.machine.is_parallel_execution:
+            batch_size = batch_size * len(device_ids)
 
         header = self._absolute_move_commands
         body = self._chunk_actions(batch_size)

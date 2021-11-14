@@ -37,11 +37,13 @@ class Machine:
     dimensions: vec3 = vec3(inf)
     origin: vec3 = vec3(inf)
     homing_sequence: List[str] = ''
+    is_parallel_execution: bool = False
 
     def as_dict(self):
         """Returns a dictionary representation of a machine instance."""
         return {
             'Machine': {
+                'is_parallel_execution': self.is_parallel_execution,
                 'size_x': self.dimensions.x,
                 'size_y': self.dimensions.y,
                 'size_z': self.dimensions.z,
