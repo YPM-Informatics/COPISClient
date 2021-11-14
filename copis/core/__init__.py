@@ -110,14 +110,12 @@ class COPISCore(
 
         # True if sending actions, false if paused
         self._keep_working = False
-        self._is_paused = False
+        self._is_machine_paused = False
 
         self._read_threads = []
         self._working_thread = None
 
         self._mainqueue = []
-        self._sidequeue = Queue(0)
-        self._sidequeue_batch_size = 1
 
         # list of actions (paths)
         self._actions: List[Action] = MonitoredList('core_a_list_changed')
@@ -243,7 +241,7 @@ class COPISCore(
                 'The machine needs to be connected before imaging can start.')
             return False
 
-        if self._working_thread:
+        if self._is_machine_busy:
             print_error_msg(self.console, 'The machine is busy.')
             return False
 
@@ -335,7 +333,7 @@ class COPISCore(
 
         if self.pause_work():
             self._mainqueue = []
-            self._is_paused = False
+            self._is_machine_paused = False
             self._clear_to_send = True
             print_info_msg(self.console, 'Work stopped.')
 
@@ -346,7 +344,7 @@ class COPISCore(
             print_error_msg(self.console, 'No working thread to pause.')
             return False
 
-        self._is_paused = True
+        self._is_machine_paused = True
         self._keep_working = False
 
         # try joining the print thread: enclose it in try/except because we
@@ -371,7 +369,7 @@ class COPISCore(
         device_count = len(set(a.device for a in self._mainqueue))
         batch_size = 2 * device_count
 
-        self._is_paused = False
+        self._is_machine_paused = False
         self._keep_working = True
         self._working_thread = threading.Thread(
             target=self._worker,

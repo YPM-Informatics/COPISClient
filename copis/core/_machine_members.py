@@ -26,6 +26,9 @@ from copis.helpers import print_debug_msg, print_error_msg
 class MachineMembersMixin:
     """Implement COPIS Core machine related class members using mixins."""
     @property
+    def _is_machine_busy(self):
+        return self._working_thread is not None or self._is_machine_paused
+    @property
     def _machine_status(self):
         status = 'unknown'
         statuses = list(set(dvc.serial_status for dvc in self.devices))
@@ -94,8 +97,8 @@ class MachineMembersMixin:
         print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
         cmds = []
 
-        if self._working_thread:
-            print_error_msg(self.console, 'Cannot query; the machine is busy.')
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
 
         for dvc in self.devices:
@@ -117,8 +120,8 @@ class MachineMembersMixin:
         print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
         cmds = []
 
-        if self._working_thread:
-            print_error_msg(self.console, 'Cannot unlock; the machine is busy.')
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot unlock. The machine is busy.')
             return False
 
         for dvc in self.devices:
@@ -175,8 +178,8 @@ class MachineMembersMixin:
             for dvc in self.devices:
                 dvc.is_homed = True
 
-        if self._working_thread:
-            print_error_msg(self.console, 'Cannot set ready; the machine is busy.')
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot set or go to ready. The machine is busy.')
             return
 
         cmds = self._get_initialization_commands(ActionType.G92)
