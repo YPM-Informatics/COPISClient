@@ -34,8 +34,7 @@ from typing import List
 from glm import vec3
 
 from copis.command_processor import serialize_command
-from copis.helpers import (print_error_msg, print_debug_msg,
-    print_info_msg)
+from copis.helpers import print_error_msg, print_debug_msg, print_info_msg # , create_action_args
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
 from copis.classes import (
@@ -179,10 +178,17 @@ class COPISCore(
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
 
-            #TODO: implement back off
-            dvc_360s = self._get_imminent_360s(packet)
-            for did in dvc_360s:
-                print_info_msg(self.console, f'**** DEVICE: {did} IS ABOUT TO TURN!!! ****')
+            # dvc_360s = self._get_imminent_360s(packet)
+            # for dvc_360 in dvc_360s:
+            #     did = dvc_360[0]
+            #     print_debug_msg(self.console, f'**** DEVICE: {did} IS ABOUT TO TURN!!! ****',
+            #         self._is_dev_env)
+            #     pts = self._back_off(dvc_360)
+
+            #     for i, pt in enumerate(pts):
+            #         args = create_action_args(list(pt))
+            #         jog = Action(ActionType.G1, did, len(args), args)
+            #         packet.insert(i, jog)
 
             print_debug_msg(self.console, f'Packet size is: {len(packet)}',
                 self._is_dev_env)
