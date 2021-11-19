@@ -26,7 +26,7 @@ import glm
 import wx
 import wx.lib.agw.aui as aui
 
-from copis.classes import Action, Object3D
+from copis.classes import Action, Object3D, Pose
 from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
@@ -58,13 +58,17 @@ class PathgenToolbar(aui.AuiToolBar):
         """
         # add path shape adders
         _bmp = create_scaled_bitmap('cylinder_path', 24)
-        self.AddTool(PathIds.CYLINDER.value, 'Cylinder', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add cylinder path')
+        self.AddTool(PathIds.CYLINDER.value, 'Cylinder', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add cylinder path')
         _bmp = create_scaled_bitmap('helix_path', 24)
-        self.AddTool(PathIds.HELIX.value, 'Helix', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add helix path')
+        self.AddTool(PathIds.HELIX.value, 'Helix', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add helix path')
         _bmp = create_scaled_bitmap('sphere_path', 24)
-        self.AddTool(PathIds.SPHERE.value, 'Sphere', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add sphere path')
+        self.AddTool(PathIds.SPHERE.value, 'Sphere', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add sphere path')
         _bmp = create_scaled_bitmap('line_path', 24)
-        self.AddTool(PathIds.LINE.value, 'Line', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add line path')
+        self.AddTool(PathIds.LINE.value, 'Line', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add line path')
 
         self.AddSeparator()
 
@@ -325,12 +329,12 @@ class PathgenToolbar(aui.AuiToolBar):
                 s_tilt = sanitize_number(tilt)
                 g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
                 c_args = create_action_args([1.5], 'S')
-                interlaced_actions.extend((
+                interlaced_actions.append(
                     # TODO: allow user customization of actions at each point
                     # https://github.com/YPM-Informatics/COPISClient/issues/102
-                    Action(ActionType.G1, device_id, len(g_args), g_args),
-                    Action(ActionType.C0, device_id, len(c_args), c_args),
-                ))
+                    Pose(Action(ActionType.G1, device_id, len(g_args), g_args),
+                    [Action(ActionType.C0, device_id, len(c_args), c_args)])
+                )
 
         # extend core actions list
         self.core.actions.extend(interlaced_actions)

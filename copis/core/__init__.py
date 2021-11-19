@@ -29,7 +29,6 @@ import threading
 import time
 import warnings
 
-from queue import Queue
 from typing import List
 from glm import vec3
 
