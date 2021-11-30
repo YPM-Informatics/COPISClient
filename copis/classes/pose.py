@@ -24,3 +24,12 @@ class Pose(NamedTuple):
     """Device pose data structure."""
     position: Action = None
     payload: List[Action] = None
+
+    def get_actions(self) -> List[Action]:
+        """Flattens the pose into its constituent list of actions and returns it."""
+        actions = [self.position] if self.position else []
+
+        if self.payload and len(self.payload) > 0:
+            actions.extend(self.payload)
+
+        return actions

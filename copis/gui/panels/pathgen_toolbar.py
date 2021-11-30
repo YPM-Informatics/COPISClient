@@ -88,7 +88,7 @@ class PathgenToolbar(aui.AuiToolBar):
         """On interleave paths button pressed, rearrange actions to alternate by
         camera.
         This allows us to simultaneously play paths that have be created sequentially."""
-        get_device = lambda a: a.device
+        get_device = lambda a: a.position.device
 
         actions = sorted(self.core.actions, key=get_device)
 
@@ -97,11 +97,9 @@ class PathgenToolbar(aui.AuiToolBar):
             groups = []
 
             for _, g in grouped:
-                tuples = zip(g, g)
-                groups.append(list(tuples))
+                groups.append(list(g))
 
-            interleaved_tuples = interleave_lists(*groups)
-            interleaved = [val for tup in interleaved_tuples for val in tup]
+            interleaved = interleave_lists(*groups)
 
             self.core.actions.clear()
             self.core.actions.extend(interleaved)

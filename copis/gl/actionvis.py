@@ -200,20 +200,20 @@ class GLActionVis:
         self._items['point'].clear()
         self._num_points = 0
 
-        for i, action in enumerate(self.core.actions):
-
-            if action.atype in (ActionType.G0, ActionType.G1):
-                args = get_action_args_values(action.args)
-                self._items['line'][action.device].append((i + self._num_devices, xyzpt_to_mat4(*args[:5])))
-
-            elif action.atype in (ActionType.C0, ActionType.C1):
-                if action.device not in self._items['line'].keys():
-                    continue
-                self._items['point'][action.device].append(self._items['line'][action.device][-1])
-
-            else:
-                # TODO!
-                pass
+        for i, pose in enumerate(self.core.actions):
+            for action in pose.get_actions():
+                if action.atype in (ActionType.G0, ActionType.G1):
+                    args = get_action_args_values(action.args)
+                    self._items['line'][action.device].append(
+                        (i + self._num_devices, xyzpt_to_mat4(*args[:5])))
+                elif action.atype in (ActionType.C0, ActionType.C1):
+                    if action.device not in self._items['line'].keys():
+                        continue
+                    self._items['point'][action.device].append(
+                        self._items['line'][action.device][-1])
+                else:
+                    # TODO!
+                    pass
 
         self.update_action_vaos()
 

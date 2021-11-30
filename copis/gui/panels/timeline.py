@@ -173,5 +173,7 @@ class TimelinePanel(wx.Panel):
         Handles core_a_list_changed signal sent by self.core.
         """
         self.timeline.Clear()
-        for action in self.core.actions:
-            self.add_command(f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')
+        for pose in self.core.actions:
+            for action in pose.get_actions():
+                self.add_command(
+                    f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')
