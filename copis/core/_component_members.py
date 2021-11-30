@@ -132,8 +132,9 @@ class ComponentMembersMixin:
         """Update position of points in selected points list."""
         args = create_action_args(args)
         for id_ in self.selected_points:
-            for i in range(min(len(self.actions[id_].args), len(args))):
-                self.actions[id_].args[i] = args[i]
+            action = self.actions[id_].position
+            for i in range(min(len(action.args), len(args))):
+                action.args[i] = args[i]
 
         dispatcher.send('core_a_list_changed')
 

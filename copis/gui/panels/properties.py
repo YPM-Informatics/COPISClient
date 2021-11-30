@@ -127,7 +127,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On core_a_selected, set to point view."""
 
         if len(points) == 1:
-            action = self.core.actions[points[0]]
+            action = self.core.actions[points[0]].position
             if action.atype == ActionType.G0 or action.atype == ActionType.G1:
                 self.current = 'Point'
                 args = get_action_args_values(action.args)
