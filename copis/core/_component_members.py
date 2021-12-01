@@ -18,9 +18,7 @@
 from typing import List
 from pydispatch import dispatcher
 
-from copis.classes.action import Action
-from copis.classes.device import Device
-from copis.classes.proxy_objects import Object3D
+from copis.classes import Action, Device, Object3D, Pose
 from copis.command_processor import serialize_command
 from copis.globals import ActionType
 from copis.helpers import create_action_args, print_error_msg
@@ -30,7 +28,7 @@ class ComponentMembersMixin:
     """Implement COPIS Core component (actions, points, devices, proxy objects)
         related class members using mixins."""
     @property
-    def actions(self) -> List[Action]:
+    def actions(self) -> List[Pose]:
         """Returns the core action list."""
         return self._actions
 
