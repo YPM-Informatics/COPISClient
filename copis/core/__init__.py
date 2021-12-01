@@ -36,8 +36,7 @@ from copis.command_processor import serialize_command
 from copis.helpers import print_error_msg, print_debug_msg, print_info_msg # , create_action_args
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
-from copis.classes import (
-    Action, Device, MonitoredList, Object3D, OBJObject3D)
+from copis.classes import Device, MonitoredList, Object3D, OBJObject3D, Pose
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -117,7 +116,7 @@ class COPISCore(
         self._mainqueue = []
 
         # list of actions (paths)
-        self._actions: List[Action] = MonitoredList('core_a_list_changed')
+        self._actions: List[Pose] = MonitoredList('core_a_list_changed')
 
         # list of devices (cameras)
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
@@ -241,11 +240,12 @@ class COPISCore(
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
 
-        device_ids = list(set(a.device for a in self._actions))
-        # 1 move command * 1 shutter command.
-        batch_size = 2
+        action_ids = map(lambda p: p.position.device, self._actions)
+        device_ids = list(set(action_ids))
+
+        batch_size = 1
         if self.config.machine_settings.machine.is_parallel_execution:
-            batch_size = batch_size * len(device_ids)
+            batch_size = len(device_ids)
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.devices])
         body = self._chunk_actions(batch_size)

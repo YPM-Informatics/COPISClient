@@ -19,7 +19,7 @@ import threading
 
 # from math import cos, sin
 
-from copis.classes.action import Action
+from copis.classes import Action
 from copis.command_processor import deserialize_command
 from copis.globals import ActionType, ComStatus, WorkType # , Point5
 from copis.helpers import print_debug_msg, print_error_msg # , print_info_msg, dd_to_rad,
@@ -168,7 +168,18 @@ class MachineMembersMixin:
 
     def _chunk_actions(self, batch_size, actions=None):
         cmds = actions if actions else self._actions
-        return [cmds[i:i + batch_size] for i in range(0, len(cmds), batch_size)]
+        actions = []
+
+        for i in range(0, len(cmds), batch_size):
+            chunk = cmds[i:i + batch_size]
+            chunk_actions = []
+
+            for pose in chunk:
+                chunk_actions.extend(pose.get_actions())
+
+            actions.append(chunk_actions)
+
+        return actions
 
     def _unlock_machine(self):
         print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
