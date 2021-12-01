@@ -15,10 +15,10 @@
 
 """MainWindow class."""
 
-from glm import vec3
 import wx
 import wx.lib.agw.aui as aui
 
+from glm import vec3
 from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
     AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
     AUI_BUTTON_STATE_PRESSED)
@@ -26,7 +26,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
-from copis.classes import AABBObject3D, CylinderObject3D
+from copis.classes import AABBObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -322,6 +322,15 @@ class MainWindow(wx.Frame):
     def do_load_project(self, path: str) -> None:
         """Load project from file Path."""
         actions = store.load(path, [])
+
+        # Adjust actions from list of actions to a least of poses.
+        if isinstance(actions[0], Action):
+            poses = []
+            for i in range(0, len(actions), 2):
+                chunk = actions[i:i + 2]
+                poses.append(Pose(chunk[0], [chunk[1]]))
+
+            actions = poses
 
         self.core.actions.clear()
         self.core.actions.extend(actions)
