@@ -21,7 +21,6 @@ from datetime import datetime
 from pydispatch import dispatcher
 
 from copis.helpers import print_debug_msg, print_error_msg, print_info_msg
-from copis.globals import WorkType
 from copis.classes import SerialResponse
 
 class ThreadTargetsMixin:
