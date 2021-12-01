@@ -16,22 +16,22 @@
 """PathgenToolbar class."""
 
 import math
+import glm
+
 from collections import defaultdict
 from typing import List, Tuple
 from itertools import groupby
-
-from glm import vec2, vec3
-import glm
+from glm import vec2, vec3, vec4
 
 import wx
 import wx.lib.agw.aui as aui
 
 from copis.classes import Action, Object3D, Pose
-from copis.globals import ActionType, PathIds
+from copis.globals import ActionType, PathIds, Point5
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import (create_action_args, interleave_lists, print_debug_msg,
-    sanitize_number, sanitize_point,
+    rad_to_dd, sanitize_number, sanitize_point,
     xyz_units)
 from copis.pathutils import create_circle, create_helix, create_line
 
@@ -309,6 +309,9 @@ class PathgenToolbar(aui.AuiToolBar):
         # interlace actions
         interlaced_actions = []
         empty = False
+
+        pos_records = {}
+
         while not empty:
             empty = True
             for device_id in device_list:
@@ -325,6 +328,52 @@ class PathgenToolbar(aui.AuiToolBar):
                 s_point = sanitize_point(point)
                 s_pan = sanitize_number(pan)
                 s_tilt = sanitize_number(tilt)
+                record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
+
+                if device_id in pos_records.keys():
+                    last_record = pos_records[device_id]
+                    last_pan = rad_to_dd(last_record.p)
+                    next_pan = rad_to_dd(s_pan)
+
+                    # 200 is arbitrary.
+                    # this is a naive placeholder logic that'll be fleshed out later.
+                    dist = 200 - glm.distance(vec2(0, 0), vec2(last_record.x, last_record.y))
+
+                    if abs(next_pan - last_pan) > 180 and dist > 0:
+                        # Back off
+                        # The right formula for this is new_x = x + (dist * cos(pan)) &
+                        # new_y = y + (dist * cos(pan)). but since our pan angle is measured
+                        # relative to the positive y axis, we have to flip sine and cosine.
+                        next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
+
+                        x1 = sanitize_number(last_record.x + (dist * math.sin(last_record.p)))
+                        y1 = sanitize_number(last_record.y + (dist * math.cos(last_record.p)))
+                        z1 = last_record.z
+
+                        x2 = sanitize_number(next_record.x + (dist * math.sin(next_record.p)))
+                        y2 = sanitize_number(next_record.y + (dist * math.cos(next_record.p)))
+                        z2 = next_record.z
+
+                        pt1 = Point5(x1, y1, z1, last_record.p, last_record.t)
+                        pt2 = Point5(x2, y2, z2, next_record.p, next_record.t)
+
+                        args1 = create_action_args([pt1.x, pt1.y, pt1.z, pt1.p, pt1.t])
+                        args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
+
+                        interlaced_actions.append(
+                            Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
+                        interlaced_actions.append(
+                            Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
+
+                        print_debug_msg(
+                            self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
+                        print_debug_msg(
+                            self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
+
+                    pos_records[device_id] = record
+                else:
+                    pos_records.update({device_id: record})
+
                 g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
                 c_args = create_action_args([1.5], 'S')
                 interlaced_actions.append(
