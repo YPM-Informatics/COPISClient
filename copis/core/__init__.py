@@ -233,7 +233,7 @@ class COPISCore(
             return False
 
         if self._is_machine_busy:
-            print_error_msg(self.console, 'The machine is busy.')
+            print_error_msg(self.console, 'Cannot image. The machine is busy.')
             return False
 
         if not self.is_machine_idle:
@@ -279,7 +279,7 @@ class COPISCore(
             return False
 
         if self._is_machine_busy:
-            print_error_msg(self.console, 'The machine is busy.')
+            print_error_msg(self.console, 'Cannot home. The machine is busy.')
             return False
 
         homing_actions = self.config.machine_settings.machine.homing_actions.copy()
