@@ -31,7 +31,7 @@ from copis.globals import ActionType, PathIds, Point5
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import (create_action_args, interleave_lists, print_debug_msg,
-    rad_to_dd, sanitize_number, sanitize_point,
+    sanitize_number, sanitize_point,
     xyz_units)
 from copis.pathutils import create_circle, create_helix, create_line
 
@@ -313,7 +313,7 @@ class PathgenToolbar(aui.AuiToolBar):
         interlaced_actions = []
         empty = False
 
-        pos_records = {}
+        # pos_records = {}
 
         while not empty:
             empty = True
@@ -322,7 +322,7 @@ class PathgenToolbar(aui.AuiToolBar):
                     continue
                 empty = False
 
-                point = cost_ordered_points[device_id].pop()
+                point = cost_ordered_points[device_id].pop(0)
                 dx, dy, dz = point.x - lookat.x, point.y - lookat.y, point.z - lookat.z
                 pan = math.atan2(dx, dy)
                 tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
