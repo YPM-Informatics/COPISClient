@@ -272,8 +272,9 @@ class PathgenToolbar(aui.AuiToolBar):
 
             # intersect bad!
             for obj in colliders:
-                if obj.vec3_intersect(end, 10.0) or \
-                        obj.bbox.line_segment_intersect(start, end):
+                # if obj.vec3_intersect(end, 10.0) or \
+                #         obj.bbox.line_segment_intersect(start, end):
+                if obj.vec3_intersect(end, 10.0):
                     return math.inf
 
             return (
@@ -285,14 +286,16 @@ class PathgenToolbar(aui.AuiToolBar):
         # greedily expand path from starting point
         cost_ordered_points = defaultdict(list)
         for device_id, points in grouped_points.items():
-            # choose starting point, currently the first one in the list
-            # TODO: make starting point less arbitrary
-            cost_ordered_points[device_id].append(points.pop(0))
-
             # loop until all points used
             while points:
                 # get best next point using cost function
-                curr_point = cost_ordered_points[device_id][-1]
+                if len(cost_ordered_points[device_id]) > 0:
+                    curr_point = cost_ordered_points[device_id][-1]
+                else:
+                    # choose starting point, currently the first one in the list
+                    # TODO: make starting point less arbitrary
+                    curr_point = points[0]
+
                 best_cost = math.inf
                 best_index = -1
                 for index, point in enumerate(points):
@@ -328,51 +331,51 @@ class PathgenToolbar(aui.AuiToolBar):
                 s_point = sanitize_point(point)
                 s_pan = sanitize_number(pan)
                 s_tilt = sanitize_number(tilt)
-                record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
+                # record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
 
-                if device_id in pos_records.keys():
-                    last_record = pos_records[device_id]
-                    last_pan = rad_to_dd(last_record.p)
-                    next_pan = rad_to_dd(s_pan)
+                # if device_id in pos_records.keys():
+                #     last_record = pos_records[device_id]
+                #     last_pan = rad_to_dd(last_record.p)
+                #     next_pan = rad_to_dd(s_pan)
 
-                    # 200 is arbitrary.
-                    # this is a naive placeholder logic that'll be fleshed out later.
-                    dist = 200 - glm.distance(vec2(0, 0), vec2(last_record.x, last_record.y))
+                #     # 200 is arbitrary.
+                #     # this is a naive placeholder logic that'll be fleshed out later.
+                #     dist = 200 - glm.distance(vec2(0, 0), vec2(last_record.x, last_record.y))
 
-                    if abs(next_pan - last_pan) > 180 and dist > 0:
-                        # Back off
-                        # The right formula for this is new_x = x + (dist * cos(pan)) &
-                        # new_y = y + (dist * cos(pan)). but since our pan angle is measured
-                        # relative to the positive y axis, we have to flip sine and cosine.
-                        next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
+                #     if abs(next_pan - last_pan) > 180 and dist > 0:
+                #         # Back off
+                #         # The right formula for this is new_x = x + (dist * cos(pan)) &
+                #         # new_y = y + (dist * cos(pan)). but since our pan angle is measured
+                #         # relative to the positive y axis, we have to flip sine and cosine.
+                #         next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
 
-                        x1 = sanitize_number(last_record.x + (dist * math.sin(last_record.p)))
-                        y1 = sanitize_number(last_record.y + (dist * math.cos(last_record.p)))
-                        z1 = last_record.z
+                #         x1 = sanitize_number(last_record.x + (dist * math.sin(last_record.p)))
+                #         y1 = sanitize_number(last_record.y + (dist * math.cos(last_record.p)))
+                #         z1 = last_record.z
 
-                        x2 = sanitize_number(next_record.x + (dist * math.sin(next_record.p)))
-                        y2 = sanitize_number(next_record.y + (dist * math.cos(next_record.p)))
-                        z2 = next_record.z
+                #         x2 = sanitize_number(next_record.x + (dist * math.sin(next_record.p)))
+                #         y2 = sanitize_number(next_record.y + (dist * math.cos(next_record.p)))
+                #         z2 = next_record.z
 
-                        pt1 = Point5(x1, y1, z1, last_record.p, last_record.t)
-                        pt2 = Point5(x2, y2, z2, next_record.p, next_record.t)
+                #         pt1 = Point5(x1, y1, z1, last_record.p, last_record.t)
+                #         pt2 = Point5(x2, y2, z2, next_record.p, next_record.t)
 
-                        args1 = create_action_args([pt1.x, pt1.y, pt1.z, pt1.p, pt1.t])
-                        args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
+                #         args1 = create_action_args([pt1.x, pt1.y, pt1.z, pt1.p, pt1.t])
+                #         args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
 
-                        interlaced_actions.append(
-                            Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
-                        interlaced_actions.append(
-                            Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
+                #         interlaced_actions.append(
+                #             Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
+                #         interlaced_actions.append(
+                #             Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
 
-                        print_debug_msg(
-                            self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
-                        print_debug_msg(
-                            self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
+                #         print_debug_msg(
+                #             self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
+                #         print_debug_msg(
+                #             self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
 
-                    pos_records[device_id] = record
-                else:
-                    pos_records.update({device_id: record})
+                #     pos_records[device_id] = record
+                # else:
+                #     pos_records.update({device_id: record})
 
                 g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
                 c_args = create_action_args([1.5], 'S')
