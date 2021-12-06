@@ -21,19 +21,19 @@ import glm
 from collections import defaultdict
 from typing import List, Tuple
 from itertools import groupby
-from glm import vec2, vec3, vec4
+from glm import vec2, vec3
 
 import wx
 import wx.lib.agw.aui as aui
 
 from copis.classes import Action, Object3D, Pose
-from copis.globals import ActionType, PathIds, Point5
+from copis.globals import ActionType, PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import (create_action_args, interleave_lists, print_debug_msg,
     sanitize_number, sanitize_point,
     xyz_units)
-from copis.pathutils import create_circle, create_helix, create_line
+from copis.pathutils import create_circle, create_helix, create_line, process_path
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -250,12 +250,14 @@ class PathgenToolbar(aui.AuiToolBar):
 
         devices = self.core.config.machine_settings.devices
         grouped_points = defaultdict(list)
+        max_zs = defaultdict(float)
 
         # group points into devices
         for i in range(count):
             point = vec3(vertices[i * 3:i * 3 + 3])
             device_id = -1
             for id_ in device_list:
+                max_zs[id_] = devices[id_].device_bounds.upper.z
                 if devices[id_].device_bounds.vec3_intersect(point, 0.0):
                     device_id = id_
 
@@ -263,130 +265,7 @@ class PathgenToolbar(aui.AuiToolBar):
             if device_id != -1:
                 grouped_points[device_id].append(point)
 
-        def _cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
-            """Calculate cost of moving from start to end. Returns math.inf
-            if movement will intersect a proxy object.
-            """
-            XY_COST = 1.0
-            Z_COST = 10.0
-
-            # intersect bad!
-            for obj in colliders:
-                # if obj.vec3_intersect(end, 10.0) or \
-                #         obj.bbox.line_segment_intersect(start, end):
-                if obj.vec3_intersect(end, 10.0):
-                    return math.inf
-
-            return (
-                # cost of movement along XY
-                XY_COST * glm.distance(vec2(start), vec2(end)) +
-                # cost of movement along Z
-                Z_COST * abs(end.z - start.z))
-
-        # greedily expand path from starting point
-        cost_ordered_points = defaultdict(list)
-        for device_id, points in grouped_points.items():
-            # loop until all points used
-            while points:
-                # get best next point using cost function
-                if len(cost_ordered_points[device_id]) > 0:
-                    curr_point = cost_ordered_points[device_id][-1]
-                else:
-                    # choose starting point, currently the first one in the list
-                    # TODO: make starting point less arbitrary
-                    curr_point = points[0]
-
-                best_cost = math.inf
-                best_index = -1
-                for index, point in enumerate(points):
-                    cost = _cost(curr_point, point, self.core.objects)
-                    if cost < best_cost:
-                        best_cost = cost
-                        best_index = index
-
-                # stop if cost is infinite (intersect with objects)
-                if best_cost == math.inf:
-                    break
-                cost_ordered_points[device_id].append(points.pop(best_index))
-
-        # interlace actions
-        interlaced_actions = []
-        empty = False
-
-        # pos_records = {}
-
-        while not empty:
-            empty = True
-            for device_id in device_list:
-                if not cost_ordered_points[device_id]:
-                    continue
-                empty = False
-
-                point = cost_ordered_points[device_id].pop(0)
-                dx, dy, dz = point.x - lookat.x, point.y - lookat.y, point.z - lookat.z
-                pan = math.atan2(dx, dy)
-                tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
-
-                # Add action. skip feed rate for now.
-                s_point = sanitize_point(point)
-                s_pan = sanitize_number(pan)
-                s_tilt = sanitize_number(tilt)
-                # record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
-
-                # if device_id in pos_records.keys():
-                #     last_record = pos_records[device_id]
-                #     last_pan = rad_to_dd(last_record.p)
-                #     next_pan = rad_to_dd(s_pan)
-
-                #     # 200 is arbitrary.
-                #     # this is a naive placeholder logic that'll be fleshed out later.
-                #     dist = 200 - glm.distance(vec2(0, 0), vec2(last_record.x, last_record.y))
-
-                #     if abs(next_pan - last_pan) > 180 and dist > 0:
-                #         # Back off
-                #         # The right formula for this is new_x = x + (dist * cos(pan)) &
-                #         # new_y = y + (dist * cos(pan)). but since our pan angle is measured
-                #         # relative to the positive y axis, we have to flip sine and cosine.
-                #         next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
-
-                #         x1 = sanitize_number(last_record.x + (dist * math.sin(last_record.p)))
-                #         y1 = sanitize_number(last_record.y + (dist * math.cos(last_record.p)))
-                #         z1 = last_record.z
-
-                #         x2 = sanitize_number(next_record.x + (dist * math.sin(next_record.p)))
-                #         y2 = sanitize_number(next_record.y + (dist * math.cos(next_record.p)))
-                #         z2 = next_record.z
-
-                #         pt1 = Point5(x1, y1, z1, last_record.p, last_record.t)
-                #         pt2 = Point5(x2, y2, z2, next_record.p, next_record.t)
-
-                #         args1 = create_action_args([pt1.x, pt1.y, pt1.z, pt1.p, pt1.t])
-                #         args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
-
-                #         interlaced_actions.append(
-                #             Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
-                #         interlaced_actions.append(
-                #             Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
-
-                #         print_debug_msg(
-                #             self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
-                #         print_debug_msg(
-                #             self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
-
-                #     pos_records[device_id] = record
-                # else:
-                #     pos_records.update({device_id: record})
-
-                g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
-                c_args = create_action_args([1.5], 'S')
-                interlaced_actions.append(
-                    # TODO: allow user customization of actions at each point
-                    # https://github.com/YPM-Informatics/COPISClient/issues/102
-                    Pose(Action(ActionType.G1, device_id, len(g_args), g_args),
-                    [Action(ActionType.C0, device_id, len(c_args), c_args)])
-                )
-
-        # extend core actions list
+        interlaced_actions = process_path(grouped_points, self.core.objects, max_zs, lookat)
         self.core.actions.extend(interlaced_actions)
 
     def __del__(self) -> None:
