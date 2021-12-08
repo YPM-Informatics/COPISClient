@@ -30,12 +30,13 @@ class Point5(NamedTuple):
     t: float = 0.0
 
 
-class Rectangle(NamedTuple):
-    """Flat structure representing a rectangle with a point and dimensions."""
+class WindowState(NamedTuple):
+    """Flat structure representing the state of the application window."""
     x: int = 0
     y: int = 0
     width: int = 0
     height: int = 0
+    is_maximized: bool = False
 
 
 class Size(NamedTuple):

@@ -47,7 +47,7 @@ class COPISApp(wx.App):
         self.AppName = 'COPIS Interface'
         dimensions_list = self._parse_chamber_dimensions()
 
-        x, y, width, height = self.config.application_settings.window_geometry
+        x, y, width, height, is_maximized = self.config.application_settings.window_state
 
         self.mainwindow = MainWindow(
             dimensions_list,
@@ -58,6 +58,7 @@ class COPISApp(wx.App):
             size=(width, height)
         )
         self.mainwindow.Show()
+        self.mainwindow.Maximize(is_maximized)
 
         self.is_gui_loaded = True
 

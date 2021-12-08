@@ -18,9 +18,21 @@
 from configparser import ConfigParser
 from glm import vec3
 
-from .globals import DebugEnv, Size, Rectangle
+from .globals import DebugEnv, Size, WindowState
 from .store import Store
 from .classes import ApplicationSettings, MachineSettings
+
+
+def _get_bool(val):
+    return val.lower() in ['yes', 'on', 'true', '1']
+
+
+def _get_state_parts(state_str):
+    parts = state_str.split(',')
+
+    return list(int(s)
+        if i < len(parts) - 1 else _get_bool(s)
+            for i, s in enumerate(parts))
 
 
 class Config():
@@ -32,7 +44,7 @@ class Config():
             'debug_env': 'prod'
         },
         'Machine': {
-            'is_parallel_execution': 'yes',
+            'is_parallel_execution': 'True',
             'size_x': '700',
             'size_y': '800',
             'size_z': '450',
@@ -73,61 +85,58 @@ class Config():
             self._store.save_config_parser(parser)
 
         app = parser['App']
-        min_w, min_h = [int(d) for d in app['window_min_size'].split(',')]
-        x, y, w, h = None, None, int(min_w), int(min_h)
+        min_width, min_height = [int(d) for d in app['window_min_size'].split(',')]
+        x, y, width, height, is_maximized = None, None, int(min_width), int(min_height), False
 
-        if 'window_geometry' in app:
-            coords = [int(c) for c in app['window_geometry'].split(',')]
-            if len(coords) == 4:
-                x, y, w, h = coords
-            elif len(coords) == 2:
-                w, h = max(min_w, coords[0]), max(min_h, coords[1])
+        if 'window_state' in app:
+            x, y, width, height, is_maximized = _get_state_parts(app['window_state'])
         else:
-            w, h = [get_sixty_pct(d) for d in display_size]
+            width, height = [get_sixty_pct(d) for d in display_size]
 
-        w = min(w, display_size.x)
-        h = min(h, display_size.y)
+        width = min(width, display_size.x)
+        height = min(height, display_size.y)
 
-        if x is not None and y is not None:
-            if x < 0:
-                x = 0
-                w = max(min_w, w + x)
-            if y < 0:
-                y = 0
-                h = max(min_h, h + y)
-            if x + w > display_size.x:
-                offset = x + w - display_size.x
-                w = max(min_w, w - offset)
-            if y + h > display_size.y:
-                offset = y + h - display_size.y
-                h = max(min_h, h - offset)
-        else:
-            x = int((display_size.x - w) / 2)
-            y = int((display_size.y - h) / 2)
+        if not is_maximized:
+            if x is not None and y is not None:
+                if x < 0:
+                    x = 0
+                    width = max(min_width, width + x)
+                if y < 0:
+                    y = 0
+                    height = max(min_height, height + y)
+                if x + width > display_size.x:
+                    offset = x + width - display_size.x
+                    width = max(min_width, width - offset)
+                if y + height > display_size.y:
+                    offset = y + height - display_size.y
+                    height = max(min_height, height - offset)
+            else:
+                x = int((display_size.x - width) / 2)
+                y = int((display_size.y - height) / 2)
 
-        app['window_geometry'] = f'{x},{y},{w},{h}'
-        self._store.save_config_parser(parser)
+            app['window_state'] = f'{x},{y},{width},{height},{is_maximized}'
+            self._store.save_config_parser(parser)
 
         return parser
 
     def _populate_application_settings(self) -> ApplicationSettings:
-        get_ints = lambda val: list(int(i) for i in val.split(','))
+        get_size_parts = lambda val: list(int(i) for i in val.split(','))
 
         section = 'App'
         app = self._config_parser[section]
 
-        ints = get_ints(app['window_min_size'])
-        window_min_size = Size(*ints)
+        parts = get_size_parts(app['window_min_size'])
+        window_min_size = Size(*parts)
 
-        ints = get_ints(app['window_geometry'])
-        window_geometry = Rectangle(*ints)
+        parts = _get_state_parts(app['window_state'])
+        window_state = WindowState(*parts)
 
         debug_env = app['debug_env']
 
         if not any(e.value == debug_env for e in DebugEnv):
             debug_env = self._DEFAULT_CONFIG[section]['debug_env']
 
-        return ApplicationSettings(DebugEnv(debug_env), window_min_size, window_geometry)
+        return ApplicationSettings(DebugEnv(debug_env), window_min_size, window_state)
 
     def _populate_machine_settings(self) -> MachineSettings:
         section = 'Machine'
@@ -146,9 +155,9 @@ class Config():
 
         return MachineSettings(origin, dimensions, is_parallel_execution)
 
-    def update_window_geometry(self, rect: Rectangle) -> None:
+    def update_window_state(self, state: WindowState) -> None:
         """Updates the window geometry application setting."""
-        self.application_settings.window_geometry = rect
+        self.application_settings.window_state = state
 
         self._store.save_config(self)
 
