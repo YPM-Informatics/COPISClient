@@ -29,8 +29,6 @@ class Store():
     """Handle application-wide data storage operations."""
 
     _PROJECT_FOLDER = 'copis'
-
-    _CONFIG_FOLDER = 'config'
     _CONFIG_FILE = 'copis.ini'
 
     def __init__(self) -> None:
@@ -40,9 +38,10 @@ class Store():
         root_segments = segments[1:index]
 
         root = '\\' + os.path.join(*root_segments)
+        app_data = '\\' + os.path.join(*os.environ['APPDATA'].split(os.sep)[1:])
 
         self._root_dir = root
-        self._config_dir = os.path.join(root, Store._PROJECT_FOLDER, Store._CONFIG_FOLDER)
+        self._config_dir = os.path.join(app_data, Store._PROJECT_FOLDER)
         self._config_path = os.path.join(self._config_dir, Store._CONFIG_FILE)
 
         if not os.path.exists(self._config_dir):
