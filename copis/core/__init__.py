@@ -30,7 +30,7 @@ import time
 import warnings
 
 from typing import List
-from glm import vec3
+from glm import vec2, vec3
 
 from copis.command_processor import serialize_command
 from copis.helpers import print_error_msg, print_debug_msg, print_info_msg # , create_action_args
@@ -84,12 +84,12 @@ class COPISCore(
 
     def __init__(self, parent=None) -> None:
         """Initializes a CopisCore instance."""
-        self.config = parent.config if parent else Config()
+        self.config = parent.config if parent else Config(vec2(800, 600))
         self._evf_thread = None
 
         self.console = ConsoleOutput(parent)
 
-        self._is_dev_env = self.config.settings.debug_env == DebugEnv.DEV.value
+        self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV.value
         self._is_edsdk_enabled = False
         self._edsdk = None
         self._is_serial_enabled = False
@@ -120,7 +120,7 @@ class COPISCore(
 
         # list of devices (cameras)
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
-            iterable=self.config.machine_settings.devices)
+            iterable=[])#self.config.machine_settings.devices)
 
         # list of objects (proxy objects)
         self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
@@ -148,7 +148,7 @@ class COPISCore(
         msg = None
         machine_config = self.config.machine_settings
 
-        if machine_config.machine is None:
+        if machine_config is None:
             # If the machine is not configured, throw no matter what.
             warn = False
             msg = 'The machine is not configured.'
@@ -244,7 +244,7 @@ class COPISCore(
         device_ids = list(set(action_ids))
 
         batch_size = 1
-        if self.config.machine_settings.machine.is_parallel_execution:
+        if self.config.machine_settings.is_parallel_execution:
             batch_size = len(device_ids)
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.devices])

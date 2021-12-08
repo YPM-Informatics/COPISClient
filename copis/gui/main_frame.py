@@ -26,6 +26,8 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
     IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
+
+from copis.globals import Rectangle
 from copis.classes import AABBObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
 from .panels.console import ConsolePanel
@@ -65,7 +67,8 @@ class MainWindow(wx.Frame):
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
         # pylint: disable=invalid-name
-        self.MinSize = wx.Size(800, 575)
+        min_size = self.core.config.application_settings.window_min_size
+        self.MinSize = wx.Size(min_size.width, min_size.height)
 
         self.chamber_dimensions = chamber_dimensions
 
@@ -86,7 +89,6 @@ class MainWindow(wx.Frame):
         # TODO: re-enable liveview
         # self.add_evf_pane()
 
-        self.Centre()
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -593,6 +595,11 @@ class MainWindow(wx.Frame):
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""
         event.StopPropagation()
+
+        pos = self.GetPosition()
+        size = self.GetSize()
+        self.core.config.update_window_geometry(
+            Rectangle(pos.x, pos.y, size.x, size.y))
 
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',

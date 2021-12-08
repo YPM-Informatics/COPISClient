@@ -62,11 +62,11 @@ class CommunicationMembersMixin:
         """Returns a safe (without the actual connections) representation
         of the serial ports list."""
         safe_list = []
-        Device = namedtuple('SerialDevice', 'name is_connected is_active')
+        device = namedtuple('SerialDevice', 'name is_connected is_active')
 
         # pylint: disable=not-an-iterable
         for port in self._serial.port_list:
-            safe_port = Device(
+            safe_port = device(
                 name=port.name,
                 is_connected=port.connection is not None and port.connection.is_open,
                 is_active=port.is_active

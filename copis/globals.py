@@ -30,6 +30,20 @@ class Point5(NamedTuple):
     t: float = 0.0
 
 
+class Rectangle(NamedTuple):
+    """Flat structure representing a rectangle with a point and dimensions."""
+    x: int = 0
+    y: int = 0
+    width: int = 0
+    height: int = 0
+
+
+class Size(NamedTuple):
+    """Structure representing size."""
+    width: int = 0
+    height: int = 0
+
+
 class ToolIds(Enum):
     """Toolbar item IDs."""
     PLAY = 1

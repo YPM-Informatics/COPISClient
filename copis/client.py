@@ -18,6 +18,7 @@
 """Main COPIS App (GUI)."""
 
 import wx
+# TODO: good example of singleton: F12 on inspection.
 import wx.lib.inspection
 
 from .config import Config
@@ -35,27 +36,34 @@ class COPISApp(wx.App):
         super().__init__(*args, **kwargs)
         self.is_gui_loaded = False
 
-        self.config = Config()
+        displays = (wx.Display(i) for i in range(wx.Display.GetCount()))
+        main_d = next(filter(lambda d: d.IsPrimary, displays))
+        display_size = main_d.GetGeometry().GetSize()
+
+        self.config = Config(display_size)
         self.core = COPISCore(self)
 
         # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
         dimensions_list = self._parse_chamber_dimensions()
 
+        x, y, width, height = self.config.application_settings.window_geometry
+
         self.mainwindow = MainWindow(
             dimensions_list,
             None,
             style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE,
             title='COPIS',
-            size=(self.config.settings.app_window_width, self.config.settings.app_window_height)
+            pos=(x, y),
+            size=(width, height)
         )
         self.mainwindow.Show()
 
         self.is_gui_loaded = True
 
     def _parse_chamber_dimensions(self) -> list:
-        size = list(self.config.machine_settings.machine.dimensions)
-        origin = list(self.config.machine_settings.machine.origin)
+        size = list(self.config.machine_settings.dimensions)
+        origin = list(self.config.machine_settings.origin)
 
         dimensions = []
         dimensions.extend(size)
