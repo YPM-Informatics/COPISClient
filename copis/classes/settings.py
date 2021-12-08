@@ -17,10 +17,9 @@
 
 from dataclasses import dataclass
 from math import inf
-from typing import List, Dict
 from glm import vec3
 
-from copis.globals import DebugEnv, Size, Rectangle
+from copis.globals import DebugEnv, Size, WindowState
 
 
 @dataclass
@@ -28,7 +27,7 @@ class ApplicationSettings:
     """Application settings data structure."""
     debug_env: DebugEnv = DebugEnv.PROD
     window_min_size: Size = Size(800, 600)
-    window_geometry: Rectangle = Rectangle(0, 0, 800, 600)
+    window_state: WindowState = WindowState(0, 0, 800, 600, False)
 
     def as_dict(self):
         """Return a dictionary representation of an ApplicationSettings instance."""
@@ -38,7 +37,7 @@ class ApplicationSettings:
             'App': {
                 'window_min_size': stringify(self.window_min_size),
                 'debug_env': self.debug_env.value,
-                'window_geometry': stringify(self.window_geometry)
+                'window_state': stringify(self.window_state)
             }
         }
 

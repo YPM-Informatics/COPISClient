@@ -27,7 +27,7 @@ from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
 
 import copis.store as store
 
-from copis.globals import Rectangle
+from copis.globals import WindowState
 from copis.classes import AABBObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
 from .panels.console import ConsolePanel
@@ -598,8 +598,8 @@ class MainWindow(wx.Frame):
 
         pos = self.GetPosition()
         size = self.GetSize()
-        self.core.config.update_window_geometry(
-            Rectangle(pos.x, pos.y, size.x, size.y))
+        self.core.config.update_window_state(
+            WindowState(pos.x, pos.y, size.x, size.y, self.IsMaximized()))
 
         if self.project_dirty:
             if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
