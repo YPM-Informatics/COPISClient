@@ -46,10 +46,6 @@ class Config():
         self._store = Store()
         self._config_parser = self._ensure_config_exists(display_size)
 
-        # filepath = '\\projects\\ypm\\python\\COPISClient\\copis\\config\\copis1.ini'
-        # with open(filepath, 'w') as configfile:
-        #     self._config_parser.write(configfile)
-
         self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
 
