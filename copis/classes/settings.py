@@ -13,129 +13,144 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Provide the COPIS Settings class"""
+
 from dataclasses import dataclass
+from math import inf
 from typing import List, Dict
 from glm import vec3
 
-from copis.globals import DebugEnv, Point5
-from . import Device, Machine, BoundingBox
+from copis.globals import DebugEnv, Size, Rectangle
 
 
 @dataclass
-class ConfigSettings:
-    """Configuration settings data structure."""
-    debug_env: DebugEnv
-
-    app_window_width: int
-    app_window_height: int
-
-    machine_config_path: str
+class ApplicationSettings:
+    """Application settings data structure."""
+    debug_env: DebugEnv = DebugEnv.PROD
+    window_min_size: Size = Size(800, 600)
+    window_geometry: Rectangle = Rectangle(0, 0, 800, 600)
 
     def as_dict(self):
-        """Return a dictionary representation of a Settings instance."""
+        """Return a dictionary representation of an ApplicationSettings instance."""
+        stringify = lambda val: ','.join([str(d) for d in val])
+
         return {
-            'AppWindow': {
-                'width': self.app_window_width,
-                'height': self.app_window_height
-            },
-            'Debug': {
-                'env': self.debug_env
-            },
-            'Machine': {
-                'path': self.machine_config_path
+            'App': {
+                'window_min_size': stringify(self.window_min_size),
+                'debug_env': self.debug_env.value,
+                'window_geometry': stringify(self.window_geometry)
             }
         }
 
-
+@dataclass
 class MachineSettings:
-    """Machine configuration settings data structure."""
-    def __init__(self, data: List[Dict[str, str]]) -> None:
-        self._machine_data = next(filter(lambda d: d['name'].lower() == 'machine', data), None)
-        self._device_data = [d for d in data if d['name'].lower().startswith('camera ')]
-
-        self._parse_machine()
-        self._parse_devices()
+    """Machine settings settings data structure."""
+    origin: vec3 = vec3(inf)
+    dimensions: vec3 = vec3(inf)
+    is_parallel_execution: bool = True
 
     def as_dict(self):
-        """Return a dictionary representation of a MachineSettings instance."""
-        this = {}
+        """"Return a dictionary representation of a MachineSettings instance."""
 
-        this.update(self._machine.as_dict())
+        return {
+            'Machine': {
+                'is_parallel_execution': self.is_parallel_execution,
+                'size_x': self.dimensions.x,
+                'size_y': self.dimensions.y,
+                'size_z': self.dimensions.z,
+                'origin_x': self.origin.x,
+                'origin_y': self.origin.y,
+                'origin_z': self.origin.z
+            }
+        }
 
-        for device in self._devices:
-            this.update(device.as_dict())
+    # def __init__(self, data: List[Dict[str, str]]) -> None:
+    #     self._machine_data = next(filter(lambda d: d['name'].lower() == 'machine', data), None)
+    #     self._device_data = [d for d in data if d['name'].lower().startswith('camera ')]
 
-        return this
+    #     self._parse_machine()
+    #     self._parse_devices()
 
-    def _parse_machine(self) -> None:
-        def get_boolean(value: str):
-            trues = ['yes', 'on', 'true', '1']
+    # def as_dict(self):
+    #     """Return a dictionary representation of a MachineSettings instance."""
+    #     this = {}
 
-            return value.lower() in trues
+    #     this.update(self._machine.as_dict())
 
-        datum = self._machine_data
-        self._machine = None
+    #     for device in self._devices:
+    #         this.update(device.as_dict())
 
-        if datum is not None:
-            size_x = float(datum['size_x'])
-            size_y = float(datum['size_y'])
-            size_z = float(datum['size_z'])
-            origin_x = float(datum['origin_x'])
-            origin_y = float(datum['origin_y'])
-            origin_z = float(datum['origin_z'])
-            homing_sequence = datum['homing_sequence'].splitlines()
-            self._machine = Machine(vec3(size_x, size_y, size_z),
-                vec3(origin_x, origin_y, origin_z), homing_sequence)
+    #     return this
 
-            if 'is_parallel_execution' in datum.keys():
-                is_parallel_execution = get_boolean(datum['is_parallel_execution'])
-                self._machine.is_parallel_execution = is_parallel_execution
+    # def _parse_machine(self) -> None:
+    #     def get_boolean(value: str):
+    #         trues = ['yes', 'on', 'true', '1']
 
-    def _parse_devices(self) -> None:
-        data = self._device_data
-        self._devices = []
+    #         return value.lower() in trues
 
-        for datum in data:
-            device_id = int(datum['id'])
-            name = datum['name'].split(' ', maxsplit=1)[1]
-            pos_x = float(datum['x'])
-            pos_y = float(datum['y'])
-            pos_z = float(datum['z'])
-            pos_p = float(datum['p'])
-            pos_t = float(datum['t'])
-            device_bounds = BoundingBox(
-                vec3(float(datum['min_x']),
-                     float(datum['min_y']),
-                     float(datum['min_z'])),
-                vec3(float(datum['max_x']),
-                     float(datum['max_y']),
-                     float(datum['max_z'])))
-            size = vec3(float(datum['size_x']),
-                        float(datum['size_y']),
-                        float(datum['size_z']))
-            device_type = datum['type']
-            interfaces = datum['interfaces'].splitlines()
-            port = datum['port']
+    #     datum = self._machine_data
+    #     self._machine = None
 
-            device = Device(
-                device_id=device_id,
-                device_name=name,
-                device_type=device_type,
-                interfaces=interfaces,
-                position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
-                initial_position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
-                device_bounds=device_bounds,
-                collision_bounds=size,
-                port=port)
+    #     if datum is not None:
+    #         size_x = float(datum['size_x'])
+    #         size_y = float(datum['size_y'])
+    #         size_z = float(datum['size_z'])
+    #         origin_x = float(datum['origin_x'])
+    #         origin_y = float(datum['origin_y'])
+    #         origin_z = float(datum['origin_z'])
+    #         homing_sequence = datum['homing_sequence'].splitlines()
+    #         self._machine = Machine(vec3(size_x, size_y, size_z),
+    #             vec3(origin_x, origin_y, origin_z), homing_sequence)
 
-            self._devices.append(device)
+    #         if 'is_parallel_execution' in datum.keys():
+    #             is_parallel_execution = get_boolean(datum['is_parallel_execution'])
+    #             self._machine.is_parallel_execution = is_parallel_execution
 
-    @property
-    def machine(self) -> Machine:
-        """Machine configuration settings' machine getter."""
-        return self._machine
+    # def _parse_devices(self) -> None:
+    #     data = self._device_data
+    #     self._devices = []
 
-    @property
-    def devices(self) -> List[Device]:
-        """Machine configuration settings' devices getter."""
-        return self._devices
+    #     for datum in data:
+    #         device_id = int(datum['id'])
+    #         name = datum['name'].split(' ', maxsplit=1)[1]
+    #         pos_x = float(datum['x'])
+    #         pos_y = float(datum['y'])
+    #         pos_z = float(datum['z'])
+    #         pos_p = float(datum['p'])
+    #         pos_t = float(datum['t'])
+    #         device_bounds = BoundingBox(
+    #             vec3(float(datum['min_x']),
+    #                  float(datum['min_y']),
+    #                  float(datum['min_z'])),
+    #             vec3(float(datum['max_x']),
+    #                  float(datum['max_y']),
+    #                  float(datum['max_z'])))
+    #         size = vec3(float(datum['size_x']),
+    #                     float(datum['size_y']),
+    #                     float(datum['size_z']))
+    #         device_type = datum['type']
+    #         interfaces = datum['interfaces'].splitlines()
+    #         port = datum['port']
+
+    #         device = Device(
+    #             device_id=device_id,
+    #             device_name=name,
+    #             device_type=device_type,
+    #             interfaces=interfaces,
+    #             position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
+    #             initial_position=Point5(pos_x, pos_y, pos_z, pos_p, pos_t),
+    #             device_bounds=device_bounds,
+    #             collision_bounds=size,
+    #             port=port)
+
+    #         self._devices.append(device)
+
+    # @property
+    # def machine(self) -> Machine:
+    #     """Machine configuration settings' machine getter."""
+    #     return self._machine
+
+    # @property
+    # def devices(self) -> List[Device]:
+    #     """Machine configuration settings' devices getter."""
+    #     return self._devices

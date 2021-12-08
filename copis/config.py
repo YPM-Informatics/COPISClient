@@ -13,85 +13,153 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
 
-from configparser import ConfigParser
+"""Provide the COPIS Configuration class"""
 
-from .globals import DebugEnv
-from .store import Store, load_machine
-from .classes import ConfigSettings, MachineSettings
+from configparser import ConfigParser
+from glm import vec3
+
+from .globals import DebugEnv, Size, Rectangle
+from .store import Store
+from .classes import ApplicationSettings, MachineSettings
 
 
 class Config():
     """Handle application configuration."""
 
-    _DEFAULT_DEBUG_ENV = DebugEnv.PROD
-    _DEFAULT_APP_WINDOW_WIDTH = 1400
-    _DEFAULT_APP_WINDOW_HEIGHT = 1000
+    _DEFAULT_CONFIG = {
+        'App': {
+            'window_min_size': '800,600',
+            'debug_env': 'prod'
+        },
+        'Machine': {
+            'is_parallel_execution': 'yes',
+            'size_x': '700',
+            'size_y': '800',
+            'size_z': '450',
+            'origin_x': '350',
+            'origin_y': '400',
+            'origin_z': '0'
+        }
+    }
 
-    def __init__(self) -> None:
+    def __init__(self, display_size) -> None:
         self._store = Store()
-        self._config_parser = self._ensure_config_exists()
-        self._settings = self._populate_settings()
+        self._config_parser = self._ensure_config_exists(display_size)
+
+        # filepath = '\\projects\\ypm\\python\\COPISClient\\copis\\config\\copis1.ini'
+        # with open(filepath, 'w') as configfile:
+        #     self._config_parser.write(configfile)
+
+        self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
 
-    def _ensure_config_exists(self) -> ConfigParser:
-        parser = self._store.load_config()
-
-        if parser is None:
-            parser = ConfigParser()
-
-            parser['AppWindow'] = {
-                'width': str(self._DEFAULT_APP_WINDOW_WIDTH),
-                'height': str(self._DEFAULT_APP_WINDOW_HEIGHT)
-            }
-
-            parser['Debug'] = {
-                'env': self._DEFAULT_DEBUG_ENV.value
-            }
-
-            self._store.save_config(parser)
-
-        return parser
-
-    def _populate_settings(self) -> ConfigSettings:
-        app_window_height = self._config_parser.getint('AppWindow',
-            'height', fallback=self._DEFAULT_APP_WINDOW_HEIGHT)
-
-        app_window_width = self._config_parser.getint('AppWindow',
-            'width', fallback=self._DEFAULT_APP_WINDOW_WIDTH)
-
-        debug_env = self._config_parser.get('Debug', 'env',
-            fallback=self._DEFAULT_DEBUG_ENV)
-
-        if not any(e.value == debug_env for e in DebugEnv):
-            debug_env = self._DEFAULT_DEBUG_ENV
-
-        machine_config_path = self._config_parser.get('Machine', 'path', fallback='')
-
-        return ConfigSettings(debug_env, app_window_width, app_window_height, machine_config_path)
-
-    def _populate_machine_settings(self) -> MachineSettings:
-        machine_path = self._store.find_path(self._settings.machine_config_path)
-        machine_parser = load_machine(machine_path)
-
-        items = []
-        for section in machine_parser.sections():
-            item = {
-                "name": section
-            }
-
-            for option in machine_parser[section]:
-                item[option] = machine_parser[section][option]
-            items.append(item)
-
-        return MachineSettings(items)
-
-
     @property
-    def settings(self) -> ConfigSettings:
+    def application_settings(self) -> ApplicationSettings:
         """Configuration settings getter."""
-        return self._settings
+        return self._application_settings
 
     @property
     def machine_settings(self) -> MachineSettings:
         """Machine configuration settings getter."""
         return self._machine_settings
+
+    def _ensure_config_exists(self, display_size) -> ConfigParser:
+        get_sixty_pct = lambda val: int(val * 60 / 100)
+
+        parser = self._store.load_config()
+
+        if parser is None:
+            parser = ConfigParser()
+
+            parser['App'] = self._DEFAULT_CONFIG['App']
+            parser['Machine'] = self._DEFAULT_CONFIG['Machine']
+
+            self._store.save_config_parser(parser)
+
+        app = parser['App']
+        min_w, min_h = [int(d) for d in app['window_min_size'].split(',')]
+        x, y, w, h = None, None, int(min_w), int(min_h)
+
+        if 'window_geometry' in app:
+            coords = [int(c) for c in app['window_geometry'].split(',')]
+            if len(coords) == 4:
+                x, y, w, h = coords
+            elif len(coords) == 2:
+                w, h = max(min_w, coords[0]), max(min_h, coords[1])
+        else:
+            w, h = [get_sixty_pct(d) for d in display_size]
+
+        w = min(w, display_size.x)
+        h = min(h, display_size.y)
+
+        if x is not None and y is not None:
+            if x < 0:
+                x = 0
+                w = max(min_w, w + x)
+            if y < 0:
+                y = 0
+                h = max(min_h, h + y)
+            if x + w > display_size.x:
+                offset = x + w - display_size.x
+                w = max(min_w, w - offset)
+            if y + h > display_size.y:
+                offset = y + h - display_size.y
+                h = max(min_h, h - offset)
+        else:
+            x = int((display_size.x - w) / 2)
+            y = int((display_size.y - h) / 2)
+
+        app['window_geometry'] = f'{x},{y},{w},{h}'
+        self._store.save_config_parser(parser)
+
+        return parser
+
+    def _populate_application_settings(self) -> ApplicationSettings:
+        get_ints = lambda val: list(int(i) for i in val.split(','))
+
+        section = 'App'
+        app = self._config_parser[section]
+
+        ints = get_ints(app['window_min_size'])
+        window_min_size = Size(*ints)
+
+        ints = get_ints(app['window_geometry'])
+        window_geometry = Rectangle(*ints)
+
+        debug_env = app['debug_env']
+
+        if not any(e.value == debug_env for e in DebugEnv):
+            debug_env = self._DEFAULT_CONFIG[section]['debug_env']
+
+        return ApplicationSettings(DebugEnv(debug_env), window_min_size, window_geometry)
+
+    def _populate_machine_settings(self) -> MachineSettings:
+        section = 'Machine'
+        machine = self._config_parser[section]
+
+        size_x = machine.getfloat('size_x')
+        size_y = machine.getfloat('size_y')
+        size_z = machine.getfloat('size_z')
+        origin_x = machine.getfloat('origin_x')
+        origin_y = machine.getfloat('origin_y')
+        origin_z = machine.getfloat('origin_z')
+        is_parallel_execution = machine.getboolean('is_parallel_execution')
+
+        origin = vec3(origin_x, origin_y, origin_z)
+        dimensions = vec3(size_x, size_y, size_z)
+
+        return MachineSettings(origin, dimensions, is_parallel_execution)
+
+    def update_window_geometry(self, rect: Rectangle) -> None:
+        """Updates the window geometry application setting."""
+        self.application_settings.window_geometry = rect
+
+        self._store.save_config(self)
+
+    def as_dict(self):
+        """"Return a dictionary representation of a Config instance."""
+        config = {}
+        config.update(self.application_settings.as_dict())
+        config.update(self.machine_settings.as_dict())
+
+        return config

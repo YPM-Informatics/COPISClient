@@ -21,7 +21,7 @@ import os
 import io
 import pickle
 from configparser import ConfigParser
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Optional
 
 
@@ -31,7 +31,7 @@ class Store():
     _PROJECT_FOLDER = 'copis'
 
     _CONFIG_FOLDER = 'config'
-    _CONFIG_FILE = 'app.ini'
+    _CONFIG_FILE = 'copis.ini'
 
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
@@ -39,7 +39,7 @@ class Store():
         index = segments.index(Store._PROJECT_FOLDER)
         root_segments = segments[1:index]
 
-        root = '/' + PurePath(os.path.join(*root_segments)).as_posix()
+        root = '\\' + os.path.join(*root_segments)
 
         self._root_dir = root
         self._config_dir = os.path.join(root, Store._PROJECT_FOLDER, Store._CONFIG_FOLDER)
@@ -48,17 +48,17 @@ class Store():
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
 
-    def save_config(self, parser: ConfigParser) -> None:
+    def save_config_parser(self, parser: ConfigParser) -> None:
         """Save a configuration object to file."""
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
-    def save_config_settings(self, settings) -> None:
+    def save_config(self, config) -> None:
         """Save a configuration object to file, via its settings object."""
         parser = ConfigParser()
-        parser.read_dict(settings.as_dict())
+        parser.read_dict(config.as_dict())
 
-        self.save_config(parser)
+        self.save_config_parser(parser)
 
     def load_config(self) -> Optional[ConfigParser]:
         """Load a configuration object from file."""
@@ -85,21 +85,6 @@ class _RemoduleUnpickler(pickle.Unpickler):
 
         return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
 
-
-def save_machine(filename: str, settings) -> None:
-    """Save a machine configuration settings object to file."""
-    parser = ConfigParser()
-    parser.read_dict(settings.as_dict())
-
-    with open(filename, 'w') as file:
-        parser.write(file)
-
-def load_machine(filename: str) -> ConfigParser:
-    """Parse a machine.ini file and returns instances of the objects within."""
-    parser = ConfigParser()
-    parser.read(filename)
-
-    return parser
 
 def save(filename: str, obj: object) -> None:
     """Save an object to file."""

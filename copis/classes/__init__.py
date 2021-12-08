@@ -24,9 +24,9 @@ from .pose import Pose
 from .serial_response import SerialResponse
 from .read_thread import ReadThread
 from .proxy_objects import Object3D, CylinderObject3D, AABBObject3D, OBJObject3D
-from .settings import ConfigSettings, MachineSettings
+from .settings import ApplicationSettings, MachineSettings
 
 __all__ = [
     "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABBObject3D",
     "OBJObject3D", "Action", "Machine", "SerialResponse", "ReadThread",
-    "MonitoredList", "ConfigSettings", "MachineSettings", "Pose"]
+    "MonitoredList", "ApplicationSettings", "MachineSettings", "Pose"]
