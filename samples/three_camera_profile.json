@@ -1,0 +1,98 @@
+{
+	"devices": [
+		{
+			"id": 0,
+			"name": "Front",
+			"type": "Camera",
+			"description": "Canon EOS 80D\\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				-300,
+				-358,
+				300,
+				0,
+				0
+			],
+			"range_x": [
+				-300,
+				300
+			],
+			"range_y": [
+				-350,
+				-150
+			],
+			"range_z": [
+				0,
+				300
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "COM3"
+		},
+		{
+			"id": 1,
+			"name": "Middle",
+			"type": "Camera",
+			"description": "Canon EOS 80D\\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				0,
+				0,
+				300,
+				0,
+				0
+			],
+			"range_x": [
+				-300,
+				300
+			],
+			"range_y": [
+				-175,
+				175
+			],
+			"range_z": [
+				0,
+				300
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "COM3"
+		},
+		{
+			"id": 2,
+			"name": "Back",
+			"type": "Camera",
+			"description": "Canon EOS 80D\\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				300,
+				358,
+				300,
+				0,
+				0
+			],
+			"range_x": [
+				-300,
+				300
+			],
+			"range_y": [
+				150,
+				350
+			],
+			"range_z": [
+				0,
+				300
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "COM3"
+		}
+	],
+	"homing_sequence": "G28Z\\n>1G28Z\\n>2G28Z\\n// batch 1\\nG1Z300\\n>1G1Z300\\n>2G1Z300\\n// batch 2\\nG28YF2000\\nG92Y-358\\nG28XF2000\\n// batch 3\\nG1X-10\\nG92X300\\nG1X-300\\n// batch 4\\n>1G28XF2000\\n>1G1X-15\\n>1G92X300\\n// batch 5\\n>1G28YF2000\\n>1G92Y-232\\n>1G1X0\\n// batch 6\\n>2G28XF2000\\n>2G1X-10\\n>2G92X300\\n// batch 7\\n>2G28YF2000\\n>2G92Y-113\\n// gantry 2 is already here. Using this so we can group PT homing together.\\n>2G1X300\\n// batch 8\\n>2G28PTF1500\\n>1G28PTF1500\\nG28PTF1500\\n// batch 9"
+}
