@@ -152,7 +152,7 @@ class OBJObject3D(Object3D):
 
         self._store = Store()
 
-        self.obj = pywavefront.Wavefront(self._store.find_path(filename))
+        self.obj = pywavefront.Wavefront(filename)
         for _, material in self.obj.materials.items():
             v = material.vertices
             v = [v[i:i + 8] for i in range(0, len(v), 8)]

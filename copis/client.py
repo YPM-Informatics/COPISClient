@@ -18,7 +18,6 @@
 """Main COPIS App (GUI)."""
 
 import wx
-# TODO: good example of singleton: F12 on inspection.
 import wx.lib.inspection
 
 from .config import Config

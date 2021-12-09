@@ -36,6 +36,7 @@ from copis.command_processor import serialize_command
 from copis.helpers import print_error_msg, print_debug_msg, print_info_msg # , create_action_args
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
+from copis.project import Project
 from copis.classes import Device, MonitoredList, Object3D, OBJObject3D, Pose
 
 from ._console_output import ConsoleOutput
@@ -85,6 +86,10 @@ class COPISCore(
     def __init__(self, parent=None) -> None:
         """Initializes a CopisCore instance."""
         self.config = parent.config if parent else Config(vec2(800, 600))
+
+        self.project = Project()
+        self.project.start()
+
         self._evf_thread = None
 
         self.console = ConsoleOutput(parent)
@@ -126,7 +131,7 @@ class COPISCore(
         self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
             iterable=[
                 # start with handsome dan :)
-                OBJObject3D('model/handsome_dan.obj', scale=vec3(20, 20, 20)),
+                OBJObject3D(self.project.proxy_path, scale=vec3(20, 20, 20)),
             ])
 
         self._selected_points: List[int] = []
