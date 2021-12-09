@@ -15,11 +15,10 @@
 
 """COPIS Application Data storage facility."""
 
-__version__ = ""
-
 import os
 import io
 import pickle
+import json
 from configparser import ConfigParser
 from pathlib import Path
 from typing import Optional
@@ -29,7 +28,7 @@ class Store():
     """Handle application-wide data storage operations."""
 
     _PROJECT_FOLDER = 'copis'
-    _CONFIG_FILE = 'copis.ini'
+    _CONFIG_FILE = 'COPIS.ini'
 
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
@@ -41,26 +40,49 @@ class Store():
         app_data = '\\' + os.path.join(*os.environ['APPDATA'].split(os.sep)[1:])
 
         self._root_dir = root
-        self._config_dir = os.path.join(app_data, Store._PROJECT_FOLDER)
+        self._config_dir = os.path.join(app_data, Store._PROJECT_FOLDER.upper())
         self._config_path = os.path.join(self._config_dir, Store._CONFIG_FILE)
 
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
 
+    def ensure_default_profile(self, name, data):
+        """Ensures the default profile file exists and returns it path."""
+        filename = os.path.join(self._config_dir, name)
+
+        if not os.path.exists(filename):
+            obj = json.loads(data)
+            obj_str = json.dumps(obj, indent='\t')
+
+            with open(filename, 'w') as file:
+                file.write(obj_str)
+
+        return filename
+
+    def ensure_default_proxy(self, name, data):
+        """Ensures the default proxy file exists and returns it path."""
+        filename = os.path.join(self._config_dir, name)
+
+        if not os.path.exists(filename):
+            with open(filename, 'w') as file:
+                file.write(data)
+
+        return filename
+
     def save_config_parser(self, parser: ConfigParser) -> None:
-        """Save a configuration object to file."""
+        """Saves a configuration object to file."""
         with open(self._config_path, 'w') as file:
             parser.write(file)
 
     def save_config(self, config) -> None:
-        """Save a configuration object to file, via its settings object."""
+        """Saves a configuration object to file, via its settings object."""
         parser = ConfigParser()
         parser.read_dict(config.as_dict())
 
         self.save_config_parser(parser)
 
     def load_config(self) -> Optional[ConfigParser]:
-        """Load a configuration object from file."""
+        """Loads a configuration object from file."""
         if os.path.exists(self._config_path):
             parser = ConfigParser()
             parser.read(self._config_path)
@@ -86,7 +108,7 @@ class _RemoduleUnpickler(pickle.Unpickler):
 
 
 def save(filename: str, obj: object) -> None:
-    """Save an object to file."""
+    """Saves an object to file."""
     with open(filename, 'wb') as file:
         pickle.dump(obj, file)
 
