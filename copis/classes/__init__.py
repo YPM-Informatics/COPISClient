@@ -19,7 +19,6 @@ from .bounding_box import BoundingBox
 from .monitored_list import MonitoredList
 from .device import Device
 from .action import Action
-from .machine import Machine
 from .pose import Pose
 from .serial_response import SerialResponse
 from .read_thread import ReadThread
@@ -28,5 +27,5 @@ from .settings import ApplicationSettings, MachineSettings
 
 __all__ = [
     "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABBObject3D",
-    "OBJObject3D", "Action", "Machine", "SerialResponse", "ReadThread",
-    "MonitoredList", "ApplicationSettings", "MachineSettings", "Pose"]
+    "OBJObject3D", "Action", "SerialResponse", "ReadThread", "MonitoredList",
+    "ApplicationSettings", "MachineSettings", "Pose"]
