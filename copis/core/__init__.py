@@ -125,12 +125,13 @@ class COPISCore(
 
         # list of devices (cameras)
         self._devices: List[Device] = MonitoredList('core_d_list_changed',
-            iterable=[])#self.config.machine_settings.devices)
+            iterable=self.project.devices)
 
         # list of objects (proxy objects)
         self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
             iterable=[
-                # start with handsome dan :)
+                # Start with handsome dan :)
+                # On init a new project is created with handsome dan as the proxy.
                 OBJObject3D(self.project.proxy_path, scale=vec3(20, 20, 20)),
             ])
 
@@ -287,7 +288,7 @@ class COPISCore(
             print_error_msg(self.console, 'Cannot home. The machine is busy.')
             return False
 
-        homing_actions = self.config.machine_settings.machine.homing_actions.copy()
+        homing_actions = self.project.homing_actions
 
         if not homing_actions or len(homing_actions) == 0:
             print_error_msg(self.console, 'No homing sequence to provided.')

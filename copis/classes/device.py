@@ -31,14 +31,12 @@ from . import BoundingBox
 class Device:
     """Data structure that implements a COPIS instrument imaging device."""
     device_id: int = 0
-    device_name: str = ''
-    device_type: str = ''
-    interfaces: Optional[List[str]] = None
-    position: Point5 = Point5()
-    initial_position: Point5 = Point5()
-    max_feed_rates: Point5 = Point5()
-    device_bounds: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
-    collision_bounds: vec3 = vec3()
+    name: str = ''
+    type: str = ''
+    description: str = ''
+    home_position: Point5 = Point5()
+    range_3d: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
+    size: vec3 = vec3()
     port: str = ''
 
     _serial_response: SerialResponse = None
@@ -95,30 +93,3 @@ class Device:
             self._last_reported_on = None
 
         self._is_writing = False
-
-    def as_dict(self):
-        """Returns a dictionary representation of a Device instance."""
-        data = {
-            f'Camera {self.device_name}': {
-                'id': self.device_id,
-                'x': self.position.x,
-                'y': self.position.y,
-                'z': self.position.z,
-                'p': self.position.p,
-                't': self.position.t,
-                'min_x': self.device_bounds.lower.x,
-                'max_x': self.device_bounds.upper.x,
-                'min_y': self.device_bounds.lower.y,
-                'max_y': self.device_bounds.upper.y,
-                'min_z': self.device_bounds.lower.z,
-                'max_z': self.device_bounds.upper.z,
-                'size_x': self.collision_bounds.x,
-                'size_y': self.collision_bounds.y,
-                'size_z': self.collision_bounds.z,
-                'type': self.device_type,
-                'interfaces': '\n'.join(self.interfaces),
-                'port': self.port
-            }
-        }
-
-        return data

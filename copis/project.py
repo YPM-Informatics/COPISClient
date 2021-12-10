@@ -15,7 +15,14 @@
 
 """COPIS Application project manager."""
 
-from .store import Store
+from typing import List
+from glm import vec3
+
+from copis.classes import BoundingBox, Device, Action
+from copis.globals import Point5
+from copis.command_processor import deserialize_command
+from .store import Store, load_json
+
 
 class Project:
     """A singleton that manages COPIS project operations."""
@@ -66,9 +73,69 @@ class Project:
         if not hasattr(self, '_proxy_path'):
             self._proxy_path = None
 
+        if not hasattr(self, '_profile'):
+            self._profile = None
+
     @property
-    def proxy_path(self):
+    def proxy_path(self) -> str:
+        """Returns the project's proxy path."""
         return self._proxy_path
+
+    @property
+    def devices(self) -> List[Device]:
+        """Parses and returns the profile devicess."""
+        def parse_device(data):
+            home_position = Point5(*data['home_position'])
+            size = vec3(data['size'])
+            lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
+            upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
+
+            return Device(
+                data['id'],
+                data['name'],
+                data['type'],
+                data['description'],
+                home_position,
+                BoundingBox(lower_corner, upper_corner),
+                size,
+                data['port']
+            )
+
+        key = 'devices'
+        devices = []
+
+        if key in self._profile and self._profile[key]:
+            devices = [parse_device(d) for d in self._profile[key]]
+
+        return devices
+
+    @property
+    def homing_sequence(self) -> List[str]:
+        """Parses and returns the profile homing sequence."""
+        def is_step_valid(step: str):
+            # remove comments (js, python and ini style) and empty lines.
+            if step.startswith(('//', '#', ';')):
+                return False
+            if step is None or (step is not None and len(step.strip()) <= 0):
+                return False
+
+            return True
+
+        key = 'homing_sequence'
+        seq = []
+
+        if key in self._profile and self._profile[key]:
+            seq = list(filter(is_step_valid, self._profile[key].split('\n')))
+
+        return seq
+
+    @property
+    def homing_actions(self) -> List[Action]:
+        """Turns the homing sequence into a list of actions."""
+        if not self.homing_sequence or len(self.homing_sequence) == 0:
+            return []
+
+        return [deserialize_command(cmd) for cmd in self.homing_sequence]
 
     def _ensure_defaults(self):
         self._default_profile_path = self._store.ensure_default_profile(
@@ -90,10 +157,17 @@ class Project:
 
         self.initialized = True
 
+    def _load_profile(self):
+        self._profile = load_json(self._profile_path)
+
     def start(self):
+        """Starts a new project."""
         if not self.initialized:
             self._init()
 
+        self._load_profile()
+
     def open(self):
+        """Opens an existing project."""
         if not self.initialized:
             self._init()

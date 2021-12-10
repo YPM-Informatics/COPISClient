@@ -46,20 +46,19 @@ class Store():
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
 
-    def ensure_default_profile(self, name, data):
+    def ensure_default_profile(self, name: str, data: str):
         """Ensures the default profile file exists and returns it path."""
         filename = os.path.join(self._config_dir, name)
 
         if not os.path.exists(filename):
             obj = json.loads(data)
-            obj_str = json.dumps(obj, indent='\t')
 
             with open(filename, 'w') as file:
-                file.write(obj_str)
+                json.dump(obj, file, indent='\t')
 
         return filename
 
-    def ensure_default_proxy(self, name, data):
+    def ensure_default_proxy(self, name: str, data: str):
         """Ensures the default proxy file exists and returns it path."""
         filename = os.path.join(self._config_dir, name)
 
@@ -114,9 +113,17 @@ def save(filename: str, obj: object) -> None:
 
 
 def load(filename: str, obj: object) -> object:
-    """Load an object from file."""
+    """Loads an object from file."""
     with open(filename, 'rb') as file:
         obj = _pickle_remodule_load(file) # pickle.load(file)
+
+    return obj
+
+
+def load_json(filename: str):
+    """Loads a JSON object from file."""
+    with open(filename, 'r') as file:
+        obj = json.load(file)
 
     return obj
 
