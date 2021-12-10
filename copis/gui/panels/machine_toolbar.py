@@ -71,8 +71,8 @@ class MachineToolbar(aui.AuiToolBar):
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
         self.AddSpacer(8)
-        self.set_ready_btn = wx.Button(self, wx.ID_ANY, label='Ready', size=(75, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_ready, self.AddControl(self.set_ready_btn))
+        self.ready_btn = wx.Button(self, wx.ID_ANY, label='Ready', size=(75, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_ready, self.AddControl(self.ready_btn))
         self.AddSpacer(8)
 
         self.home_btn.Enable(self._can_home())
