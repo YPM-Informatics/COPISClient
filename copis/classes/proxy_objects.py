@@ -159,7 +159,8 @@ class OBJObject3D(Object3D):
 
             self.vertices = glm.array([vec3(chunk[5:8]) * scale for chunk in v])
             self.normals = glm.array([vec3(chunk[2:5]) for chunk in v])
-            self.indices = glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
+            self.indices = \
+                glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
 
             # only use first mesh
             break
