@@ -55,8 +55,8 @@ class Project:
         else:
             self.__dict__ = Project.__shared_state
 
-        if not hasattr(self, 'initialized'):
-            self.initialized = False
+        if not hasattr(self, '_initialized'):
+            self._initialized = False
 
         if not hasattr(self, '_store'):
             self._store = None
@@ -155,19 +155,19 @@ class Project:
         self._profile_path = self._default_profile_path
         self._proxy_path = self._default_proxy_path
 
-        self.initialized = True
+        self._initialized = True
 
     def _load_profile(self):
         self._profile = load_json(self._profile_path)
 
     def start(self):
         """Starts a new project."""
-        if not self.initialized:
+        if not self._initialized:
             self._init()
 
         self._load_profile()
 
     def open(self):
         """Opens an existing project."""
-        if not self.initialized:
+        if not self._initialized:
             self._init()
