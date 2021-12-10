@@ -94,7 +94,7 @@ class COPISCore(
 
         self.console = ConsoleOutput(parent)
 
-        self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV.value
+        self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
         self._is_edsdk_enabled = False
         self._edsdk = None
         self._is_serial_enabled = False
