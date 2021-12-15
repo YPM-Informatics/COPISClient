@@ -34,7 +34,7 @@ from OpenGL.GLU import ctypes
 
 from copis.globals import ActionType
 from copis.helpers import (
-    get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
+    create_cuboid, fade_color, get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
 
 
 class GLActionVis:
@@ -52,6 +52,8 @@ class GLActionVis:
         vec4(0.0157, 0.3494, 0.3890, 1.0),    # tealish
     ]
 
+    _SCALE_FACTOR = 3
+
     def __init__(self, parent):
         """Initialize GLActionVis with constructors."""
         self.parent = parent
@@ -68,9 +70,8 @@ class GLActionVis:
         }
         self._vaos = {
             'line': {},
-            'point': {},
-            'box': None,
-            'camera': None,
+            'point': None,
+            'device': None,
         }
 
     def create_vaos(self) -> None:
@@ -79,49 +80,28 @@ class GLActionVis:
 
         # initialize camera box
         # TODO: update to obj file
-        vertices = glm.array(
-            vec3(-1.0, -0.5, -1.0),     # bottom
-            vec3(-1.0, -0.5, 1.0),
-            vec3(-1.0, 0.5, 1.0),
-            vec3(-1.0, 0.5, -1.0),
-            vec3(1.0, -0.5, -1.0),      # right
-            vec3(-1.0, -0.5, -1.0),
-            vec3(-1.0, 0.5, -1.0),
-            vec3(1.0, 0.5, -1.0),
-            vec3(1.0, -0.5, 1.0),       # top
-            vec3(1.0, -0.5, -1.0),
-            vec3(1.0, 0.5, -1.0),
-            vec3(1.0, 0.5, 1.0),
-            vec3(-1.0, -0.5, 1.0),      # left
-            vec3(1.0, -0.5, 1.0),
-            vec3(1.0, 0.5, 1.0),
-            vec3(-1.0, 0.5, 1.0),
-            vec3(1.0, 0.5, -1.0),       # back
-            vec3(-1.0, 0.5, -1.0),
-            vec3(-1.0, 0.5, 1.0),
-            vec3(1.0, 0.5, 1.0),
-            vec3(-1.0, -0.5, -1.0),     # front
-            vec3(1.0, -0.5, -1.0),
-            vec3(1.0, -0.5, 1.0),
-            vec3(-1.0, -0.5, 1.0),
-        )
+        size = vec3(350, 250, 200)
+        scale = 3 * self._SCALE_FACTOR
+        size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
+        # arg = vec3(2, 1, 2)
+        vertices = glm.array(*create_cuboid(size_nm))
+
         glBindBuffer(GL_ARRAY_BUFFER, vbo)
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
 
-        self._vaos['box'] = glGenVertexArrays(1)
-        glBindVertexArray(self._vaos['box'])
+        self._vaos['point'] = glGenVertexArrays(1)
+        glBindVertexArray(self._vaos['point'])
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
-        self._vaos['camera'] = glGenVertexArrays(1)
-        glBindVertexArray(self._vaos['camera'])
+        self._vaos['device'] = glGenVertexArrays(1)
+        glBindVertexArray(self._vaos['device'])
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(0)
 
     def update_action_vaos(self) -> None:
         """Update VAOs when action list changes."""
         self._vaos['line'].clear()
-        self._vaos['point'].clear()
 
         # --- bind data for lines ---
 
@@ -149,7 +129,7 @@ class GLActionVis:
         point_mats: glm.array = None
         point_cols: glm.array = None
         point_ids: glm.array = None
-        scale = glm.scale(mat4(), vec3(3, 3, 3))
+        scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
 
         for key, value in self._items['point'].items():
             new_mats = glm.array([p[1] * scale for p in value])
@@ -174,20 +154,25 @@ class GLActionVis:
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
 
-        self._bind_vao_mat_col_id(self._vaos['box'], point_mats, point_cols, point_ids)
+        self._bind_vao_mat_col_id(self._vaos['point'], point_mats, point_cols, point_ids)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
         self._num_devices = len(self.core.devices)
 
         if self._num_devices > 0:
-            scale = glm.scale(mat4(), vec3(3, 3, 3))
+            scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
             mats = glm.array([mat * scale for mat in self._devices])
-            cols = glm.array([self.colors[i % len(self.colors)]
-                for i in range(self._num_devices)])
+
+            colors = [self.colors[i % len(self.colors)]
+                if self.core.devices[i].is_homed else
+                    fade_color(self.colors[i % len(self.colors)], .8, .4)
+                for i in range(self._num_devices)]
+            cols = glm.array(colors)
+
             ids = glm.array(ctypes.c_int, *list(range(self._num_devices)))
 
-            self._bind_vao_mat_col_id(self._vaos['camera'], mats, cols, ids)
+            self._bind_vao_mat_col_id(self._vaos['device'], mats, cols, ids)
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -258,7 +243,7 @@ class GLActionVis:
         glUseProgram(self.parent.shaders['instanced_model_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glBindVertexArray(self._vaos['camera'])
+        glBindVertexArray(self._vaos['device'])
         glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
 
         # --- render path lines ---
@@ -280,7 +265,7 @@ class GLActionVis:
             glUseProgram(self.parent.shaders['instanced_model_color'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-            glBindVertexArray(self._vaos['box'])
+            glBindVertexArray(self._vaos['point'])
             glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
 
         glBindVertexArray(0)
@@ -299,12 +284,12 @@ class GLActionVis:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         # render cameras for picking
-        glBindVertexArray(self._vaos['camera'])
+        glBindVertexArray(self._vaos['device'])
         glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
 
         # render points for picking
         if self._num_points > 0:
-            glBindVertexArray(self._vaos['box'])
+            glBindVertexArray(self._vaos['point'])
             glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
 
         glBindVertexArray(0)

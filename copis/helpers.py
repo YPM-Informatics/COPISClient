@@ -36,7 +36,7 @@ pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
-_SCIENTIFIC_NOTATION_PATTERN = re.compile('[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')
+_SCIENTIFIC_NOTATION_PATTERN = re.compile(r'[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')
 
 
 def timing(f: Callable) -> Callable:
@@ -71,6 +71,21 @@ def shade_color(color: vec4, shade_factor: float) -> vec4:
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
+
+def fade_color(color: vec4, fade_pct: float, alpha: float=None) -> vec4:
+    """Returns color faded by fade percentage (0 to 1).
+    An alpha value (0 to 1) can be optionally provided."""
+    bind = lambda x: min(max(x, 0), 1)
+
+    if alpha is None:
+        alpha = color.w
+
+    alpha = bind(alpha)
+    fade_pct = bind(fade_pct)
+
+    return vec4(
+        *map(lambda v: 1 * fade_pct + v * (1 - fade_pct), vec3(color)),
+        alpha)
 
 def get_action_args_values(args: List[tuple]) -> List[float]:
     """Extracts and returns the values for an action arguments' list of tuples."""
@@ -167,3 +182,29 @@ def locked(func):
             return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
+
+def create_cuboid(size: vec3) -> List[vec3]:
+    """Returns a cuboid centered at 0,0,0 given its size"""
+    edges = [
+        0, 1, 3, 2,     # bottom
+        4, 0, 2, 6,      # right
+        5, 4, 6, 7,       # top
+        1, 5, 7, 3,      # left
+        6, 2, 3, 7,       # back
+        0, 4, 5, 1     # front
+    ]
+
+    corner = size / -2
+
+    vertices = [corner]
+    vertices.append(vec3(corner.x, corner.y, corner.z + size.z))
+    vertices.append(vec3(corner.x, corner.y + size.y, corner.z))
+    vertices.append(vec3(corner.x, corner.y + size.y, corner.z + size.z))
+    vertices.append(vec3(corner.x + size.x, corner.y, corner.z))
+    vertices.append(vec3(corner.x + size.x, corner.y, corner.z + size.z))
+    vertices.append(vec3(corner.x + size.x, corner.y + size.y, corner.z))
+    vertices.append(vec3(corner.x + size.x, corner.y + size.y, corner.z + size.z))
+
+    edge_nodes = list(map(lambda e: vertices[e], edges))
+
+    return edge_nodes

@@ -45,7 +45,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     config = {
         'Default': ['viewport'],
-        'Camera': ['camera_info', 'camera_config', 'viewport'],
+        'Device': ['device_info', 'device_config', 'viewport'],
         'Point': ['transform', 'viewport'],
         'Object': ['viewport'],
     }
@@ -83,8 +83,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
         self._property_panels['transform'] = _PropTransform(self)
-        self._property_panels['camera_info'] = _PropCameraInfo(self)
-        self._property_panels['camera_config'] = _PropCameraConfig(self)
+        self._property_panels['device_info'] = _PropDeviceInfo(self)
+        self._property_panels['device_config'] = _PropDeviceConfig(self)
         self._property_panels['quick_actions'] = _PropQuickActions(self)
         self._property_panels['viewport'] = _PropViewport(self)
 
@@ -116,12 +116,13 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._current_text.Label = value
 
     def on_device_selected(self, device) -> None:
-        """On core_d_selected, set to camera view."""
-        self.current = 'Camera'
-        self._property_panels['camera_info'].device_id = device.device_id
-        self._property_panels['camera_info'].device_name = device.device_name
-        self._property_panels['camera_info'].device_type = device.device_type
-        self.update_to_selected('Camera')
+        """On core_d_selected, set to device view."""
+        self.current = 'Device'
+        self._property_panels['device_info'].device_id = device.device_id
+        self._property_panels['device_info'].device_name = device.name
+        self._property_panels['device_info'].device_type = device.type
+        self._property_panels['device_info'].device_desc = device.description
+        self.update_to_selected('Device')
 
     def on_points_selected(self, points: List[int]) -> None:
         """On core_a_selected, set to point view."""
@@ -483,7 +484,7 @@ class _PropTransform(wx.Panel):
         self.pt_step_ctrl.num_value = value*180/math.pi
 
 
-class _PropCameraInfo(wx.Panel):
+class _PropDeviceInfo(wx.Panel):
     """[summary]
 
     Args:
@@ -493,31 +494,35 @@ class _PropCameraInfo(wx.Panel):
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize _PropCameraInfo with constructors."""
+        """Initialize _PropDeviceInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Camera Info'), wx.VERTICAL)
+        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Device Info'), wx.VERTICAL)
 
         # ---
 
-        grid = wx.FlexGridSizer(3, 2, 4, 8)
+        grid = wx.FlexGridSizer(4, 2, 4, 8)
         grid.AddGrowableCol(1, 0)
 
         self.id_text = wx.StaticText(self, label='')
         self.name_text = wx.StaticText(self, label='')
         self.type_text = wx.StaticText(self, label='')
+        self.desc_text = wx.StaticText(self, label='')
 
         grid.AddMany([
-            (simple_statictext(self, 'Device ID:', 80), 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'ID:', 80), 0, wx.EXPAND, 0),
             (self.id_text, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Device Name:', 80), 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Type:', 80), 0, wx.EXPAND, 0),
+            (self.type_text, 0, wx.EXPAND, 0),
+
+            (simple_statictext(self, 'Name:', 80), 0, wx.EXPAND, 0),
             (self.name_text, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Device Type:', 80), 0, wx.EXPAND, 0),
-            (self.type_text, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Description:', 80), 0, wx.EXPAND, 0),
+            (self.desc_text, 0, wx.EXPAND, 0),
         ])
 
         box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 4)
@@ -548,16 +553,24 @@ class _PropCameraInfo(wx.Panel):
     def device_type(self, value: str) -> None:
         self.type_text.Label = value
 
+    @property
+    def device_desc(self) -> str:
+        return self.desc_text.Label
 
-class _PropCameraConfig(wx.Panel):
+    @device_desc.setter
+    def device_desc(self, value: str) -> None:
+        self.desc_text.Label = value
+
+
+class _PropDeviceConfig(wx.Panel):
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize _PropCamera with constructors."""
+        """Initialize _PropDevice with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self.box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Camera Config'), wx.VERTICAL)
+        self.box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Device Config'), wx.VERTICAL)
 
         # ---
 
@@ -662,7 +675,7 @@ class _PropQuickActions(wx.Panel):
     """
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize _PropCameraInfo with constructors."""
+        """Initialize _PropDeviceInfo with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
 
