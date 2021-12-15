@@ -280,7 +280,7 @@ class _PathgenCylinder(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -377,7 +377,7 @@ class _PathgenHelix(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -474,7 +474,7 @@ class _PathgenSphere(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -554,7 +554,7 @@ class _PathgenLine(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -651,7 +651,7 @@ class _PathgenPoint(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.device_name})', self.parent.core.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 

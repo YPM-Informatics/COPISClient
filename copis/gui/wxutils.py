@@ -15,12 +15,12 @@
 
 """wxPython util functions."""
 
+from typing import Any, Tuple
+
 import re
 import wx
 import wx.lib.newevent
 import wx.svg as svg
-
-from typing import Any, Tuple
 
 from copis.store import Store
 
@@ -57,7 +57,7 @@ def simple_statictext(parent: Any, label: str = '', width: int = -1) -> wx.Stati
         parent,
         label=label,
         size=(width, -1),
-        style=wx.ALIGN_RIGHT
+        style=wx.ALIGN_LEFT
     )
 
 

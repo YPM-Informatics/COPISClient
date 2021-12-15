@@ -19,7 +19,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from math import inf
-from typing import List, Optional
 from glm import vec3
 
 from copis.classes.serial_response import SerialResponse
@@ -43,6 +42,11 @@ class Device:
     is_homed: bool = False
     _is_writing: bool = False
     _last_reported_on: datetime = None
+
+    @property
+    def position(self):
+        """Returns the device's current position base of if it's homed."""
+        return self.serial_response.position if self.is_homed else self.home_position
 
     @property
     def is_writing(self) -> bool:
