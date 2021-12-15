@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with COPISClient.  If not, see <https://www.gnu.org/licenses/>.
+# along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
 """Helper math functions: arcball, project_to_sphere, and orthonormal_basis_of.
 """
