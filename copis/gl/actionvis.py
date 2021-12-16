@@ -63,41 +63,50 @@ class GLActionVis:
         self._num_points = 0
         self._num_devices = 0
 
-        self._devices = []
         self._items = {
             'line': defaultdict(list),
             'point': defaultdict(list),
+            'device': defaultdict(list)
         }
         self._vaos = {
             'line': {},
-            'point': None,
-            'device': None,
+            'point': {},
+            'device': {},
         }
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        vbo = glGenBuffers(1)
+        # Initialize device boxes
+        for dvc in self.core.devices:
+            key = dvc.device_id
+            size = dvc.size
+            scale = 3 * self._SCALE_FACTOR
+            size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
+            vertices = glm.array(*create_cuboid(size_nm))
 
-        # initialize camera box
-        # TODO: update to obj file
-        size = vec3(350, 250, 200)
-        scale = 3 * self._SCALE_FACTOR
-        size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
-        # arg = vec3(2, 1, 2)
-        vertices = glm.array(*create_cuboid(size_nm))
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo)
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['device'][key] = vao
 
-        self._vaos['point'] = glGenVertexArrays(1)
-        glBindVertexArray(self._vaos['point'])
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
+            glBindVertexArray(0)
 
-        self._vaos['device'] = glGenVertexArrays(1)
-        glBindVertexArray(self._vaos['device'])
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(0)
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
+
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['point'][key] = vao
+
+            glBindVertexArray(0)
 
     def update_action_vaos(self) -> None:
         """Update VAOs when action list changes."""
@@ -126,35 +135,25 @@ class GLActionVis:
 
         # --- bind data for points ---
 
-        point_mats: glm.array = None
-        point_cols: glm.array = None
-        point_ids: glm.array = None
-        scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
-
-        for key, value in self._items['point'].items():
-            new_mats = glm.array([p[1] * scale for p in value])
-            color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
-            new_cols = glm.array([color] * len(value))
-
-            # if point is selected, darken its color
-            for i, v in enumerate(value):
-                # un-offset ids
-                if (v[0] - self._num_devices) in self.core.selected_points:
-                    new_cols[i] = shade_color(vec4(new_cols[i]), 0.6)
-
-            new_ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
-
-            point_mats = new_mats if point_mats is None else point_mats.concat(new_mats)
-            point_cols = new_cols if point_cols is None else point_cols.concat(new_cols)
-            point_ids  = new_ids  if point_ids is None  else point_ids.concat(new_ids)
-
-        # we're done if no points to set
-        if not self._items['point']:
-            return
-
         self._num_points = sum(len(i) for i in self._items['point'].values())
 
-        self._bind_vao_mat_col_id(self._vaos['point'], point_mats, point_cols, point_ids)
+        if self._num_points > 0:
+            scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
+
+            for key, value in self._items['point'].items():
+                mats = glm.array([p[1] * scale for p in value])
+                color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
+                cols = glm.array([color] * len(value))
+
+                # If point is selected, darken its color.
+                for i, v in enumerate(value):
+                    # Un-offset ids.
+                    if v[0] - self._num_devices in self.core.selected_points:
+                        cols[i] = shade_color(vec4(cols[i]), 0.6)
+
+                ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
+
+                self._bind_vao_mat_col_id(self._vaos['point'][key], mats, cols, ids)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -162,17 +161,19 @@ class GLActionVis:
 
         if self._num_devices > 0:
             scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
-            mats = glm.array([mat * scale for mat in self._devices])
 
-            colors = [self.colors[i % len(self.colors)]
-                if self.core.devices[i].is_homed else
-                    fade_color(self.colors[i % len(self.colors)], .8, .4)
-                for i in range(self._num_devices)]
-            cols = glm.array(colors)
+            for key, value in self._items['device'].items():
+                mats = glm.array([mat * scale for mat in value])
+                device = next(filter(lambda d, k = key: d.device_id == k, self.core.devices))
 
-            ids = glm.array(ctypes.c_int, *list(range(self._num_devices)))
+                color = self.colors[key % len(self.colors)]
+                if not device.is_homed:
+                    color = fade_color(color, .8, .4)
+                cols = glm.array([color])
 
-            self._bind_vao_mat_col_id(self._vaos['device'], mats, cols, ids)
+                ids = glm.array(ctypes.c_int, key)
+
+                self._bind_vao_mat_col_id(self._vaos['device'][key], mats, cols, ids)
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -207,9 +208,9 @@ class GLActionVis:
 
         Called from GLCanvas upon core_d_list_changed signal.
         """
-        self._devices.clear()
+        self._items['device'].clear()
         for device in self.core.devices:
-            self._devices.append(point5_to_mat4(device.position))
+            self._items['device'][device.device_id].append(point5_to_mat4(device.position))
 
         self.update_device_vaos()
 
@@ -238,13 +239,15 @@ class GLActionVis:
         view = self.parent.modelview_matrix
         model = mat4()
 
-        # --- render cameras ---
+        # --- render devices ---
 
         glUseProgram(self.parent.shaders['instanced_model_color'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-        glBindVertexArray(self._vaos['device'])
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
+
+        for key, value in self._vaos['device'].items():
+            glBindVertexArray(value)
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['device'][key]))
 
         # --- render path lines ---
 
@@ -265,8 +268,10 @@ class GLActionVis:
             glUseProgram(self.parent.shaders['instanced_model_color'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-            glBindVertexArray(self._vaos['point'])
-            glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
+
+            for key, value in self._vaos['point'].items():
+                glBindVertexArray(value)
+                glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['point'][key]))
 
         glBindVertexArray(0)
         glUseProgram(0)
@@ -283,14 +288,15 @@ class GLActionVis:
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        # render cameras for picking
-        glBindVertexArray(self._vaos['device'])
-        glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_devices)
+        # render devices for picking
+        for key, value in self._vaos['device'].items():
+            glBindVertexArray(value)
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['device'][key]))
 
         # render points for picking
-        if self._num_points > 0:
-            glBindVertexArray(self._vaos['point'])
-            glDrawArraysInstanced(GL_QUADS, 0, 24, self._num_points)
+        for key, value in self._vaos['point'].items():
+            glBindVertexArray(value)
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['point'][key]))
 
         glBindVertexArray(0)
         glUseProgram(0)
