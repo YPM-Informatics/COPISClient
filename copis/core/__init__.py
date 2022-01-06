@@ -277,7 +277,7 @@ class COPISCore(
         """Start the homing sequence, following the steps in the configuration."""
         def homing_callback():
             for dvc in self.devices:
-                dvc.is_homed = True
+                dvc.set_is_homed()
 
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
