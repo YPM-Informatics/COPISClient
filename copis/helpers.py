@@ -53,12 +53,15 @@ def timing(f: Callable) -> Callable:
 
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
-    model = glm.translate(mat4(), vec3(x, y, z)) * \
-            mat4(
-                cos(p), -sin(p), 0.0, 0.0,
-                cos(t) * sin(p), cos(t) * cos(p), -sin(t), 0.0,
-                sin(t) * sin(p), sin(t) * cos(p), cos(t), 0.0,
-                0.0, 0.0, 0.0, 1.0)
+    translation_mat = glm.translate(mat4(), vec3(x, y, z))
+    rotation_mat = mat4(
+        cos(p), -sin(p), 0.0, 0.0,
+        cos(t) * sin(p), cos(t) * cos(p), -sin(t), 0.0,
+        sin(t) * sin(p), sin(t) * cos(p), cos(t), 0.0,
+        0.0, 0.0, 0.0, 1.0)
+
+    model = translation_mat * rotation_mat
+
     return model
 
 def point5_to_mat4(point) -> mat4:
@@ -184,17 +187,19 @@ def locked(func):
     return inner
 
 def create_cuboid(size: vec3) -> List[vec3]:
-    """Returns a cuboid centered at 0,0,0 given its size"""
-    edges = [
-        0, 1, 3, 2,     # bottom
-        4, 0, 2, 6,      # right
-        5, 4, 6, 7,       # top
-        1, 5, 7, 3,      # left
-        6, 2, 3, 7,       # back
-        0, 4, 5, 1     # front
+    """Returns a cuboid centered at 0,0,0 given its size."""
+    face_map = [
+        0, 1, 3, 2,     # Left.
+        4, 0, 2, 6,     # Bottom.
+        5, 4, 6, 7,     # Right.
+        1, 5, 7, 3,     # Top.
+        6, 2, 3, 7,     # Back.
+        0, 4, 5, 1      # Front.
     ]
 
     corner = size / -2
+    # Flatten the device body along the y axis to fit the axes and lens.
+    corner.y = 0
 
     vertices = [corner]
     vertices.append(vec3(corner.x, corner.y, corner.z + size.z))
@@ -205,6 +210,43 @@ def create_cuboid(size: vec3) -> List[vec3]:
     vertices.append(vec3(corner.x + size.x, corner.y + size.y, corner.z))
     vertices.append(vec3(corner.x + size.x, corner.y + size.y, corner.z + size.z))
 
-    edge_nodes = list(map(lambda e: vertices[e], edges))
+    return list(map(lambda e: vertices[e], face_map))
 
-    return edge_nodes
+def create_device_features(size: vec3, scale: float, offset: vec3 = vec3(0)):
+    """Returns imaging device features (axes & lens lines) centered at 0,0,0
+        given the device size."""
+    size_nm = glm.normalize(size) * scale
+
+    size_nm_lens = size_nm * .75 # vec3([round(v, 1) for v in size *.75])
+    lens_top_left = vec3(size_nm_lens.xy * -1, size_nm_lens.z)
+    lens_top_right = vec3(lens_top_left.x * -1, lens_top_left.yz)
+    lens_bottom_left = (size_nm_lens * -1)
+    lens_bottom_right = vec3(lens_bottom_left.x * -1, lens_bottom_left.yz)
+
+    lens_top_left = offset + lens_top_left
+    lens_top_right = offset + lens_top_right
+    lens_bottom_left = offset + lens_bottom_left
+    lens_bottom_right = offset + lens_bottom_right
+
+    x_dist, y_dist, z_dist = [offset.xyz for i in [1] * 3]
+
+    x_dist.x, y_dist.y, z_dist.z = offset + size_nm
+
+    red = vec3(1, 0, 0)
+    green = vec3(0, 1, 0)
+    blue = vec3(0, 0, 1)
+    gray = vec3(.7)
+
+    points = [*x_dist, *red, *offset, *red]
+    points.extend([*y_dist, *green, *offset, *green])
+    points.extend([*z_dist, *blue, *offset, *blue])
+    points.extend([*lens_top_left, *gray, *offset, *gray])
+    points.extend([*lens_top_right, *gray, *offset, *gray])
+    points.extend([*lens_bottom_right, *gray, *offset, *gray])
+    points.extend([*lens_bottom_left, *gray, *offset, *gray])
+    points.extend([*lens_top_left, *gray, *lens_top_right, *gray])
+    points.extend([*lens_bottom_right, *gray, *lens_bottom_left, *gray])
+    points.extend([*lens_top_left, *gray, *lens_bottom_left, *gray])
+    points.extend([*lens_top_right, *gray, *lens_bottom_right, *gray])
+
+    return [round(i, 1) for i in points]
