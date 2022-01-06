@@ -241,7 +241,7 @@ class MachineMembersMixin:
         """Initializes the gantries to their current positions."""
         def set_ready_callback():
             for dvc in self.devices:
-                dvc.is_homed = True
+                dvc.set_is_homed()
 
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot set or go to ready. The machine is busy.')

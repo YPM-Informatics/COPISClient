@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from math import inf
 from glm import vec3
+from pydispatch import dispatcher
 
 from copis.classes.serial_response import SerialResponse
 from copis.globals import ComStatus, Point5
@@ -39,19 +40,24 @@ class Device:
     port: str = ''
 
     _serial_response: SerialResponse = None
-    is_homed: bool = False
+    _is_homed: bool = False
     _is_writing: bool = False
     _last_reported_on: datetime = None
 
     @property
     def position(self):
         """Returns the device's current position base of if it's homed."""
-        return self.serial_response.position if self.is_homed else self.home_position
+        return self.serial_response.position if self._is_homed else self.home_position
 
     @property
     def is_writing(self) -> bool:
         """Returns the device's IsWriting flag."""
         return self._is_writing
+
+    @property
+    def is_homed(self) -> bool:
+        """Returns the device's IsHomed flag."""
+        return self._is_homed
 
     @property
     def serial_response(self) -> SerialResponse:
@@ -67,7 +73,7 @@ class Device:
     def serial_status(self) -> ComStatus:
         """Returns the device's serial status based on its last serial response."""
         if self.serial_response is None:
-            if self.is_homed:
+            if self._is_homed:
                 return ComStatus.IDLE
 
             return ComStatus.BUSY if self._is_writing else ComStatus.UNKNOWN
@@ -86,6 +92,12 @@ class Device:
     def set_is_writing(self) -> None:
         """Sets the device's IsWriting flag."""
         self._is_writing = True
+
+    def set_is_homed(self) -> None:
+        """Sets the device's IsHomed flag and notifies."""
+        self._is_homed = True
+
+        dispatcher.send('notify_device_homed')
 
     def set_serial_response(self, response: SerialResponse) -> None:
         """Sets the device's serial response."""

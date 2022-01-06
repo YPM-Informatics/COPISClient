@@ -39,7 +39,7 @@ from OpenGL.GL import (shaders,
     glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
     glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
     glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable,
-    glPolygonMode, glViewport, glReadPixels, glDrawArrays)
+    glPolygonMode, glViewport, glReadPixels)
 from OpenGL.GLU import ctypes
 
 import copis.gl.shaders as shaderlib
@@ -149,6 +149,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_colors, signal='core_a_selected')
         dispatcher.connect(self._update_colors, signal='core_a_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
+        dispatcher.connect(self._update_devices, signal='notify_device_homed')
         dispatcher.connect(self._update_objects, signal='core_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='core_o_deselected')
         # bind events
