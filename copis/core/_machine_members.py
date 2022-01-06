@@ -218,7 +218,7 @@ class MachineMembersMixin:
             device_id = dvc.device_id
             cmd_str_1 = ''
             cmd_str_2 = ''
-            x, y, z, p, t = self._get_device(device_id).initial_position
+            x, y, z, p, t = self._get_device(device_id).home_position
 
             if device_id == 0:
                 cmd_str_1 = f'{g_code}Z{z}'
