@@ -290,12 +290,12 @@ class GLActionVis:
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-        for key, value in self._vaos['device'].items():
+        for key, value in self._items['device'].items():
             glBindVertexArray(self._vaos['dvc_feature'][key])
-            glDrawArraysInstanced(GL_LINES, 0, 24, len(self._items['device'][key]))
+            glDrawArraysInstanced(GL_LINES, 0, 24, len(value))
 
-            glBindVertexArray(value)
-            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['device'][key]))
+            glBindVertexArray(self._vaos['device'][key])
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         # --- render path lines ---
 
@@ -317,12 +317,12 @@ class GLActionVis:
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
-            for key, value in self._vaos['point'].items():
+            for key, value in self._items['point'].items():
                 glBindVertexArray(self._vaos['pt_feature'][key])
-                glDrawArraysInstanced(GL_LINES, 0, 24, len(self._items['point'][key]))
+                glDrawArraysInstanced(GL_LINES, 0, 24, len(value))
 
-                glBindVertexArray(value)
-                glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['point'][key]))
+                glBindVertexArray(self._vaos['point'][key])
+                glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         glBindVertexArray(0)
         glUseProgram(0)
@@ -340,14 +340,14 @@ class GLActionVis:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         # render devices for picking
-        for key, value in self._vaos['device'].items():
-            glBindVertexArray(value)
-            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['device'][key]))
+        for key, value in self._items['device'].items():
+            glBindVertexArray(self._vaos['device'][key])
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         # render points for picking
-        for key, value in self._vaos['point'].items():
-            glBindVertexArray(value)
-            glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['point'][key]))
+        for key, value in self._items['point'].items():
+            glBindVertexArray(self._vaos['point'][key])
+            glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         glBindVertexArray(0)
         glUseProgram(0)
