@@ -34,8 +34,8 @@ from OpenGL.GL import (shaders,
     GL_MULTISAMPLE, GL_FALSE, GL_UNSIGNED_BYTE, GL_FLOAT, GL_AMBIENT_AND_DIFFUSE,
     GL_BLEND, GL_COLOR_BUFFER_BIT, GL_COLOR_MATERIAL, GL_CULL_FACE,
     GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_FILL, GL_FRONT_AND_BACK, GL_LESS,
-    GL_LINE_SMOOTH, GL_ONE_MINUS_SRC_ALPHA, GL_RGB, GL_SRC_ALPHA, GL_TRIANGLES,
-    glGenVertexArrays, glUniformMatrix4fv, glDeleteBuffers, glGenBuffers,
+    GL_LINE_SMOOTH, GL_ONE_MINUS_SRC_ALPHA, GL_RGB, GL_SRC_ALPHA,
+    glGenVertexArrays, glDeleteBuffers, glGenBuffers,
     glBindVertexArray, glEnableVertexAttribArray, glUseProgram,
     glVertexAttribPointer, glBindBuffer, glBufferData, glBlendFunc, glClear,
     glClearColor, glClearDepth, glColorMaterial, glDepthFunc, glDisable, glEnable,
@@ -198,7 +198,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # compile shader programs
         self._shaders['default'] = shaderlib.compile_shader(*shaderlib.default)
         self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
-        self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self._shaders['instanced_model_color'] = \
+            shaderlib.compile_shader(*shaderlib.instanced_model_color)
         self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
         self._shaders['diffuse'] = shaderlib.compile_shader(*shaderlib.diffuse)
         self._shaders['solid'] = shaderlib.compile_shader(*shaderlib.solid)

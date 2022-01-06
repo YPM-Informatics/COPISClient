@@ -45,8 +45,6 @@ class _Axes():
         parent: Pointer to a parent GLChamber.
     """
 
-    origin = (0.0, 0.0, 0.0)
-
     def __init__(self, parent) -> None:
         """Initializes _Axes with constructors."""
         self.parent = parent
@@ -76,7 +74,7 @@ class _Axes():
             0.0, y[0], 0.0, 0.0, 1.0, 0.0,
             0.0, -y[1], 0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, z[0], 0.0, 0.0, 1.0,
-            0.0, 0.0, -z[1], 0.0, 0.0, 1.0,
+            0.0, 0.0, -z[1], 0.0, 0.0, 1.0
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
 

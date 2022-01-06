@@ -18,15 +18,16 @@
 TODO: Add rendering functionality to more than just G0 and C0 actions.
 TODO: Signify via color or border when action is selected
 """
+from collections import defaultdict, namedtuple
 
-from collections import defaultdict
+import numpy as np
 
 from glm import vec3, vec4, mat4
 import glm
 
 from OpenGL.GL import (
-    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINE_STRIP,
-    glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv,
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINES, GL_LINE_STRIP,
+    glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv, glDeleteBuffers,
     glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
     glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
     glDrawArrays, glDrawArraysInstanced)
@@ -34,8 +35,10 @@ from OpenGL.GLU import ctypes
 
 from copis.globals import ActionType
 from copis.helpers import (
-    create_cuboid, fade_color, get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
+    create_cuboid, create_device_features, fade_color,
+    get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
 
+ArrayInfo = namedtuple('ArrayInfo', 'name key')
 
 class GLActionVis:
     """Manage action list rendering in a GLCanvas."""
@@ -66,12 +69,16 @@ class GLActionVis:
         self._items = {
             'line': defaultdict(list),
             'point': defaultdict(list),
-            'device': defaultdict(list)
+            'device': defaultdict(list),
+            'dvc_feature_vtx': defaultdict(list),
+            'pt_feature_vtx': defaultdict(list)
         }
         self._vaos = {
             'line': {},
             'point': {},
             'device': {},
+            'dvc_feature': {},
+            'pt_feature': {}
         }
 
     def create_vaos(self) -> None:
@@ -79,10 +86,13 @@ class GLActionVis:
         # Initialize device boxes
         for dvc in self.core.devices:
             key = dvc.device_id
-            size = dvc.size
-            scale = 3 * self._SCALE_FACTOR
+            size = vec3(dvc.size.x, dvc.size.y / 2, dvc.size.z)
+            scale = 2 * self._SCALE_FACTOR
             size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
             vertices = glm.array(*create_cuboid(size_nm))
+            feat_vertices = np.array(
+                create_device_features(dvc.size, 3 * self._SCALE_FACTOR),
+                dtype=np.float32)
 
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
@@ -94,8 +104,6 @@ class GLActionVis:
             glEnableVertexAttribArray(0)
             self._vaos['device'][key] = vao
 
-            glBindVertexArray(0)
-
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
             glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
@@ -106,7 +114,30 @@ class GLActionVis:
             glEnableVertexAttribArray(0)
             self._vaos['point'][key] = vao
 
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, feat_vertices.nbytes, feat_vertices, GL_STATIC_DRAW)
+
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['dvc_feature'][key] = vao
+            self._items['dvc_feature_vtx'][key] = feat_vertices
+
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, feat_vertices.nbytes, feat_vertices, GL_STATIC_DRAW)
+
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['pt_feature'][key] = vao
+            self._items['pt_feature_vtx'][key] = feat_vertices
+
             glBindVertexArray(0)
+            glEnableVertexAttribArray(0)
 
     def update_action_vaos(self) -> None:
         """Update VAOs when action list changes."""
@@ -142,8 +173,12 @@ class GLActionVis:
 
             for key, value in self._items['point'].items():
                 mats = glm.array([p[1] * scale for p in value])
+
                 color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
                 cols = glm.array([color] * len(value))
+
+                feat_colors = self._get_dvc_feature_cols(('pt_feature_vtx', key))
+                feat_cols = glm.array(feat_colors * len(value))
 
                 # If point is selected, darken its color.
                 for i, v in enumerate(value):
@@ -153,7 +188,8 @@ class GLActionVis:
 
                 ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
-                self._bind_vao_mat_col_id(self._vaos['point'][key], mats, cols, ids)
+                self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
+                self._bind_device_features(('pt_feature', key), mats, feat_cols)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -167,13 +203,19 @@ class GLActionVis:
                 device = next(filter(lambda d, k = key: d.device_id == k, self.core.devices))
 
                 color = self.colors[key % len(self.colors)]
+                feat_colors = self._get_dvc_feature_cols(('dvc_feature_vtx', key))
+
                 if not device.is_homed:
-                    color = fade_color(color, .8, .4)
-                cols = glm.array([color])
+                    fade_pct = .5
+                    alpha = .6
+                    color = fade_color(color, fade_pct, alpha)
+                    feat_colors = list(map(lambda c, f = fade_pct, a = alpha:
+                        fade_color(c, f, a), feat_colors))
 
                 ids = glm.array(ctypes.c_int, key)
 
-                self._bind_vao_mat_col_id(self._vaos['device'][key], mats, cols, ids)
+                self._bind_vao_mat_col_id(('device', key), mats, glm.array([color]), ids)
+                self._bind_device_features(('dvc_feature', key), mats, glm.array(*feat_colors))
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -195,8 +237,10 @@ class GLActionVis:
                 elif action.atype in (ActionType.C0, ActionType.C1):
                     if action.device not in self._items['line'].keys():
                         continue
-                    self._items['point'][action.device].append(
-                        self._items['line'][action.device][-1])
+
+                    data = self._items['line'][action.device][-1]
+                    self._items['point'][action.device].append(data)
+
                 else:
                     # TODO!
                     pass
@@ -209,6 +253,7 @@ class GLActionVis:
         Called from GLCanvas upon core_d_list_changed signal.
         """
         self._items['device'].clear()
+
         for device in self.core.devices:
             self._items['device'][device.device_id].append(point5_to_mat4(device.position))
 
@@ -246,6 +291,9 @@ class GLActionVis:
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
         for key, value in self._vaos['device'].items():
+            glBindVertexArray(self._vaos['dvc_feature'][key])
+            glDrawArraysInstanced(GL_LINES, 0, 24, len(self._items['device'][key]))
+
             glBindVertexArray(value)
             glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['device'][key]))
 
@@ -270,6 +318,9 @@ class GLActionVis:
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
 
             for key, value in self._vaos['point'].items():
+                glBindVertexArray(self._vaos['pt_feature'][key])
+                glDrawArraysInstanced(GL_LINES, 0, 24, len(self._items['point'][key]))
+
                 glBindVertexArray(value)
                 glDrawArraysInstanced(GL_QUADS, 0, 24, len(self._items['point'][key]))
 
@@ -301,40 +352,94 @@ class GLActionVis:
         glBindVertexArray(0)
         glUseProgram(0)
 
-    def _bind_vao_mat_col_id(self, vao, mat: glm.array, col: glm.array, ids: glm.array) -> None:
+    def _bind_vao_mat_col_id(self, vao_info: ArrayInfo, mat: glm.array,
+        col: glm.array, ids: glm.array):
+
+        name, key = vao_info
+        vao = self._vaos[name][key]
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
         glBindVertexArray(vao)
 
-        # modelmats
+        # Modelmats.
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
         glEnableVertexAttribArray(3)
         glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
         glVertexAttribDivisor(3, 1)
         glEnableVertexAttribArray(4)
         glVertexAttribDivisor(4, 1)
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+        glVertexAttribPointer(
+            5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
         glEnableVertexAttribArray(5)
         glVertexAttribDivisor(5, 1)
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+        glVertexAttribPointer(
+            6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
         glEnableVertexAttribArray(6)
         glVertexAttribDivisor(6, 1)
 
-        # colors
+        # Colors.
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
         glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
         glVertexAttribDivisor(7, 1)
 
-        # ids for picking
+        # Ids for picking.
         glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
         glBufferData(GL_ARRAY_BUFFER, ids.nbytes, ids.ptr, GL_STATIC_DRAW)
-        # it should be GL_INT here, yet only GL_FLOAT works. huh??
+        # It should be GL_INT here, yet only GL_FLOAT works. huh??
         glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glEnableVertexAttribArray(8)
         glVertexAttribDivisor(8, 1)
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
+        glDeleteBuffers(3, vbo)
+
+    def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, col: glm.array):
+        name, key = vao_info
+        vao = self._vaos[name][key]
+        vbo = glGenBuffers(2)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
+        glBindVertexArray(vao)
+
+        # Modelmats.
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(3)
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+        glVertexAttribDivisor(3, 1)
+        glEnableVertexAttribArray(4)
+        glVertexAttribDivisor(4, 1)
+        glVertexAttribPointer(
+            5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+        glEnableVertexAttribArray(5)
+        glVertexAttribDivisor(5, 1)
+        glVertexAttribPointer(
+            6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+        glEnableVertexAttribArray(6)
+        glVertexAttribDivisor(6, 1)
+
+        # Colors.
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
+        glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
+        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(7)
+
+        glEnableVertexAttribArray(0)
+        glBindVertexArray(0)
+        glDeleteBuffers(2, vbo)
+
+    def _get_dvc_feature_cols(self, item_info: ArrayInfo):
+        name, key = item_info
+        vertices = self._items[name][key]
+
+        dim_1 = 2 # 2  vec3s: position and color
+        dim_2 = 3 # 3 scalars in a vec3
+        dim_0 = int(len(vertices) / (dim_1 * dim_2))
+
+        part = vertices.reshape(dim_0, dim_1, dim_2)
+        colors = [list(a[1]) for a in part]
+
+        return list(map(lambda a: vec4(*a, 1), colors))
