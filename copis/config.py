@@ -99,11 +99,19 @@ class Config():
         if not is_maximized:
             if x is not None and y is not None:
                 if x < 0:
-                    x = 0
                     width = max(min_width, width + x)
+                    x = 0
                 if y < 0:
-                    y = 0
                     height = max(min_height, height + y)
+                    y = 0
+                if x > display_size.x:
+                    offset = x - display_size.x
+                    width = max(min_width, width - offset)
+                    x = offset
+                if y  > display_size.y:
+                    offset = y - display_size.y
+                    height = max(min_height, height - offset)
+                    y = offset
                 if x + width > display_size.x:
                     offset = x + width - display_size.x
                     width = max(min_width, width - offset)
