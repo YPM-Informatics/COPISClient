@@ -149,7 +149,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_colors, signal='core_a_selected')
         dispatcher.connect(self._update_colors, signal='core_a_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
-        dispatcher.connect(self._update_devices, signal='notify_device_homed')
+        dispatcher.connect(self._handle_device_homed, signal='notify_device_homed')
         dispatcher.connect(self._update_objects, signal='core_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='core_o_deselected')
         # bind events
@@ -282,6 +282,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         glBindVertexArray(0)
         glDeleteBuffers(4, vbo)
+
+    def _handle_device_homed(self) -> None:
+        wx.CallAfter(self._update_devices)
 
     def _update_volumes(self) -> None:
         """When action list is modified, calculate point positions.
