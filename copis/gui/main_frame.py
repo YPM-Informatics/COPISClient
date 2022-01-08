@@ -110,12 +110,12 @@ class MainWindow(wx.Frame):
         """Initialize menubar.
 
         Menu tree:
-            - &Files
+            - &File
                 - &New Project              Ctrl+N
-                - &Open...                  Ctrl+O
-                ---
-                - &Save                     Ctrl+S
-                - &Save As...               Ctrl+Shift+S
+                - &Open Project...          Ctrl+O
+                - &Recent Projects           >
+                - &Save Project             Ctrl+S
+                - Save Project &As...       Ctrl+Shift+S
                 ---
                 - E&xit                     Alt+F4
             - &Edit
@@ -153,28 +153,34 @@ class MainWindow(wx.Frame):
         # File menu
         file_menu = wx.Menu()
 
-        _item = wx.MenuItem(None, wx.ID_ANY, '&New Project\tCtrl+N', 'Create new project')
-        _item.Bitmap = create_scaled_bitmap('add', 16)
-        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(_item))
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Open...\tCtrl+O', 'Open project')
-        _item.Bitmap = create_scaled_bitmap('open_in_new', 16)
-        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(_item))
-        file_menu.AppendSeparator()
+        recent_menu = wx.Menu()
 
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Save\tCtrl+S', 'Save project')
+        _item = wx.MenuItem(None, wx.ID_NEW, '&New Project\tCtrl+N', 'Create new project')
+        _item.Bitmap = create_scaled_bitmap('add_project', 16)
+        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(_item))
+
+        _item = wx.MenuItem(None, wx.ID_OPEN, '&Open Project...\tCtrl+O', 'Open existing project')
+        _item.Bitmap = create_scaled_bitmap('open_project', 16)
+        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(_item))
+
+        _item = wx.MenuItem(None, wx.ID_JUMP_TO, '&Recent Projects', 'Open one of recent projects',
+            subMenu=recent_menu)
+        file_menu.Append(_item)
+
+        _item = wx.MenuItem(None, wx.ID_SAVE, '&Save Project\tCtrl+S', 'Save project')
         _item.Bitmap = create_scaled_bitmap('save', 16)
         self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(_item))
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Save &As...\tCtrl+Shift+S', 'Save project as')
-        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
-        file_menu.AppendSeparator()
 
-        # _item = wx.MenuItem(None, wx.ID_ANY, '&Import GCODE...', '')
-        # _item.Bitmap = create_scaled_bitmap('get_app', 16)
-        # self.Bind(wx.EVT_MENU, None, file_menu.Append(_item))
-        # _item = wx.MenuItem(None, wx.ID_ANY, 'E&xport GCODE\tF8', '')
-        # _item.Bitmap = create_scaled_bitmap('publish', 16)
-        # self.Bind(wx.EVT_MENU, self.on_export, file_menu.Append(_item))
-        # file_menu.AppendSeparator()
+        _item = wx.MenuItem(None, wx.ID_SAVEAS, 'Save Project &As...\tCtrl+Shift+S',
+            'Save project as')
+        _item.Bitmap = create_scaled_bitmap('save', 16)
+        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
+
+        file_menu.Enable(wx.ID_NEW, False)
+        file_menu.Enable(wx.ID_JUMP_TO, False)
+        file_menu.Enable(wx.ID_SAVE, False)
+
+        file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
         _item.Bitmap = create_scaled_bitmap('exit_to_app', 16)
