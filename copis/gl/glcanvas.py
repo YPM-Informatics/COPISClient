@@ -294,9 +294,6 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._actionvis.update_actions()
         self._dirty = True
 
-        # TODO: is this needed?
-        glBindVertexArray(0)
-
     def _update_colors(self) -> None:
         self._actionvis.update_action_vaos()
         self._dirty = True
