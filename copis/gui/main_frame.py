@@ -161,7 +161,7 @@ class MainWindow(wx.Frame):
 
         _item = wx.MenuItem(None, wx.ID_OPEN, '&Open Project...\tCtrl+O', 'Open existing project')
         _item.Bitmap = create_scaled_bitmap('open_project', 16)
-        self.Bind(wx.EVT_MENU, self.on_open, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_open_project, file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_JUMP_TO, '&Recent Projects', 'Open one of recent projects',
             subMenu=recent_menu)
@@ -269,7 +269,7 @@ class MainWindow(wx.Frame):
         """TODO: Implement project file/directory creation """
         pass
 
-    def on_open(self, event: wx.CommandEvent) -> None:
+    def on_open_project(self, event: wx.CommandEvent) -> None:
         """Open 'open' dialog.
 
         TODO: Implement reading file/directory
