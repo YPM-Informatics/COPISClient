@@ -196,7 +196,7 @@ class GLActionVis:
                 ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
                 self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
-                self._bind_device_features(('pt_feature', key), mats, feat_cols, ids)
+                self._bind_device_features(('pt_feature', key), mats, feat_cols)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -222,7 +222,7 @@ class GLActionVis:
                 ids = glm.array(ctypes.c_int, key)
 
                 self._bind_vao_mat_col_id(('device', key), mats, glm.array(color), ids)
-                self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_colors), ids)
+                self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_colors))
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -387,15 +387,6 @@ class GLActionVis:
         glVertexAttribDivisor(6, 1)
 
         # Colors.
-        print(f'body color:\n{col}')
-        # if len(col) == 3:
-        #     col_arr = [
-        #         [1,            0,            0,            1],
-        #         [1,            0,            0,            1],
-        #         [0,            1,            0,            1],
-        #         [0,            1,            0,            1],
-        #         [0,            0,            1,            1],
-        #         [0,            0,            1,            1],
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
         glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -414,11 +405,10 @@ class GLActionVis:
         glBindVertexArray(0)
         glDeleteBuffers(3, vbo)
 
-    def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, col: glm.array,
-        ids: glm.array):
+    def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, col: glm.array):
         name, key = vao_info
         vao = self._vaos[name][key]
-        vbo = glGenBuffers(3)
+        vbo = glGenBuffers(2)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
         glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
         glBindVertexArray(vao)
@@ -440,24 +430,15 @@ class GLActionVis:
         glVertexAttribDivisor(6, 1)
 
         # Colors.
-        print(f'features color:\n{col}')
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
         glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
-        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 352, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
-        glVertexAttribDivisor(7, 0)
-
-        # Ids for picking.
-        glBindBuffer(GL_ARRAY_BUFFER, vbo[2])
-        glBufferData(GL_ARRAY_BUFFER, ids.nbytes, ids.ptr, GL_STATIC_DRAW)
-        # It should be GL_INT here, yet only GL_FLOAT works. huh??
-        glVertexAttribPointer(8, 1, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
-        glEnableVertexAttribArray(8)
-        glVertexAttribDivisor(8, 1)
+        glVertexAttribDivisor(7, 1)
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
-        glDeleteBuffers(3, vbo)
+        glDeleteBuffers(2, vbo)
 
     def _get_dvc_feature_cols(self, item_info: ArrayInfo):
         name, key = item_info
