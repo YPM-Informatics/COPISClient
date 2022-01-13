@@ -129,6 +129,63 @@ instanced_model_color = _Shader(
     """)
 )
 
+instanced_model_multi_colors = _Shader(
+    vs=cleandoc("""
+    #version 450 core
+
+    layout (location = 0) in vec3 positions;
+    layout (location = 3) in mat4 instance_model;
+    layout (location = 7) in vec4 colors[];
+
+    out vec4 new_color;
+
+    layout (location = 0) uniform mat4 projection;
+    layout (location = 1) uniform mat4 view;
+
+    const vec4 colors_c[22] = vec4[22](
+        vec4(1,0,0,1),
+        vec4(1,0,0,1),
+        vec4(0,1,0,1),
+        vec4(0,1,0,1),
+        vec4(0,0,1,1),
+        vec4(0,0,1,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1),
+        vec4(.7,.7,.7,1)
+    );
+
+    void main() {
+        gl_Position = projection * view * instance_model * vec4(positions, 1.0);
+        new_color = colors_c[gl_VertexID];
+    }
+    """),
+
+    fs=cleandoc("""
+    #version 450 core
+
+    in vec4 new_color;
+
+    out vec4 color;
+
+    void main() {
+        color = new_color;
+    }
+    """)
+)
+
 instanced_picking = _Shader(
     vs=cleandoc("""
     #version 450 core

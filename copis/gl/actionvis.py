@@ -292,15 +292,18 @@ class GLActionVis:
         model = mat4()
 
         # --- render devices ---
-        glUseProgram(self.parent.shaders['instanced_model_color'])
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-        glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
         for key, value in self._items['device'].items():
             index_count = self._get_dvc_feature_vtx_count(('dvc_feature_vtx', key))
+
+            glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
             glBindVertexArray(self._vaos['dvc_feature'][key])
             glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
 
+            glUseProgram(self.parent.shaders['instanced_model_color'])
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
             glBindVertexArray(self._vaos['device'][key])
             glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
@@ -320,15 +323,17 @@ class GLActionVis:
         # --- render points ---
 
         if self._num_points > 0:
-            glUseProgram(self.parent.shaders['instanced_model_color'])
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-
             for key, value in self._items['point'].items():
+                glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
                 index_count = self._get_dvc_feature_vtx_count(('pt_feature_vtx', key))
                 glBindVertexArray(self._vaos['pt_feature'][key])
                 glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
 
+                glUseProgram(self.parent.shaders['instanced_model_color'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
                 glBindVertexArray(self._vaos['point'][key])
                 glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 

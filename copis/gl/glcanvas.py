@@ -201,6 +201,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
         self._shaders['instanced_model_color'] = \
             shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self._shaders['instanced_model_multi_colors'] = \
+            shaderlib.compile_shader(*shaderlib.instanced_model_multi_colors)
         self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
         self._shaders['diffuse'] = shaderlib.compile_shader(*shaderlib.diffuse)
         self._shaders['solid'] = shaderlib.compile_shader(*shaderlib.solid)
