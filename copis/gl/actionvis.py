@@ -122,6 +122,9 @@ class GLActionVis:
             glBindVertexArray(vao)
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
             glEnableVertexAttribArray(0)
+            # Vertex Color
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+            glEnableVertexAttribArray(1)
             self._vaos['dvc_feature'][key] = vao
             self._items['dvc_feature_vtx'][key] = feat_vertices
 
@@ -133,6 +136,9 @@ class GLActionVis:
             glBindVertexArray(vao)
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
             glEnableVertexAttribArray(0)
+            # Vertex Color
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+            glEnableVertexAttribArray(1)
             self._vaos['pt_feature'][key] = vao
             self._items['pt_feature_vtx'][key] = feat_vertices
 
@@ -177,8 +183,7 @@ class GLActionVis:
                 color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
                 cols = glm.array([color] * len(value))
 
-                feat_colors = self._get_dvc_feature_cols(('pt_feature_vtx', key))
-                feat_cols = glm.array(feat_colors * len(value))
+                feat_color_mods = glm.array([vec3()] * len(value))
 
                 # If point is selected, darken its color.
                 for i, v in enumerate(value):
@@ -186,17 +191,12 @@ class GLActionVis:
                     if v[0] - self._num_devices in self.core.selected_points:
                         shade_factor = .6
                         cols[i] = shade_color(vec4(cols[i]), shade_factor)
-
-                        item_count = len(feat_colors)
-                        start = i * item_count
-                        stop = (i + 1) * item_count
-                        for j in range(start, stop):
-                            feat_cols[j] = shade_color(vec4(feat_cols[j]), shade_factor)
+                        feat_color_mods[i] = vec3(2, shade_factor, 0)
 
                 ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
                 self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
-                self._bind_device_features(('pt_feature', key), mats, feat_cols)
+                self._bind_device_features(('pt_feature', key), mats, feat_color_mods)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -210,19 +210,18 @@ class GLActionVis:
                 device = next(filter(lambda d, k = key: d.device_id == k, self.core.devices))
 
                 color = self.colors[key % len(self.colors)]
-                feat_colors = self._get_dvc_feature_cols(('dvc_feature_vtx', key))
+                feat_color_mods = vec3()
 
                 if not device.is_homed:
                     fade_pct = .5
                     alpha = .6
                     color = fade_color(color, fade_pct, alpha)
-                    feat_colors = list(map(lambda c, f = fade_pct, a = alpha:
-                        fade_color(c, f, a), feat_colors))
+                    feat_color_mods = vec3(1, fade_pct, alpha)
 
                 ids = glm.array(ctypes.c_int, key)
 
                 self._bind_vao_mat_col_id(('device', key), mats, glm.array(color), ids)
-                self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_colors))
+                self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_color_mods))
 
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
@@ -410,7 +409,7 @@ class GLActionVis:
         glBindVertexArray(0)
         glDeleteBuffers(3, vbo)
 
-    def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, col: glm.array):
+    def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, color_mods: glm.array):
         name, key = vao_info
         vao = self._vaos[name][key]
         vbo = glGenBuffers(2)
@@ -434,29 +433,16 @@ class GLActionVis:
         glEnableVertexAttribArray(6)
         glVertexAttribDivisor(6, 1)
 
-        # Colors.
+        # Color modifications.
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
-        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 352, ctypes.c_void_p(0))
+        glBufferData(GL_ARRAY_BUFFER, color_mods.nbytes, color_mods.ptr, GL_STATIC_DRAW)
+        glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
         glVertexAttribDivisor(7, 1)
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
         glDeleteBuffers(2, vbo)
-
-    def _get_dvc_feature_cols(self, item_info: ArrayInfo):
-        name, key = item_info
-        vertices = self._items[name][key]
-
-        dim_1 = 2 # 2  vec3s: position and color
-        dim_2 = 3 # 3 scalars in a vec3
-        dim_0 = int(len(vertices) / (dim_1 * dim_2))
-
-        part = vertices.reshape(dim_0, dim_1, dim_2)
-        colors = [list(a[1]) for a in part]
-
-        return list(map(lambda a: vec4(*a, 1), colors))
 
     def _get_dvc_feature_vtx_count(self, item_info: ArrayInfo):
         name, key = item_info

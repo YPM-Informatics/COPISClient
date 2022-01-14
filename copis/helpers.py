@@ -87,7 +87,7 @@ def fade_color(color: vec4, fade_pct: float, alpha: float=None) -> vec4:
     fade_pct = bind(fade_pct)
 
     return vec4(
-        *map(lambda v: 1 * fade_pct + v * (1 - fade_pct), vec3(color)),
+        *map(lambda v: fade_pct + v * (1 - fade_pct), vec3(color)),
         alpha)
 
 def get_action_args_values(args: List[tuple]) -> List[float]:

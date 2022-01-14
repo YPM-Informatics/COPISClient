@@ -134,54 +134,59 @@ instanced_model_multi_colors = _Shader(
     #version 450 core
 
     layout (location = 0) in vec3 positions;
+    layout (location = 1) in vec3 colors;
     layout (location = 3) in mat4 instance_model;
-    layout (location = 7) in vec4 colors[];
+    layout (location = 7) in vec3 instance_color_mods;
 
-    out vec4 new_color;
+
+    out vec3 new_color;
+    out vec3 color_mods;
 
     layout (location = 0) uniform mat4 projection;
     layout (location = 1) uniform mat4 view;
 
-    const vec4 colors_c[22] = vec4[22](
-        vec4(1,0,0,1),
-        vec4(1,0,0,1),
-        vec4(0,1,0,1),
-        vec4(0,1,0,1),
-        vec4(0,0,1,1),
-        vec4(0,0,1,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1),
-        vec4(.7,.7,.7,1)
-    );
-
     void main() {
         gl_Position = projection * view * instance_model * vec4(positions, 1.0);
-        new_color = colors_c[gl_VertexID];
+        new_color = colors;
+        color_mods = instance_color_mods;
     }
     """),
 
     fs=cleandoc("""
     #version 450 core
 
-    in vec4 new_color;
+    in vec3 new_color;
+    in vec3 color_mods;
 
     out vec4 color;
 
+    void fade(vec3 color, float fade_pct, float alpha, out vec4 faded_color) {
+        alpha = min(max(alpha, 0), 1.0);
+        fade_pct = min(max(fade_pct, 0), 1.0);
+
+        faded_color = vec4(fade_pct + color * (1.0 - fade_pct), alpha);
+    }
+
+    void shade(vec3 color, float shade_factor, out vec4 shaded_color) {
+        float x = min(1.0, color.x * (1.0 - shade_factor));
+        float y = min(1.0, color.y * (1.0 - shade_factor));
+        float z = min(1.0, color.z * (1.0 - shade_factor));
+
+        shaded_color = vec4(x, y, z, 1.0);
+    }
+
     void main() {
-        color = new_color;
+        vec4 modded_color = vec4(new_color, 1.0);
+
+        if (color_mods.x == 1) {
+            fade(new_color, color_mods.y, color_mods.z, modded_color);
+        }
+
+        if (color_mods.x == 2) {
+            shade(new_color, color_mods.y, modded_color);
+        }
+
+        color = modded_color;
     }
     """)
 )
