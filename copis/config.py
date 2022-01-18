@@ -44,7 +44,6 @@ class Config():
             'debug_env': 'prod'
         },
         'Machine': {
-            'is_parallel_execution': 'True',
             'size_x': '700',
             'size_y': '800',
             'size_z': '450',
@@ -156,12 +155,11 @@ class Config():
         origin_x = machine.getfloat('origin_x')
         origin_y = machine.getfloat('origin_y')
         origin_z = machine.getfloat('origin_z')
-        is_parallel_execution = machine.getboolean('is_parallel_execution')
 
         origin = vec3(origin_x, origin_y, origin_z)
         dimensions = vec3(size_x, size_y, size_z)
 
-        return MachineSettings(origin, dimensions, is_parallel_execution)
+        return MachineSettings(origin, dimensions)
 
     def update_window_state(self, state: WindowState) -> None:
         """Updates the window geometry application setting."""

@@ -249,9 +249,7 @@ class COPISCore(
         action_ids = map(lambda p: p.position.device, self._actions)
         device_ids = list(set(action_ids))
 
-        batch_size = 1
-        if self.config.machine_settings.is_parallel_execution:
-            batch_size = len(device_ids)
+        batch_size = len(device_ids)
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.devices])
         body = self._chunk_actions(batch_size)

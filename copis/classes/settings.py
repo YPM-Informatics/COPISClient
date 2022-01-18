@@ -46,14 +46,12 @@ class MachineSettings:
     """Machine settings settings data structure."""
     origin: vec3 = vec3(inf)
     dimensions: vec3 = vec3(inf)
-    is_parallel_execution: bool = True
 
     def as_dict(self):
         """"Return a dictionary representation of a MachineSettings instance."""
 
         return {
             'Machine': {
-                'is_parallel_execution': self.is_parallel_execution,
                 'size_x': self.dimensions.x,
                 'size_y': self.dimensions.y,
                 'size_z': self.dimensions.z,
