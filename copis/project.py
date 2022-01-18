@@ -16,6 +16,7 @@
 """COPIS Application project manager."""
 
 from typing import List
+from pydispatch import dispatcher
 from glm import vec3
 
 from copis.classes import BoundingBox, Device, Action
@@ -55,8 +56,8 @@ class Project:
         else:
             self.__dict__ = Project.__shared_state
 
-        if not hasattr(self, '_initialized'):
-            self._initialized = False
+        if not hasattr(self, '_is_initialized'):
+            self._is_initialized = False
 
         if not hasattr(self, '_store'):
             self._store = None
@@ -76,6 +77,13 @@ class Project:
         if not hasattr(self, '_profile'):
             self._profile = None
 
+        if not hasattr(self, '_is_dirty'):
+            self._is_dirty = False
+
+        # Bind copiscore listeners.
+        dispatcher.connect(self._on_notification, signal='core_a_list_changed')
+        dispatcher.connect(self._on_notification, signal='core_d_list_changed')
+
     @property
     def proxy_path(self) -> str:
         """Returns the project's proxy path."""
@@ -83,7 +91,7 @@ class Project:
 
     @property
     def devices(self) -> List[Device]:
-        """Parses and returns the profile devicess."""
+        """Parses and returns the profile devices."""
         def parse_device(data):
             home_position = Point5(*data['home_position'])
             size = vec3(data['size'])
@@ -155,19 +163,24 @@ class Project:
         self._profile_path = self._default_profile_path
         self._proxy_path = self._default_proxy_path
 
-        self._initialized = True
+        self._is_initialized = True
+        self._is_dirty = False
 
     def _load_profile(self):
         self._profile = load_json(self._profile_path)
 
+    def _on_notification(self):
+        self._is_dirty = True
+        print('notified')
+
     def start(self):
         """Starts a new project."""
-        if not self._initialized:
+        if not self._is_initialized:
             self._init()
 
         self._load_profile()
 
     def open(self):
         """Opens an existing project."""
-        if not self._initialized:
+        if not self._is_initialized:
             self._init()

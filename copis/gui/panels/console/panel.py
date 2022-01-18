@@ -52,7 +52,7 @@ class ConsolePanel(wx.Panel):
         self.Layout()
         self._cmd_processor = _CommandProcessor(self.core)
 
-        # bind copiscore listeners
+        # Bind copiscore listeners.
         dispatcher.connect(self.on_notification, signal='core_a_list_changed')
         dispatcher.connect(self.on_notification, signal='core_d_list_changed')
         dispatcher.connect(self.on_notification, signal='core_a_selected')

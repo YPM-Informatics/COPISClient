@@ -248,7 +248,7 @@ class PathgenToolbar(aui.AuiToolBar):
             lookat: A vec3 representing the lookat point in space.
         """
 
-        devices = self.core.config.machine_settings.devices
+        devices = self.core.project.devices
         grouped_points = defaultdict(list)
         max_zs = defaultdict(float)
 
@@ -257,8 +257,8 @@ class PathgenToolbar(aui.AuiToolBar):
             point = vec3(vertices[i * 3:i * 3 + 3])
             device_id = -1
             for id_ in device_list:
-                max_zs[id_] = devices[id_].device_bounds.upper.z
-                if devices[id_].device_bounds.vec3_intersect(point, 0.0):
+                max_zs[id_] = devices[id_].range_3d.upper.z
+                if devices[id_].range_3d.vec3_intersect(point, 0.0):
                     device_id = id_
 
             # ignore if point not in bounds of any device
