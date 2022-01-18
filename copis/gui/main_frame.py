@@ -19,11 +19,6 @@ import wx
 import wx.lib.agw.aui as aui
 
 from glm import vec3
-from wx.lib.agw.aui.aui_constants import (AUI_NB_BOTTOM,
-    AUI_BUTTON_STATE_HIDDEN, AUI_NB_CLOSE_ON_TAB_LEFT, AUI_BUTTON_STATE_HOVER,
-    AUI_BUTTON_STATE_PRESSED)
-from wx.lib.agw.aui.aui_utilities import (ChopText, GetBaseColour,
-    IndentPressedBitmap, StepColour, TakeScreenShot)
 
 import copis.store as store
 
@@ -41,6 +36,7 @@ from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
 from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
 from .wxutils import create_scaled_bitmap
+from .custom_tab_art import CustomAuiTabArt
 
 
 class MainWindow(wx.Frame):
@@ -60,9 +56,10 @@ class MainWindow(wx.Frame):
     """
 
     _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
+    _COPIS_WEBSITE = 'http://www.copis3d.org/'
 
     def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
-        """Initialize MainWindow with constructors."""
+        """Initializes MainWindow with constructors."""
         super().__init__(*args, **kwargs)
         self.core = wx.GetApp().core
         # set minimum size to show whole interface properly
@@ -93,6 +90,50 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.numpoints = None
+
+    # --------------------------------------------------------------------------
+    # Accessor methods
+    # --------------------------------------------------------------------------
+
+    @property
+    def console_panel(self) -> ConsolePanel:
+        """Returns the console panel."""
+        return self.panels['console']
+
+    @property
+    def controller_panel(self) -> ControllerPanel:
+        """Returns the controller panel."""
+        return self.panels['controller']
+
+    @property
+    def evf_panel(self) -> EvfPanel:
+        """Returns the EVF panel."""
+        return self.panels['evf']
+
+    @property
+    def properties_panel(self) -> PropertiesPanel:
+        """Returns the properties panel."""
+        return self.panels['properties']
+
+    @property
+    def timeline_panel(self) -> TimelinePanel:
+        """Returns the timeline panel."""
+        return self.panels['timeline']
+
+    @property
+    def viewport_panel(self) -> ViewportPanel:
+        """Returns the viewport panel."""
+        return self.panels['viewport']
+
+    @property
+    def machine_toolbar(self) -> MachineToolbar:
+        """Returns the machine toolbar."""
+        return self.panels['machine_toolbar']
+
+    @property
+    def pathgen_toolbar(self) -> PathgenToolbar:
+        """Returns the path generation toolbar."""
+        return self.panels['pathgen_toolbar']
 
     def init_statusbar(self) -> None:
         """Initialize statusbar."""
@@ -150,7 +191,7 @@ class MainWindow(wx.Frame):
 
         self._menubar = wx.MenuBar(0)
 
-        # File menu
+        # File menu.
         file_menu = wx.Menu()
 
         recent_menu = wx.Menu()
@@ -186,7 +227,7 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('exit_to_app', 16)
         self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(_item))
 
-        # Edit menu
+        # Edit menu.
         edit_menu = wx.Menu()
         _item = wx.MenuItem(None, wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts')
         self.Bind(wx.EVT_MENU, None, edit_menu.Append(_item))
@@ -196,44 +237,57 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('tune', 16)
         self.Bind(wx.EVT_MENU, self.open_preferences_frame, edit_menu.Append(_item))
 
-        # View menu
+        # View menu.
         view_menu = wx.Menu()
-        self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, '&Status &Bar', 'Toggle status bar visibility', wx.ITEM_CHECK)
+        self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, '&Status &Bar',
+            'Toggle status bar visibility', wx.ITEM_CHECK)
         view_menu.Check(self.statusbar_menuitem.Id, True)
         self.Bind(wx.EVT_MENU, self.update_statusbar, self.statusbar_menuitem)
 
-        # Camera menu
+        # Camera menu.
         camera_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Perspective Projection', 'Set viewport projection to perspective', wx.ITEM_RADIO)
-        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_perspective_projection, camera_menu.Append(_item))
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Orthographic Projection', 'Set viewport projection to orthographic', wx.ITEM_RADIO)
-        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_orthographic_projection, camera_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Perspective Projection',
+            'Set viewport projection to perspective', wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_perspective_projection,
+            camera_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Orthographic Projection',
+            'Set viewport projection to orthographic', wx.ITEM_RADIO)
+        self.Bind(wx.EVT_MENU, self.panels['viewport'].set_orthographic_projection,
+            camera_menu.Append(_item))
 
-        # Tools menu
+        # Tools menu.
         tools_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object', 'Add a cylinder proxy object to the chamber')
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Cylinder Proxy Object',
+            'Add a cylinder proxy object to the chamber')
         self.Bind(wx.EVT_MENU, self.add_proxy_cylinder, tools_menu.Append(_item))
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Box Proxy Object', 'Add a box proxy object to the chamber')
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Add &Box Proxy Object',
+            'Add a box proxy object to the chamber')
         self.Bind(wx.EVT_MENU, self.add_proxy_aabb, tools_menu.Append(_item))
 
-        # Window menu
+        # Window menu.
         window_menu = wx.Menu()
-        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF', 'Show/hide camera EVF window', wx.ITEM_CHECK)
+        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF',
+            'Show/hide camera EVF window', wx.ITEM_CHECK)
         self.menuitems['evf'].Enable(False)
         self.Bind(wx.EVT_MENU, self.update_evf_panel, self.menuitems['evf'])
-        self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console', 'Show/hide console window', wx.ITEM_CHECK)
+        self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console',
+            'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
-        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller', 'Show/hide controller window', wx.ITEM_CHECK)
+        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller',
+            'Show/hide controller window', wx.ITEM_CHECK)
         self.menuitems['controller'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
-        self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties', 'Show/hide camera properties window', wx.ITEM_CHECK)
+        self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties',
+            'Show/hide camera properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
-        self.menuitems['timeline'] = window_menu.Append(wx.ID_ANY, 'Timeline', 'Show/hide timeline window', wx.ITEM_CHECK)
+        self.menuitems['timeline'] = window_menu.Append(wx.ID_ANY, 'Timeline',
+            'Show/hide timeline window', wx.ITEM_CHECK)
         self.menuitems['timeline'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_timeline_panel, self.menuitems['timeline'])
-        self.menuitems['viewport'] = window_menu.Append(wx.ID_ANY, 'Viewport', 'Show/hide viewport window', wx.ITEM_CHECK)
+        self.menuitems['viewport'] = window_menu.Append(wx.ID_ANY,'Viewport',
+            'Show/hide viewport window', wx.ITEM_CHECK)
         self.menuitems['viewport'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_viewport_panel, self.menuitems['viewport'])
         window_menu.AppendSeparator()
@@ -242,14 +296,15 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('tune', 16)
         self.Bind(wx.EVT_MENU, None, window_menu.Append(_item))
 
-        # Help menu
+        # Help menu.
         help_menu = wx.Menu()
         _item = wx.MenuItem(None, wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu')
         _item.Bitmap = create_scaled_bitmap('help_outline', 16)
         self.Bind(wx.EVT_MENU, None, help_menu.Append(_item))
         help_menu.AppendSeparator()
 
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', 'Open www.copis3d.org')
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Visit COPIS website\tCtrl+F1',
+            f'Open {self._COPIS_WEBSITE}')
         _item.Bitmap = create_scaled_bitmap('open_in_new', 16)
         self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(_item))
         _item = wx.MenuItem(None, wx.ID_ANY, '&About COPIS...', 'Show about dialog')
@@ -265,12 +320,12 @@ class MainWindow(wx.Frame):
         self._menubar.Append(help_menu, '&Help')
         self.SetMenuBar(self._menubar)
 
-    def on_new_project(self, event: wx.CommandEvent) -> None:
+    def on_new_project(self, _) -> None:
         """TODO: Implement project file/directory creation """
         pass
 
-    def on_open_project(self, event: wx.CommandEvent) -> None:
-        """Open 'open' dialog.
+    def on_open_project(self, _) -> None:
+        """Opens 'open' dialog.
 
         TODO: Implement reading file/directory
         """
@@ -280,26 +335,26 @@ class MainWindow(wx.Frame):
                 return
 
         with wx.FileDialog(self, 'Open Project File', wildcard=self._FILE_DIALOG_WILDCARD,
-                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
 
-            if fileDialog.ShowModal() == wx.ID_CANCEL:
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return     # the user changed their mind
 
             # Proceed loading the file chosen by the user
-            path = fileDialog.Path
+            path = file_dialog.Path
             try:
                 self.do_load_project(path)
-            except Exception as e:
-                wx.LogError(str(e))
+            except Exception as err:
+                wx.LogError(str(err))
 
-    def on_save(self, event: wx.CommandEvent) -> None:
-        """Open 'save' dialog.
+    def on_save(self, _) -> None:
+        """Opens 'save' dialog.
 
         TODO: Implement saving with projects
         """
 
-    def on_save_as(self, event: wx.CommandEvent) -> None:
-        """Open 'save as' dialog.
+    def on_save_as(self, _) -> None:
+        """Opens 'save as' dialog.
 
          TODO: Implement saving as with projects
         """
@@ -313,22 +368,22 @@ class MainWindow(wx.Frame):
             # save the current contents in the file
             path = file_dialog.Path
             try:
-                with open(path, 'x') as file:
+                with open(path, 'x'):
                     self.do_save_project(path)
             except IOError:
                 wx.LogError(f'Could not save in file "{path}".')
 
-    def on_export(self, event: wx.CommandEvent) -> None:
-        """Export action list as series of gcode commands."""
+    def on_export(self, _) -> None:
+        """Exports action list as series of G-code commands."""
         self.core.export_actions("./test.copis")
 
     def do_save_project(self, path) -> None:
-        """Save project to file Path."""
+        """Saves project to file Path."""
         self.project_dirty = False
         store.save(path, self.core.actions)
 
     def do_load_project(self, path: str) -> None:
-        """Load project from file Path."""
+        """Loads project from file Path."""
         actions = store.load(path, [])
 
         # Adjust actions from list of actions to a least of poses.
@@ -344,12 +399,12 @@ class MainWindow(wx.Frame):
         self.core.actions.extend(actions)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
-        """Update status bar visibility based on menu item."""
+        """Updates status bar visibility based on menu item."""
         self.StatusBar.Show(event.IsChecked())
         self._mgr.Update()
 
     def add_proxy_cylinder(self, _) -> None:
-        """Open dialog to generate cylinder proxy object."""
+        """Opens dialog to generate cylinder proxy object."""
         with ProxygenCylinder(self) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 start = vec3(dlg.start_x_ctrl.num_value,
@@ -362,7 +417,7 @@ class MainWindow(wx.Frame):
                 self.core.objects.append(CylinderObject3D(start, end, radius))
 
     def add_proxy_aabb(self, _) -> None:
-        """Open dialog to generate box proxy object."""
+        """Opens dialog to generate box proxy object."""
         with ProxygenAABB(self) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 lower = vec3(dlg.lower_x_ctrl.num_value,
@@ -373,21 +428,21 @@ class MainWindow(wx.Frame):
                              dlg.upper_z_ctrl.num_value)
                 self.core.objects.append(AABBObject3D(lower, upper))
 
-    def update_menubar(self) -> None:
-        pass
-
     def open_preferences_frame(self, _) -> None:
+        """Opens the preferences frame."""
         preferences_dialog = PreferenceFrame(self)
         preferences_dialog.Show()
 
     def open_copis_website(self, _) -> None:
-        wx.LaunchDefaultBrowser('http://www.copis3d.org/')
+        """Launches the COPIS project's website."""
+        wx.LaunchDefaultBrowser(self._COPIS_WEBSITE)
 
     def open_about_dialog(self, _) -> None:
+        """Opens the 'about' dialog."""
         about = AboutDialog(self)
         about.Show()
 
-    def on_exit(self, event: wx.CommandEvent) -> None:
+    def on_exit(self, _) -> None:
         """On menu close, exit application."""
         self.Close()
 
@@ -407,7 +462,7 @@ class MainWindow(wx.Frame):
         if self._mgr is not None:
             return
 
-        # create auimanager and set flags
+        # Create AUI manager and set flags.
         self._mgr = aui.AuiManager(self, agwFlags=
             aui.AUI_MGR_ALLOW_FLOATING |
             aui.AUI_MGR_TRANSPARENT_DRAG |
@@ -416,7 +471,7 @@ class MainWindow(wx.Frame):
             aui.AUI_MGR_LIVE_RESIZE |
             aui.AUI_MGR_AUTONB_NO_CAPTION)
 
-        # set auto notebook style
+        # Set auto notebook style.
         self._mgr.SetAutoNotebookStyle(
             aui.AUI_NB_TOP |
             aui.AUI_NB_TAB_SPLIT |
@@ -427,15 +482,18 @@ class MainWindow(wx.Frame):
             aui.AUI_NB_CLOSE_ON_ACTIVE_TAB |
             aui.AUI_NB_TAB_FLOAT)
 
-        # set aui colors and style
-        # see https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui.dockart.AuiDefaultDockArt.html
+        # Set AUI colors and style.
+        # See https://wxpython.org/Phoenix/docs/html/wx.lib.agw.aui.dockart.AuiDefaultDockArt.html
         dockart = aui.AuiDefaultDockArt()
         dockart.SetMetric(aui.AUI_DOCKART_SASH_SIZE, 3)
         dockart.SetMetric(aui.AUI_DOCKART_CAPTION_SIZE, 18)
         dockart.SetMetric(aui.AUI_DOCKART_PANE_BUTTON_SIZE, 16)
-        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
-        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_GRADIENT_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
-        dockart.SetColor(aui.AUI_DOCKART_SASH_COLOUR, wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
+        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_COLOUR,
+            wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
+        dockart.SetColor(aui.AUI_DOCKART_BACKGROUND_GRADIENT_COLOUR,
+            wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
+        dockart.SetColor(aui.AUI_DOCKART_SASH_COLOUR,
+            wx.SystemSettings().GetColour(wx.SYS_COLOUR_MENU))
         dockart.SetColor(aui.AUI_DOCKART_ACTIVE_CAPTION_COLOUR, '#FFFFFF')
         dockart.SetColor(aui.AUI_DOCKART_INACTIVE_CAPTION_COLOUR, '#FFFFFF')
         dockart.SetMetric(aui.AUI_DOCKART_GRADIENT_TYPE, aui.AUI_GRADIENT_NONE)
@@ -444,7 +502,7 @@ class MainWindow(wx.Frame):
         tabart = CustomAuiTabArt()
         self._mgr.SetAutoNotebookTabArt(tabart)
 
-        # initialize relevant panels
+        # Initialize relevant panels.
         self.panels['viewport'] = ViewportPanel(self)
         self.panels['console'] = ConsolePanel(self)
         self.panels['timeline'] = TimelinePanel(self)
@@ -453,13 +511,13 @@ class MainWindow(wx.Frame):
         self.panels['machine_toolbar'] = MachineToolbar(self)
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
-        # add viewport panel
+        # Add viewport panel.
         self._mgr.AddPane(
             self.panels['viewport'],
             aui.AuiPaneInfo().Name('viewport').Caption('Viewport').
             Dock().Center().MaximizeButton().MinimizeButton().DefaultPane().MinSize(350, 250))
 
-        # add console, timeline panel
+        # Add console, timeline panel.
         self._mgr.AddPane(
             self.panels['console'],
             aui.AuiPaneInfo().Name('console').Caption('Console').
@@ -470,7 +528,7 @@ class MainWindow(wx.Frame):
             Dock().Bottom().Position(1).Layer(0).MinSize(280, 180).Show(True),
             target=self._mgr.GetPane('console'))
 
-        # add properties and controller panel
+        # Add properties and controller panel.
         self._mgr.AddPane(
             self.panels['properties'],
             aui.AuiPaneInfo().Name('properties').Caption('Properties').
@@ -480,11 +538,11 @@ class MainWindow(wx.Frame):
             aui.AuiPaneInfo().Name('controller').Caption('Controller').
             Dock().Right().Position(1).Layer(1).MinSize(280, 200).Show(True))
 
-        # set first tab of all auto notebooks as the one selected
+        # Set first tab of all auto notebooks as the one selected.
         for notebook in self._mgr.GetNotebooks():
             notebook.SetSelection(0)
 
-        # add toolbar panels
+        # Add toolbar panels.
         self.panels['machine_toolbar'].Realize()
         self._mgr.AddPane(
             self.panels['machine_toolbar'],
@@ -539,10 +597,10 @@ class MainWindow(wx.Frame):
         self._mgr.ShowPane(self.viewport_panel, event.IsChecked())
 
     def on_pane_close(self, event: aui.framemanager.AuiManagerEvent) -> None:
-        """Update menu itmes in the Window menu when a pane has been closed."""
+        """Update menu items in the Window menu when a pane has been closed."""
         pane = event.GetPane()
 
-        # if closed pane is a notebook, process and hide all pages in the notebook
+        # if closed pane is a notebook, process and hide all pages in the notebook.
         if pane.IsNotebookControl():
             notebook = pane.window
             for i in range(notebook.GetPageCount()):
@@ -560,43 +618,6 @@ class MainWindow(wx.Frame):
         #     pane.window.Destroy()
 
         print('hidden', pane.name)
-
-
-    # --------------------------------------------------------------------------
-    # Accessor methods
-    # --------------------------------------------------------------------------
-
-    @property
-    def console_panel(self) -> ConsolePanel:
-        return self.panels['console']
-
-    @property
-    def controller_panel(self) -> ControllerPanel:
-        return self.panels['controller']
-
-    @property
-    def evf_panel(self) -> EvfPanel:
-        return self.panels['evf']
-
-    @property
-    def properties_panel(self) -> PropertiesPanel:
-        return self.panels['properties']
-
-    @property
-    def timeline_panel(self) -> TimelinePanel:
-        return self.panels['timeline']
-
-    @property
-    def viewport_panel(self) -> ViewportPanel:
-        return self.panels['viewport']
-
-    @property
-    def machine_toolbar(self) -> MachineToolbar:
-        return self.panels['machine_toolbar']
-
-    @property
-    def pathgen_toolbar(self) -> PathgenToolbar:
-        return self.panels['pathgen_toolbar']
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""
@@ -617,268 +638,3 @@ class MainWindow(wx.Frame):
 
     def __del__(self) -> None:
         pass
-
-
-class CustomAuiTabArt(aui.AuiDefaultTabArt):
-    """Custom tab art for SetAutoNotebookTabArt.
-
-    Derived from
-    https://github.com/wxWidgets/Phoenix/blob/master/wx/lib/agw/aui/tabart.py.
-    """
-
-    def __init__(self):
-        """ Default class constructor. """
-        aui.AuiDefaultTabArt.__init__(self)
-
-        self._normal_font.PointSize -= 1
-        self._selected_font.PointSize -= 1
-        self._measuring_font.PointSize -= 1
-
-    def SetDefaultColours(self, base_colour=None):
-        """
-        Sets the default colours, which are calculated from the given base colour.
-        :param `base_colour`: an instance of :class:`wx.Colour`. If defaulted to ``None``, a colour
-         is generated accordingly to the platform and theme.
-        """
-        if base_colour is None:
-            base_colour = GetBaseColour()
-
-        self.SetBaseColour(base_colour)
-        self._border_colour = StepColour(base_colour, 80)
-        self._border_pen = wx.Pen(StepColour(self._border_colour, 130))
-
-        self._background_top_colour = StepColour(base_colour, 170)
-        self._background_bottom_colour = StepColour(base_colour, 170)
-
-        self._tab_top_colour =  wx.WHITE
-        self._tab_bottom_colour = wx.WHITE
-        self._tab_gradient_highlight_colour = wx.WHITE
-
-        self._tab_inactive_top_colour = self._background_top_colour
-        self._tab_inactive_bottom_colour = self._background_bottom_colour
-
-        self._tab_text_colour = lambda page: page.text_colour
-        self._tab_disabled_text_colour = wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT)
-
-    def DrawBackground(self, dc, wnd, rect):
-        """
-        Draws the tab area background.
-        :param `dc`: a :class:`wx.DC` device context;
-        :param `wnd`: a :class:`wx.Window` instance object;
-        :param wx.Rect `rect`: the tab control rectangle.
-        """
-
-        self._buttonRect = wx.Rect()
-
-        # draw background
-        agwFlags = self.GetAGWFlags()
-        if agwFlags & AUI_NB_BOTTOM:
-            r = wx.Rect(rect.x-1, rect.y-1, rect.width+2, rect.height+2)
-        else: #for AUI_NB_TOP
-            r = wx.Rect(rect.x-1, rect.y-1, rect.width+2, rect.height+2)
-
-        dc.SetBrush(wx.Brush(self._background_top_colour))
-        dc.DrawRectangle(r)
-
-        dc.SetPen(self._border_pen)
-        dc.DrawLine(0, rect.GetHeight()-1, rect.GetWidth(), rect.GetHeight()-1)
-
-    def GetTabSize(self, dc, wnd, caption, bitmap, active, close_button_state, control=None):
-        tab_size, x_extent = aui.AuiDefaultTabArt.GetTabSize(self, dc, wnd, caption, bitmap,
-                                                             active, close_button_state, control)
-
-        tab_width, tab_height = tab_size
-
-        # modify tab height
-        tab_height -= 6
-        tab_width += 4
-        x_extent += 4
-
-        return (tab_width, tab_height), x_extent
-
-    def DrawTab(self, dc, wnd, page, in_rect, close_button_state, paint_control=False):
-        """
-        Draws a single tab.
-        :param `dc`: a :class:`wx.DC` device context;
-        :param `wnd`: a :class:`wx.Window` instance object;
-        :param `page`: the tab control page associated with the tab;
-        :param wx.Rect `in_rect`: rectangle the tab should be confined to;
-        :param integer `close_button_state`: the state of the close button on the tab;
-        :param bool `paint_control`: whether to draw the control inside a tab (if any) on a :class:`MemoryDC`.
-        """
-
-        # a flat, minimal style
-
-        # if the caption is empty, measure some temporary text
-        caption = page.caption
-        if not caption:
-            caption = "Xj"
-
-        dc.SetFont(self._normal_font)
-        normal_textx, normal_texty, dummy = dc.GetFullMultiLineTextExtent(caption)
-
-        control = page.control
-
-        # figure out the size of the tab
-        tab_size, x_extent = self.GetTabSize(dc, wnd, page.caption, page.bitmap,
-                                             page.active, close_button_state, control)
-
-        tab_height = tab_size[1] + 6
-        tab_width = tab_size[0]
-        tab_x = in_rect.x - 6
-        tab_y = in_rect.y + in_rect.height - tab_height + 3
-
-        caption = page.caption
-
-        # select pen, brush and font for the tab to be drawn
-        dc.SetFont(self._normal_font)
-        textx, texty = normal_textx, normal_texty
-
-        if not page.enabled:
-            dc.SetTextForeground(self._tab_disabled_text_colour)
-            pagebitmap = page.dis_bitmap
-        else:
-            dc.SetTextForeground(self._tab_text_colour(page))
-            pagebitmap = page.bitmap
-
-        # create points that will make the tab outline
-
-        clip_width = tab_width
-        if tab_x + clip_width > in_rect.x + in_rect.width:
-            clip_width = in_rect.x + in_rect.width - tab_x
-
-        # since the above code above doesn't play well with WXDFB or WXCOCOA,
-        # we'll just use a rectangle for the clipping region for now --
-        dc.SetClippingRegion(tab_x, tab_y, clip_width+1, tab_height-3)
-
-        agwFlags = self.GetAGWFlags()
-
-        wxPoint = wx.Point  # local opt
-        if agwFlags & AUI_NB_BOTTOM:
-            border_points = [wxPoint(tab_x,             tab_y),
-                             wxPoint(tab_x,             tab_y+tab_height-4),
-                             wxPoint(tab_x+tab_width,   tab_y+tab_height-4),
-                             wxPoint(tab_x+tab_width,   tab_y)]
-
-        else: #if (agwFlags & AUI_NB_TOP)
-            border_points = [wxPoint(tab_x,             tab_y+tab_height-4),
-                             wxPoint(tab_x,             tab_y),
-                             wxPoint(tab_x+tab_width,   tab_y),
-                             wxPoint(tab_x+tab_width,   tab_y+tab_height-4)]
-
-        drawn_tab_yoff = border_points[1].y
-        drawn_tab_height = border_points[0].y - border_points[1].y
-
-        if page.active:
-            # draw active tab
-            r = wx.Rect(tab_x, tab_y, tab_width, tab_height)
-
-            dc.SetPen(wx.Pen(self._tab_top_colour))
-            dc.SetBrush(wx.Brush(self._tab_top_colour))
-            dc.DrawRectangle(r)
-
-        else:
-            # draw inactive tab
-            r = wx.Rect(tab_x, tab_y, tab_width, tab_height)
-
-            dc.SetPen(wx.Pen(self._tab_inactive_top_colour))
-            dc.SetBrush(wx.Brush(self._tab_inactive_top_colour))
-            dc.DrawRectangle(r)
-
-        # draw tab outline
-        dc.SetPen(self._border_pen)
-        dc.SetBrush(wx.TRANSPARENT_BRUSH)
-        dc.DrawPolygon(border_points)
-
-        # remove bottom border of active tab
-        if page.active:
-            dc.SetPen(wx.Pen(self._tab_bottom_colour))
-            dc.DrawLine(border_points[0].x+1, border_points[0].y,
-                        border_points[3].x, border_points[3].y)
-
-        text_offset = tab_x + 4
-        close_button_width = 0
-
-        if close_button_state != AUI_BUTTON_STATE_HIDDEN:
-            close_button_width = self._active_close_bmp.GetWidth()
-
-            if agwFlags & AUI_NB_CLOSE_ON_TAB_LEFT:
-                text_offset += close_button_width - 5
-
-        bitmap_offset = 0
-
-        if pagebitmap.IsOk():
-
-            bitmap_offset = tab_x + 8
-            if agwFlags & AUI_NB_CLOSE_ON_TAB_LEFT and close_button_width:
-                bitmap_offset += close_button_width - 5
-
-            # draw bitmap
-            dc.DrawBitmap(pagebitmap,
-                          bitmap_offset,
-                          drawn_tab_yoff + (drawn_tab_height/2) - (pagebitmap.GetHeight()/2),
-                          True)
-
-            text_offset = bitmap_offset + pagebitmap.GetWidth()
-            text_offset += 3 # bitmap padding
-
-        else:
-
-            if agwFlags & AUI_NB_CLOSE_ON_TAB_LEFT == 0 or not close_button_width:
-                text_offset = tab_x + 8
-
-        draw_text = ChopText(dc, caption, tab_width - (text_offset-tab_x) - close_button_width)
-
-        ypos = drawn_tab_yoff + (drawn_tab_height)/2 - (texty/2) + 1
-
-        if control:
-            if control.GetPosition() != wxPoint(text_offset+1, ypos):
-                control.SetPosition(wxPoint(text_offset+1, ypos))
-
-            if not control.IsShown():
-                control.Show()
-
-            if paint_control:
-                bmp = TakeScreenShot(control.GetScreenRect())
-                dc.DrawBitmap(bmp, text_offset+1, ypos, True)
-
-            controlW, controlH = control.GetSize()
-            text_offset += controlW + 4
-            textx += controlW + 4
-
-        # draw tab text
-        rectx, recty, dummy = dc.GetFullMultiLineTextExtent(draw_text)
-        dc.DrawLabel(draw_text, wx.Rect(text_offset, ypos, rectx, recty))
-
-        out_button_rect = wx.Rect()
-
-        # draw close button if necessary
-        if close_button_state != AUI_BUTTON_STATE_HIDDEN:
-
-            bmp = self._disabled_close_bmp
-
-            if close_button_state == AUI_BUTTON_STATE_HOVER:
-                bmp = self._hover_close_bmp
-            elif close_button_state == AUI_BUTTON_STATE_PRESSED:
-                bmp = self._pressed_close_bmp
-
-            shift = (agwFlags & AUI_NB_BOTTOM and [1] or [0])[0]
-
-            if agwFlags & AUI_NB_CLOSE_ON_TAB_LEFT:
-                rect = wx.Rect(tab_x + 4, tab_y + (tab_height - bmp.GetHeight())/2 - shift,
-                               close_button_width, tab_height)
-            else:
-                rect = wx.Rect(tab_x + tab_width - close_button_width - 1,
-                               tab_y + (tab_height - bmp.GetHeight())/2 - shift,
-                               close_button_width, tab_height)
-
-            rect = IndentPressedBitmap(rect, close_button_state)
-            dc.DrawBitmap(bmp, rect.x, rect.y-1, True)
-
-            out_button_rect = rect
-
-        out_tab_rect = wx.Rect(tab_x, tab_y, tab_width, tab_height)
-
-        dc.DestroyClippingRegion()
-
-        return out_tab_rect, out_button_rect, x_extent

@@ -80,9 +80,9 @@ class Project:
         if not hasattr(self, '_is_dirty'):
             self._is_dirty = False
 
-        # Bind copiscore listeners.
-        dispatcher.connect(self._on_notification, signal='core_a_list_changed')
-        dispatcher.connect(self._on_notification, signal='core_d_list_changed')
+        # Bind listeners.
+        dispatcher.connect(self._set_is_dirty, signal='core_a_list_changed')
+        dispatcher.connect(self._set_is_dirty, signal='core_d_list_changed')
 
     @property
     def proxy_path(self) -> str:

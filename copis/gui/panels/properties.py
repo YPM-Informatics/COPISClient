@@ -72,7 +72,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.SetupScrolling(scroll_x=False)
         self.Layout()
 
-        # bind copiscore listeners
+        # Bind listeners.
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
         dispatcher.connect(self.on_points_selected, signal='core_a_selected')
         dispatcher.connect(self.on_object_selected, signal='core_o_selected')
@@ -215,7 +215,7 @@ class _PropTransform(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.init_gui()
 
-        # bind events
+        # Bind events.
         for ctrl in (self.x_ctrl, self.y_ctrl, self.z_ctrl, self.p_ctrl, self.t_ctrl,
                      self.xyz_step_ctrl, self.pt_step_ctrl):
             ctrl.Bind(EVT_FANCY_TEXT_UPDATED_EVENT, self.on_text_update)

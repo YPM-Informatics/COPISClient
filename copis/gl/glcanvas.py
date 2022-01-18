@@ -144,15 +144,17 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._center = vec3(0.0, 0.0, (self._build_dimensions[5] - self._build_dimensions[2]) / 2.0)
         self._object_scale = 3.0
 
-        # bind core listeners
+        # Bind listeners.
         dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
         dispatcher.connect(self._update_colors, signal='core_a_selected')
         dispatcher.connect(self._update_colors, signal='core_a_deselected')
         dispatcher.connect(self._update_devices, signal='core_d_list_changed')
-        dispatcher.connect(self._handle_device_homed, signal='notify_device_homed')
         dispatcher.connect(self._update_objects, signal='core_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='core_o_deselected')
-        # bind events
+
+        dispatcher.connect(self._handle_device_homed, signal='notify_device_homed')
+
+        # Bind events.
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
         self._canvas.Bind(wx.EVT_IDLE, self.on_idle)
         self._canvas.Bind(wx.EVT_KEY_DOWN, self.on_key_down)

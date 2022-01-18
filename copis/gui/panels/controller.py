@@ -58,7 +58,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
         self.SetupScrolling(scroll_x=False, scrollIntoView=False)
 
-        # bind copiscore listeners
+        # Bind listeners.
         dispatcher.connect(self.on_device_selected, signal='core_d_selected')
         dispatcher.connect(self.on_device_deselected, signal='core_d_deselected')
 

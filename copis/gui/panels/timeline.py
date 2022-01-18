@@ -46,7 +46,7 @@ class TimelinePanel(wx.Panel):
         self.init_gui()
         self.update_timeline()
 
-        # bind copiscore listeners
+        # Bind listeners.
         dispatcher.connect(self.update_timeline, signal='core_a_list_changed')
 
         self.Layout()
