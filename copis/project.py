@@ -19,7 +19,9 @@ from typing import List
 from pydispatch import dispatcher
 from glm import vec3
 
-from copis.classes import BoundingBox, Device, Action
+from copis.classes import (
+    BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
+
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from .store import Store, load_json
@@ -80,42 +82,28 @@ class Project:
         if not hasattr(self, '_is_dirty'):
             self._is_dirty = False
 
+        if not hasattr(self, '_devices'):
+            self._devices: List[Device] = None
+
+        if not hasattr(self, '_proxies'):
+            self._proxies: List[Object3D] = None
+
+        if not hasattr(self, '_poses'):
+            self._poses: List[Pose] = None # MonitoredList('ntf_a_list_changed')
+
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_d_list_changed')
 
     @property
-    def proxy_path(self) -> str:
-        """Returns the project's proxy path."""
-        return self._proxy_path
+    def devices(self) -> List[Device]:
+        """Returns the list of configured devices."""
+        return self._devices
 
     @property
-    def devices(self) -> List[Device]:
-        """Parses and returns the profile devices."""
-        def parse_device(data):
-            home_position = Point5(*data['home_position'])
-            size = vec3(data['size'])
-            lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
-            upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
-
-            return Device(
-                data['id'],
-                data['name'],
-                data['type'],
-                data['description'],
-                home_position,
-                BoundingBox(lower_corner, upper_corner),
-                size,
-                data['port']
-            )
-
-        key = 'devices'
-        devices = []
-
-        if key in self._profile and self._profile[key]:
-            devices = [parse_device(d) for d in self._profile[key]]
-
-        return devices
+    def proxies(self) -> List[Object3D]:
+        """Returns the list of proxy objects."""
+        return self._proxies
 
     @property
     def homing_sequence(self) -> List[str]:
@@ -172,6 +160,37 @@ class Project:
     def _on_notification(self):
         self._is_dirty = True
         print('notified')
+    def _init_devices(self):
+        def parse_device(data):
+            home_position = Point5(*data['home_position'])
+            size = vec3(data['size'])
+            lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
+            upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
+
+            return Device(
+                data['id'],
+                data['name'],
+                data['type'],
+                data['description'],
+                home_position,
+                BoundingBox(lower_corner, upper_corner),
+                size,
+                data['port']
+            )
+
+        key = 'devices'
+        devices = []
+
+        if key in self._profile and self._profile[key]:
+            devices = [parse_device(d) for d in self._profile[key]]
+
+        self._devices = MonitoredList('ntf_d_list_changed', devices)
+
+    def _init_proxies(self):
+        self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
+                # Start with handsome dan :)
+                # On init a new project is created with handsome dan as the proxy.
+                [OBJObject3D(self._proxy_path, scale=vec3(20, 20, 20))])
 
     def start(self):
         """Starts a new project."""
@@ -179,6 +198,8 @@ class Project:
             self._init()
 
         self._load_profile()
+        self._init_devices()
+        self._init_proxies()
 
     def open(self):
         """Opens an existing project."""

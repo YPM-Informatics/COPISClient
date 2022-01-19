@@ -33,11 +33,11 @@ from typing import List
 from glm import vec2, vec3
 
 from copis.command_processor import serialize_command
-from copis.helpers import print_error_msg, print_debug_msg, print_info_msg # , create_action_args
+from copis.helpers import print_error_msg, print_debug_msg, print_info_msg
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
-from copis.classes import Device, MonitoredList, Object3D, OBJObject3D, Pose
+from copis.classes import MonitoredList, Pose
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -54,27 +54,21 @@ class COPISCore(
     """COPISCore. Connects and interacts with devices in system.
 
     Attributes:
-        points: A list of points representing a path.
-        devices: A list of devices (cameras).
-        objects: A list of proxy objects.
-        selected_device: Current selected device. -1 if not selected.
-        selected_points: A list of integers representing the index of selected
+        selected_device: current selected device. -1 if not selected.
+        selected_points: a list of integers representing the index of selected
             points.
 
     Emits:
-        ntf_a_list_changed: When the action list has changed.
-        ntf_a_selected: When a new point (action) has been selected.
-        ntf_a_deselected: When a point (action) has been deselected.
-        ntf_d_list_changed: When the device list has changed.
-        ntf_d_selected: When a device has been selected.
-        ntf_d_deselected: When the current device has been deselected.
-        ntf_o_selected: When a proxy object has been selected.
-        ntf_o_deselected: When the current proxy object has been deselected.
+        ntf_a_list_changed: when the action list has changed.
+        ntf_a_selected: when a new point (action) has been selected.
+        ntf_a_deselected: when a point (action) has been deselected.
+        ntf_d_selected: when a device has been selected.
+        ntf_d_deselected: when the current device has been deselected.
+        ntf_o_deselected: when the current proxy object has been deselected.
 
-        msg_info: Any copiscore informational message.
-        msg_debug: Any copiscore debug message.
-        msg_error: Any copiscore access error message.
-
+        msg_info: any COPISCore informational message.
+        msg_debug: any COPISCore debug message.
+        msg_error: any COPISCore access error message.
     """
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
@@ -84,7 +78,7 @@ class COPISCore(
     _C_COMMANDS = [ActionType.C0, ActionType.C1]
 
     def __init__(self, parent=None) -> None:
-        """Initializes a CopisCore instance."""
+        """Initializes a COPISCore instance."""
         self.config = parent.config if parent else Config(vec2(800, 600))
 
         self.project = Project()
@@ -123,20 +117,10 @@ class COPISCore(
         # list of actions (paths)
         self._actions: List[Pose] = MonitoredList('ntf_a_list_changed')
 
-        # list of devices (cameras)
-        self._devices: List[Device] = MonitoredList('ntf_d_list_changed',
-            iterable=self.project.devices)
-
-        # list of objects (proxy objects)
-        self._objects: List[Object3D] = MonitoredList('ntf_o_list_changed',
-            iterable=[
-                # Start with handsome dan :)
-                # On init a new project is created with handsome dan as the proxy.
-                OBJObject3D(self.project.proxy_path, scale=vec3(20, 20, 20)),
-            ])
-
         self._selected_points: List[int] = []
+        self._selected_proxies: List[int] = []
         self._selected_device: int = -1
+
 
     @property
     def work_type_name(self):
@@ -251,7 +235,7 @@ class COPISCore(
 
         batch_size = len(device_ids)
 
-        header = self._get_move_commands(True, *[dvc.device_id for dvc in self.devices])
+        header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = self._chunk_actions(batch_size)
         footer = self._get_initialization_commands(ActionType.G1)
         footer.extend(self._disengage_motors_commands)
@@ -274,7 +258,7 @@ class COPISCore(
     def start_homing(self) -> bool:
         """Start the homing sequence, following the steps in the configuration."""
         def homing_callback():
-            for dvc in self.devices:
+            for dvc in self.project.devices:
                 dvc.set_is_homed()
 
         if not self.is_serial_port_connected:
@@ -293,7 +277,7 @@ class COPISCore(
             return False
 
         # Only send homing commands for connected devices.
-        all_device_ids = [d.device_id for d in self.devices]
+        all_device_ids = [d.device_id for d in self.project.devices]
         homing_actions = list(filter(lambda c: c.device in all_device_ids, homing_actions))
 
         device_ids = list(set(a.device for a in homing_actions))

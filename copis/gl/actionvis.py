@@ -84,7 +84,7 @@ class GLActionVis:
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
         # Initialize device boxes
-        for dvc in self.core.devices:
+        for dvc in self.core.project.devices:
             key = dvc.device_id
             size = vec3(dvc.size.x, dvc.size.y / 2, dvc.size.z)
             scale = 2 * self._SCALE_FACTOR
@@ -200,14 +200,14 @@ class GLActionVis:
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
-        self._num_devices = len(self.core.devices)
+        self._num_devices = len(self.core.project.devices)
 
         if self._num_devices > 0:
             scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
 
             for key, value in self._items['device'].items():
                 mats = glm.array([mat * scale for mat in value])
-                device = next(filter(lambda d, k = key: d.device_id == k, self.core.devices))
+                device = next(filter(lambda d, k = key: d.device_id == k, self.core.project.devices))
 
                 color = self.colors[key % len(self.colors)]
                 feat_color_mods = vec3()
@@ -260,7 +260,7 @@ class GLActionVis:
         """
         self._items['device'].clear()
 
-        for device in self.core.devices:
+        for device in self.core.project.devices:
             self._items['device'][device.device_id].append(point5_to_mat4(device.position))
 
         self.update_device_vaos()

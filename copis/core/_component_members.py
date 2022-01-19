@@ -33,27 +33,17 @@ class ComponentMembersMixin:
         return self._actions
 
     @property
-    def devices(self) -> List[Device]:
-        """Returns the core device list."""
-        return self._devices
-
-    @property
-    def objects(self) -> List[Object3D]:
-        """Returns the core object list."""
-        return self._objects
-
-    @property
     def selected_device(self) -> int:
-        """Returns the selected device."""
+        """Returns the selected device's ID."""
         return self._selected_device
 
     @property
     def selected_points(self) -> List[int]:
-        """Returns the selected points."""
+        """Returns the selected points' IDs."""
         return self._selected_points
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self.devices), None)
+        return next(filter(lambda d: d.device_id == device_id, self.project.devices), None)
 
     def add_action(self, atype: ActionType, device: int, *args) -> bool:
         """TODO: validate args given atype"""
@@ -78,17 +68,31 @@ class ComponentMembersMixin:
         self._actions.clear()
         dispatcher.send('ntf_a_list_changed')
 
-    def select_device(self, index: int) -> None:
-        """Select device given index in devices list."""
-        if index < 0:
-            self._selected_device = -1
-            dispatcher.send('ntf_d_deselected')
+    def select_proxy(self, index) -> None:
+        """Saves the selected proxy object's index."""
+        self._selected_proxies.append(index)
 
-        elif index < len(self._devices):
+    def deselect_proxy(self, index) -> None:
+        """Removes proxy objects ID from list of saved proxies."""
+        if index in self._selected_proxies:
+            self._selected_proxies.remove(index)
+
+    def select_device(self, index: int) -> None:
+        """Selects device given index in devices list."""
+        if index < 0:
+            if self.selected_device >= 0:
+                self._selected_device = -1
+                dispatcher.send('ntf_d_deselected')
+
+        elif index < len(self.project.devices):
             self._selected_device = index
             self.select_point(-1)
-            dispatcher.send('ntf_o_deselected')
-            dispatcher.send('ntf_d_selected', device=self._devices[index])
+
+            if len(self._selected_proxies) > 0 and \
+                all(id_ >= 0 for id_ in self._selected_proxies):
+                dispatcher.send('ntf_o_deselected')
+
+            dispatcher.send('ntf_d_selected', device=self.project.devices[index])
 
         else:
             print_error_msg(self.console, f'invalid device index {index}.')

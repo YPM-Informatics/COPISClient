@@ -78,7 +78,7 @@ class GLObjectVis:
         """
         self._meshes.clear()
 
-        for index, object3d in enumerate(self.core.objects):
+        for index, object3d in enumerate(self.core.project.proxies):
             vao = glGenVertexArrays(1)
             glBindVertexArray(vao)
 

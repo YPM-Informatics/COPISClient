@@ -23,7 +23,10 @@ class MonitoredList(list):
 
     Just a regular list, but sends notifications when changed or modified.
     """
-    def __init__(self, signal: str, iterable=[]) -> None:
+    def __init__(self, signal: str, iterable=None) -> None:
+        if iterable is None:
+            iterable = []
+
         super().__init__(iterable)
         self.signal = signal
 

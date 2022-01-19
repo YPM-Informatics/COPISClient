@@ -34,7 +34,7 @@ class MachineMembersMixin:
     @property
     def _machine_status(self):
         status = 'unknown'
-        statuses = list(set(dvc.serial_status for dvc in self.devices))
+        statuses = list(set(dvc.serial_status for dvc in self.project.devices))
 
         if len(statuses) == 1 and statuses[0]:
             status = statuses[0].name.lower()
@@ -45,12 +45,12 @@ class MachineMembersMixin:
 
     @property
     def _machine_last_reported_on(self):
-        reports = [dvc.last_reported_on for dvc in self.devices if dvc.last_reported_on]
+        reports = [dvc.last_reported_on for dvc in self.project.devices if dvc.last_reported_on]
         return max(reports) if len(reports) > 0 else None
 
     @property
     def _is_machine_locked(self):
-        for dvc in self.devices:
+        for dvc in self.project.devices:
             if dvc.serial_response:
                 flags = dvc.serial_response.system_status_flags
 
@@ -61,15 +61,15 @@ class MachineMembersMixin:
 
     @property
     def _has_machine_reported(self):
-        if any(not dvc.serial_response for dvc in self.devices):
+        if any(not dvc.serial_response for dvc in self.project.devices):
             return False
 
-        return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.devices)
+        return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.project.devices)
 
     @property
     def _disengage_motors_commands(self):
         cmds = []
-        for dvc in self.devices:
+        for dvc in self.project.devices:
             cmds.append(Action(ActionType.M18, dvc.device_id))
 
         actions = []
@@ -79,12 +79,12 @@ class MachineMembersMixin:
     @property
     def is_machine_idle(self):
         """Returns a value indicating whether the machine is idle."""
-        return all(dvc.serial_status == ComStatus.IDLE for dvc in self.devices)
+        return all(dvc.serial_status == ComStatus.IDLE for dvc in self.project.devices)
 
     @property
     def is_machine_homed(self):
         """Returns a value indicating whether the machine is homed."""
-        return all(dvc.is_homed for dvc in self.devices)
+        return all(dvc.is_homed for dvc in self.project.devices)
 
     # def _back_off(self, device_360):
     #     device_id = device_360[0]
@@ -134,7 +134,7 @@ class MachineMembersMixin:
 
     def _get_move_commands(self, is_absolute, *device_ids):
         actions = []
-        all_device_ids = [dvc.device_id for dvc in self.devices]
+        all_device_ids = [dvc.device_id for dvc in self.project.devices]
 
         if device_ids and all(did in all_device_ids for did in device_ids):
             atype = ActionType.G90 if is_absolute else ActionType.G91
@@ -155,7 +155,7 @@ class MachineMembersMixin:
             print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
 
-        for dvc in self.devices:
+        for dvc in self.project.devices:
             cmds.append(Action(ActionType.G0, dvc.device_id))
 
         if cmds:
@@ -189,7 +189,7 @@ class MachineMembersMixin:
             print_error_msg(self.console, 'Cannot unlock. The machine is busy.')
             return False
 
-        for dvc in self.devices:
+        for dvc in self.project.devices:
             if dvc.serial_response:
                 flags = dvc.serial_response.system_status_flags
 
@@ -214,7 +214,7 @@ class MachineMembersMixin:
         actions = []
         g_code = str(atype).split('.')[1]
 
-        for dvc in self.devices:
+        for dvc in self.project.devices:
             device_id = dvc.device_id
             cmd_str_1 = ''
             cmd_str_2 = ''
@@ -240,7 +240,7 @@ class MachineMembersMixin:
     def set_ready(self):
         """Initializes the gantries to their current positions."""
         def set_ready_callback():
-            for dvc in self.devices:
+            for dvc in self.project.devices:
                 dvc.set_is_homed()
 
         if self._is_machine_busy:

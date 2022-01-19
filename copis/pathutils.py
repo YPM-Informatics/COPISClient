@@ -191,8 +191,6 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
                 c_args = create_action_args([1.5], 'S')
                 payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
-            
-
             interlaced_actions.append(
                 # TODO: allow user customization of actions at each point
                 # https://github.com/YPM-Informatics/COPISClient/issues/102

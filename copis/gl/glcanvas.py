@@ -119,8 +119,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._vaos = {}
         self._point_lines = None
         self._point_count = None
-        self._num_devices: int = len(self.core.devices)
-        self._num_objects: int = len(self.core.objects)
+        self._num_devices: int = len(self.core.project.devices)
+        self._num_objects: int = len(self.core.project.proxies)
 
         self._dirty = False
         self._gl_initialized = False
@@ -307,7 +307,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles ntf_d_list_changed signal.
         """
-        self._num_devices = len(self.core.devices)
+        self._num_devices = len(self.core.project.devices)
         self._actionvis.update_devices()
         self._dirty = True
 
@@ -316,7 +316,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles ntf_o_list_changed signal.
         """
-        self._num_objects = len(self.core.objects)
+        self._num_objects = len(self.core.project.proxies)
         self._objectvis.update_objects()
         self._dirty = True
 
@@ -393,7 +393,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
             for obj in reversed(self._objectvis.objects):
                 if obj.selected:
-                    self.core.objects.pop(obj.object_id)
+                    self.core.project.proxies.pop(obj.object_id)
 
         else:
             event.Skip()
@@ -500,8 +500,12 @@ class GLCanvas3D(glcanvas.GLCanvas):
             self.core.select_point(-1)
             self.core.select_device(-1)
             for obj in self._objectvis.objects:
-                obj.selected = obj.object_id == id_
-            dispatcher.send('ntf_o_selected', object=self.core.objects[id_])
+                is_obj_found = obj.object_id == id_
+                obj.selected = is_obj_found
+                if is_obj_found:
+                    self.core.select_proxy(id_)
+
+            dispatcher.send('ntf_o_selected', object=self.core.project.proxies[id_])
             self._dirty = True
 
         else:
@@ -510,6 +514,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _deselect_object(self) -> None:
         for obj in self._objectvis.objects:
             obj.selected = False
+            self.core.deselect_proxy(obj.object_id)
+
         self._dirty = True
 
     def on_erase_background(self, event: wx.EraseEvent) -> None:
