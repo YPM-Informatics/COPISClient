@@ -59,17 +59,17 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.SetupScrolling(scroll_x=False, scrollIntoView=False)
 
         # Bind listeners.
-        dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_device_deselected, signal='core_d_deselected')
+        dispatcher.connect(self.on_device_selected, signal='ntf_d_selected')
+        dispatcher.connect(self.on_device_deselected, signal='ntf_d_deselected')
 
     def on_device_selected(self, device) -> None:
-        """On core_d_selected, update and enable controls."""
+        """On ntf_d_selected, update and enable controls."""
         self._device = device
         self.update_machine_pos(device.position)
         self.Enable()
 
     def on_device_deselected(self) -> None:
-        """On core_d_deselected, clear and disable controls."""
+        """On ntf_d_deselected, clear and disable controls."""
         self.update_machine_pos(Point5())
         self.Disable()
 

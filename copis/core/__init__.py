@@ -62,14 +62,14 @@ class COPISCore(
             points.
 
     Emits:
-        core_a_list_changed: When the action list has changed.
-        core_a_selected: When a new point (action) has been selected.
-        core_a_deselected: When a point (action) has been deselected.
-        core_d_list_changed: When the device list has changed.
-        core_d_selected: When a device has been selected.
-        core_d_deselected: When the current device has been deselected.
-        core_o_selected: When a proxy object has been selected.
-        core_o_deselected: When the current proxy object has been deselected.
+        ntf_a_list_changed: When the action list has changed.
+        ntf_a_selected: When a new point (action) has been selected.
+        ntf_a_deselected: When a point (action) has been deselected.
+        ntf_d_list_changed: When the device list has changed.
+        ntf_d_selected: When a device has been selected.
+        ntf_d_deselected: When the current device has been deselected.
+        ntf_o_selected: When a proxy object has been selected.
+        ntf_o_deselected: When the current proxy object has been deselected.
 
         msg_info: Any copiscore informational message.
         msg_debug: Any copiscore debug message.
@@ -121,14 +121,14 @@ class COPISCore(
         self._mainqueue = []
 
         # list of actions (paths)
-        self._actions: List[Pose] = MonitoredList('core_a_list_changed')
+        self._actions: List[Pose] = MonitoredList('ntf_a_list_changed')
 
         # list of devices (cameras)
-        self._devices: List[Device] = MonitoredList('core_d_list_changed',
+        self._devices: List[Device] = MonitoredList('ntf_d_list_changed',
             iterable=self.project.devices)
 
         # list of objects (proxy objects)
-        self._objects: List[Object3D] = MonitoredList('core_o_list_changed',
+        self._objects: List[Object3D] = MonitoredList('ntf_o_list_changed',
             iterable=[
                 # Start with handsome dan :)
                 # On init a new project is created with handsome dan as the proxy.

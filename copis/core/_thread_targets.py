@@ -63,7 +63,7 @@ class ThreadTargetsMixin:
                     print_debug_msg(self.console, '**** Machine is idle ****', self._is_dev_env)
 
                     if len(self._mainqueue) <= 0:
-                        dispatcher.send('notify_machine_idle')
+                        dispatcher.send('ntf_machine_idle')
 
             if self._is_new_connection:
                 if self._has_machine_reported:
@@ -119,7 +119,7 @@ class ThreadTargetsMixin:
                 extra_callback()
             print_info_msg(self.console, f'{t_name} ended.')
 
-        dispatcher.connect(callback, signal='notify_machine_idle')
+        dispatcher.connect(callback, signal='ntf_machine_idle')
 
         print_info_msg(self.console, f'{t_name} started.')
 

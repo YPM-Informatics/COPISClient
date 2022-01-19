@@ -145,14 +145,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._object_scale = 3.0
 
         # Bind listeners.
-        dispatcher.connect(self._update_volumes, signal='core_a_list_changed')
-        dispatcher.connect(self._update_colors, signal='core_a_selected')
-        dispatcher.connect(self._update_colors, signal='core_a_deselected')
-        dispatcher.connect(self._update_devices, signal='core_d_list_changed')
-        dispatcher.connect(self._update_objects, signal='core_o_list_changed')
-        dispatcher.connect(self._deselect_object, signal='core_o_deselected')
+        dispatcher.connect(self._update_volumes, signal='ntf_a_list_changed')
+        dispatcher.connect(self._update_colors, signal='ntf_a_selected')
+        dispatcher.connect(self._update_colors, signal='ntf_a_deselected')
+        dispatcher.connect(self._update_devices, signal='ntf_d_list_changed')
+        dispatcher.connect(self._update_objects, signal='ntf_o_list_changed')
+        dispatcher.connect(self._deselect_object, signal='ntf_o_deselected')
 
-        dispatcher.connect(self._handle_device_homed, signal='notify_device_homed')
+        dispatcher.connect(self._handle_device_homed, signal='ntf_device_homed')
 
         # Bind events.
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -293,7 +293,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _update_volumes(self) -> None:
         """When action list is modified, calculate point positions.
 
-        Handles core_a_list_changed signal.
+        Handles ntf_a_list_changed signal.
         """
         self._actionvis.update_actions()
         self._dirty = True
@@ -305,7 +305,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _update_devices(self) -> None:
         """When the device list has changed, update actionvis and _num_devices.
 
-        Handles core_d_list_changed signal.
+        Handles ntf_d_list_changed signal.
         """
         self._num_devices = len(self.core.devices)
         self._actionvis.update_devices()
@@ -314,7 +314,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _update_objects(self) -> None:
         """When the proxy object list has changed, update objectvis and _num_objects.
 
-        Handles core_o_list_changed signal.
+        Handles ntf_o_list_changed signal.
         """
         self._num_objects = len(self.core.objects)
         self._objectvis.update_objects()
@@ -494,14 +494,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Select proxy object given id."""
         if id_ < 0:
             self._deselect_object()
-            dispatcher.send('core_o_deselected')
+            dispatcher.send('ntf_o_deselected')
 
         elif id_ in (x.object_id for x in self._objectvis.objects):
             self.core.select_point(-1)
             self.core.select_device(-1)
             for obj in self._objectvis.objects:
                 obj.selected = obj.object_id == id_
-            dispatcher.send('core_o_selected', object=self.core.objects[id_])
+            dispatcher.send('ntf_o_selected', object=self.core.objects[id_])
             self._dirty = True
 
         else:

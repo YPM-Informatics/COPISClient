@@ -15,7 +15,7 @@
 
 """GLObjectVis class.
 
-TODO: on core_o_list_changed, update only vao's which have been modified, not everything
+TODO: on ntf_o_list_changed, update only vao's which have been modified, not everything
 """
 
 from dataclasses import dataclass
@@ -74,7 +74,7 @@ class GLObjectVis:
     def update_objects(self) -> None:
         """Update proxy objects when object list changes.
 
-        Called from GLCanvas upon core_o_list_changed signal.
+        Called from GLCanvas upon ntf_o_list_changed signal.
         """
         self._meshes.clear()
 

@@ -226,7 +226,7 @@ class GLActionVis:
     def update_actions(self) -> None:
         """Update lines and points when action list changes.
 
-        Called from GLCanvas upon core_a_list_changed signal.
+        Called from GLCanvas upon ntf_a_list_changed signal.
 
         # TODO: process other action ids
         """
@@ -256,7 +256,7 @@ class GLActionVis:
     def update_devices(self) -> None:
         """Update device locations when device list changes.
 
-        Called from GLCanvas upon core_d_list_changed signal.
+        Called from GLCanvas upon ntf_d_list_changed signal.
         """
         self._items['device'].clear()
 

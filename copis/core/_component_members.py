@@ -63,32 +63,32 @@ class ComponentMembersMixin:
 
         # if certain type, broadcast that positions are modified
         if atype in (ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3):
-            dispatcher.send('core_a_list_changed')
+            dispatcher.send('ntf_a_list_changed')
 
         return True
 
     def remove_action(self, index: int) -> Action:
         """Removes an action given action list index."""
         action = self._actions.pop(index)
-        dispatcher.send('core_a_list_changed')
+        dispatcher.send('ntf_a_list_changed')
         return action
 
     def clear_action(self) -> None:
         """Removes all actions from actions list."""
         self._actions.clear()
-        dispatcher.send('core_a_list_changed')
+        dispatcher.send('ntf_a_list_changed')
 
     def select_device(self, index: int) -> None:
         """Select device given index in devices list."""
         if index < 0:
             self._selected_device = -1
-            dispatcher.send('core_d_deselected')
+            dispatcher.send('ntf_d_deselected')
 
         elif index < len(self._devices):
             self._selected_device = index
             self.select_point(-1)
-            dispatcher.send('core_o_deselected')
-            dispatcher.send('core_d_selected', device=self._devices[index])
+            dispatcher.send('ntf_o_deselected')
+            dispatcher.send('ntf_d_selected', device=self._devices[index])
 
         else:
             print_error_msg(self.console, f'invalid device index {index}.')
@@ -103,7 +103,7 @@ class ComponentMembersMixin:
         """
         if index == -1:
             self._selected_points.clear()
-            dispatcher.send('core_a_deselected')
+            dispatcher.send('ntf_a_deselected')
             return
 
         if index >= len(self._actions):
@@ -115,14 +115,14 @@ class ComponentMembersMixin:
         if index not in self._selected_points:
             self._selected_points.append(index)
             self.select_device(-1)
-            dispatcher.send('core_o_deselected')
-            dispatcher.send('core_a_selected', points=self._selected_points)
+            dispatcher.send('ntf_o_deselected')
+            dispatcher.send('ntf_a_selected', points=self._selected_points)
 
     def deselect_point(self, index: int) -> None:
         """Remove point from selected points given index in actions list."""
         try:
             self._selected_points.remove(index)
-            dispatcher.send('core_a_deselected')
+            dispatcher.send('ntf_a_deselected')
         except ValueError:
             return
 
@@ -134,7 +134,7 @@ class ComponentMembersMixin:
             for i in range(min(len(action.args), len(args))):
                 action.args[i] = args[i]
 
-        dispatcher.send('core_a_list_changed')
+        dispatcher.send('ntf_a_list_changed')
 
     def export_actions(self, filename: str = None) -> list:
         """Serialize action list and write to file.
@@ -152,5 +152,5 @@ class ComponentMembersMixin:
             with open(filename, 'w') as file:
                 file.write('\n'.join(lines))
 
-        dispatcher.send('core_a_exported', filename=filename)
+        dispatcher.send('ntf_a_exported', filename=filename)
         return lines

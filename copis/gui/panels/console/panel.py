@@ -53,15 +53,15 @@ class ConsolePanel(wx.Panel):
         self._cmd_processor = _CommandProcessor(self.core)
 
         # Bind listeners.
-        dispatcher.connect(self.on_notification, signal='core_a_list_changed')
-        dispatcher.connect(self.on_notification, signal='core_d_list_changed')
-        dispatcher.connect(self.on_notification, signal='core_a_selected')
-        dispatcher.connect(self.on_notification, signal='core_a_deselected')
-        dispatcher.connect(self.on_notification, signal='core_d_selected')
-        dispatcher.connect(self.on_notification, signal='core_d_deselected')
-        dispatcher.connect(self.on_notification, signal='core_o_selected')
-        dispatcher.connect(self.on_notification, signal='core_o_deselected')
-        dispatcher.connect(self.on_action_export, signal='core_a_exported')
+        dispatcher.connect(self.on_notification, signal='ntf_a_list_changed')
+        dispatcher.connect(self.on_notification, signal='ntf_d_list_changed')
+        dispatcher.connect(self.on_notification, signal='ntf_a_selected')
+        dispatcher.connect(self.on_notification, signal='ntf_a_deselected')
+        dispatcher.connect(self.on_notification, signal='ntf_d_selected')
+        dispatcher.connect(self.on_notification, signal='ntf_d_deselected')
+        dispatcher.connect(self.on_notification, signal='ntf_o_selected')
+        dispatcher.connect(self.on_notification, signal='ntf_o_deselected')
+        dispatcher.connect(self.on_action_export, signal='ntf_a_exported')
 
         dispatcher.connect(self.on_notification, signal='msg_error')
         dispatcher.connect(self.on_notification, signal='msg_info')
@@ -121,7 +121,7 @@ class ConsolePanel(wx.Panel):
         """Print any pydispatch signals."""
         notification = message
 
-        if signal.startswith('core_'):
+        if signal.startswith('ntf_'):
             if self.core.is_dev_env:
                 parts = signal.split('_')
                 signal = 'msg_debug'

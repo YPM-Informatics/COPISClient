@@ -97,7 +97,7 @@ class Device:
         """Sets the device's IsHomed flag and notifies."""
         self._is_homed = True
 
-        dispatcher.send('notify_device_homed')
+        dispatcher.send('ntf_device_homed')
 
     def set_serial_response(self, response: SerialResponse) -> None:
         """Sets the device's serial response."""

@@ -73,12 +73,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.Layout()
 
         # Bind listeners.
-        dispatcher.connect(self.on_device_selected, signal='core_d_selected')
-        dispatcher.connect(self.on_points_selected, signal='core_a_selected')
-        dispatcher.connect(self.on_object_selected, signal='core_o_selected')
-        dispatcher.connect(self.on_deselected, signal='core_d_deselected')
-        dispatcher.connect(self.on_deselected, signal='core_a_deselected')
-        dispatcher.connect(self.on_deselected, signal='core_o_deselected')
+        dispatcher.connect(self.on_device_selected, signal='ntf_d_selected')
+        dispatcher.connect(self.on_points_selected, signal='ntf_a_selected')
+        dispatcher.connect(self.on_object_selected, signal='ntf_o_selected')
+        dispatcher.connect(self.on_deselected, signal='ntf_d_deselected')
+        dispatcher.connect(self.on_deselected, signal='ntf_a_deselected')
+        dispatcher.connect(self.on_deselected, signal='ntf_o_deselected')
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
@@ -116,7 +116,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._current_text.Label = value
 
     def on_device_selected(self, device) -> None:
-        """On core_d_selected, set to device view."""
+        """On ntf_d_selected, set to device view."""
         self.current = 'Device'
         self._property_panels['device_info'].device_id = device.device_id
         self._property_panels['device_info'].device_name = device.name
@@ -125,7 +125,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.update_to_selected('Device')
 
     def on_points_selected(self, points: List[int]) -> None:
-        """On core_a_selected, set to point view."""
+        """On ntf_a_selected, set to point view."""
 
         if len(points) == 1:
             action = self.core.actions[points[0]].position
@@ -136,12 +136,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
                 self.update_to_selected('Point')
 
     def on_object_selected(self, object) -> None:
-        """On core_o_selected, set to proxy object view."""
+        """On ntf_o_selected, set to proxy object view."""
         self.current = 'Proxy Object'
         self.update_to_selected('Object')
 
     def on_deselected(self) -> None:
-        """On core_*_deselected, reset to default view."""
+        """On ntf_*_deselected, reset to default view."""
         self.current = 'No Selection'
         self.update_to_selected('Default')
 

@@ -47,7 +47,7 @@ class TimelinePanel(wx.Panel):
         self.update_timeline()
 
         # Bind listeners.
-        dispatcher.connect(self.update_timeline, signal='core_a_list_changed')
+        dispatcher.connect(self.update_timeline, signal='ntf_a_list_changed')
 
         self.Layout()
 
@@ -170,7 +170,7 @@ class TimelinePanel(wx.Panel):
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
 
-        Handles core_a_list_changed signal sent by self.core.
+        Handles ntf_a_list_changed signal sent by self.core.
         """
         self.timeline.Clear()
         for pose in self.core.actions:
