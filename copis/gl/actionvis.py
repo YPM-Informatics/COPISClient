@@ -188,7 +188,7 @@ class GLActionVis:
                 # If point is selected, darken its color.
                 for i, v in enumerate(value):
                     # Un-offset ids.
-                    if v[0] - self._num_devices in self.core.selected_points:
+                    if v[0] - self._num_devices == self.core.selected_pose:
                         shade_factor = .6
                         cols[i] = shade_color(vec4(cols[i]), shade_factor)
                         feat_color_mods[i] = vec3(2, shade_factor, 0)

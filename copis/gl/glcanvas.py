@@ -450,7 +450,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         self._dirty = True
 
-    def on_left_dclick(self, event: wx.MouseEvent) -> None:
+    def on_left_dclick(self, _) -> None:
         id_ = self._hover_id
 
         # id_ belongs to viewcube
@@ -493,8 +493,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def select_object(self, id_: int) -> None:
         """Select proxy object given id."""
         if id_ < 0:
-            self._deselect_object()
-            dispatcher.send('ntf_o_deselected')
+            if len(self._objectvis.objects) > 0 and \
+                any(obj.selected for obj in self._objectvis.objects):
+                dispatcher.send('ntf_o_deselected')
 
         elif id_ in (x.object_id for x in self._objectvis.objects):
             self.core.select_point(-1)

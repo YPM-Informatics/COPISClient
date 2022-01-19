@@ -51,25 +51,7 @@ class COPISCore(
     MachineMembersMixin,
     ComponentMembersMixin,
     CommunicationMembersMixin):
-    """COPISCore. Connects and interacts with devices in system.
-
-    Attributes:
-        selected_device: current selected device. -1 if not selected.
-        selected_points: a list of integers representing the index of selected
-            points.
-
-    Emits:
-        ntf_a_list_changed: when the action list has changed.
-        ntf_a_selected: when a new point (action) has been selected.
-        ntf_a_deselected: when a point (action) has been deselected.
-        ntf_d_selected: when a device has been selected.
-        ntf_d_deselected: when the current device has been deselected.
-        ntf_o_deselected: when the current proxy object has been deselected.
-
-        msg_info: any COPISCore informational message.
-        msg_debug: any COPISCore debug message.
-        msg_error: any COPISCore access error message.
-    """
+    """COPISCore. Connects and interacts with devices in system."""
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
     _G_COMMANDS = [ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
@@ -117,8 +99,8 @@ class COPISCore(
         # list of actions (paths)
         self._actions: List[Pose] = MonitoredList('ntf_a_list_changed')
 
-        self._selected_points: List[int] = []
-        self._selected_proxies: List[int] = []
+        self._selected_pose: int = -1
+        self._selected_proxy: int = -1
         self._selected_device: int = -1
 
 

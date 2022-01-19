@@ -32,15 +32,20 @@ class ComponentMembersMixin:
         """Returns the core action list."""
         return self._actions
 
-    @property
-    def selected_device(self) -> int:
-        """Returns the selected device's ID."""
-        return self._selected_device
+    # @property
+    # def selected_device(self) -> int:
+    #     """Returns the selected device's ID."""
+    #     return self._selected_device
 
-    @property
-    def selected_points(self) -> List[int]:
-        """Returns the selected points' IDs."""
-        return self._selected_points
+    # @property
+    # def selected_pose(self) -> int:
+    #     """Returns the selected pose's ID."""
+    #     return self._selected_pose
+
+    # @property
+    # def selected_proxy(self) -> int:
+    #     """Returns the selected proxy object's ID."""
+    #     return self._selected_proxy
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.project.devices), None)
@@ -69,66 +74,46 @@ class ComponentMembersMixin:
         dispatcher.send('ntf_a_list_changed')
 
     def select_proxy(self, index) -> None:
-        """Saves the selected proxy object's index."""
+        """Selects proxy given index in proxy list."""
         self._selected_proxies.append(index)
+        if index < 0 and self.selected_device >= 0:
+            self._selected_device = -1
 
-    def deselect_proxy(self, index) -> None:
-        """Removes proxy objects ID from list of saved proxies."""
-        if index in self._selected_proxies:
-            self._selected_proxies.remove(index)
+            dispatcher.send('ntf_d_deselected')
 
     def select_device(self, index: int) -> None:
-        """Selects device given index in devices list."""
-        if index < 0:
-            if self.selected_device >= 0:
-                self._selected_device = -1
-                dispatcher.send('ntf_d_deselected')
+        """Selects device given index in d."""
+        if index < 0 and self.selected_device >= 0:
+            self._selected_device = -1
 
+            dispatcher.send('ntf_d_deselected')
         elif index < len(self.project.devices):
+            self.select_proxy(-1)
+            self.select_pose(-1)
+
             self._selected_device = index
-            self.select_point(-1)
 
-            if len(self._selected_proxies) > 0 and \
-                all(id_ >= 0 for id_ in self._selected_proxies):
-                dispatcher.send('ntf_o_deselected')
-
-            dispatcher.send('ntf_d_selected', device=self.project.devices[index])
+            dispatcher.send('ntf_d_selected', device=self._selected_device)
 
         else:
-            print_error_msg(self.console, f'invalid device index {index}.')
+            print_error_msg(self.console, f'Device index {index} is out of range.')
 
-    def select_point(self, index: int, clear: bool = True) -> None:
-        """Add point to points list given index in actions list.
+    def select_pose(self, index: int) -> None:
+        """Selects pose given index in pose list."""
+        if index < 0 and self._selected_pose >= 0:
+            self._selected_pose = -1
 
-        Args:
-            index: An integer representing index of action to be selected.
-            clear: A boolean representing whether to clear the list before
-                selecting the new point or not.
-        """
-        if index == -1:
-            self._selected_points.clear()
             dispatcher.send('ntf_a_deselected')
-            return
-
-        if index >= len(self._actions):
-            return
-
-        if clear:
-            self._selected_points.clear()
-
-        if index not in self._selected_points:
-            self._selected_points.append(index)
+        elif index < len (self._actions):
             self.select_device(-1)
-            dispatcher.send('ntf_o_deselected')
-            dispatcher.send('ntf_a_selected', points=self._selected_points)
+            self.select_proxy(-1)
 
-    def deselect_point(self, index: int) -> None:
-        """Remove point from selected points given index in actions list."""
-        try:
-            self._selected_points.remove(index)
-            dispatcher.send('ntf_a_deselected')
-        except ValueError:
-            return
+            self._selected_pose = index
+
+            dispatcher.send('ntf_a_selected', pose=self._selected_pose)
+
+        else:
+            print_error_msg(self.console, f'Pose index {index} is out of range.')
 
     def update_selected_points(self, args) -> None:
         """Update position of points in selected points list."""
