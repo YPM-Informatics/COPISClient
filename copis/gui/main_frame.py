@@ -18,6 +18,7 @@
 import wx
 import wx.lib.agw.aui as aui
 
+from pydispatch import dispatcher
 from glm import vec3
 
 import copis.store as store
@@ -71,6 +72,8 @@ class MainWindow(wx.Frame):
 
         # project saving
         self.project_dirty = False
+
+        self.file_menu = None
         self._menubar = None
         self._mgr = None
 
@@ -90,6 +93,10 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.numpoints = None
+
+        # Bind listeners.
+        dispatcher.connect(self._handle_project_dirty_changed,
+            signal='ntf_project_dirty_changed')
 
     # --------------------------------------------------------------------------
     # Accessor methods
@@ -134,6 +141,9 @@ class MainWindow(wx.Frame):
     def pathgen_toolbar(self) -> PathgenToolbar:
         """Returns the path generation toolbar."""
         return self.panels['pathgen_toolbar']
+
+    def _handle_project_dirty_changed(self, is_project_dirty: bool) -> None:
+        self.file_menu.Enable(wx.ID_NEW, is_project_dirty)
 
     def init_statusbar(self) -> None:
         """Initialize statusbar."""
@@ -192,40 +202,40 @@ class MainWindow(wx.Frame):
         self._menubar = wx.MenuBar(0)
 
         # File menu.
-        file_menu = wx.Menu()
+        self.file_menu = wx.Menu()
 
         recent_menu = wx.Menu()
 
         _item = wx.MenuItem(None, wx.ID_NEW, '&New Project\tCtrl+N', 'Create new project')
         _item.Bitmap = create_scaled_bitmap('add_project', 16)
-        self.Bind(wx.EVT_MENU, self.on_new_project, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_new_project, self.file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_OPEN, '&Open Project...\tCtrl+O', 'Open existing project')
         _item.Bitmap = create_scaled_bitmap('open_project', 16)
-        self.Bind(wx.EVT_MENU, self.on_open_project, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_open_project, self.file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_JUMP_TO, '&Recent Projects', 'Open one of recent projects',
             subMenu=recent_menu)
-        file_menu.Append(_item)
+        self.file_menu.Append(_item)
 
         _item = wx.MenuItem(None, wx.ID_SAVE, '&Save Project\tCtrl+S', 'Save project')
         _item.Bitmap = create_scaled_bitmap('save', 16)
-        self.Bind(wx.EVT_MENU, self.on_save, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_save, self.file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_SAVEAS, 'Save Project &As...\tCtrl+Shift+S',
             'Save project as')
         _item.Bitmap = create_scaled_bitmap('save', 16)
-        self.Bind(wx.EVT_MENU, self.on_save_as, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_save_as, self.file_menu.Append(_item))
 
-        file_menu.Enable(wx.ID_NEW, False)
-        file_menu.Enable(wx.ID_JUMP_TO, False)
-        file_menu.Enable(wx.ID_SAVE, False)
+        self.file_menu.Enable(wx.ID_NEW, False)
+        self.file_menu.Enable(wx.ID_JUMP_TO, False)
+        self.file_menu.Enable(wx.ID_SAVE, False)
 
-        file_menu.AppendSeparator()
+        self.file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
         _item.Bitmap = create_scaled_bitmap('exit_to_app', 16)
-        self.Bind(wx.EVT_MENU, self.on_exit, file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_exit, self.file_menu.Append(_item))
 
         # Edit menu.
         edit_menu = wx.Menu()
@@ -311,7 +321,7 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('info', 16)
         self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(_item))
 
-        self._menubar.Append(file_menu, '&File')
+        self._menubar.Append(self.file_menu, '&File')
         self._menubar.Append(edit_menu, '&Edit')
         self._menubar.Append(view_menu, '&View')
         self._menubar.Append(camera_menu, '&Camera')
@@ -414,7 +424,7 @@ class MainWindow(wx.Frame):
                            dlg.end_y_ctrl.num_value,
                            dlg.end_z_ctrl.num_value)
                 radius = dlg.radius_ctrl.num_value
-                self.core.objects.append(CylinderObject3D(start, end, radius))
+                self.core.project.proxies.append(CylinderObject3D(start, end, radius))
 
     def add_proxy_aabb(self, _) -> None:
         """Opens dialog to generate box proxy object."""
@@ -426,7 +436,7 @@ class MainWindow(wx.Frame):
                 upper = vec3(dlg.upper_x_ctrl.num_value,
                              dlg.upper_y_ctrl.num_value,
                              dlg.upper_z_ctrl.num_value)
-                self.core.objects.append(AABBObject3D(lower, upper))
+                self.core.project.proxies.append(AABBObject3D(lower, upper))
 
     def open_preferences_frame(self, _) -> None:
         """Opens the preferences frame."""

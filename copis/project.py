@@ -157,9 +157,13 @@ class Project:
     def _load_profile(self):
         self._profile = load_json(self._profile_path)
 
-    def _on_notification(self):
-        self._is_dirty = True
-        print('notified')
+    def _set_is_dirty(self):
+        self._toggle_is_dirty(True)
+
+    def _toggle_is_dirty(self, value):
+        self._is_dirty = value
+        dispatcher.send('ntf_project_dirty_changed', is_project_dirty=self._is_dirty)
+
     def _init_devices(self):
         def parse_device(data):
             home_position = Point5(*data['home_position'])
