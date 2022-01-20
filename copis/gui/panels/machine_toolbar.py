@@ -172,7 +172,7 @@ class MachineToolbar(aui.AuiToolBar):
             #     self.core.start_imaging()
 
             is_connected = self._core.is_serial_port_connected
-            has_path = len(self._core.actions)
+            has_path = len(self._core.project.poses)
             is_homed = self._core.is_machine_homed
             can_image = is_connected and has_path and is_homed
 
@@ -199,7 +199,7 @@ class MachineToolbar(aui.AuiToolBar):
                 print_debug_msg(self._core.console, 'Machine Settings opened.', self._core.is_dev_env)
 
         elif event.Id == ToolIds.EXPORT.value:
-            self._core.export_actions('actions.txt')
+            self._core.export_poses('actions.txt')
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""

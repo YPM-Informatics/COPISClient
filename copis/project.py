@@ -22,7 +22,7 @@ from glm import vec3
 from copis.classes import (
     BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
 
-from copis.globals import Point5
+from copis.globals import Point5, ActionType
 from copis.command_processor import deserialize_command
 from .store import Store, load_json
 
@@ -89,11 +89,12 @@ class Project:
             self._proxies: List[Object3D] = None
 
         if not hasattr(self, '_poses'):
-            self._poses: List[Pose] = None # MonitoredList('ntf_a_list_changed')
+            self._poses: List[Pose] = None
 
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_d_list_changed')
+        dispatcher.connect(self._set_is_dirty, signal='ntf_o_list_changed')
 
     @property
     def devices(self) -> List[Device]:
@@ -104,6 +105,11 @@ class Project:
     def proxies(self) -> List[Object3D]:
         """Returns the list of proxy objects."""
         return self._proxies
+
+    @property
+    def poses(self) -> List[Pose]:
+        """Returns the list of poses."""
+        return self._poses
 
     @property
     def homing_sequence(self) -> List[str]:
@@ -188,7 +194,7 @@ class Project:
         if key in self._profile and self._profile[key]:
             devices = [parse_device(d) for d in self._profile[key]]
 
-        self._devices = MonitoredList('ntf_d_list_changed', devices)
+        self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
 
     def _init_proxies(self):
         self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
@@ -196,16 +202,39 @@ class Project:
                 # On init a new project is created with handsome dan as the proxy.
                 [OBJObject3D(self._proxy_path, scale=vec3(20, 20, 20))])
 
+    def _init_poses(self):
+        self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
+
     def start(self):
         """Starts a new project."""
         if not self._is_initialized:
             self._init()
 
         self._load_profile()
+
         self._init_devices()
         self._init_proxies()
+        self._init_poses()
 
     def open(self):
         """Opens an existing project."""
         if not self._is_initialized:
             self._init()
+
+    # def add_pose(self, atype: ActionType, device_id: int, *args) -> bool:
+    #     """TODO: validate args given atype"""
+    #     pose = Pose(Action(atype, device_id, len(args), list(args)), [])
+    #     self._poses.append(pose)
+    #     dispatcher.send('ntf_a_list_changed')
+    #     return pose
+
+    def remove_pose(self, index: int) -> Action:
+        """Removes a pose given pose list index."""
+        pose = self._poses.pop(index)
+        dispatcher.send('ntf_a_list_changed')
+        return pose
+
+    def clear_poses(self) -> None:
+        """Removes all poses from pose list."""
+        self._poses.clear()
+        dispatcher.send('ntf_a_list_changed')

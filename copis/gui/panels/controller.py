@@ -65,7 +65,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
     def on_device_selected(self, device) -> None:
         """On ntf_d_selected, update and enable controls."""
         self._device = device
-        self.update_machine_pos(device.position)
+        self.update_machine_pos(self._device.position)
         self.Enable()
 
     def on_device_deselected(self) -> None:

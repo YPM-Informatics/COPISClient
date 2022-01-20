@@ -74,12 +74,13 @@ class PathgenToolbar(aui.AuiToolBar):
 
         # add single point adder
         _bmp = create_scaled_bitmap('add_circle_outline', 24)
-        self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add single path point')
+        self.AddTool(PathIds.POINT.value, 'Single Point', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add single path point')
 
         self.AddSeparator()
 
         self.Bind(wx.EVT_BUTTON, self.on_interleave_paths,
-            self.AddControl(wx.Button(self, wx.ID_ANY, label='Interleave pathes', size=(110, -1))))
+            self.AddControl(wx.Button(self, wx.ID_ANY, label='Interleave paths', size=(110, -1))))
         self.AddSpacer(8)
         self.Bind(wx.EVT_BUTTON, self.on_clear_path,
             self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
@@ -90,10 +91,10 @@ class PathgenToolbar(aui.AuiToolBar):
         This allows us to simultaneously play paths that have be created sequentially."""
         get_device = lambda a: a.position.device
 
-        actions = sorted(self.core.actions, key=get_device)
+        poses = sorted(self.core.project.poses, key=get_device)
 
-        if actions and len(actions):
-            grouped  = groupby(actions, get_device)
+        if poses and len(poses):
+            grouped  = groupby(poses, get_device)
             groups = []
 
             for _, g in grouped:
@@ -101,13 +102,13 @@ class PathgenToolbar(aui.AuiToolBar):
 
             interleaved = interleave_lists(*groups)
 
-            self.core.actions.clear()
-            self.core.actions.extend(interleaved)
+            self.core.project.poses.clear(False)
+            self.core.project.poses.extend(interleaved)
 
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
-        if len(self.core.actions) > 0:
-            self.core.actions.clear()
+        if len(self.core.project.poses) > 0:
+            self.core.project.poses.clear()
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, create pathgen dialog and process accordingly.
@@ -265,8 +266,8 @@ class PathgenToolbar(aui.AuiToolBar):
             if device_id != -1:
                 grouped_points[device_id].append(point)
 
-        interlaced_actions = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
-        self.core.actions.extend(interlaced_actions)
+        interlaced_poses = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
+        self.core.project.poses.extend(interlaced_poses)
 
     def __del__(self) -> None:
         pass

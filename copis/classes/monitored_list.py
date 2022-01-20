@@ -30,9 +30,11 @@ class MonitoredList(list):
         super().__init__(iterable)
         self.signal = signal
 
-    def clear(self) -> None:
+    def clear(self, dispatch=True) -> None:
         super().clear()
-        self._dispatch()
+
+        if dispatch:
+            self._dispatch()
 
     def append(self, __object) -> None:
         super().append(__object)

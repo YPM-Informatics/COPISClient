@@ -74,7 +74,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         # Bind listeners.
         dispatcher.connect(self.on_device_selected, signal='ntf_d_selected')
-        dispatcher.connect(self.on_points_selected, signal='ntf_a_selected')
+        dispatcher.connect(self.on_pose_selected, signal='ntf_a_selected')
         dispatcher.connect(self.on_object_selected, signal='ntf_o_selected')
         dispatcher.connect(self.on_deselected, signal='ntf_d_deselected')
         dispatcher.connect(self.on_deselected, signal='ntf_a_deselected')
@@ -124,16 +124,15 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['device_info'].device_desc = device.description
         self.update_to_selected('Device')
 
-    def on_points_selected(self, points: List[int]) -> None:
+    def on_pose_selected(self, pose_index: int) -> None:
         """On ntf_a_selected, set to point view."""
 
-        if len(points) == 1:
-            action = self.core.actions[points[0]].position
-            if action.atype == ActionType.G0 or action.atype == ActionType.G1:
-                self.current = 'Point'
-                args = get_action_args_values(action.args)
-                self._property_panels['transform'].set_point(*args[:5])
-                self.update_to_selected('Point')
+        pose = self.core.project.poses[pose_index].position
+        if pose.atype == ActionType.G0 or pose.atype == ActionType.G1:
+            self.current = 'Point'
+            args = get_action_args_values(pose.args)
+            self._property_panels['transform'].set_point(*args[:5])
+            self.update_to_selected('Point')
 
     def on_object_selected(self, object) -> None:
         """On ntf_o_selected, set to proxy object view."""
@@ -359,7 +358,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_pose([self.x, self.y, self.z, self.p, self.t])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -368,7 +367,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_points([self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_pose([self.x, self.y, self.z, self.p, self.t])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""

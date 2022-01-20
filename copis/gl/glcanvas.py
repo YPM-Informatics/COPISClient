@@ -295,7 +295,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles ntf_a_list_changed signal.
         """
-        self._actionvis.update_actions()
+        self._actionvis.update_poses()
         self._dirty = True
 
     def _update_colors(self) -> None:
@@ -386,13 +386,14 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         if keycode == wx.WXK_ESCAPE:
             self.core.select_device(-1)
-            self.core.select_point(-1, clear=True)
+            self.core.select_pose(-1)
             self.select_object(-1)
 
         # delete selected proxy object if backspace
         elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
             for obj in reversed(self._objectvis.objects):
                 if obj.selected:
+                    self.core.select_proxy(-1)
                     self.core.project.proxies.pop(obj.object_id)
 
         else:
@@ -474,7 +475,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             # nothing selected
             if id_ == -1:
                 self.core.select_device(-1)
-                self.core.select_point(-1, clear=True)
+                self.core.select_pose(-1)
                 self.select_object(-1)
 
             # id_ belongs to camera device
@@ -488,49 +489,50 @@ class GLCanvas3D(glcanvas.GLCanvas):
             # id_ belongs to action point
             else:
                 # un-offset ids
-                self.core.select_point(id_ - self._num_devices, clear=True)
+                self.core.select_pose(id_ - self._num_devices)
 
     def select_object(self, id_: int) -> None:
         """Select proxy object given id."""
         if id_ < 0:
             if len(self._objectvis.objects) > 0 and \
                 any(obj.selected for obj in self._objectvis.objects):
-                dispatcher.send('ntf_o_deselected')
+                self.core.select_proxy(-1)
 
         elif id_ in (x.object_id for x in self._objectvis.objects):
-            self.core.select_point(-1)
             self.core.select_device(-1)
+            self.core.select_pose(-1)
+
+            self.core.select_proxy(-1)
+
             for obj in self._objectvis.objects:
                 is_obj_found = obj.object_id == id_
                 obj.selected = is_obj_found
                 if is_obj_found:
                     self.core.select_proxy(id_)
 
-            dispatcher.send('ntf_o_selected', object=self.core.project.proxies[id_])
             self._dirty = True
 
         else:
-            print_error_msg(self.core.console, f'invalid proxy object id {id_}.')
+            print_error_msg(self.core.console, f'Proxy object index {id_} is out of range.')
 
     def _deselect_object(self) -> None:
         for obj in self._objectvis.objects:
             obj.selected = False
-            self.core.deselect_proxy(obj.object_id)
 
         self._dirty = True
 
-    def on_erase_background(self, event: wx.EraseEvent) -> None:
+    def on_erase_background(self, _) -> None:
         """On EVT_ERASE_BACKGROUND, do nothing. Avoids flashing on MSW."""
         pass
 
-    def on_paint(self, event: wx.PaintEvent) -> None:
+    def on_paint(self, _) -> None:
         """On EVT_PAINT, try to refresh canvas."""
         if self._gl_initialized:
             self._dirty = True
         else:
             self.render()
 
-    def on_set_focus(self, event: wx.FocusEvent) -> None:
+    def on_set_focus(self, _) -> None:
         """On EVT_SET_FOCUS, try to refresh canvas."""
         self._refresh_if_shown_on_screen()
 

@@ -385,28 +385,28 @@ class MainWindow(wx.Frame):
 
     def on_export(self, _) -> None:
         """Exports action list as series of G-code commands."""
-        self.core.export_actions("./test.copis")
+        self.core.export_poses("./test.copis")
 
     def do_save_project(self, path) -> None:
         """Saves project to file Path."""
         self.project_dirty = False
-        store.save(path, self.core.actions)
+        store.save(path, self.core.project.poses)
 
     def do_load_project(self, path: str) -> None:
         """Loads project from file Path."""
-        actions = store.load(path, [])
+        poses = store.load(path, [])
 
-        # Adjust actions from list of actions to a least of poses.
-        if isinstance(actions[0], Action):
-            poses = []
-            for i in range(0, len(actions), 2):
-                chunk = actions[i:i + 2]
-                poses.append(Pose(chunk[0], [chunk[1]]))
+        # Adjust actions from list of actions to a list of poses.
+        if isinstance(poses[0], Action):
+            real_poses = []
+            for i in range(0, len(poses), 2):
+                chunk = poses[i:i + 2]
+                real_poses.append(Pose(chunk[0], [chunk[1]]))
 
-            actions = poses
+            poses = real_poses
 
-        self.core.actions.clear()
-        self.core.actions.extend(actions)
+        self.core.project.poses.clear(False)
+        self.core.project.poses.extend(poses)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Updates status bar visibility based on menu item."""

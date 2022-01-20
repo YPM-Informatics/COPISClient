@@ -159,12 +159,12 @@ class TimelinePanel(wx.Panel):
         if size == 'single':
             index = self.timeline.Selection
             if index != -1:
-                self.core.remove_action(index)
+                self.core.project.remove_pose(index)
                 self.timeline.Delete(index)
             else:
                 set_dialog('Please select the command to delete.')
         else:
-            self.core.clear_action()
+            self.core.project.clear_poses()
             self.timeline.Clear()
 
     def update_timeline(self) -> None:
@@ -173,7 +173,7 @@ class TimelinePanel(wx.Panel):
         Handles ntf_a_list_changed signal sent by self.core.
         """
         self.timeline.Clear()
-        for pose in self.core.actions:
+        for pose in self.core.project.poses:
             for action in pose.get_actions():
                 self.add_command(
                     f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')

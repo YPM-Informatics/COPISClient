@@ -223,18 +223,18 @@ class GLActionVis:
                 self._bind_vao_mat_col_id(('device', key), mats, glm.array(color), ids)
                 self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_color_mods))
 
-    def update_actions(self) -> None:
-        """Update lines and points when action list changes.
+    def update_poses(self) -> None:
+        """Update lines and poses when pose list changes.
 
         Called from GLCanvas upon ntf_a_list_changed signal.
 
-        # TODO: process other action ids
+        # TODO: process other pose ids
         """
         self._items['line'].clear()
         self._items['point'].clear()
         self._num_points = 0
 
-        for i, pose in enumerate(self.core.actions):
+        for i, pose in enumerate(self.core.project.poses):
             for action in pose.get_actions():
                 if action.atype in (ActionType.G0, ActionType.G1):
                     args = get_action_args_values(action.args)
@@ -276,7 +276,7 @@ class GLActionVis:
 
         self.create_vaos()
         self.update_devices()
-        self.update_actions()
+        self.update_poses()
 
         self._initialized = True
         return True

@@ -166,9 +166,9 @@ class MachineMembersMixin:
             self._send_next()
             self._keep_working = False
 
-    def _chunk_actions(self, batch_size, actions=None):
-        cmds = actions if actions else self._actions
-        actions = []
+    def _chunk_poses(self, batch_size, poses=None):
+        cmds = poses if poses else self.project.poses
+        poses = []
 
         for i in range(0, len(cmds), batch_size):
             chunk = cmds[i:i + batch_size]
@@ -177,9 +177,9 @@ class MachineMembersMixin:
             for pose in chunk:
                 chunk_actions.extend(pose.get_actions())
 
-            actions.append(chunk_actions)
+            poses.append(chunk_actions)
 
-        return actions
+        return poses
 
     def _unlock_machine(self):
         print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
