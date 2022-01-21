@@ -268,6 +268,7 @@ class Project:
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
         self._path = path
+        
         print('Save requested.')
         self._unset_dirty_flag()
 

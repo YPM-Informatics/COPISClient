@@ -29,15 +29,13 @@ import threading
 import time
 import warnings
 
-from typing import List
-from glm import vec2, vec3
+from glm import vec2
 
 from copis.command_processor import serialize_command
 from copis.helpers import print_error_msg, print_debug_msg, print_info_msg
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
-from copis.classes import MonitoredList, Pose
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -209,6 +207,11 @@ class COPISCore(
         self.select_proxy(-1)
 
         self.project.open(path)
+
+    def save_project(self, path) -> None:
+        """Saves a project and update recent projects."""
+        self.project.save(path)
+        self.config.update_recent_projects(path)
 
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the define action path."""

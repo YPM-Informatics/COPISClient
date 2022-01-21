@@ -128,8 +128,13 @@ def load_json(filename: str):
     return obj
 
 
+def get_directory(filename: str) -> str:
+    """Extracts and returns a paths directory."""
+    return os.path.dirname(filename)
+
+
 def get_file_base_name(filename: str) -> str:
-    """Extracts and retuns a file name without extension out of a path."""
+    """Extracts and returns a file name without extension out of a path."""
     return os.path.splitext(os.path.basename(filename))[0]
 
 

@@ -15,8 +15,9 @@
 
 """Provide the COPIS Settings class"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import inf
+from typing import List
 from glm import vec3
 
 from copis.globals import DebugEnv, Size, WindowState
@@ -27,19 +28,31 @@ class ApplicationSettings:
     """Application settings data structure."""
     debug_env: DebugEnv = DebugEnv.PROD
     window_min_size: Size = Size(800, 600)
+
     window_state: WindowState = WindowState(0, 0, 800, 600, False)
+    last_output_path: str = ''
+    recent_projects: List[str] = field(default_factory=lambda: [])
 
     def as_dict(self):
         """Return a dictionary representation of an ApplicationSettings instance."""
         stringify = lambda val: ','.join([str(d) for d in val])
+        stringify_list = lambda val: '\n\t'.join([str(d) for d in val])
 
-        return {
+        settings_dict = {
             'App': {
                 'window_min_size': stringify(self.window_min_size),
                 'debug_env': self.debug_env.value,
                 'window_state': stringify(self.window_state)
             }
         }
+
+        if self.last_output_path:
+            settings_dict['App']['last_output_path'] = self.last_output_path
+
+        if self.recent_projects:
+            settings_dict['App']['recent_projects'] = stringify_list(self.recent_projects)
+
+        return settings_dict
 
 @dataclass
 class MachineSettings:

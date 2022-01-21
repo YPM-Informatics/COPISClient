@@ -15,6 +15,7 @@
 
 """MainWindow class."""
 
+from email.policy import default
 import wx
 import wx.lib.agw.aui as aui
 
@@ -77,7 +78,7 @@ class MainWindow(wx.Frame):
         # project saving
         self.project_dirty = False
 
-        self.file_menu = None
+        self._file_menu = None
         self._menubar = None
         self._mgr = None
 
@@ -146,12 +147,15 @@ class MainWindow(wx.Frame):
         """Returns the path generation toolbar."""
         return self.panels['pathgen_toolbar']
 
+    def _get_default_dir(self):
+        return self.core.config.application_settings.last_output_path
+
     def _handle_project_dirty_changed(self, is_project_dirty: bool) -> None:
         project_path = self.core.project.path
         has_project_path = project_path is not None and len(project_path.strip()) > 0
 
-        self.file_menu.Enable(wx.ID_NEW, is_project_dirty or has_project_path)
-        self.file_menu.Enable(wx.ID_SAVE, is_project_dirty or has_project_path)
+        self._file_menu.Enable(wx.ID_NEW, is_project_dirty or has_project_path)
+        self._file_menu.Enable(wx.ID_SAVE, is_project_dirty or has_project_path)
 
         project_name = '' if not project_path else store.get_file_base_name(project_path)
 
@@ -162,6 +166,26 @@ class MainWindow(wx.Frame):
             self.Title = f'{project_name} - {self._default_title}'
         elif self.Title != self._default_title:
             self.Title = self._default_title
+
+    def _populate_recent_projects(self):
+        proj_list = self.core.config.application_settings.recent_projects
+        if proj_list:
+            ids = [wx.ID_FILE, wx.ID_FILE1, wx.ID_FILE2, wx.ID_FILE3, wx.ID_FILE4,
+                   wx.ID_FILE5, wx.ID_FILE6, wx.ID_FILE7, wx.ID_FILE8, wx.ID_FILE9]
+
+            menu = self._file_menu.FindItemById(wx.ID_JUMP_TO).SubMenu
+            for item in menu.GetMenuItems():
+                menu.Delete(item)
+
+            for i, proj in enumerate(proj_list):
+                rank = i + 1
+                _item = wx.MenuItem(None, ids[i], f'&{str(rank)}: {proj}',
+                    f'Recent project {rank}')
+                self.Bind(wx.EVT_MENU, self.on_project_selected, menu.Append(_item))
+
+            self._file_menu.Enable(wx.ID_JUMP_TO, True)
+        else:
+            self._file_menu.Enable(wx.ID_JUMP_TO, False)
 
     def _prompt_saving(self, caption, event):
         proceed = True
@@ -238,7 +262,7 @@ class MainWindow(wx.Frame):
         self._menubar = wx.MenuBar(0)
 
         # File menu.
-        self.file_menu = wx.Menu()
+        self._file_menu = wx.Menu()
 
         # Submenus.
         recent_menu = wx.Menu()
@@ -251,40 +275,41 @@ class MainWindow(wx.Frame):
 
         _item = wx.MenuItem(None, wx.ID_NEW, '&New Project\tCtrl+N', 'Create new project')
         _item.Bitmap = create_scaled_bitmap('add_project', 16)
-        self.Bind(wx.EVT_MENU, self.on_new_project, self.file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_new_project, self._file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_OPEN, '&Open Project...\tCtrl+O', 'Open existing project')
         _item.Bitmap = create_scaled_bitmap('open_project', 16)
-        self.Bind(wx.EVT_MENU, self.on_open_project, self.file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_open_project, self._file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_JUMP_TO, '&Recent Projects', 'Open one of recent projects',
             subMenu=recent_menu)
-        self.file_menu.Append(_item)
+        self._file_menu.Append(_item)
 
         _item = wx.MenuItem(None, wx.ID_SAVE, '&Save Project\tCtrl+S', 'Save project')
         _item.Bitmap = create_scaled_bitmap('save', 16)
-        self.Bind(wx.EVT_MENU, self.on_save, self.file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_save, self._file_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_SAVEAS, 'Save Project &As...\tCtrl+Shift+S',
             'Save project as')
         _item.Bitmap = create_scaled_bitmap('save', 16)
-        self.Bind(wx.EVT_MENU, self.on_save_as, self.file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_save_as, self._file_menu.Append(_item))
 
-        self.file_menu.Enable(wx.ID_NEW, False)
-        self.file_menu.Enable(wx.ID_JUMP_TO, False)
-        self.file_menu.Enable(wx.ID_SAVE, False)
+        self._file_menu.Enable(wx.ID_NEW, False)
+        self._file_menu.Enable(wx.ID_SAVE, False)
 
-        self.file_menu.AppendSeparator()
+        self._populate_recent_projects()
+
+        self._file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ADD, '&Import', 'Import files',
             subMenu=import_menu)
-        self.file_menu.Append(_item)
+        self._file_menu.Append(_item)
 
-        self.file_menu.AppendSeparator()
+        self._file_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'E&xit\tAlt+F4', 'Close the program')
         _item.Bitmap = create_scaled_bitmap('exit_to_app', 16)
-        self.Bind(wx.EVT_MENU, self.on_exit, self.file_menu.Append(_item))
+        self.Bind(wx.EVT_MENU, self.on_exit, self._file_menu.Append(_item))
 
         # Edit menu.
         edit_menu = wx.Menu()
@@ -370,7 +395,7 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('info', 16)
         self.Bind(wx.EVT_MENU, self.open_about_dialog, help_menu.Append(_item))
 
-        self._menubar.Append(self.file_menu, '&File')
+        self._menubar.Append(self._file_menu, '&File')
         self._menubar.Append(edit_menu, '&Edit')
         self._menubar.Append(view_menu, '&View')
         self._menubar.Append(camera_menu, '&Camera')
@@ -395,8 +420,10 @@ class MainWindow(wx.Frame):
                 return
 
         wildcard = f'{self._FILES_LEGACY_ACTIONS}|{self._FILES_WILDCARD}'
+
         with wx.FileDialog(self, 'Import legacy actions', wildcard=wildcard,
-            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+            defaultDir=self._get_default_dir(), style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
+            ) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
@@ -407,14 +434,21 @@ class MainWindow(wx.Frame):
             except Exception as err:
                 wx.LogError(str(err))
 
+    def on_project_selected(self, event: wx.CommandEvent):
+        """Opens the selected recent project."""
+        print(f'client data: {event.ClientData}')
+        print(f'client data: {event.Selection}')
+
     def on_open_project(self, _) -> None:
         """Opens 'open' dialog for existing COPIS projects."""
         if not self._prompt_saving('Open project', _):
             return
 
         wildcard = f'{self._FILES_PROJECT}|{self._FILES_WILDCARD}'
+
         with wx.FileDialog(self, 'Open Project File', wildcard=wildcard,
-            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+            defaultDir=self._get_default_dir(), style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
+            ) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
@@ -428,7 +462,8 @@ class MainWindow(wx.Frame):
 
         if has_project_path:
             try:
-                self.core.project.save(project_path)
+                self.core.save_project(project_path)
+                self._populate_recent_projects()
             except Exception as err:
                 wx.LogError('Could not save the project.')
 
@@ -445,16 +480,17 @@ class MainWindow(wx.Frame):
                     'Save project') == wx.ID_NO:
                 return
 
-        with wx.FileDialog(
-            self, 'Save project as', wildcard=self._FILES_PROJECT,
-            style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT) as file_dialog:
+        with wx.FileDialog(self, 'Save project as', wildcard=self._FILES_PROJECT,
+            defaultDir=self._get_default_dir(), style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT
+            ) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
             path = file_dialog.Path
             try:
-                self.core.project.save(path)
+                self.core.save_project(path)
+                self._populate_recent_projects()
             except Exception as err:
                 wx.LogError(f'Could not save the project as "{path}".')
 
