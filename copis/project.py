@@ -22,7 +22,7 @@ from glm import vec3
 from copis.classes import (
     BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
 
-from copis.globals import Point5, ActionType
+from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from .store import Store, load_json
 
@@ -76,6 +76,9 @@ class Project:
         if not hasattr(self, '_proxy_path'):
             self._proxy_path = None
 
+        if not hasattr(self, '_path'):
+            self._path = None
+
         if not hasattr(self, '_profile'):
             self._profile = None
 
@@ -97,6 +100,11 @@ class Project:
         dispatcher.connect(self._set_is_dirty, signal='ntf_o_list_changed')
 
     @property
+    def path(self) -> str:
+        """Returns the project's save path."""
+        return self._path
+
+    @property
     def devices(self) -> List[Device]:
         """Returns the list of configured devices."""
         return self._devices
@@ -110,6 +118,11 @@ class Project:
     def poses(self) -> List[Pose]:
         """Returns the list of poses."""
         return self._poses
+
+    @property
+    def is_dirty(self) -> bool:
+        """Returns whether the project is dirty."""
+        return self._is_dirty
 
     @property
     def homing_sequence(self) -> List[str]:
@@ -154,9 +167,6 @@ class Project:
         self._store = Store()
         self._ensure_defaults()
 
-        self._profile_path = self._default_profile_path
-        self._proxy_path = self._default_proxy_path
-
         self._is_initialized = True
         self._is_dirty = False
 
@@ -165,6 +175,9 @@ class Project:
 
     def _set_is_dirty(self):
         self._toggle_is_dirty(True)
+
+    def _unset_dirty_flag(self):
+        self._toggle_is_dirty(False)
 
     def _toggle_is_dirty(self, value):
         self._is_dirty = value
@@ -194,21 +207,38 @@ class Project:
         if key in self._profile and self._profile[key]:
             devices = [parse_device(d) for d in self._profile[key]]
 
-        self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
+        if self._devices is not None:
+            self._devices.clear(False)
+            self._devices.extend(devices)
+        else:
+            self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
 
     def _init_proxies(self):
-        self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
+        handsome_dan = OBJObject3D(self._proxy_path, scale=vec3(20, 20, 20))
+
+        if self._proxies is not None:
+            self._proxies.clear(False)
+            self._proxies.append(handsome_dan)
+        else:
+            self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
                 # Start with handsome dan :)
                 # On init a new project is created with handsome dan as the proxy.
-                [OBJObject3D(self._proxy_path, scale=vec3(20, 20, 20))])
+                [handsome_dan])
 
     def _init_poses(self):
-        self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
+        if self._poses is not None:
+            self._poses.clear()
+        else:
+            self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
 
-    def start(self):
+    def start(self) -> None:
         """Starts a new project."""
         if not self._is_initialized:
             self._init()
+
+        self._profile_path = self._default_profile_path
+        self._proxy_path = self._default_proxy_path
+        self._path = None
 
         self._load_profile()
 
@@ -216,10 +246,30 @@ class Project:
         self._init_proxies()
         self._init_poses()
 
-    def open(self):
-        """Opens an existing project."""
+        self._unset_dirty_flag()
+
+    def open(self, path: str) -> None:
+        """Opens an existing project given it's path."""
         if not self._is_initialized:
             self._init()
+
+        # self._profile_path = self._default_profile_path
+        # self._proxy_path = self._default_proxy_path
+        self._path = path
+
+        self._load_profile()
+
+        self._init_devices()
+        self._init_proxies()
+        self._init_poses()
+        print('Open requested.')
+        self._unset_dirty_flag()
+
+    def save(self, path: str) -> None:
+        """Saves the project to disk at the given path."""
+        self._path = path
+        print('Save requested.')
+        self._unset_dirty_flag()
 
     # def add_pose(self, atype: ActionType, device_id: int, *args) -> bool:
     #     """TODO: validate args given atype"""

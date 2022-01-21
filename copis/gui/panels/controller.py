@@ -27,7 +27,7 @@ from pydispatch import dispatcher
 
 from copis.gui.wxutils import (
     FancyTextCtrl,
-    create_scaled_bitmap, set_dialog, simple_statictext)
+    create_scaled_bitmap, show_msg_dialog, simple_statictext)
 from copis.helpers import create_action_args, dd_to_rad, pt_units, xyz_units
 from copis.globals import ActionType, Point5
 from copis.classes import Action
@@ -122,7 +122,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
             action = self._generate_commands('G1', args)
             self._core.jog(action)
         else:
-            set_dialog('Connect to the machine in order to jog.')
+            show_msg_dialog('Connect to the machine in order to jog.', 'Jog controller')
 
     def _generate_commands(self, name, args = None):
         if args == None:

@@ -128,6 +128,11 @@ def load_json(filename: str):
     return obj
 
 
+def get_file_base_name(filename: str) -> str:
+    """Extracts and retuns a file name without extension out of a path."""
+    return os.path.splitext(os.path.basename(filename))[0]
+
+
 def _pickle_remodule_load(file_obj):
     return _RemoduleUnpickler(file_obj).load()
 

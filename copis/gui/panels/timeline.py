@@ -22,7 +22,7 @@ TODO: Overhaul timeline panel visually
 import wx
 from pydispatch import dispatcher
 
-from copis.gui.wxutils import set_dialog
+from copis.gui.wxutils import show_msg_dialog
 
 
 class TimelinePanel(wx.Panel):
@@ -149,9 +149,9 @@ class TimelinePanel(wx.Panel):
                 self.timeline.SetString(selected, replacement)
                 self.timeline_writer.Value = ''
             else:
-                set_dialog('Please type command to replace.')
+                show_msg_dialog('Please type command to replace.', 'Replace command')
         else:
-            set_dialog('Please select the command to replace.')
+            show_msg_dialog('Please select the command to replace.', 'Replace command')
 
     def on_delete_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
@@ -162,7 +162,7 @@ class TimelinePanel(wx.Panel):
                 self.core.project.remove_pose(index)
                 self.timeline.Delete(index)
             else:
-                set_dialog('Please select the command to delete.')
+                show_msg_dialog('Please select the command to delete.', 'Delete command')
         else:
             self.core.project.clear_poses()
             self.timeline.Clear()

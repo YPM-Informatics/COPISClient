@@ -55,6 +55,7 @@ class ConsolePanel(wx.Panel):
         # Bind listeners.
         dispatcher.connect(self.on_notification, signal='ntf_a_list_changed')
         dispatcher.connect(self.on_notification, signal='ntf_d_list_changed')
+        dispatcher.connect(self.on_notification, signal='ntf_o_list_changed')
         dispatcher.connect(self.on_notification, signal='ntf_a_selected')
         dispatcher.connect(self.on_notification, signal='ntf_a_deselected')
         dispatcher.connect(self.on_notification, signal='ntf_d_selected')

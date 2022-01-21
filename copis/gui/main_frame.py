@@ -23,6 +23,7 @@ from glm import vec3
 
 import copis.store as store
 
+from copis.helpers import print_error_msg
 from copis.globals import WindowState
 from copis.classes import AABBObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
@@ -36,7 +37,7 @@ from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
 from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
-from .wxutils import create_scaled_bitmap
+from .wxutils import create_scaled_bitmap, show_prompt_dialog
 from .custom_tab_art import CustomAuiTabArt
 
 
@@ -56,7 +57,9 @@ class MainWindow(wx.Frame):
         pathgen_toolbar: A pointer to the pathgen toolbar.
     """
 
-    _FILE_DIALOG_WILDCARD = 'COPIS Files (*.copis)|*.copis|All Files (*.*)|*.*'
+    _FILES_WILDCARD = 'All Files (*.*)|*.*'
+    _FILES_LEGACY_ACTIONS = 'COPIS legacy actions files (*.copis)|*.copis'
+    _FILES_PROJECT = 'COPIS project files (*.cproj)|*.cproj'
     _COPIS_WEBSITE = 'http://www.copis3d.org/'
 
     def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
@@ -68,6 +71,7 @@ class MainWindow(wx.Frame):
         min_size = self.core.config.application_settings.window_min_size
         self.MinSize = wx.Size(min_size.width, min_size.height)
 
+        self._default_title = self.Title
         self.chamber_dimensions = chamber_dimensions
 
         # project saving
@@ -143,7 +147,36 @@ class MainWindow(wx.Frame):
         return self.panels['pathgen_toolbar']
 
     def _handle_project_dirty_changed(self, is_project_dirty: bool) -> None:
-        self.file_menu.Enable(wx.ID_NEW, is_project_dirty)
+        project_path = self.core.project.path
+        has_project_path = project_path is not None and len(project_path.strip()) > 0
+
+        self.file_menu.Enable(wx.ID_NEW, is_project_dirty or has_project_path)
+        self.file_menu.Enable(wx.ID_SAVE, is_project_dirty or has_project_path)
+
+        project_name = '' if not project_path else store.get_file_base_name(project_path)
+
+        if is_project_dirty:
+            project_name = f'*{project_name}'
+
+        if len(project_name) > 0:
+            self.Title = f'{project_name} - {self._default_title}'
+        elif self.Title != self._default_title:
+            self.Title = self._default_title
+
+    def _prompt_saving(self, caption, event):
+        proceed = True
+
+        if self.core.project.is_dirty:
+            choice = show_prompt_dialog(
+                'The project was modified. Would you like to save it first?',
+                    caption, True)
+
+            if choice == wx.ID_YES:
+                self.on_save(event)
+            elif choice == wx.ID_CANCEL:
+                proceed = False
+
+        return proceed
 
     def init_statusbar(self) -> None:
         """Initialize statusbar."""
@@ -167,6 +200,9 @@ class MainWindow(wx.Frame):
                 - &Recent Projects           >
                 - &Save Project             Ctrl+S
                 - Save Project &As...       Ctrl+Shift+S
+                ---
+                - &Import                    >
+                    - Import Legacy Actions Ctrl+I
                 ---
                 - E&xit                     Alt+F4
             - &Edit
@@ -204,7 +240,14 @@ class MainWindow(wx.Frame):
         # File menu.
         self.file_menu = wx.Menu()
 
+        # Submenus.
         recent_menu = wx.Menu()
+        import_menu = wx.Menu()
+
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Import Legacy Actions\tCtrl+I',
+            'Import legacy actions')
+        _item.Bitmap = create_scaled_bitmap('import', 16)
+        self.Bind(wx.EVT_MENU, self.on_import_legacy_actions, import_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_NEW, '&New Project\tCtrl+N', 'Create new project')
         _item.Bitmap = create_scaled_bitmap('add_project', 16)
@@ -230,6 +273,12 @@ class MainWindow(wx.Frame):
         self.file_menu.Enable(wx.ID_NEW, False)
         self.file_menu.Enable(wx.ID_JUMP_TO, False)
         self.file_menu.Enable(wx.ID_SAVE, False)
+
+        self.file_menu.AppendSeparator()
+
+        _item = wx.MenuItem(None, wx.ID_ADD, '&Import', 'Import files',
+            subMenu=import_menu)
+        self.file_menu.Append(_item)
 
         self.file_menu.AppendSeparator()
 
@@ -331,69 +380,93 @@ class MainWindow(wx.Frame):
         self.SetMenuBar(self._menubar)
 
     def on_new_project(self, _) -> None:
-        """TODO: Implement project file/directory creation """
-        pass
+        """Starts a new project with defaults."""
+        proceed = self._prompt_saving('New project', _)
 
-    def on_open_project(self, _) -> None:
-        """Opens 'open' dialog.
+        if proceed:
+            self.core.start_new_project()
 
-        TODO: Implement reading file/directory
-        """
-        if self.project_dirty:
-            if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
-                             wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
+    def on_import_legacy_actions(self, _) -> None:
+        """Opens 'open' dialog for legacy *.copis action paths."""
+        current_poses = self.core.project.poses
+        if current_poses is not None and len(current_poses) > 0:
+            if show_prompt_dialog('This will overwrite the current path. Proceed?',
+                'Import legacy actions') == wx.ID_NO:
                 return
 
-        with wx.FileDialog(self, 'Open Project File', wildcard=self._FILE_DIALOG_WILDCARD,
-                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+        wildcard = f'{self._FILES_LEGACY_ACTIONS}|{self._FILES_WILDCARD}'
+        with wx.FileDialog(self, 'Import legacy actions', wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
-                return     # the user changed their mind
+                return
 
-            # Proceed loading the file chosen by the user
             path = file_dialog.Path
             try:
-                self.do_load_project(path)
+                self.do_load_legacy_actions(path)
             except Exception as err:
                 wx.LogError(str(err))
 
-    def on_save(self, _) -> None:
-        """Opens 'save' dialog.
+    def on_open_project(self, _) -> None:
+        """Opens 'open' dialog for existing COPIS projects."""
+        if not self._prompt_saving('Open project', _):
+            return
 
-        TODO: Implement saving with projects
-        """
-
-    def on_save_as(self, _) -> None:
-        """Opens 'save as' dialog.
-
-         TODO: Implement saving as with projects
-        """
-        with wx.FileDialog(
-            self, 'Save Project As', wildcard = self._FILE_DIALOG_WILDCARD,
-            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as file_dialog:
+        wildcard = f'{self._FILES_PROJECT}|{self._FILES_WILDCARD}'
+        with wx.FileDialog(self, 'Open Project File', wildcard=wildcard,
+            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
 
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
-            # save the current contents in the file
+            self.core.open_project(file_dialog.Path)
+
+    def on_save(self, _) -> None:
+        """Opens 'save' dialog."""
+        project_path = self.core.project.path
+        has_project_path = project_path and len(project_path.strip()) > 0
+
+        if has_project_path:
+            try:
+                self.core.project.save(project_path)
+            except Exception as err:
+                wx.LogError('Could not save the project.')
+
+                print_error_msg(self.core.console,
+                f'An exception occurred while saving the project: {err.args[0]}')
+        else:
+            self.on_save_as(_)
+
+    def on_save_as(self, _) -> None:
+        """Opens 'save as' dialog."""
+        if not self.core.project.is_dirty:
+            if show_prompt_dialog(
+                'The project was not modified. Would you still like to save it?',
+                    'Save project') == wx.ID_NO:
+                return
+
+        with wx.FileDialog(
+            self, 'Save project as', wildcard=self._FILES_PROJECT,
+            style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT) as file_dialog:
+
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+
             path = file_dialog.Path
             try:
-                with open(path, 'x'):
-                    self.do_save_project(path)
-            except IOError:
-                wx.LogError(f'Could not save in file "{path}".')
+                self.core.project.save(path)
+            except Exception as err:
+                wx.LogError(f'Could not save the project as "{path}".')
+
+                print_error_msg(self.core.console,
+                f'An exception occurred while saving the project: {err.args[0]}')
 
     def on_export(self, _) -> None:
         """Exports action list as series of G-code commands."""
         self.core.export_poses("./test.copis")
 
-    def do_save_project(self, path) -> None:
-        """Saves project to file Path."""
-        self.project_dirty = False
-        store.save(path, self.core.project.poses)
-
-    def do_load_project(self, path: str) -> None:
-        """Loads project from file Path."""
+    def do_load_legacy_actions(self, path: str) -> None:
+        """Loads legacy actions from file Path."""
         poses = store.load(path, [])
 
         # Adjust actions from list of actions to a list of poses.
@@ -633,15 +706,13 @@ class MainWindow(wx.Frame):
         """On EVT_CLOSE, exit application."""
         event.StopPropagation()
 
+        if not self._prompt_saving('Close', event):
+            return
+
         pos = self.GetPosition()
         size = self.GetSize()
         self.core.config.update_window_state(
             WindowState(pos.x, pos.y, size.x, size.y, self.IsMaximized()))
-
-        if self.project_dirty:
-            if wx.MessageBox('Current project has not been saved. Proceed?', 'Please confirm',
-                             wx.ICON_QUESTION | wx.YES_NO, self) == wx.NO:
-                return
 
         self._mgr.UnInit()
         self.Destroy()

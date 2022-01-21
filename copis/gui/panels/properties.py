@@ -611,7 +611,7 @@ class _PropDeviceConfig(wx.Panel):
         vbox2.Add(self.takePictureBtn)
         self.takePictureBtn.Bind(wx.EVT_BUTTON, self.on_take_picture)
 
-        self.startEvfBtn = wx.Button(self.box_sizer.StaticBox, wx.ID_ANY, label='Start Liveview')
+        self.startEvfBtn = wx.Button(self.box_sizer.StaticBox, wx.ID_ANY, label='Start Live View')
         vbox2.Add(self.startEvfBtn)
         self.startEvfBtn.Bind(wx.EVT_BUTTON, self.on_start_evf)
 
@@ -651,7 +651,7 @@ class _PropDeviceConfig(wx.Panel):
         # if self.parent.core.get_selected_camera() is not None:
         #     self.parent.core.get_selected_camera().shoot()
         # else:
-        #     set_dialog('Please select the camera to take a picture.')
+        #     show_msg_dialog('Please select the camera to take a picture.', 'Take picture')
 
     def on_start_evf(self, event: wx.CommandEvent) -> None:
         """TODO: implement when edsdk is fully implemented in copiscore.
@@ -661,7 +661,7 @@ class _PropDeviceConfig(wx.Panel):
         #     self.parent.core.get_selected_camera().startEvf()
         #     self.parent.add_evf_pane()
         # else:
-        #     set_dialog('Please select the camera to start live view.')
+        #     show_msg_dialog('Please select the camera to start live view.', 'Start live view')
 
 
 class _PropQuickActions(wx.Panel):

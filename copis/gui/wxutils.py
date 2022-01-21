@@ -27,12 +27,20 @@ from copis.store import Store
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
 
-def set_dialog(msg: str) -> None:
-    """Show a wx.MessageDialog with msg as the message."""
-    dialog = wx.MessageDialog(None, msg, 'Confirm Exit', wx.OK)
+def show_msg_dialog(msg: str, caption=' ') -> None:
+    """Shows a wx.MessageDialog informational message."""
+    dialog = wx.MessageDialog(None, msg, caption, wx.OK)
     dialog.ShowModal()
-    dialog.Destroy()
 
+def show_prompt_dialog(msg: str, caption=' ', show_cancel_btn=False) -> None:
+    """Show a wx.MessageDialog confirmation prompt."""
+    style = wx.YES_NO
+    if show_cancel_btn:
+        style = style | wx.CANCEL
+
+    choice = wx.MessageDialog(None, msg, caption, style).ShowModal()
+
+    return choice
 
 def create_scaled_bitmap(bmp_name: str,
                          px_cnt: int = 16) -> wx.Bitmap:

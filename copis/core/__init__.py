@@ -194,6 +194,22 @@ class COPISCore(
 
             self._serial.write(cmd_lines)
 
+    def start_new_project(self) -> None:
+        """Starts a new project with defaults."""
+        self.select_pose(-1)
+        self.select_device(-1)
+        self.select_proxy(-1)
+
+        self.project.start()
+
+    def open_project(self, path) -> None:
+        """Opens an existing project."""
+        self.select_pose(-1)
+        self.select_device(-1)
+        self.select_proxy(-1)
+
+        self.project.open(path)
+
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the define action path."""
         if not self.is_serial_port_connected:

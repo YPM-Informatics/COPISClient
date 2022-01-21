@@ -21,7 +21,7 @@ import wx.lib.agw.aui as aui
 
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
-from copis.gui.wxutils import create_scaled_bitmap, set_dialog
+from copis.gui.wxutils import create_scaled_bitmap, show_msg_dialog
 from copis.helpers import print_debug_msg, print_info_msg
 
 
@@ -92,7 +92,7 @@ class MachineToolbar(aui.AuiToolBar):
         # self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL,
         #     short_help_string=f'Abort {self._core.work_type_name}')
 
-        _bmp = create_scaled_bitmap('get_app', 24)
+        _bmp = create_scaled_bitmap('export', 24)
         self.AddTool(ToolIds.EXPORT.value, 'Export actions', _bmp, _bmp, aui.ITEM_NORMAL,
             short_help_string='Export actions')
 
@@ -138,23 +138,24 @@ class MachineToolbar(aui.AuiToolBar):
 
     def on_connect(self, event: wx.CommandEvent) -> None:
         """On connect button pressed, updates serial connection and button text"""
+        caption = 'Connect'
         connect_btn = self.FindControl(event.Id)
         if self.port_cb.Selection >= 0:
             selection = self.baud_cb.Selection
             baud = int(self.baud_cb.Items[selection]) \
                 if selection >= 0 else self._core.serial_bauds[-1]
 
-            if connect_btn.Label == 'Connect':
+            if connect_btn.Label == caption:
                 if self._core.connect(baud):
                     connect_btn.Label = 'Disconnect'
                 else:
-                    connect_btn.Label = 'Connect'
-                    set_dialog('Unable to connect.')
+                    connect_btn.Label = caption
+                    show_msg_dialog('Unable to connect.', caption)
             else:
                 self._core.disconnect()
-                connect_btn.Label = 'Connect'
+                connect_btn.Label = caption
         else:
-            set_dialog('Please select a port to connect to.')
+            show_msg_dialog('Please select a port to connect to.', caption)
 
     def update_ports(self) -> None:
         """Set port combobox to serial ports list."""
@@ -183,7 +184,7 @@ class MachineToolbar(aui.AuiToolBar):
                 elif not has_path:
                     msg = 'The machine needs a path for imaging.'
 
-                set_dialog(msg)
+                show_msg_dialog(msg, 'Imaging')
                 return
 
             self._core.start_imaging()
@@ -204,7 +205,7 @@ class MachineToolbar(aui.AuiToolBar):
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""
         if not self._core.is_serial_port_connected:
-            set_dialog('Connect to the machine in order to home it.')
+            show_msg_dialog('Connect to the machine in order to home it.', 'Homing')
             return
 
         home_btn = self.FindControl(event.Id)
@@ -216,7 +217,7 @@ class MachineToolbar(aui.AuiToolBar):
         the gantries to their current positions."""
 
         if not self._core.is_serial_port_connected:
-            set_dialog('Connect to the machine in order to set ready.')
+            show_msg_dialog('Connect to the machine in order to set or go to ready.', 'Readying')
             return
 
         self._core.set_ready()
