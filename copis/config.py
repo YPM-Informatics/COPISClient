@@ -201,6 +201,14 @@ class Config():
 
         self._store.save_config(self)
 
+    def remove_recent_project(self, path: str) -> None:
+        """Removes a recent projects entry."""
+        recent_projects = list(map(str.lower, self.application_settings.recent_projects))
+        index = recent_projects.index(path.strip().lower())
+
+        if index >= 0:
+            self.application_settings.recent_projects.pop(index)
+            self._store.save_config(self)
 
     def as_dict(self):
         """"Return a dictionary representation of a Config instance."""

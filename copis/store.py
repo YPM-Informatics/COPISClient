@@ -138,6 +138,11 @@ def get_file_base_name(filename: str) -> str:
     return os.path.splitext(os.path.basename(filename))[0]
 
 
+def path_exists(filename: str) -> bool:
+    """Checks whether the given path exists."""
+    return os.path.exists(filename)
+
+
 def _pickle_remodule_load(file_obj):
     return _RemoduleUnpickler(file_obj).load()
 

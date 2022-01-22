@@ -211,7 +211,10 @@ class COPISCore(
     def save_project(self, path) -> None:
         """Saves a project and update recent projects."""
         self.project.save(path)
-        self.config.update_recent_projects(path)
+
+        recent_projects = list(map(str.lower, self.config.application_settings.recent_projects))
+        if path.lower() not in recent_projects:
+            self.config.update_recent_projects(path)
 
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the define action path."""

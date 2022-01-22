@@ -15,7 +15,6 @@
 
 """MainWindow class."""
 
-from email.policy import default
 import wx
 import wx.lib.agw.aui as aui
 
@@ -38,7 +37,7 @@ from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
 from .pref_frame import PreferenceFrame
 from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
-from .wxutils import create_scaled_bitmap, show_prompt_dialog
+from .wxutils import create_scaled_bitmap, show_msg_dialog, show_prompt_dialog
 from .custom_tab_art import CustomAuiTabArt
 
 
@@ -436,8 +435,20 @@ class MainWindow(wx.Frame):
 
     def on_project_selected(self, event: wx.CommandEvent):
         """Opens the selected recent project."""
-        print(f'client data: {event.ClientData}')
-        print(f'client data: {event.Selection}')
+        caption = 'Open recent project'
+        item_text = event.EventObject.GetLabelText(event.Id)
+        path = item_text.split(':', 1)[1].strip()
+
+        if not store.path_exists(path):
+            show_msg_dialog('The selected project no longer exists.', caption)
+            self.core.config.remove_recent_project(path)
+            self._populate_recent_projects()
+            return
+
+        if not self._prompt_saving(caption, event):
+            return
+
+        self.core.open_project(path)
 
     def on_open_project(self, _) -> None:
         """Opens 'open' dialog for existing COPIS projects."""
