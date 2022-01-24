@@ -123,7 +123,7 @@ def save_json(filename: str, obj: object) -> None:
         json.dump(obj, file, indent='\t')
 
 
-def load_json(filename: str) -> object:
+def load_json(filename: str) -> dict:
     """Loads a JSON object from file."""
     with open(filename, 'r') as file:
         obj = json.load(file)
@@ -156,12 +156,30 @@ def get_file_base_name_no_ext(filename: str) -> str:
 
 
 def get_file_base_name(filename: str) -> str:
+    """Extracts and returns a file name with extension out of a path."""
     return os.path.basename(filename)
 
 
 def path_exists(filename: str) -> bool:
     """Checks whether the given path exists."""
     return os.path.exists(filename)
+
+
+def save_project(data: dict) -> str:
+    """Saves a project."""
+    filename = data['path']
+    p_root = get_directory(filename)
+    proj_rel_dir = get_file_base_name_no_ext(filename)
+
+    if p_root.split(os.sep)[-1] != proj_rel_dir:
+        p_root = os.path.join(p_root, proj_rel_dir)
+
+    filename = os.path.join(p_root, get_file_base_name(filename))
+
+    playlist = json.dumps(data['playlist'])
+
+    return filename
+
 
 
 def _pickle_remodule_load(file_obj):

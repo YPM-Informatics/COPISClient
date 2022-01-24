@@ -27,7 +27,7 @@ from copis.classes import (
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces
-from .store import Store, get_file_base_name_no_ext, load_json
+from .store import Store, get_file_base_name_no_ext, load_json, save_project
 
 
 class Project:
@@ -276,7 +276,7 @@ class Project:
             'path': path,
             'profile': self._profile,
             'proxies': [],
-            'poses': self._poses
+            'playlist': self._poses
         }
 
         for proxy in self._proxies:
@@ -295,9 +295,9 @@ class Project:
                 ext = 'json'
 
                 # Proxy object rehydration code.
-                mod = import_module(data['module'])
-                globals()[data['cls']] = getattr(mod, data['cls'])
-                obj = eval(data['repr'])
+                # mod = import_module(data['module'])
+                # globals()[data['cls']] = getattr(mod, data['cls'])
+                # obj = eval(data['repr'])
 
                 count = 1
                 while any(p['file_base_name'] == file_base_name for p in proj_data['proxies']):
@@ -312,7 +312,7 @@ class Project:
 
             proj_data['proxies'].append(proxy_data)
 
-        self._path = path
+        self._path = save_project(proj_data)
 
         print('Save requested.')
         self._unset_dirty_flag()
