@@ -52,9 +52,7 @@ class Store():
 
         if not os.path.exists(filename):
             obj = json.loads(data)
-
-            with open(filename, 'w') as file:
-                json.dump(obj, file, indent='\t')
+            save_json(filename, obj)
 
         return filename
 
@@ -63,8 +61,7 @@ class Store():
         filename = os.path.join(self._config_dir, name)
 
         if not os.path.exists(filename):
-            with open(filename, 'w') as file:
-                file.write(data)
+            save_data(filename, data)
 
         return filename
 
@@ -106,21 +103,27 @@ class _RemoduleUnpickler(pickle.Unpickler):
         return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
 
 
-def save(filename: str, obj: object) -> None:
-    """Saves an object to file."""
+def save_pickle(filename: str, obj: object) -> None:
+    """Saves a pickled object to file."""
     with open(filename, 'wb') as file:
         pickle.dump(obj, file)
 
 
-def load(filename: str, obj: object) -> object:
-    """Loads an object from file."""
+def load_pickle(filename: str, obj: object) -> object:
+    """Loads a pickled object from file."""
     with open(filename, 'rb') as file:
         obj = _pickle_remodule_load(file) # pickle.load(file)
 
     return obj
 
 
-def load_json(filename: str):
+def save_json(filename: str, obj: object) -> None:
+    """Saves a JSON object to file."""
+    with open(filename, 'w') as file:
+        json.dump(obj, file, indent='\t')
+
+
+def load_json(filename: str) -> object:
     """Loads a JSON object from file."""
     with open(filename, 'r') as file:
         obj = json.load(file)
@@ -128,14 +131,32 @@ def load_json(filename: str):
     return obj
 
 
+def save_data(filename: str, data: str) -> None:
+    """Saves some string data to file."""
+    with open(filename, 'w') as file:
+        file.write(data)
+
+
+def load_data(filename: str) -> str:
+    """Loads some string data from file."""
+    with open(filename, 'r') as file:
+        data = file.read()
+
+    return data
+
+
 def get_directory(filename: str) -> str:
     """Extracts and returns a paths directory."""
     return os.path.dirname(filename)
 
 
-def get_file_base_name(filename: str) -> str:
+def get_file_base_name_no_ext(filename: str) -> str:
     """Extracts and returns a file name without extension out of a path."""
-    return os.path.splitext(os.path.basename(filename))[0]
+    return os.path.splitext(get_file_base_name(filename))[0]
+
+
+def get_file_base_name(filename: str) -> str:
+    return os.path.basename(filename)
 
 
 def path_exists(filename: str) -> bool:

@@ -15,6 +15,8 @@
 
 """COPIS Application project manager."""
 
+from importlib import import_module
+import sys
 from typing import List
 from pydispatch import dispatcher
 from glm import vec3
@@ -24,7 +26,8 @@ from copis.classes import (
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
-from .store import Store, load_json
+from copis.helpers import collapse_whitespaces
+from .store import Store, get_file_base_name_no_ext, load_json
 
 
 class Project:
@@ -267,8 +270,50 @@ class Project:
 
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
+        get_module = lambda i: '.'.join(i.split(".")[:2])
+
+        proj_data = {
+            'path': path,
+            'profile': self._profile,
+            'proxies': [],
+            'poses': self._poses
+        }
+
+        for proxy in self._proxies:
+            if hasattr(proxy, 'obj'):
+                data = proxy.obj.file_name
+                file_base_name = get_file_base_name_no_ext(data)
+                ext = 'obj'
+            else:
+                cls_name = type(proxy).__qualname__
+                data = {
+                    'module': get_module(type(proxy).__module__),
+                    'cls': cls_name,
+                    'repr': collapse_whitespaces(repr(proxy))
+                }
+                file_base_name = cls_name.lower().split("object")[0]
+                ext = 'json'
+
+                # Proxy object rehydration code.
+                mod = import_module(data['module'])
+                globals()[data['cls']] = getattr(mod, data['cls'])
+                obj = eval(data['repr'])
+
+                count = 1
+                while any(p['file_base_name'] == file_base_name for p in proj_data['proxies']):
+                    file_base_name = f'{file_base_name}_{count}'
+                    count = count + 1
+
+            proxy_data = {
+                'file_base_name': file_base_name,
+                'ext': ext,
+                'data': data
+            }
+
+            proj_data['proxies'].append(proxy_data)
+
         self._path = path
-        
+
         print('Save requested.')
         self._unset_dirty_flag()
 

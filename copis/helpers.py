@@ -37,6 +37,9 @@ pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
 _SCIENTIFIC_NOTATION_PATTERN = re.compile(r'[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')
+_WHITESPACE_PATTERN = re.compile(r'\s+')
+_OPEN_PAREN_SPACE_PATTERN = re.compile(r'\(\s+')
+_CLOSE_PAREN_SPACE_PATTERN = re.compile(r'\s+\)')
 
 
 def timing(f: Callable) -> Callable:
@@ -250,3 +253,10 @@ def create_device_features(size: vec3, scale: float, offset: vec3 = vec3(0)):
     points.extend([*lens_top_right, *gray, *lens_bottom_right, *gray])
 
     return [round(i, 1) for i in points]
+
+def collapse_whitespaces(string: str) -> str:
+    """Collapses whitespaces to one in a string."""
+    output = _WHITESPACE_PATTERN.sub(' ', string)
+    output = _OPEN_PAREN_SPACE_PATTERN.sub('(', output)
+
+    return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)

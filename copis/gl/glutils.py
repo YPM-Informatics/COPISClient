@@ -15,7 +15,6 @@
 
 """OpenGL viewport util functions."""
 
-import ctypes
 import math
 from math import cos, tan
 from typing import Tuple
@@ -23,7 +22,7 @@ from typing import Tuple
 import glm
 from glm import vec3, vec4, u32vec3, mat3
 
-from copis.classes import CylinderObject3D, AABBObject3D
+from copis.classes import CylinderObject3D, AABoxObject3D
 
 
 def get_cylinder_vertices(cylinder: CylinderObject3D,
@@ -70,11 +69,11 @@ def get_cylinder_vertices(cylinder: CylinderObject3D,
     return glm.array(vertices), glm.array(normals), glm.array(indices)
 
 
-def get_aabb_vertices(aabb: AABBObject3D) -> Tuple[glm.array, glm.array, glm.array]:
+def get_aabb_vertices(aabb: AABoxObject3D) -> Tuple[glm.array, glm.array, glm.array]:
     """Get vertices, normals, and indices for an axis-aligned box object.
 
     Args:
-        cylinder: An AABBObject3D.
+        aabb: An AABoxObject3D.
     """
     vertices = glm.array(
         vec3(aabb.upper.x, aabb.lower.y, aabb.upper.z), # front

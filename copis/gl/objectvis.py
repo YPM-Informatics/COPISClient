@@ -34,7 +34,7 @@ from OpenGL.GL import (
 
 from OpenGL.GLU import ctypes
 
-from copis.classes import CylinderObject3D, OBJObject3D, AABBObject3D
+from copis.classes import CylinderObject3D, OBJObject3D, AABoxObject3D
 from copis.gl.glutils import get_cylinder_vertices, get_aabb_vertices
 from copis.globals import MAX_ID
 
@@ -94,7 +94,7 @@ class GLObjectVis:
                 normals = object3d.normals
                 indices = object3d.indices
 
-            elif object3d.__class__ == AABBObject3D:
+            elif object3d.__class__ == AABoxObject3D:
                 vertices, normals, indices = get_aabb_vertices(object3d)
 
             else:

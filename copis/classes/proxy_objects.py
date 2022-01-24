@@ -16,7 +16,7 @@
 """Define proxy objects. Abstract base class is Object3D.
 
 Classes:
-    AABBObject3D, CylinderObject3D, OBJObject3D.
+    AABoxObject3D, CylinderObject3D, OBJObject3D.
 """
 
 from abc import ABC, abstractmethod
@@ -53,7 +53,7 @@ class Object3D(ABC):
         pass
 
 
-class AABBObject3D(Object3D):
+class AABoxObject3D(Object3D):
     """Axis-aligned box object."""
 
     def __init__(self, lower: vec3, upper: vec3):
@@ -70,10 +70,9 @@ class AABBObject3D(Object3D):
         return self._bbox
 
     def __repr__(self) -> str:
-        return 'AABBObject3D(' + \
-               f'lower={repr(self.lower)}, ' + \
-               f'upper={repr(self.upper)}, ' + \
-               f'bbox={self._bbox})'
+        return ('AABoxObject3D(' +
+            f'lower={repr(self.lower)}, ' +
+            f'upper={repr(self.upper)}')
 
 
 class CylinderObject3D(Object3D):
@@ -130,11 +129,10 @@ class CylinderObject3D(Object3D):
         return self._bbox
 
     def __repr__(self) -> str:
-        return 'CylinderObject3D(' + \
-               f'start={self.start}, ' + \
-               f'end={self.end}, ' + \
-               f'radius={self.radius}, ' + \
-               f'bbox={self._bbox})'
+        return ('CylinderObject3D(' +
+            f'start={self.start}, ' +
+            f'end={self.end}, ' +
+            f'radius={self.radius})')
 
 
 class OBJObject3D(Object3D):
@@ -178,6 +176,5 @@ class OBJObject3D(Object3D):
         return self._bbox
 
     def __repr__(self) -> str:
-        return 'OBJObject3D(' + \
-               f'filename=\'{self._filename}\', ' + \
-               f'bbox={self._bbox})'
+        return ('OBJObject3D(' +
+            f'filename=\'{self._filename}\')')

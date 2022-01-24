@@ -25,7 +25,7 @@ import copis.store as store
 
 from copis.helpers import print_error_msg
 from copis.globals import WindowState
-from copis.classes import AABBObject3D, CylinderObject3D, Action, Pose
+from copis.classes import AABoxObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
 from .panels.console import ConsolePanel
 from .panels.controller import ControllerPanel
@@ -156,7 +156,7 @@ class MainWindow(wx.Frame):
         self._file_menu.Enable(wx.ID_NEW, is_project_dirty or has_project_path)
         self._file_menu.Enable(wx.ID_SAVE, is_project_dirty or has_project_path)
 
-        project_name = '' if not project_path else store.get_file_base_name(project_path)
+        project_name = '' if not project_path else store.get_file_base_name_no_ext(project_path)
 
         if is_project_dirty:
             project_name = f'*{project_name}'
@@ -514,7 +514,7 @@ class MainWindow(wx.Frame):
 
     def do_load_legacy_actions(self, path: str) -> None:
         """Loads legacy actions from file Path."""
-        poses = store.load(path, [])
+        poses = store.load_pickle(path, [])
 
         # Adjust actions from list of actions to a list of poses.
         if isinstance(poses[0], Action):
@@ -556,7 +556,7 @@ class MainWindow(wx.Frame):
                 upper = vec3(dlg.upper_x_ctrl.num_value,
                              dlg.upper_y_ctrl.num_value,
                              dlg.upper_z_ctrl.num_value)
-                self.core.project.proxies.append(AABBObject3D(lower, upper))
+                self.core.project.proxies.append(AABoxObject3D(lower, upper))
 
     def open_preferences_frame(self, _) -> None:
         """Opens the preferences frame."""
