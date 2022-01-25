@@ -14,17 +14,36 @@
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
 """Provide the COPIS Action Class."""
-
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
 from copis.globals import ActionType
 
 @dataclass
-class Action:
+class Action(dict):
     """Data structure that implements a camera action."""
 
     atype: ActionType = ActionType.NONE
     device: int = -1
     argc: int = 0
     args: Optional[List[Any]] = None
+
+    def __post_init__(self):
+        a_type = self.atype
+
+        if isinstance(a_type, str):
+            a_type = a_type.upper()
+
+            if any(t.name == a_type for t in ActionType):
+                a_type = ActionType[a_type]
+            else:
+                a_type = ActionType.NONE
+
+            self.__dict__['atype'] = a_type
+
+        a_type_name = a_type.name
+        a_dict = deepcopy(self.__dict__)
+        a_dict['atype'] = a_type_name
+
+        dict.__init__(self, a_dict)
