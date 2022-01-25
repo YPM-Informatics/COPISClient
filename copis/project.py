@@ -15,8 +15,6 @@
 
 """COPIS Application project manager."""
 
-from importlib import import_module
-import sys
 from typing import List
 from pydispatch import dispatcher
 from glm import vec3
@@ -27,7 +25,7 @@ from copis.classes import (
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces
-from .store import Store, get_file_base_name_no_ext, load_json, save_project
+from .store import Store, get_file_base_name_no_ext, load_json, save_json
 
 
 class Project:
@@ -273,26 +271,25 @@ class Project:
         get_module = lambda i: '.'.join(i.split(".")[:2])
 
         proj_data = {
-            'path': path,
             'profile': self._profile,
             'proxies': [],
-            'playlist': self._poses
+            'imaging_path': self._poses
         }
 
         for proxy in self._proxies:
             if hasattr(proxy, 'obj'):
-                data = proxy.obj.file_name
-                file_base_name = get_file_base_name_no_ext(data)
-                ext = 'obj'
+                proxy_data = proxy.obj.file_name
+                proxy_name = get_file_base_name_no_ext(proxy_data)
+                is_path = True
             else:
                 cls_name = type(proxy).__qualname__
-                data = {
+                proxy_data = {
                     'module': get_module(type(proxy).__module__),
                     'cls': cls_name,
                     'repr': collapse_whitespaces(repr(proxy))
                 }
-                file_base_name = cls_name.lower().split("object")[0]
-                ext = 'json'
+                proxy_name = cls_name.lower().split("object")[0]
+                is_path = False
 
                 # Proxy object rehydration code.
                 # mod = import_module(data['module'])
@@ -300,21 +297,20 @@ class Project:
                 # obj = eval(data['repr'])
 
                 count = 1
-                while any(p['file_base_name'] == file_base_name for p in proj_data['proxies']):
-                    file_base_name = f'{file_base_name}_{count}'
+                while any(p['name'] == proxy_name for p in proj_data['proxies']):
+                    proxy_name = f'{proxy_name.split("_")[0]}_{count}'
                     count = count + 1
 
-            proxy_data = {
-                'file_base_name': file_base_name,
-                'ext': ext,
-                'data': data
+            p_data = {
+                'name': proxy_name,
+                'data': proxy_data,
+                'is_path': is_path
             }
 
-            proj_data['proxies'].append(proxy_data)
+            proj_data['proxies'].append(p_data)
 
-        self._path = save_project(proj_data)
-
-        print('Save requested.')
+        save_json(path, proj_data)
+        self._path = path
         self._unset_dirty_flag()
 
     # def add_pose(self, atype: ActionType, device_id: int, *args) -> bool:

@@ -165,23 +165,6 @@ def path_exists(filename: str) -> bool:
     return os.path.exists(filename)
 
 
-def save_project(data: dict) -> str:
-    """Saves a project."""
-    filename = data['path']
-    p_root = get_directory(filename)
-    proj_rel_dir = get_file_base_name_no_ext(filename)
-
-    if p_root.split(os.sep)[-1] != proj_rel_dir:
-        p_root = os.path.join(p_root, proj_rel_dir)
-
-    filename = os.path.join(p_root, get_file_base_name(filename))
-
-    playlist = json.dumps(data['playlist'])
-
-    return filename
-
-
-
 def _pickle_remodule_load(file_obj):
     return _RemoduleUnpickler(file_obj).load()
 
