@@ -117,7 +117,7 @@ def load_pickle(filename: str, obj: object) -> object:
     return obj
 
 
-def save_json(filename: str, obj: object) -> None:
+def save_json(filename: str, obj: dict) -> None:
     """Saves a JSON object to file."""
     with open(filename, 'w') as file:
         json.dump(obj, file, indent='\t')

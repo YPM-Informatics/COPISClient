@@ -23,11 +23,13 @@ from collections import OrderedDict
 from functools import wraps
 from math import cos, sin, pi
 from time import time
-from typing import Callable, List
+from typing import Any, Callable, Iterable, List
 from itertools import zip_longest
 
 import glm
 from glm import mat4, vec3, vec4
+
+from copis.classes import Action, Pose
 
 
 xyz_steps = [10, 1, 0.1, 0.01]
@@ -260,3 +262,16 @@ def collapse_whitespaces(string: str) -> str:
     output = _OPEN_PAREN_SPACE_PATTERN.sub('(', output)
 
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
+
+def pose_from_json_map(data: Iterable[Any]) -> Pose:
+    """Parses an iterable of JSON result dictionaries into a Pose and returns it."""
+    tupleify = lambda l: list(map(tuple, l))
+
+    position = Action(**data[0])
+    position.args = tupleify(position.args)
+
+    payload = [Action(**a) for a in data[1]]
+    for a in payload:
+        a.args = tupleify(a.args)
+
+    return Pose(position, payload)

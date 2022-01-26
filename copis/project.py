@@ -15,6 +15,7 @@
 
 """COPIS Application project manager."""
 
+from importlib import import_module
 from typing import List
 from pydispatch import dispatcher
 from glm import vec3
@@ -24,7 +25,7 @@ from copis.classes import (
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
-from copis.helpers import collapse_whitespaces
+from copis.helpers import collapse_whitespaces, pose_from_json_map
 from .store import Store, get_file_base_name_no_ext, load_json, save_json
 
 
@@ -70,12 +71,6 @@ class Project:
 
         if not hasattr(self, '_default_proxy_path'):
             self._default_proxy_path = None
-
-        if not hasattr(self, '_profile_path'):
-            self._profile_path = None
-
-        if not hasattr(self, '_proxy_path'):
-            self._proxy_path = None
 
         if not hasattr(self, '_path'):
             self._path = None
@@ -171,9 +166,6 @@ class Project:
         self._is_initialized = True
         self._is_dirty = False
 
-    def _load_profile(self):
-        self._profile = load_json(self._profile_path)
-
     def _set_is_dirty(self):
         self._toggle_is_dirty(True)
 
@@ -214,39 +206,44 @@ class Project:
         else:
             self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
 
-    def _init_proxies(self):
-        handsome_dan = OBJObject3D(self._proxy_path, scale=vec3(20, 20, 20))
+    def _init_proxies(self, proxies=None):
+        if proxies is None:
+            # Start with handsome dan :)
+            # On init a new project is created with handsome dan as the proxy.
+            handsome_dan = OBJObject3D(self._default_proxy_path, scale=vec3(20, 20, 20))
+            proxies = [handsome_dan]
 
         if self._proxies is not None:
             self._proxies.clear(False)
-            self._proxies.append(handsome_dan)
+            self._proxies.extend(proxies)
         else:
             self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
-                # Start with handsome dan :)
-                # On init a new project is created with handsome dan as the proxy.
-                [handsome_dan])
+                proxies)
 
-    def _init_poses(self):
+    def _init_poses(self, poses=None):
         if self._poses is not None:
-            self._poses.clear()
+            self._poses.clear(poses is None)
+            if poses is not None:
+                self._poses.extend(poses)
         else:
-            self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
+            if poses:
+                self._poses: List[Pose] = MonitoredList('ntf_a_list_changed',
+                poses)
+            else:
+                self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
 
     def start(self) -> None:
         """Starts a new project."""
         if not self._is_initialized:
             self._init()
 
-        self._profile_path = self._default_profile_path
-        self._proxy_path = self._default_proxy_path
-        self._path = None
-
-        self._load_profile()
+        self._profile = load_json(self._default_profile_path)
 
         self._init_devices()
         self._init_proxies()
         self._init_poses()
 
+        self._path = None
         self._unset_dirty_flag()
 
     def open(self, path: str) -> None:
@@ -254,16 +251,29 @@ class Project:
         if not self._is_initialized:
             self._init()
 
-        # self._profile_path = self._default_profile_path
-        # self._proxy_path = self._default_proxy_path
-        self._path = path
+        proj_data = load_json(path)
+        self._profile = proj_data['profile']
 
-        self._load_profile()
+        poses = list(map(pose_from_json_map, proj_data['imaging_path']))
+        proxies = []
+
+        for proxy in proj_data['proxies']:
+            if proxy['is_path']:
+                proxies.append(OBJObject3D(proxy['data'], scale=vec3(20, 20, 20)))
+            else:
+                glob_key = proxy['data']['cls']
+                if glob_key not in globals().keys():
+                    mod = import_module(proxy['data']['module'])
+                    globals()[glob_key] = getattr(mod, glob_key)
+
+                # pylint: disable=eval-used
+                proxies.append(eval(proxy['data']['repr']))
 
         self._init_devices()
-        self._init_proxies()
-        self._init_poses()
+        self._init_proxies(proxies)
+        self._init_poses(poses)
         print('Open requested.')
+        self._path = path
         self._unset_dirty_flag()
 
     def save(self, path: str) -> None:
@@ -290,11 +300,6 @@ class Project:
                 }
                 proxy_name = cls_name.lower().split("object")[0]
                 is_path = False
-
-                # Proxy object rehydration code.
-                # mod = import_module(data['module'])
-                # globals()[data['cls']] = getattr(mod, data['cls'])
-                # obj = eval(data['repr'])
 
                 count = 1
                 while any(p['name'] == proxy_name for p in proj_data['proxies']):

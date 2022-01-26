@@ -72,7 +72,7 @@ class AABoxObject3D(Object3D):
     def __repr__(self) -> str:
         return ('AABoxObject3D(' +
             f'lower={repr(self.lower)}, ' +
-            f'upper={repr(self.upper)}')
+            f'upper={repr(self.upper)})')
 
 
 class CylinderObject3D(Object3D):
