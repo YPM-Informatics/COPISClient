@@ -231,10 +231,9 @@ class COPISCore(
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
 
-        action_ids = map(lambda p: p.position.device, self.project.poses)
-        device_ids = list(set(action_ids))
-
-        batch_size = len(device_ids)
+        dvc_ids = map(lambda p: p.position.device, self.project.poses)
+        distinct_dvc_ids = list(set(dvc_ids))
+        batch_size = len(distinct_dvc_ids)
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = self._chunk_poses(batch_size)

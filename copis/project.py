@@ -116,6 +116,20 @@ class Project:
         return self._poses
 
     @property
+    def pose_sets(self) ->List[List[Pose]]:
+        """Returns sets of poses, each containing a pose from each device."""
+        poses = self._poses
+
+        if not poses:
+            return poses
+
+        dvc_ids = map(lambda p: p.position.device, self._poses)
+        distinct_dvc_ids = list(set(dvc_ids))
+        size = len(distinct_dvc_ids)
+
+        return [poses[i:i + size] for i in range(0, len(poses), size)]
+
+    @property
     def is_dirty(self) -> bool:
         """Returns whether the project is dirty."""
         return self._is_dirty

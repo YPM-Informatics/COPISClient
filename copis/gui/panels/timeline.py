@@ -55,7 +55,13 @@ class TimelinePanel(wx.Panel):
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.timeline = wx.ListBox(self, style=wx.LB_SINGLE)
+        self.timeline = wx.TreeCtrl(self) # wx.ListBox(self, style=wx.LB_SINGLE)
+        root = self.timeline.AddRoot('root')
+        node = self.timeline.AppendItem(root, 'child')
+        self.timeline.AppendItem(root, 'node 1')
+        self.timeline.AppendItem(node, 'leaf')
+        self.timeline.AppendItem(node, 'leaf 1')
+
         timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
 
         cmd_sizer = wx.BoxSizer()
@@ -172,6 +178,7 @@ class TimelinePanel(wx.Panel):
 
         Handles ntf_a_list_changed signal sent by self.core.
         """
+        sets = self.core.project.pose_sets
         self.timeline.Clear()
         for pose in self.core.project.poses:
             for action in pose.get_actions():
