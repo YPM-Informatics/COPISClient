@@ -116,12 +116,12 @@ def create_line(start: vec3,
 
 def process_path(grouped_points, colliders, max_zs, lookat) -> defaultdict(list):
     """Processes imaging path to add all necessary adjustments."""
-    cost_ordered_points, clearance_indexes = _order_points(grouped_points, colliders, max_zs)
+    # cost_ordered_points, clearance_indexes = _order_points(grouped_points, colliders, max_zs)
 
-    if all(len(points) == 0 for points in cost_ordered_points.values()):
-        print('Error: All poses are within the proxy object.')
+    # if all(len(points) == 0 for points in cost_ordered_points.values()):
+    #     print('Error: All poses are within the proxy object.')
 
-    return _build_poses(cost_ordered_points, clearance_indexes, lookat)
+    return _build_poses(grouped_points, [], lookat)
 
 
 def interleave_poses(poses):
@@ -206,7 +206,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
             payload = []
 
-            if i not in clearance_indexes[device_id]:
+            if not clearance_indexes or i not in clearance_indexes[device_id]:
                 c_args = create_action_args([1.5], 'S')
                 payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
