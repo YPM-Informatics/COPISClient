@@ -272,7 +272,7 @@ class Project:
         self._init_devices()
         self._init_proxies(proxies)
         self._init_poses(poses)
-        print('Open requested.')
+
         self._path = path
         self._unset_dirty_flag()
 

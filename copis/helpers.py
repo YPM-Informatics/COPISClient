@@ -126,7 +126,7 @@ def sanitize_number(value: float) -> float:
     if _SCIENTIFIC_NOTATION_PATTERN.match(str(value)):
         value = float(f'{value:.4f}')
 
-    return value if value != 0.0 else 0.0
+    return round(value, 3) if value != 0.0 else 0.0
 
 def sanitize_point(value: vec3) -> vec3:
     """Sanitizes a vec3 point with coordinates approaching zero."""
