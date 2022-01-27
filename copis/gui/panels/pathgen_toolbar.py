@@ -16,24 +16,19 @@
 """PathgenToolbar class."""
 
 import math
-import glm
 
 from collections import defaultdict
-from typing import List, Tuple
-from itertools import groupby
-from glm import vec2, vec3
+from typing import Tuple
+from glm import vec3
 
 import wx
 import wx.lib.agw.aui as aui
 
-from copis.classes import Action, Object3D, Pose
-from copis.globals import ActionType, PathIds
+from copis.globals import PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
-from copis.helpers import (create_action_args, interleave_lists, print_debug_msg,
-    sanitize_number, sanitize_point,
-    xyz_units)
-from copis.pathutils import create_circle, create_helix, create_line, process_path
+from copis.helpers import print_debug_msg, xyz_units
+from copis.pathutils import create_circle, create_helix, create_line, interleave_poses, process_path
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -86,24 +81,13 @@ class PathgenToolbar(aui.AuiToolBar):
             self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
 
     def on_interleave_paths(self, _) -> None:
-        """On interleave paths button pressed, rearrange actions to alternate by
+        """On interleave paths button pressed, rearrange poses to alternate by
         camera.
         This allows us to simultaneously play paths that have be created sequentially."""
-        get_device = lambda a: a.position.device
+        interleaved = interleave_poses(self.core.project.poses)
 
-        poses = sorted(self.core.project.poses, key=get_device)
-
-        if poses and len(poses):
-            grouped  = groupby(poses, get_device)
-            groups = []
-
-            for _, g in grouped:
-                groups.append(list(g))
-
-            interleaved = interleave_lists(*groups)
-
-            self.core.project.poses.clear(False)
-            self.core.project.poses.extend(interleaved)
+        self.core.project.poses.clear(False)
+        self.core.project.poses.extend(interleaved)
 
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
@@ -281,7 +265,8 @@ class _PathgenCylinder(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
+            self.parent.core.project.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 

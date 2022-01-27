@@ -21,11 +21,12 @@ import numpy as np
 
 from collections import defaultdict
 from typing import List, Tuple
+from itertools import groupby
 from glm import vec2, vec3
 
 from copis.classes import Action, Object3D, Pose
 from copis.globals import ActionType
-from copis.helpers import create_action_args, sanitize_number, sanitize_point
+from copis.helpers import create_action_args, interleave_lists, sanitize_number, sanitize_point
 from .mathutils import orthonormal_basis_of
 
 
@@ -122,9 +123,27 @@ def process_path(grouped_points, colliders, max_zs, lookat) -> defaultdict(list)
 
     return _build_poses(cost_ordered_points, clearance_indexes, lookat)
 
+
+def interleave_poses(poses):
+    """Rearranges poses to alternate by camera."""
+    get_device = lambda a: a.position.device
+
+    interleaved = poses
+
+    if poses and len(poses):
+        sorted_poses = sorted(poses, key=get_device)
+        grouped = groupby(sorted_poses, get_device)
+        groups = []
+
+        for _, group in grouped:
+            groups.append(list(group))
+
+        interleaved = interleave_lists(*groups)
+
+    return interleaved
+
 def _build_poses(ordered_points, clearance_indexes, lookat):
-    # interlace actions
-    interlaced_actions = []
+    poses = []
 
     # pos_records = {}
 
@@ -191,14 +210,13 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
                 c_args = create_action_args([1.5], 'S')
                 payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
-            interlaced_actions.append(
-                # TODO: allow user customization of actions at each point
+            poses.append(
+                # TODO: allow user customization of poses at each point
                 # https://github.com/YPM-Informatics/COPISClient/issues/102
                 Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
             )
 
-    # extend core actions list
-    return interlaced_actions
+    return interleave_poses(poses)
 
 
 def _order_points(grouped_points, colliders, max_zs):
