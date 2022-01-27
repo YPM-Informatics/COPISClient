@@ -63,7 +63,7 @@ def serialize_command(action: Action) -> str:
                 if g_code[0] == 'G' and arg[0] in 'PT':
                     value = rad_to_dd(value)
 
-                args[i] = (arg[0], f'{value:.3f}')
+                args[i] = (arg[0], f'{value}')
 
     g_cmd = ''.join(chain.from_iterable(args))
 

@@ -316,8 +316,8 @@ class ControllerPanel(scrolled.ScrolledPanel):
 
     def update_machine_pos(self, pos: Point5) -> None:
         """Update machine position values given point."""
-        self.x_m_text.ChangeValue(f'{pos.x:.3f}')
-        self.y_m_text.ChangeValue(f'{pos.y:.3f}')
-        self.z_m_text.ChangeValue(f'{pos.z:.3f}')
-        self.p_m_text.ChangeValue(f'{pos.p:.3f}')
-        self.t_m_text.ChangeValue(f'{pos.t:.3f}')
+        self.x_m_text.ChangeValue(f'{pos.x}')
+        self.y_m_text.ChangeValue(f'{pos.y}')
+        self.z_m_text.ChangeValue(f'{pos.z}')
+        self.p_m_text.ChangeValue(f'{pos.p}')
+        self.t_m_text.ChangeValue(f'{pos.t}')

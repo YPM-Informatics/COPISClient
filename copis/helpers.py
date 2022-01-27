@@ -104,15 +104,16 @@ def create_action_args(values: List[float], keys: str = 'XYZPTFSV'):
     generates a list of tuples suitable for an action's arguments.
     A custom ordered string of keys can be provided.
     Note that zip matches only up to the number of values."""
-    return list(zip(keys, [str(c) for c in values]))
+    return list(zip(keys, [str(round(c, 3))
+        for c in values]))
 
 def rad_to_dd(value: float) -> float:
     """Converts radians to decimal degrees."""
-    return value * pt_units['rad']
+    return round(value * pt_units['rad'], 3)
 
 def dd_to_rad(value: float) -> float:
     """Converts decimal degrees to radians."""
-    return value / pt_units['rad']
+    return round(value / pt_units['rad'], 3)
 
 def is_number(value: str) -> bool:
     """Checks to see if a string is a number (signed int of float).
@@ -126,7 +127,7 @@ def sanitize_number(value: float) -> float:
     if _SCIENTIFIC_NOTATION_PATTERN.match(str(value)):
         value = float(f'{value:.4f}')
 
-    return round(value, 3) if value != 0.0 else 0.0
+    return value if value != 0.0 else 0.0
 
 def sanitize_point(value: vec3) -> vec3:
     """Sanitizes a vec3 point with coordinates approaching zero."""
