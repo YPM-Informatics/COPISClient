@@ -250,8 +250,8 @@ class PathgenToolbar(aui.AuiToolBar):
             if device_id != -1:
                 grouped_points[device_id].append(point)
 
-        interlaced_poses = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
-        self.core.project.poses.extend(interlaced_poses)
+        pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
+        self.core.project.pose_sets.extend(pose_sets)
 
     def __del__(self) -> None:
         pass

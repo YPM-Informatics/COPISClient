@@ -121,8 +121,9 @@ def process_path(grouped_points, colliders, max_zs, lookat) -> defaultdict(list)
     # if all(len(points) == 0 for points in cost_ordered_points.values()):
     #     print('Error: All poses are within the proxy object.')
 
-    return _build_poses(grouped_points, [], lookat)
-
+    poses = _build_poses(grouped_points, [], lookat)
+    poses = interleave_poses(poses)
+    return _build_pose_sets(poses)
 
 def interleave_poses(poses):
     """Rearranges poses to alternate by camera."""
@@ -141,6 +142,26 @@ def interleave_poses(poses):
         interleaved = interleave_lists(*groups)
 
     return interleaved
+
+def _build_pose_sets(poses):
+    if not poses:
+        return poses
+
+    sets = []
+    set_ = []
+
+    for pose in poses:
+        if set_ and any(p.position.device ==
+            pose.position.device for p in set_):
+            sets.append(set_)
+            set_ = []
+
+        set_.append(pose)
+
+    if set_:
+        sets.append(set_)
+
+    return sets
 
 def _build_poses(ordered_points, clearance_indexes, lookat):
     poses = []
@@ -216,7 +237,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
                 Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
             )
 
-    return interleave_poses(poses)
+    return poses
 
 
 def _order_points(grouped_points, colliders, max_zs):

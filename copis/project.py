@@ -82,13 +82,13 @@ class Project:
             self._is_dirty = False
 
         if not hasattr(self, '_devices'):
-            self._devices: List[Device] = None
+            self._devices = None
 
         if not hasattr(self, '_proxies'):
-            self._proxies: List[Object3D] = None
+            self._proxies = None
 
-        if not hasattr(self, '_poses'):
-            self._poses: List[Pose] = None
+        if not hasattr(self, '_pose_sets'):
+            self._pose_sets = None
 
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
@@ -111,33 +111,19 @@ class Project:
         return self._proxies
 
     @property
-    def poses(self) -> List[Pose]:
-        """Returns the list of poses."""
-        return self._poses
+    def pose_sets(self) -> List[List[Pose]]:
+        """Returns the pose set list."""
+        return self._pose_sets
 
     @property
-    def pose_sets(self) ->List[List[Pose]]:
-        """Returns sets of poses, each containing a pose from each device."""
-        poses = self._poses
+    def poses(self) ->List[Pose]:
+        """Returns all poses in the pose set list."""
+        p_sets = self._pose_sets
 
-        if not poses:
-            return poses
+        if not p_sets:
+            return []
 
-        sets = []
-        set_ = []
-
-        for pose in poses:
-            if set_ and any(p.position.device ==
-                pose.position.device for p in set_):
-                sets.append(set_)
-                set_ = []
-
-            set_.append(pose)
-
-        if set_:
-            sets.append(set_)
-
-        return sets
+        return[pose for p_set in p_sets for pose in p_set]
 
     @property
     def is_dirty(self) -> bool:
@@ -244,17 +230,16 @@ class Project:
             self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
                 proxies)
 
-    def _init_poses(self, poses=None):
-        if self._poses is not None:
-            self._poses.clear(poses is None)
-            if poses is not None:
-                self._poses.extend(poses)
+    def _init_pose_sets(self, sets=None):
+        if self._pose_sets is not None:
+            self._pose_sets.clear(sets is None)
+            if sets is not None:
+                self._pose_sets.extend(sets)
         else:
-            if poses:
-                self._poses: List[Pose] = MonitoredList('ntf_a_list_changed',
-                poses)
+            if sets:
+                self._pose_sets = MonitoredList('ntf_a_list_changed', sets)
             else:
-                self._poses: List[Pose] = MonitoredList('ntf_a_list_changed')
+                self._pose_sets = MonitoredList('ntf_a_list_changed')
 
     def start(self) -> None:
         """Starts a new project."""
@@ -265,7 +250,7 @@ class Project:
 
         self._init_devices()
         self._init_proxies()
-        self._init_poses()
+        self._init_pose_sets()
 
         self._path = None
         self._unset_dirty_flag()
@@ -295,7 +280,7 @@ class Project:
 
         self._init_devices()
         self._init_proxies(proxies)
-        self._init_poses(poses)
+        self._init_pose_sets(poses)
 
         self._path = path
         self._unset_dirty_flag()
@@ -307,7 +292,7 @@ class Project:
         proj_data = {
             'profile': self._profile,
             'proxies': [],
-            'imaging_path': self._poses
+            'imaging_path': self._pose_sets
         }
 
         for proxy in self._proxies:
@@ -342,20 +327,20 @@ class Project:
         self._path = path
         self._unset_dirty_flag()
 
-    # def add_pose(self, atype: ActionType, device_id: int, *args) -> bool:
+    # def add_pose(self, set_index: int, atype: ActionType, device_id: int, *args) -> bool:
     #     """TODO: validate args given atype"""
     #     pose = Pose(Action(atype, device_id, len(args), list(args)), [])
-    #     self._poses.append(pose)
-    #     dispatcher.send('ntf_a_list_changed')
+    #     self._pose_sets[set_index].append(pose)
+    #     # dispatcher.send('ntf_a_list_changed')
     #     return pose
 
-    def remove_pose(self, index: int) -> Action:
-        """Removes a pose given pose list index."""
-        pose = self._poses.pop(index)
-        dispatcher.send('ntf_a_list_changed')
+    def remove_pose(self, set_index: int, pose_index: int) -> Action:
+        """Removes a pose given pose set and pose indexes."""
+        pose = self._pose_sets[set_index].pop(pose_index)
+        # dispatcher.send('ntf_a_list_changed')
         return pose
 
-    def clear_poses(self) -> None:
+    def clear_pose_sets(self) -> None:
         """Removes all poses from pose list."""
-        self._poses.clear()
-        dispatcher.send('ntf_a_list_changed')
+        self._pose_sets.clear()
+        # dispatcher.send('ntf_a_list_changed')
