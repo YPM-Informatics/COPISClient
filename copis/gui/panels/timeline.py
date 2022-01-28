@@ -21,6 +21,7 @@ TODO: Overhaul timeline panel visually
 
 import wx
 from pydispatch import dispatcher
+from copis.command_processor import serialize_command
 
 from copis.gui.wxutils import show_msg_dialog
 
@@ -51,16 +52,33 @@ class TimelinePanel(wx.Panel):
 
         self.Layout()
 
+    def _get_device(self, device_id):
+        return next(filter(lambda d: d.device_id == device_id, self.core.project.devices),
+            None)
+
+    def _get_device_caption(self, device_id):
+        dvc = self._get_device(device_id)
+        caption = ''
+
+        if dvc:
+            caption = f'{dvc.name} {dvc.type} ({device_id})'
+
+        return caption.capitalize()
+
+    def _get_actions_captions(self, actions):
+        captions = []
+
+        if actions:
+            for action in actions:
+                captions.append(serialize_command(action))
+
+        return captions
+
     def init_gui(self) -> None:
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.timeline = wx.TreeCtrl(self) # wx.ListBox(self, style=wx.LB_SINGLE)
-        root = self.timeline.AddRoot('root')
-        node = self.timeline.AppendItem(root, 'child')
-        self.timeline.AppendItem(root, 'node 1')
-        self.timeline.AppendItem(node, 'leaf')
-        self.timeline.AppendItem(node, 'leaf 1')
 
         timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
 
@@ -179,8 +197,20 @@ class TimelinePanel(wx.Panel):
         Handles ntf_a_list_changed signal sent by self.core.
         """
         sets = self.core.project.pose_sets
-        self.timeline.Clear()
-        for pose in self.core.project.poses:
-            for action in pose.get_actions():
-                self.add_command(
-                    f'{str(action.device)} {str(action.atype)[11:]} {str(action.args)}')
+        self.timeline.DeleteAllItems()
+
+        if sets:
+            root = self.timeline.AddRoot('Imaging path')
+
+            for i, pose_set in enumerate(sets):
+                node = self.timeline.AppendItem(root, f'Pose set {i}')
+
+                for pose in pose_set:
+                    node_1 = self.timeline.AppendItem(
+                        node, self._get_device_caption(pose.position.device))
+
+                    for caption in self._get_actions_captions(pose.get_actions()):
+                        self.timeline.AppendItem(node_1, caption)
+
+                self.timeline.Expand(node)
+            self.timeline.Expand(root)

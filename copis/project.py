@@ -123,11 +123,21 @@ class Project:
         if not poses:
             return poses
 
-        dvc_ids = map(lambda p: p.position.device, self._poses)
-        distinct_dvc_ids = list(set(dvc_ids))
-        size = len(distinct_dvc_ids)
+        sets = []
+        set_ = []
 
-        return [poses[i:i + size] for i in range(0, len(poses), size)]
+        for pose in poses:
+            if set_ and any(p.position.device ==
+                pose.position.device for p in set_):
+                sets.append(set_)
+                set_ = []
+
+            set_.append(pose)
+
+        if set_:
+            sets.append(set_)
+
+        return sets
 
     @property
     def is_dirty(self) -> bool:
