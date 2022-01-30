@@ -123,9 +123,9 @@ def process_path(grouped_points, colliders, max_zs, lookat) -> defaultdict(list)
 
     poses = _build_poses(grouped_points, [], lookat)
     poses = interleave_poses(poses)
-    return _build_pose_sets(poses)
+    return build_pose_sets(poses)
 
-def interleave_poses(poses):
+def interleave_poses(poses: List[Pose]) -> List[Pose]:
     """Rearranges poses to alternate by camera."""
     get_device = lambda a: a.position.device
 
@@ -143,7 +143,9 @@ def interleave_poses(poses):
 
     return interleaved
 
-def _build_pose_sets(poses):
+def build_pose_sets(poses: List[Pose]) -> List[List[Pose]]:
+    """Arranges a pose list into a pose set list.
+        Each set contains at most one pose per device."""
     if not poses:
         return poses
 

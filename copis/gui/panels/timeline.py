@@ -22,8 +22,10 @@ TODO: Overhaul timeline panel visually
 import wx
 from pydispatch import dispatcher
 from copis.command_processor import serialize_command
+from copis.globals import ActionType
 
 from copis.gui.wxutils import show_msg_dialog
+from copis.helpers import is_number, rad_to_dd
 
 
 class TimelinePanel(wx.Panel):
@@ -32,6 +34,9 @@ class TimelinePanel(wx.Panel):
     Args:
         parent: Pointer to a parent wx.Frame.
     """
+
+    _MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
+    _SNAP_COMMANDS = [ActionType.C0, ActionType.C1]
 
     def __init__(self, parent, *args, **kwargs) -> None:
         """Initializes TimelinePanel with constructors."""
@@ -65,14 +70,41 @@ class TimelinePanel(wx.Panel):
 
         return caption.capitalize()
 
-    def _get_actions_captions(self, actions):
-        captions = []
+    def _get_action_caption(self, action):
+        if action:
+            if action.atype in self._MOVE_COMMANDS:
+                caption = 'Move to position:'
+            elif action.atype in self._SNAP_COMMANDS:
+                caption = 'Snap picture within:'
+            else:
+                caption = serialize_command(action)
+        else:
+            caption = '<no action>'
 
-        if actions:
-            for action in actions:
-                captions.append(serialize_command(action))
+        return caption
 
-        return captions
+    def _get_action_arg_caption(self, action_type, arg):
+        time_args = {
+            'P': 'millisecond',
+            'S': 'second',
+            'X': 'second'
+        }
+
+        key, value = arg
+        key = key.upper()
+
+        if is_number(value):
+            value = float(value)
+
+        if key in time_args and action_type in self._SNAP_COMMANDS:
+            caption = f'{value} {time_args[key]}{"s" if value != 1 else ""}'
+        else:
+            dd_keys = ["P", "T"]
+            value = rad_to_dd(value) if key in dd_keys else value
+            units = 'dd' if key in dd_keys else 'mm'
+            caption = f'{key}: {value} {units}'
+
+        return caption
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -188,8 +220,7 @@ class TimelinePanel(wx.Panel):
             else:
                 show_msg_dialog('Please select the command to delete.', 'Delete command')
         else:
-            self.core.project.clear_poses()
-            self.timeline.Clear()
+            self.core.project.pose_sets.clear()
 
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
@@ -209,8 +240,13 @@ class TimelinePanel(wx.Panel):
                     node_1 = self.timeline.AppendItem(
                         node, self._get_device_caption(pose.position.device))
 
-                    for caption in self._get_actions_captions(pose.get_actions()):
-                        self.timeline.AppendItem(node_1, caption)
+                    for action in pose.get_actions():
+                        node_2 = self.timeline.AppendItem(node_1,
+                            self._get_action_caption(action))
+
+                        for arg in action.args:
+                            self.timeline.AppendItem(node_2,
+                                self._get_action_arg_caption(action.atype, arg))
 
                 self.timeline.Expand(node)
             self.timeline.Expand(root)

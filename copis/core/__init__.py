@@ -192,6 +192,13 @@ class COPISCore(
 
             self._serial.write(cmd_lines)
 
+    def _update_recent_projects(self, path) -> None:
+        recent_projects = list(map(str.lower,
+            self.config.application_settings.recent_projects))
+
+        if path.lower() not in recent_projects:
+            self.config.update_recent_projects(path)
+
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
         self.select_pose(-1)
@@ -208,13 +215,13 @@ class COPISCore(
 
         self.project.open(path)
 
+        self._update_recent_projects(path)
+
     def save_project(self, path) -> None:
         """Saves a project and update recent projects."""
         self.project.save(path)
 
-        recent_projects = list(map(str.lower, self.config.application_settings.recent_projects))
-        if path.lower() not in recent_projects:
-            self.config.update_recent_projects(path)
+        self._update_recent_projects(path)
 
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the define action path."""

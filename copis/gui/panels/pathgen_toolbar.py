@@ -28,7 +28,8 @@ from copis.globals import PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import print_debug_msg, xyz_units
-from copis.pathutils import create_circle, create_helix, create_line, interleave_poses, process_path
+from copis.pathutils import (build_pose_sets, create_circle, create_helix, create_line,
+    interleave_poses, process_path)
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -86,13 +87,13 @@ class PathgenToolbar(aui.AuiToolBar):
         This allows us to simultaneously play paths that have be created sequentially."""
         interleaved = interleave_poses(self.core.project.poses)
 
-        self.core.project.poses.clear(False)
-        self.core.project.poses.extend(interleaved)
+        self.core.project.pose_sets.clear(False)
+        self.core.project.pose_sets.extend(build_pose_sets(interleaved))
 
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
-        if len(self.core.project.poses) > 0:
-            self.core.project.poses.clear()
+        if len(self.core.project.pose_sets) > 0:
+            self.core.project.pose_sets.clear()
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, create pathgen dialog and process accordingly.

@@ -264,15 +264,20 @@ def collapse_whitespaces(string: str) -> str:
 
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
 
-def pose_from_json_map(data: Iterable[Any]) -> Pose:
+def pose_from_json_map(set_data: Iterable[Any]) -> Pose:
     """Parses an iterable of JSON result dictionaries into a Pose and returns it."""
     tupleify = lambda l: list(map(tuple, l))
 
-    position = Action(**data[0])
-    position.args = tupleify(position.args)
+    p_set = []
 
-    payload = [Action(**a) for a in data[1]]
-    for a in payload:
-        a.args = tupleify(a.args)
+    for pose_data in set_data:
+        position = Action(**pose_data[0])
+        position.args = tupleify(position.args)
 
-    return Pose(position, payload)
+        payload = [Action(**a) for a in pose_data[1]]
+        for action in payload:
+            action.args = tupleify(action.args)
+
+        p_set.append(Pose(position, payload))
+
+    return p_set

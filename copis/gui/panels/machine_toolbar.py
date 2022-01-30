@@ -173,7 +173,7 @@ class MachineToolbar(aui.AuiToolBar):
             #     self.core.start_imaging()
 
             is_connected = self._core.is_serial_port_connected
-            has_path = len(self._core.project.poses)
+            has_path = len(self._core.project.pose_sets)
             is_homed = self._core.is_machine_homed
             can_image = is_connected and has_path and is_homed
 

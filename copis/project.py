@@ -263,7 +263,7 @@ class Project:
         proj_data = load_json(path)
         self._profile = proj_data['profile']
 
-        poses = list(map(pose_from_json_map, proj_data['imaging_path']))
+        p_sets = list(map(pose_from_json_map, proj_data['imaging_path']))
         proxies = []
 
         for proxy in proj_data['proxies']:
@@ -280,7 +280,7 @@ class Project:
 
         self._init_devices()
         self._init_proxies(proxies)
-        self._init_pose_sets(poses)
+        self._init_pose_sets(p_sets)
 
         self._path = path
         self._unset_dirty_flag()
@@ -290,9 +290,9 @@ class Project:
         get_module = lambda i: '.'.join(i.split(".")[:2])
 
         proj_data = {
+            'imaging_path': self._pose_sets,
             'profile': self._profile,
-            'proxies': [],
-            'imaging_path': self._pose_sets
+            'proxies': []
         }
 
         for proxy in self._proxies:
@@ -339,8 +339,3 @@ class Project:
         pose = self._pose_sets[set_index].pop(pose_index)
         # dispatcher.send('ntf_a_list_changed')
         return pose
-
-    def clear_pose_sets(self) -> None:
-        """Removes all poses from pose list."""
-        self._pose_sets.clear()
-        # dispatcher.send('ntf_a_list_changed')

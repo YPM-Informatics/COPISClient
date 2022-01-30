@@ -465,6 +465,7 @@ class MainWindow(wx.Frame):
                 return
 
             self.core.open_project(file_dialog.Path)
+            self._populate_recent_projects()
 
     def on_save(self, _) -> None:
         """Opens 'save' dialog."""
