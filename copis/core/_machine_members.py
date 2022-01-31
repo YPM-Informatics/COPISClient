@@ -26,6 +26,7 @@ from copis.helpers import print_debug_msg, print_error_msg # , print_info_msg, d
     # rad_to_dd, sanitize_number)
 
 
+
 class MachineMembersMixin:
     """Implement COPIS Core machine related class members using mixins."""
     @property
@@ -165,21 +166,6 @@ class MachineMembersMixin:
             self._mainqueue.append(cmds)
             self._send_next()
             self._keep_working = False
-
-    def _chunk_poses(self, batch_size, poses=None):
-        cmds = poses if poses else self.project.poses
-        poses = []
-
-        for i in range(0, len(cmds), batch_size):
-            chunk = cmds[i:i + batch_size]
-            chunk_actions = []
-
-            for pose in chunk:
-                chunk_actions.extend(pose.get_actions())
-
-            poses.append(chunk_actions)
-
-        return poses
 
     def _unlock_machine(self):
         print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)

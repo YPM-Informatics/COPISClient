@@ -238,12 +238,9 @@ class COPISCore(
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
 
-        dvc_ids = map(lambda p: p.position.device, self.project.poses)
-        distinct_dvc_ids = list(set(dvc_ids))
-        batch_size = len(distinct_dvc_ids)
-
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
-        body = self._chunk_poses(batch_size)
+        body = list(map(lambda p_set: [a for p in p_set for a in p.get_actions()],
+            self.project.pose_sets))
         footer = self._get_initialization_commands(ActionType.G1)
         footer.extend(self._disengage_motors_commands)
 
@@ -291,7 +288,7 @@ class COPISCore(
         batch_size = len(device_ids)
 
         header = self._get_move_commands(True, *device_ids)
-        body = self._chunk_poses(batch_size, homing_actions)
+        body = _chunk_actions(batch_size, homing_actions)
         footer = self._get_initialization_commands(ActionType.G1)
         footer.extend(self._disengage_motors_commands)
 
@@ -363,3 +360,13 @@ class COPISCore(
         )
         self._working_thread.start()
         return True
+
+
+def _chunk_actions(batch_size, actions):
+    chunks = []
+
+    for i in range(0, len(actions), batch_size):
+        chunk = actions[i:i + batch_size]
+        chunks.append(chunk)
+
+    return chunks
