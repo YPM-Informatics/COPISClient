@@ -133,7 +133,7 @@ class CommunicationMembersMixin:
     def connect(self, baud: int = serial_controller.BAUDS[-1]) -> bool:
         """Connects to the active serial port."""
         if not self._is_serial_enabled:
-            print_error_msg(self.console, 'Serial is not enabled')
+            print_error_msg(self.console, 'Serial is not enabled.')
         else:
             connected = self._serial.open_port(baud)
 
@@ -144,7 +144,7 @@ class CommunicationMembersMixin:
                         filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
                     ).name
 
-                print_info_msg(self.console, f'Connected to device {port_name}.')
+                print_info_msg(self.console, f'Connected to device {port_name}')
 
                 read_thread = threading.Thread(
                     target=self._listener,
@@ -184,4 +184,4 @@ class CommunicationMembersMixin:
 
         self._is_new_connection = False
         self._connected_on = None
-        print_info_msg(self.console, f'Disconnected from device {port_name}.')
+        print_info_msg(self.console, f'Disconnected from device {port_name}')

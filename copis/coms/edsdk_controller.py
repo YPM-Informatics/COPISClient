@@ -131,7 +131,7 @@ class EDSDKController():
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
 
         self._is_connected = True
-        self._print_info_msg(self._console, f'Connected to camera {self._camera.index}.')
+        self._print_info_msg(self._console, f'Connected to camera {self._camera.index}')
 
         return self._is_connected
 
@@ -146,7 +146,7 @@ class EDSDKController():
             return False
 
         self._edsdk.EdsCloseSession(self._camera.ref)
-        self._print_info_msg(self._console, f'Disconnected from camera {self._camera.index}.')
+        self._print_info_msg(self._console, f'Disconnected from camera {self._camera.index}')
 
         self._camera.ref = None
         self._camera.index = -1
@@ -279,7 +279,7 @@ class EDSDKController():
 
             self._is_waiting_for_image = False
 
-            self._print_info_msg(self._console, f'Image saved at {self._image.filename}.')
+            self._print_info_msg(self._console, f'Image saved at {self._image.filename}')
 
         except Exception as err:
             self._print_error_msg(self._console,

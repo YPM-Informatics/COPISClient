@@ -311,7 +311,6 @@ class COPISCore(
             }
         )
         self._working_thread.start()
-        print_info_msg(self.console, 'Homing started.')
         return True
 
     def stop_work(self) -> None:
@@ -321,7 +320,7 @@ class COPISCore(
             self._mainqueue = []
             self._is_machine_paused = False
             self._clear_to_send = True
-            print_info_msg(self.console, f'{self.work_type_name} stopped.')
+            print_info_msg(self.console, f'{self.work_type_name} stopped')
             self._work_type = None
 
     def pause_work(self) -> bool:

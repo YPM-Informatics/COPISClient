@@ -35,7 +35,7 @@ class ThreadTargetsMixin:
         machine_queried = False
 
         print_debug_msg(self.console,
-            f'{read_thread.thread.name.capitalize()} started.', self._is_dev_env)
+            f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
@@ -60,9 +60,11 @@ class ThreadTargetsMixin:
                     self._clear_to_send = controllers_unlocked or self.is_machine_idle
 
                 if self.is_machine_idle:
-                    print_debug_msg(self.console, '**** Machine is idle ****', self._is_dev_env)
+                    print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
 
                     if len(self._mainqueue) <= 0:
+                        print_debug_msg(self.console, '**** Machine is idle ****',
+                            self._is_dev_env)
                         dispatcher.send('ntf_machine_idle')
 
             if self._is_new_connection:
@@ -105,7 +107,7 @@ class ThreadTargetsMixin:
                         machine_queried = True
 
         print_debug_msg(self.console,
-            f'{read_thread.thread.name.capitalize()} stopped.', self._is_dev_env)
+            f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
 
     def _worker(self, resuming=False, extra_callback=None) -> None:
         """Implements a worker thread."""
@@ -117,11 +119,11 @@ class ThreadTargetsMixin:
         def callback():
             if extra_callback:
                 extra_callback()
-            print_info_msg(self.console, f'{t_name} ended.')
+            print_info_msg(self.console, f'{t_name} ended')
 
         dispatcher.connect(callback, signal='ntf_machine_idle')
 
-        print_info_msg(self.console, f'{t_name} started.')
+        print_info_msg(self.console, f'{t_name} started')
 
         had_error = False
         try:
@@ -140,4 +142,4 @@ class ThreadTargetsMixin:
                 self._work_type = None
 
             if not had_error:
-                print_debug_msg(self.console, f'{t_name} thread stopped.', self._is_dev_env)
+                print_debug_msg(self.console, f'{t_name} thread stopped', self._is_dev_env)
