@@ -96,6 +96,7 @@ class COPISCore(
         self._mainqueue = []
 
         self._selected_pose: int = -1
+        self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
         self._selected_device: int = -1
 
@@ -205,6 +206,7 @@ class COPISCore(
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
+        self.select_pose_set(-1)
 
         self.project.start()
 
@@ -213,6 +215,7 @@ class COPISCore(
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
+        self.select_pose_set(-1)
 
         resp = self.project.open(path)
         did_open, _ = resp

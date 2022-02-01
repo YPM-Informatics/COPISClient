@@ -25,7 +25,7 @@ from copis.command_processor import serialize_command
 from copis.globals import ActionType
 
 from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import is_number, print_info_msg, rad_to_dd
+from copis.helpers import is_number, rad_to_dd
 
 
 class TimelinePanel(wx.Panel):
@@ -56,6 +56,7 @@ class TimelinePanel(wx.Panel):
         dispatcher.connect(self.update_timeline, signal='ntf_a_list_changed')
         dispatcher.connect(self._on_pose_selected, signal='ntf_a_selected')
         dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
+        dispatcher.connect(self._on_pose_set_deselected, signal='ntf_s_deselected')
 
         self.Layout()
 
@@ -108,29 +109,47 @@ class TimelinePanel(wx.Panel):
 
         return caption
 
+    def _on_pose_set_deselected(self, set_index):
+        root = self.timeline.GetRootItem()
+        set_node, cookie = self.timeline.GetFirstChild(root)
+
+        if set_index > 0:
+            for _ in range(set_index):
+                set_node, cookie = self.timeline.GetNextChild(
+                    set_node, cookie)
+
+        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        self.timeline.UnselectItem(set_node)
+        self.timeline.EnsureVisible(set_node)
+
+        if self.timeline.GetFocusedItem() == set_node:
+            self.timeline.ClearFocusedItem()
+
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
     def _on_pose_deselected(self, pose_index):
         set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
         root = self.timeline.GetRootItem()
-        pose_node, cookie = self.timeline.GetFirstChild(root)
+        set_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
             for _ in range(set_index):
-                pose_node, cookie = self.timeline.GetNextChild(
-                    pose_node, cookie)
+                set_node, cookie = self.timeline.GetNextChild(
+                    set_node, cookie)
 
-        dvc_node, cookie = self.timeline.GetFirstChild(pose_node)
+        pose_node, cookie = self.timeline.GetFirstChild(set_node)
 
         if idx_in_set > 0:
             for _ in range(idx_in_set):
-                dvc_node, cookie = self.timeline.GetNextChild(
-                    pose_node, cookie)
+                pose_node, cookie = self.timeline.GetNextChild(
+                    set_node, cookie)
 
         self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
-        self.timeline.UnselectItem(dvc_node)
-        self.timeline.EnsureVisible(dvc_node)
+        self.timeline.UnselectItem(pose_node)
+        self.timeline.EnsureVisible(pose_node)
 
-        if self.timeline.GetFocusedItem() == dvc_node:
+        if self.timeline.GetFocusedItem() == pose_node:
             self.timeline.ClearFocusedItem()
 
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
@@ -191,7 +210,7 @@ class TimelinePanel(wx.Panel):
 
             self.core.select_pose(idx_in_poses)
         elif data['item'] == 'set':
-            print_info_msg(self.core.console, f'set index is: {data["index"]}')
+            self.core.select_pose_set(data["index"])
 
     def init_gui(self) -> None:
         """Initialize gui elements."""

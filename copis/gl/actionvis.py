@@ -177,6 +177,17 @@ class GLActionVis:
         if self._num_points > 0:
             scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
 
+            selected_poses = []
+            if self.core.selected_pose != -1:
+                selected_poses.append(self.core.selected_pose)
+            elif self.core.selected_pose_set != -1:
+                sets = self.core.project.pose_sets
+                set_index = self.core.selected_pose_set
+                start = sum([len(s) for s in sets[:set_index]])
+
+                for i in range(len(sets[set_index])):
+                    selected_poses.append(start + i)
+
             for key, value in self._items['point'].items():
                 mats = glm.array([p[1] * scale for p in value])
 
@@ -185,10 +196,10 @@ class GLActionVis:
 
                 feat_color_mods = glm.array([vec3()] * len(value))
 
-                # If point is selected, darken its color.
+                # If point is selected (individually or highlighted in a set), darken its color.
                 for i, v in enumerate(value):
                     # Un-offset ids.
-                    if v[0] - self._num_devices == self.core.selected_pose:
+                    if selected_poses and v[0] - self._num_devices in selected_poses:
                         shade_factor = .6
                         cols[i] = shade_color(vec4(cols[i]), shade_factor)
                         feat_color_mods[i] = vec3(2, shade_factor, 0)

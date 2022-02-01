@@ -148,6 +148,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_volumes, signal='ntf_a_list_changed')
         dispatcher.connect(self._update_colors, signal='ntf_a_selected')
         dispatcher.connect(self._update_colors, signal='ntf_a_deselected')
+        dispatcher.connect(self._update_colors, signal='ntf_s_selected')
+        dispatcher.connect(self._update_colors, signal='ntf_s_deselected')
         dispatcher.connect(self._update_devices, signal='ntf_d_list_changed')
         dispatcher.connect(self._update_objects, signal='ntf_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='ntf_o_deselected')
@@ -387,6 +389,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         if keycode == wx.WXK_ESCAPE:
             self.core.select_device(-1)
             self.core.select_pose(-1)
+            self.core.select_pose_set(-1)
             self.select_object(-1)
 
         # delete selected proxy object if backspace
@@ -476,6 +479,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             if id_ == -1:
                 self.core.select_device(-1)
                 self.core.select_pose(-1)
+                self.core.select_pose_set(-1)
                 self.select_object(-1)
 
             # id_ belongs to camera device
@@ -501,7 +505,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         elif id_ in (x.object_id for x in self._objectvis.objects):
             self.core.select_device(-1)
             self.core.select_pose(-1)
-
+            self.core.select_pose_set(-1)
             self.core.select_proxy(-1)
 
             for obj in self._objectvis.objects:

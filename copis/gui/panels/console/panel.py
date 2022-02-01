@@ -58,6 +58,8 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='ntf_o_list_changed')
         dispatcher.connect(self.on_notification, signal='ntf_a_selected')
         dispatcher.connect(self.on_notification, signal='ntf_a_deselected')
+        dispatcher.connect(self.on_notification, signal='ntf_s_selected')
+        dispatcher.connect(self.on_notification, signal='ntf_s_deselected')
         dispatcher.connect(self.on_notification, signal='ntf_d_selected')
         dispatcher.connect(self.on_notification, signal='ntf_d_deselected')
         dispatcher.connect(self.on_notification, signal='ntf_o_selected')
@@ -133,6 +135,8 @@ class ConsolePanel(wx.Panel):
                     message = 'Device'
                 elif parts[1] == 'o':
                     message = 'Proxy object'
+                elif parts[1] == 's':
+                    message = 'Pose set'
 
                 for i in range(2, len(parts)):
                     message = f'{message} {parts[i]}'

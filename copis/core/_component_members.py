@@ -35,6 +35,11 @@ class ComponentMembersMixin:
         """Returns the selected pose's ID."""
         return self._selected_pose
 
+    @property
+    def selected_pose_set(self) -> int:
+        """Returns the selected pose set's ID."""
+        return self._selected_pose_set
+
     # @property
     # def selected_proxy(self) -> int:
     #     """Returns the selected proxy object's ID."""
@@ -53,6 +58,7 @@ class ComponentMembersMixin:
         elif index < len(self.project.proxies):
             self.select_device(-1)
             self.select_pose(-1)
+            self.select_pose_set(-1)
 
             self._selected_proxy = index
 
@@ -71,14 +77,33 @@ class ComponentMembersMixin:
             self.select_proxy(-1)
             self.select_pose(-1)
             self.select_device(-1)
+            self.select_pose_set(-1)
 
             self._selected_device = index
 
-            dispatcher.send('ntf_d_selected',
-                device=self.project.devices[self._selected_device])
-
+            dispatcher.send('ntf_d_selected', device=self.project.devices[self._selected_device])
         else:
             print_error_msg(self.console, f'Device index {index} is out of range.')
+
+    def select_pose_set(self, index: int) -> None:
+        """Highlights poses in a set given pose set index."""
+        if index < 0:
+            selected = self._selected_pose_set
+            if self._selected_pose_set >= 0:
+                self._selected_pose_set = -1
+
+                dispatcher.send('ntf_s_deselected', set_index=selected)
+        elif index < len(self.project.pose_sets):
+            self.select_device(-1)
+            self.select_proxy(-1)
+            self.select_pose(-1)
+            self.select_pose_set(-1)
+
+            self._selected_pose_set = index
+
+            dispatcher.send('ntf_s_selected', set_index=self._selected_pose_set)
+        else:
+            print_error_msg(self.console, f'Pose set index {index} is out of range.')
 
     def select_pose(self, index: int) -> None:
         """Selects pose given index in pose list."""
@@ -92,11 +117,11 @@ class ComponentMembersMixin:
             self.select_device(-1)
             self.select_proxy(-1)
             self.select_pose(-1)
+            self.select_pose_set(-1)
 
             self._selected_pose = index
 
             dispatcher.send('ntf_a_selected', pose_index=self._selected_pose)
-
         else:
             print_error_msg(self.console, f'Pose index {index} is out of range.')
 
