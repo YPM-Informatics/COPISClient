@@ -19,6 +19,7 @@ __version__ = ""
 
 # pylint: disable=using-constant-test
 import sys
+from typing import Tuple
 
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
@@ -207,15 +208,19 @@ class COPISCore(
 
         self.project.start()
 
-    def open_project(self, path) -> None:
+    def open_project(self, path) -> Tuple:
         """Opens an existing project."""
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
 
-        self.project.open(path)
+        resp = self.project.open(path)
+        did_open, _ = resp
 
-        self._update_recent_projects(path)
+        if did_open:
+            self._update_recent_projects(path)
+
+        return resp
 
     def save_project(self, path) -> None:
         """Saves a project and update recent projects."""

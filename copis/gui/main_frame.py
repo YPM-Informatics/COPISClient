@@ -448,7 +448,10 @@ class MainWindow(wx.Frame):
         if not self._prompt_saving(caption, event):
             return
 
-        self.core.open_project(path)
+        did_open, msg = self.core.open_project(path)
+
+        if not did_open:
+            
 
     def on_open_project(self, _) -> None:
         """Opens 'open' dialog for existing COPIS projects."""

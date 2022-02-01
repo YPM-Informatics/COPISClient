@@ -16,7 +16,7 @@
 """COPIS Application project manager."""
 
 from importlib import import_module
-from typing import List
+from typing import List, Tuple
 from pydispatch import dispatcher
 from glm import vec3
 
@@ -26,7 +26,7 @@ from copis.classes import (
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, pose_from_json_map
-from .store import Store, get_file_base_name_no_ext, load_json, save_json
+from .store import Store, get_file_base_name_no_ext, load_json, path_exists, save_json
 
 
 class Project:
@@ -255,13 +255,12 @@ class Project:
         self._path = None
         self._unset_dirty_flag()
 
-    def open(self, path: str) -> None:
+    def open(self, path: str) -> Tuple:
         """Opens an existing project given it's path."""
         if not self._is_initialized:
             self._init()
 
         proj_data = load_json(path)
-        self._profile = proj_data['profile']
 
         p_sets = list(map(pose_from_json_map, proj_data['imaging_path']))
         proxies = []
@@ -278,12 +277,20 @@ class Project:
                 # pylint: disable=eval-used
                 proxies.append(eval(proxy['data']['repr']))
 
+        for proxy in proxies:
+            proxy_path = proxy['data']
+            if proxy['is_path'] and not path_exists(proxy_path):
+                return (False, f'Proxy path "{proxy_path}" does not exist')
+
+        self._profile = proj_data['profile']
         self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
 
         self._path = path
         self._unset_dirty_flag()
+
+        return (True, '')
 
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
