@@ -109,19 +109,55 @@ class TimelinePanel(wx.Panel):
         return caption
 
     def _on_pose_deselected(self, pose_index):
-        print_info_msg(self.core.console, f'Index of pose to deselect: {pose_index}')
-        # self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
-        # selected = self.timeline.GetSelection()
+        set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
-        # if selected.IsOk():
-        #     self.timeline.SelectItem(selected, False)
-        #     self.timeline.EnsureVisible(selected)
+        root = self.timeline.GetRootItem()
+        pose_node, cookie = self.timeline.GetFirstChild(root)
 
-        # self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+        if set_index > 0:
+            for _ in range(set_index):
+                pose_node, cookie = self.timeline.GetNextChild(
+                    pose_node, cookie)
+
+        dvc_node, cookie = self.timeline.GetFirstChild(pose_node)
+
+        if idx_in_set > 0:
+            for _ in range(idx_in_set):
+                dvc_node, cookie = self.timeline.GetNextChild(
+                    pose_node, cookie)
+
+        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        self.timeline.UnselectItem(dvc_node)
+        self.timeline.EnsureVisible(dvc_node)
+
+        if self.timeline.GetFocusedItem() == dvc_node:
+            self.timeline.ClearFocusedItem()
+
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_selected(self, pose_index):
-        sets = self.core.project.pose_sets
+        set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
+        root = self.timeline.GetRootItem()
+        pose_node, cookie = self.timeline.GetFirstChild(root)
+
+        if set_index > 0:
+            for _ in range(set_index):
+                pose_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
+
+        dvc_node, cookie = self.timeline.GetFirstChild(pose_node)
+
+        if idx_in_set > 0:
+            for _ in range(idx_in_set):
+                dvc_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
+
+        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        self.timeline.SelectItem(dvc_node, True)
+        self.timeline.EnsureVisible(dvc_node)
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
+    def _place_pose_in_sets(self, pose_index):
+        sets = self.core.project.pose_sets
         set_index = 0
         idx_in_set = pose_index
 
@@ -133,23 +169,7 @@ class TimelinePanel(wx.Panel):
                     idx_in_set = pose_index - sum([len(s) for s in sets[:set_index]])
                     break
 
-        root = self.timeline.GetRootItem()
-        pose_node, cookie = self.timeline.GetFirstChild(root)
-
-        if set_index > 0:
-            for i in range(set_index):
-                pose_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
-
-        dvc_node, cookie = self.timeline.GetFirstChild(pose_node)
-
-        if idx_in_set > 0:
-            for i in range(idx_in_set):
-                dvc_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
-
-        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
-        self.timeline.SelectItem(dvc_node, True)
-        self.timeline.EnsureVisible(dvc_node)
-        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+        return set_index, idx_in_set
 
     def _on_selection_changed(self, event: wx.TreeEvent) -> None:
         obj = event.EventObject
