@@ -267,7 +267,13 @@ class Project:
 
         for proxy in proj_data['proxies']:
             if proxy['is_path']:
-                proxies.append(OBJObject3D(proxy['data'], scale=vec3(20, 20, 20)))
+                proxy_path = proxy['data']
+
+                if path_exists(proxy_path):
+                    proxies.append(OBJObject3D(
+                        proxy_path, scale=vec3(20, 20, 20)))
+                else:
+                    return (False, f'Proxy path "{proxy_path}" does not exist')
             else:
                 glob_key = proxy['data']['cls']
                 if glob_key not in globals().keys():
@@ -276,11 +282,6 @@ class Project:
 
                 # pylint: disable=eval-used
                 proxies.append(eval(proxy['data']['repr']))
-
-        for proxy in proxies:
-            proxy_path = proxy['data']
-            if proxy['is_path'] and not path_exists(proxy_path):
-                return (False, f'Proxy path "{proxy_path}" does not exist')
 
         self._profile = proj_data['profile']
         self._init_devices()

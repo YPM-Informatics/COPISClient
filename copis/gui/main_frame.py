@@ -451,7 +451,7 @@ class MainWindow(wx.Frame):
         did_open, msg = self.core.open_project(path)
 
         if not did_open:
-            
+            show_msg_dialog(f'{msg}.', caption)
 
     def on_open_project(self, _) -> None:
         """Opens 'open' dialog for existing COPIS projects."""
@@ -467,8 +467,12 @@ class MainWindow(wx.Frame):
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
-            self.core.open_project(file_dialog.Path)
-            self._populate_recent_projects()
+            did_open, msg = self.core.open_project(file_dialog.Path)
+
+            if not did_open:
+                show_msg_dialog(f'{msg}.', 'Open project')
+            else:
+                self._populate_recent_projects()
 
     def on_save(self, _) -> None:
         """Opens 'save' dialog."""
