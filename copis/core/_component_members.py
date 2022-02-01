@@ -83,10 +83,11 @@ class ComponentMembersMixin:
     def select_pose(self, index: int) -> None:
         """Selects pose given index in pose list."""
         if index < 0:
+            selected = self._selected_pose
             if self._selected_pose >= 0:
                 self._selected_pose = -1
 
-                dispatcher.send('ntf_a_deselected')
+                dispatcher.send('ntf_a_deselected', pose_index=selected)
         elif index < len(self.project.poses):
             self.select_device(-1)
             self.select_proxy(-1)

@@ -25,7 +25,7 @@ from copis.command_processor import serialize_command
 from copis.globals import ActionType
 
 from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import is_number, rad_to_dd
+from copis.helpers import is_number, print_info_msg, rad_to_dd
 
 
 class TimelinePanel(wx.Panel):
@@ -54,6 +54,8 @@ class TimelinePanel(wx.Panel):
 
         # Bind listeners.
         dispatcher.connect(self.update_timeline, signal='ntf_a_list_changed')
+        dispatcher.connect(self._on_pose_selected, signal='ntf_a_selected')
+        dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
 
         self.Layout()
 
@@ -106,11 +108,79 @@ class TimelinePanel(wx.Panel):
 
         return caption
 
+    def _on_pose_deselected(self, pose_index):
+        print_info_msg(self.core.console, f'Index of pose to deselect: {pose_index}')
+        # self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        # selected = self.timeline.GetSelection()
+
+        # if selected.IsOk():
+        #     self.timeline.SelectItem(selected, False)
+        #     self.timeline.EnsureVisible(selected)
+
+        # self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
+    def _on_pose_selected(self, pose_index):
+        sets = self.core.project.pose_sets
+
+        set_index = 0
+        idx_in_set = pose_index
+
+        if pose_index >= len(sets[0]):
+            for i in range(1, len(sets) + 1):
+                sums = sum([len(s) for s in sets[:i]])
+                if sums > pose_index:
+                    set_index = i - 1
+                    idx_in_set = pose_index - sum([len(s) for s in sets[:set_index]])
+                    break
+
+        root = self.timeline.GetRootItem()
+        pose_node, cookie = self.timeline.GetFirstChild(root)
+
+        if set_index > 0:
+            for i in range(set_index):
+                pose_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
+
+        dvc_node, cookie = self.timeline.GetFirstChild(pose_node)
+
+        if idx_in_set > 0:
+            for i in range(idx_in_set):
+                dvc_node, cookie = self.timeline.GetNextChild(pose_node, cookie)
+
+        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        self.timeline.SelectItem(dvc_node, True)
+        self.timeline.EnsureVisible(dvc_node)
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
+    def _on_selection_changed(self, event: wx.TreeEvent) -> None:
+        obj = event.EventObject
+        item = event.GetItem()
+        data = obj.GetItemData(item)
+
+        if not data:
+            return
+
+        if data['item'] == 'pose':
+            set_index = data['set index']
+            index = data['index']
+            sets = self.core.project.pose_sets
+
+            if set_index > 0:
+                idx_in_poses = sum([len(s) for s in sets[:set_index]]) + index
+            else:
+                idx_in_poses = index
+
+            self.core.select_pose(idx_in_poses)
+        elif data['item'] == 'set':
+            print_info_msg(self.core.console, f'set index is: {data["index"]}')
+
     def init_gui(self) -> None:
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.timeline = wx.TreeCtrl(self) # wx.ListBox(self, style=wx.LB_SINGLE)
+
+        # Bind events
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
         timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
 
@@ -234,11 +304,20 @@ class TimelinePanel(wx.Panel):
             root = self.timeline.AddRoot('Imaging path')
 
             for i, pose_set in enumerate(sets):
-                node = self.timeline.AppendItem(root, f'Pose set {i}')
+                data = {
+                    'item': 'set',
+                    'index': i
+                }
+                node = self.timeline.AppendItem(root, f'Pose set {i}', data=data)
 
-                for pose in pose_set:
-                    node_1 = self.timeline.AppendItem(
-                        node, self._get_device_caption(pose.position.device))
+                for j, pose in enumerate(pose_set):
+                    data = {
+                        'item': 'pose',
+                        'set index': i,
+                        'index': j
+                    }
+                    node_1 = self.timeline.AppendItem(node,
+                        self._get_device_caption(pose.position.device), data=data)
 
                     for action in pose.get_actions():
                         node_2 = self.timeline.AppendItem(node_1,
