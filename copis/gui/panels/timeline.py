@@ -56,6 +56,7 @@ class TimelinePanel(wx.Panel):
         dispatcher.connect(self.update_timeline, signal='ntf_a_list_changed')
         dispatcher.connect(self._on_pose_selected, signal='ntf_a_selected')
         dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
+        dispatcher.connect(self._on_pose_set_selected, signal='ntf_s_selected')
         dispatcher.connect(self._on_pose_set_deselected, signal='ntf_s_deselected')
 
         self.Layout()
@@ -125,6 +126,20 @@ class TimelinePanel(wx.Panel):
         if self.timeline.GetFocusedItem() == set_node:
             self.timeline.ClearFocusedItem()
 
+        self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+
+    def _on_pose_set_selected(self, set_index):
+        root = self.timeline.GetRootItem()
+        set_node, cookie = self.timeline.GetFirstChild(root)
+
+        if set_index > 0:
+            for _ in range(set_index):
+                set_node, cookie = self.timeline.GetNextChild(
+                    set_node, cookie)
+
+        self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
+        self.timeline.SelectItem(set_node, True)
+        self.timeline.EnsureVisible(set_node)
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_deselected(self, pose_index):

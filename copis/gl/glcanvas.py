@@ -301,7 +301,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._dirty = True
 
     def _update_colors(self) -> None:
-        self._actionvis.update_action_vaos()
+        wx.CallAfter(self._actionvis.update_action_vaos)
         self._dirty = True
 
     def _update_devices(self) -> None:

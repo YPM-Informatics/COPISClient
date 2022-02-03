@@ -94,7 +94,9 @@ class COPISCore(
         self._working_thread = None
 
         self._mainqueue = []
-
+        self._start_pose_set: int = -1
+        self._end_pose_set: int = -1
+        self._current_mainqueue_item: int = -1
         self._selected_pose: int = -1
         self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
@@ -194,6 +196,16 @@ class COPISCore(
 
             self._serial.write(cmd_lines)
 
+            if self._work_type == WorkType.IMAGING:
+                if self._start_pose_set <= self._current_mainqueue_item and \
+                    self._current_mainqueue_item <= self._end_pose_set:
+                    current_pose_set = self._current_mainqueue_item - self._start_pose_set
+                    self.select_pose_set(current_pose_set)
+                else:
+                    self.select_pose_set(-1)
+
+                self._current_mainqueue_item = self._current_mainqueue_item + 1
+
     def _update_recent_projects(self, path) -> None:
         recent_projects = list(map(str.lower,
             self.config.application_settings.recent_projects))
@@ -256,6 +268,9 @@ class COPISCore(
         self._mainqueue.extend(header)
         self._mainqueue.extend(body)
         self._mainqueue.extend(footer)
+        self._start_pose_set = len(header)
+        self._end_pose_set = self._start_pose_set + len(body) - 1
+        self._current_mainqueue_item = 0
         self._work_type = WorkType.IMAGING
 
         self._keep_working = True
@@ -325,8 +340,13 @@ class COPISCore(
             self._mainqueue = []
             self._is_machine_paused = False
             self._clear_to_send = True
-            print_info_msg(self.console, f'{self.work_type_name} stopped')
+            self._start_pose_set: int = -1
+            self._end_pose_set: int = -1
+            self._current_mainqueue_item: int = -1
+            self.select_pose_set(-1)
             self._work_type = None
+
+            print_info_msg(self.console, f'{self.work_type_name} stopped')
 
     def pause_work(self) -> bool:
         """Pause work in progress, saving the current position."""

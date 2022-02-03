@@ -20,6 +20,7 @@ import threading
 from datetime import datetime
 from pydispatch import dispatcher
 
+from copis.globals import WorkType
 from copis.helpers import print_debug_msg, print_error_msg, print_info_msg
 from copis.classes import SerialResponse
 
@@ -139,6 +140,12 @@ class ThreadTargetsMixin:
             self._keep_working = False
 
             if not self._is_machine_paused:
+                if self._work_type == WorkType.IMAGING:
+                    self._start_pose_set: int = -1
+                    self._end_pose_set: int = -1
+                    self._current_mainqueue_item: int = -1
+                    self.select_pose_set(-1)
+
                 self._work_type = None
 
             if not had_error:
