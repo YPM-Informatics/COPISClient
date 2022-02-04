@@ -26,7 +26,7 @@ from glm import vec3, vec4, mat4
 import glm
 
 from OpenGL.GL import (
-    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINES, GL_LINE_STRIP,
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINES, GL_LINE_STRIP
     glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv, glDeleteBuffers,
     glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
     glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
@@ -68,6 +68,7 @@ class GLActionVis:
 
         self._items = {
             'line': defaultdict(list),
+            'midline': defaultdict(list),
             'point': defaultdict(list),
             'device': defaultdict(list),
             'dvc_feature_vtx': defaultdict(list),
@@ -75,6 +76,7 @@ class GLActionVis:
         }
         self._vaos = {
             'line': {},
+            'midline': {},
             'point': {},
             'device': {},
             'dvc_feature': {},
@@ -83,7 +85,7 @@ class GLActionVis:
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        # Initialize device boxes
+        # Initialize device boxes.
         for dvc in self.core.project.devices:
             key = dvc.device_id
             size = vec3(dvc.size.x, dvc.size.y / 2, dvc.size.z)
@@ -93,6 +95,29 @@ class GLActionVis:
             feat_vertices = np.array(
                 create_device_features(dvc.size, 3 * self._SCALE_FACTOR),
                 dtype=np.float32)
+
+            triangle = glm.array(
+                vec3(0.0, 0.0, 0.0),
+                vec3(-1.0, 0.0, 1.0),
+                vec3(1.0, 0.0, 0.0),
+                vec3(-1.0, 0.0, -1.0),
+                vec3(0.0, 0.0, 0.0),
+
+                vec3(-1.0, -1.0, 0.0),
+                vec3(1.0, 0.0, 0.0),
+                vec3(-1.0, 1.0, 0.0),
+                vec3(0.0, 0.0, 0.0)
+            )
+
+            vbo = glGenBuffers(1)
+            glBindBuffer(GL_ARRAY_BUFFER, vbo)
+            glBufferData(GL_ARRAY_BUFFER, triangle.nbytes, triangle.ptr, GL_STATIC_DRAW)
+
+            vao = glGenVertexArrays(1)
+            glBindVertexArray(vao)
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+            glEnableVertexAttribArray(0)
+            self._vaos['midline'][key] = vao
 
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
@@ -149,6 +174,9 @@ class GLActionVis:
         """Update VAOs when action list changes."""
         self._vaos['line'].clear()
 
+        scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
+
+
         # --- bind data for lines ---
 
         for key, value in self._items['line'].items():
@@ -170,12 +198,20 @@ class GLActionVis:
 
             glBindVertexArray(0)
 
+        # --- bind data for imaging direction indicator ---
+
+        for key, value in self._items['midline'].items():
+            mats = glm.array([mat * scale for mat in value])
+            color = self.colors[key % len(self.colors)]
+            cols = glm.array([color] * len(value))
+
+            self._bind_directional_keys(('midline', key), mats, cols)
+
         # --- bind data for points ---
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
 
         if self._num_points > 0:
-            scale = glm.scale(mat4(), vec3(self._SCALE_FACTOR))
             sets = self.core.project.pose_sets
 
             selected_poses = []
@@ -256,9 +292,14 @@ class GLActionVis:
         """
         self._items['line'].clear()
         self._items['point'].clear()
+        self._items['midline'].clear()
         self._num_points = 0
 
+        positions = defaultdict(list)
+
         for i, pose in enumerate(self.core.project.poses):
+            positions[pose.position.device].append(pose.position.args[:5])
+
             for action in pose.get_actions():
                 if action.atype in (ActionType.G0, ActionType.G1):
                     args = get_action_args_values(action.args)
@@ -274,6 +315,15 @@ class GLActionVis:
                 else:
                     # TODO!
                     pass
+
+        for key, value in positions.items():
+            for i, args in enumerate(value):
+                if i < len(value) - 1:
+                    position = get_action_args_values(args)
+                    next_position = get_action_args_values(value[i + 1])
+
+                    midpoint = [sum(i)/2 for i in list(zip(position, next_position))]
+                    self._items['midline'][key].append(xyzpt_to_mat4(*midpoint))
 
         self.update_action_vaos()
 
@@ -342,6 +392,15 @@ class GLActionVis:
             glUniform4fv(3, 1, glm.value_ptr(color))
             glBindVertexArray(value)
             glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
+
+
+        # --- render imaging direction indicator ---
+        for key, value in self._items['midline'].items():
+            glUseProgram(self.parent.shaders['instanced_model_color'])
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+            glBindVertexArray(self._vaos['midline'][key])
+            glDrawArraysInstanced(GL_LINE_STRIP, 0, 24, len(value))
 
         # --- render points ---
 
@@ -474,3 +533,38 @@ class GLActionVis:
 
         # A feature vertex consists of 2 vec3s for 6 scalars
         return int(len(vertices) / 6)
+
+    def _bind_directional_keys(self, vao_info: ArrayInfo, mat: glm.array, col: glm.array):
+        name, key = vao_info
+        vao = self._vaos[name][key]
+        vbo = glGenBuffers(2)
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
+        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
+        glBindVertexArray(vao)
+
+        # Modelmats.
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(3)
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(16)) # sizeof(glm::vec4)
+        glVertexAttribDivisor(3, 1)
+        glEnableVertexAttribArray(4)
+        glVertexAttribDivisor(4, 1)
+        glVertexAttribPointer(
+            5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+        glEnableVertexAttribArray(5)
+        glVertexAttribDivisor(5, 1)
+        glVertexAttribPointer(
+            6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+        glEnableVertexAttribArray(6)
+        glVertexAttribDivisor(6, 1)
+
+        # Colors.
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
+        glBufferData(GL_ARRAY_BUFFER, col.nbytes, col.ptr, GL_STATIC_DRAW)
+        glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
+        glEnableVertexAttribArray(7)
+        glVertexAttribDivisor(7, 1)
+
+        glEnableVertexAttribArray(0)
+        glBindVertexArray(0)
+        glDeleteBuffers(2, vbo)
