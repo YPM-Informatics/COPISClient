@@ -141,10 +141,11 @@ class ThreadTargetsMixin:
 
             if not self._is_machine_paused:
                 if self._work_type == WorkType.IMAGING:
-                    self._start_pose_set: int = -1
-                    self._end_pose_set: int = -1
-                    self._current_mainqueue_item: int = -1
+                    self._start_pose_set = -1
+                    self._end_pose_set = -1
+                    self._current_mainqueue_item = -1
                     self.select_pose_set(-1)
+                    self._imaged_pose_sets.clear()
 
                 self._work_type = None
 

@@ -146,6 +146,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # Bind listeners.
         dispatcher.connect(self._update_volumes, signal='ntf_a_list_changed')
+        dispatcher.connect(self._update_colors, signal='ntf_i_list_changed')
         dispatcher.connect(self._update_colors, signal='ntf_a_selected')
         dispatcher.connect(self._update_colors, signal='ntf_a_deselected')
         dispatcher.connect(self._update_colors, signal='ntf_s_selected')

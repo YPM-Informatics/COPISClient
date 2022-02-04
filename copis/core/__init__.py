@@ -19,7 +19,7 @@ __version__ = ""
 
 # pylint: disable=using-constant-test
 import sys
-from typing import Tuple
+from typing import List, Tuple
 
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
@@ -37,6 +37,7 @@ from copis.helpers import print_error_msg, print_debug_msg, print_info_msg
 from copis.globals import ActionType, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
+from copis.classes import MonitoredList
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -97,11 +98,18 @@ class COPISCore(
         self._start_pose_set: int = -1
         self._end_pose_set: int = -1
         self._current_mainqueue_item: int = -1
+        self._imaged_pose_sets: List[int] = MonitoredList('ntf_i_list_changed', [])
         self._selected_pose: int = -1
         self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
         self._selected_device: int = -1
 
+
+    @property
+    def imaged_pose_sets(self):
+        """Returns a list of pose set indexes that have been imaged
+            in the current run."""
+        return self._imaged_pose_sets
 
     @property
     def work_type_name(self):
@@ -200,8 +208,16 @@ class COPISCore(
                 if self._start_pose_set <= self._current_mainqueue_item and \
                     self._current_mainqueue_item <= self._end_pose_set:
                     current_pose_set = self._current_mainqueue_item - self._start_pose_set
+                    previous_pose_set = current_pose_set - 1
+
+                    if previous_pose_set > -1:
+                        self._imaged_pose_sets.append(previous_pose_set)
+
                     self.select_pose_set(current_pose_set)
                 else:
+                    if self._current_mainqueue_item == self._end_pose_set + 1:
+                        self._imaged_pose_sets.append(self._end_pose_set - self._start_pose_set)
+
                     self.select_pose_set(-1)
 
                 self._current_mainqueue_item = self._current_mainqueue_item + 1
@@ -218,7 +234,11 @@ class COPISCore(
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
+        self._start_pose_set = -1
+        self._end_pose_set = -1
+        self._current_mainqueue_item = -1
         self.select_pose_set(-1)
+        self._imaged_pose_sets.clear()
 
         self.project.start()
 
@@ -227,7 +247,11 @@ class COPISCore(
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
+        self._start_pose_set = -1
+        self._end_pose_set = -1
+        self._current_mainqueue_item = -1
         self.select_pose_set(-1)
+        self._imaged_pose_sets.clear()
 
         resp = self.project.open(path)
         did_open, _ = resp
@@ -340,10 +364,11 @@ class COPISCore(
             self._mainqueue = []
             self._is_machine_paused = False
             self._clear_to_send = True
-            self._start_pose_set: int = -1
-            self._end_pose_set: int = -1
-            self._current_mainqueue_item: int = -1
+            self._start_pose_set = -1
+            self._end_pose_set = -1
+            self._current_mainqueue_item = -1
             self.select_pose_set(-1)
+            self._imaged_pose_sets.clear()
             self._work_type = None
 
             print_info_msg(self.console, f'{self.work_type_name} stopped')

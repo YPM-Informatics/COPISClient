@@ -186,6 +186,10 @@ instanced_model_multi_colors = _Shader(
             shade(new_color, color_mods.y, modded_color);
         }
 
+        if (color_mods.x == 3) {
+            modded_color = vec4(.75, .75, .75, 1);
+        }
+
         color = modded_color;
     }
     """)
