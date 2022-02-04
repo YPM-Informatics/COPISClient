@@ -26,7 +26,7 @@ from glm import vec3, vec4, mat4
 import glm
 
 from OpenGL.GL import (
-    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINES, GL_LINE_STRIP
+    GL_FLOAT, GL_FALSE, GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_QUADS, GL_LINES, GL_LINE_STRIP,
     glGenBuffers, glGenVertexArrays, glUniformMatrix4fv, glUniform4fv, glDeleteBuffers,
     glBindBuffer, glBufferData, glBindVertexArray, glVertexAttribPointer,
     glVertexAttribDivisor, glEnableVertexAttribArray, glUseProgram,
