@@ -20,9 +20,10 @@ TODO: Signify via color or border when action is selected
 """
 from collections import defaultdict, namedtuple
 
+import math
 import numpy as np
 
-from glm import vec3, vec4, mat4
+from glm import vec2, vec3, vec4, mat4
 import glm
 
 from OpenGL.GL import (
@@ -98,14 +99,14 @@ class GLActionVis:
 
             triangle = glm.array(
                 vec3(0.0, 0.0, 0.0),
-                vec3(-1.0, 0.0, 1.0),
-                vec3(1.0, 0.0, 0.0),
-                vec3(-1.0, 0.0, -1.0),
+                vec3(0.0, 1.0, 1.0),
+                vec3(0.0, -1.0, 0.0),
+                vec3(0.0, 1.0, -1.0),
                 vec3(0.0, 0.0, 0.0),
 
-                vec3(-1.0, -1.0, 0.0),
-                vec3(1.0, 0.0, 0.0),
                 vec3(-1.0, 1.0, 0.0),
+                vec3(0.0, -1.0, 0.0),
+                vec3(1.0, 1.0, 0.0),
                 vec3(0.0, 0.0, 0.0)
             )
 
@@ -290,6 +291,16 @@ class GLActionVis:
 
         # TODO: process other pose ids
         """
+
+        def get_heading(start: vec3, end: vec3):
+            direction = start - end
+            dir_x, dir_y, dir_z = direction
+
+            pan = math.atan2(dir_x, dir_y)
+            tilt = -math.atan2(dir_z, math.sqrt(dir_x * dir_x + dir_y * dir_y))
+
+            return vec2(pan, tilt)
+
         self._items['line'].clear()
         self._items['point'].clear()
         self._items['midline'].clear()
@@ -322,7 +333,12 @@ class GLActionVis:
                     position = get_action_args_values(args)
                     next_position = get_action_args_values(value[i + 1])
 
-                    midpoint = [sum(i)/2 for i in list(zip(position, next_position))]
+                    start = vec3(position[:3])
+                    end = vec3(next_position[:3])
+                    midpoint = [sum(i)/2 for i in list(zip(start, end))]
+                    heading = get_heading(start, end)
+                    midpoint.extend(heading)
+
                     self._items['midline'][key].append(xyzpt_to_mat4(*midpoint))
 
         self.update_action_vaos()
@@ -365,6 +381,7 @@ class GLActionVis:
         model = mat4()
 
         # --- render devices ---
+
         for key, value in self._items['device'].items():
             index_count = self._get_dvc_feature_vtx_count(('dvc_feature_vtx', key))
 
@@ -380,6 +397,25 @@ class GLActionVis:
             glBindVertexArray(self._vaos['device'][key])
             glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
+        # --- render points ---
+
+        if self._num_points > 0:
+            for key, value in self._items['point'].items():
+                glUseProgram(
+                    self.parent.shaders['instanced_model_multi_colors'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+                index_count = self._get_dvc_feature_vtx_count(
+                    ('pt_feature_vtx', key))
+                glBindVertexArray(self._vaos['pt_feature'][key])
+                glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
+
+                glUseProgram(self.parent.shaders['instanced_model_color'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+                glBindVertexArray(self._vaos['point'][key])
+                glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
+
         # --- render path lines ---
 
         glUseProgram(self.parent.shaders['single_color'])
@@ -393,31 +429,14 @@ class GLActionVis:
             glBindVertexArray(value)
             glDrawArrays(GL_LINE_STRIP, 0, len(self._items['line'][key]))
 
-
         # --- render imaging direction indicator ---
+
         for key, value in self._items['midline'].items():
             glUseProgram(self.parent.shaders['instanced_model_color'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
             glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
             glBindVertexArray(self._vaos['midline'][key])
             glDrawArraysInstanced(GL_LINE_STRIP, 0, 24, len(value))
-
-        # --- render points ---
-
-        if self._num_points > 0:
-            for key, value in self._items['point'].items():
-                glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-                index_count = self._get_dvc_feature_vtx_count(('pt_feature_vtx', key))
-                glBindVertexArray(self._vaos['pt_feature'][key])
-                glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
-
-                glUseProgram(self.parent.shaders['instanced_model_color'])
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-                glBindVertexArray(self._vaos['point'][key])
-                glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         glBindVertexArray(0)
         glUseProgram(0)
