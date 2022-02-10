@@ -47,7 +47,6 @@ class TimelinePanel(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.timeline = None
-        self.timeline_writer = None
 
         self.init_gui()
         self.update_timeline()
@@ -247,76 +246,58 @@ class TimelinePanel(wx.Panel):
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.timeline = wx.TreeCtrl(self) # wx.ListBox(self, style=wx.LB_SINGLE)
+        self.timeline = wx.TreeCtrl(self)
 
         # Bind events
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
         timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
-
-        cmd_sizer = wx.BoxSizer()
-        self.timeline_writer = wx.TextCtrl(self, size=(-1, 22))
-        add_btn = wx.Button(self, label='Add', size=(50, -1))
-        add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
-
-        cmd_sizer.AddMany([
-            (self.timeline_writer, 1, 0, 0),
-            (add_btn, 0, wx.ALL, -1),
-        ])
-
-        timeline_sizer.Add(cmd_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
-
         self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
-
-        # ---
-
         btn_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        up_btn = wx.Button(self, label='Up')
-        up_btn.direction = 'up'
-        up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        set_up_btn = wx.Button(self, label='Set up')
+        set_up_btn.direction = 'up'
+        set_up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
 
-        down_btn = wx.Button(self, label='Down')
-        down_btn.direction = 'down'
-        down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        set_down_btn = wx.Button(self, label='Set down')
+        set_down_btn.direction = 'down'
+        set_down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
 
-        replace_btn = wx.Button(self, label='Replace')
-        replace_btn.Bind(wx.EVT_BUTTON, self.on_replace_command)
+        copy_pose_btn = wx.Button(self, label='Copy pose')
+        paste_pose_btn = wx.Button(self, label='Paste pose')
+
+        # Set & pose operations.
+        add_btn = wx.Button(self, label='Add')
 
         delete_btn = wx.Button(self, label='Delete')
-        delete_btn.size = 'single'
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
 
-        delall_btn = wx.Button(self, label='Delete All')
-        delall_btn.size = 'all'
-        delall_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
+        play_btn = wx.Button(self, label='Play')
+        # ----
 
-        savetofile_btn = wx.Button(self, label='Save')
-        sendall_btn = wx.Button(self, label='Send All')
-        sendsel_btn = wx.Button(self, label='Send Sel')
+        image_btn = wx.Button(self, label='Play all')
 
         btn_sizer.AddMany([
-            (up_btn, 0, 0, 0),
-            (down_btn, 0, 0, 0),
-            (replace_btn, 0, 0, 0),
+            (set_up_btn, 0, 0, 0),
+            (set_down_btn, 0, 0, 0),
+            (copy_pose_btn, 0, 0, 0),
+            (paste_pose_btn, 0, 0, 0),
+            (add_btn, 0, 0, 0),
             (delete_btn, 0, 0, 0),
-            (delall_btn, 0, 0, 0),
-            (savetofile_btn, 0, 0, 0),
-            (sendall_btn, 0, 0, 0),
-            (sendsel_btn, 0, 0, 0),
+            (play_btn, 0, 0, 0),
+            (image_btn, 0, 0, 0)
         ])
+
+        set_up_btn.Enable(False)
+        set_down_btn.Enable(False)
+        copy_pose_btn.Enable(False)
+        paste_pose_btn.Enable(False)
+        add_btn.Enable(False)
+        delete_btn.Enable(False)
+        play_btn.Enable(False)
+        image_btn.Enable(False)
+
         self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
-
-    def on_add_command(self, event: wx.CommandEvent) -> None:
-        """TODO"""
-        cmd = self.timeline_writer.Value
-        self.add_command(cmd)
-        self.parent.viewport_panel.dirty = True
-        self.timeline_writer.Value = ''
-
-    def add_command(self, cmd: str) -> None:
-        if cmd != '':
-            self.timeline.Append(cmd)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
@@ -334,33 +315,14 @@ class TimelinePanel(wx.Panel):
 
             self.timeline.InsertItems([selected], index)
 
-    def on_replace_command(self, event: wx.CommandEvent) -> None:
-        """TODO"""
-        selected = self.timeline.Selection
-
-        if selected != -1:
-            replacement = self.timeline_writer.Value
-
-            if replacement != '':
-                self.timeline.SetString(selected, replacement)
-                self.timeline_writer.Value = ''
-            else:
-                show_msg_dialog('Please type command to replace.', 'Replace command')
-        else:
-            show_msg_dialog('Please select the command to replace.', 'Replace command')
-
     def on_delete_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
-        size = event.EventObject.size
-        if size == 'single':
-            index = self.timeline.Selection
-            if index != -1:
-                self.core.project.remove_pose(index)
-                self.timeline.Delete(index)
-            else:
-                show_msg_dialog('Please select the command to delete.', 'Delete command')
+        index = self.timeline.Selection
+        if index != -1:
+            self.core.project.remove_pose(index)
+            self.timeline.Delete(index)
         else:
-            self.core.project.pose_sets.clear()
+            show_msg_dialog('Please select the command to delete.', 'Delete command')
 
     def update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
