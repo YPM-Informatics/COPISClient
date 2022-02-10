@@ -112,6 +112,10 @@ class TimelinePanel(wx.Panel):
 
     def _on_pose_set_deselected(self, set_index):
         root = self.timeline.GetRootItem()
+
+        if not root.IsOk():
+            return
+
         set_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
@@ -130,6 +134,10 @@ class TimelinePanel(wx.Panel):
 
     def _on_pose_set_selected(self, set_index):
         root = self.timeline.GetRootItem()
+
+        if not root.IsOk():
+            return
+
         set_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
@@ -146,6 +154,10 @@ class TimelinePanel(wx.Panel):
         set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
         root = self.timeline.GetRootItem()
+
+        if not root.IsOk():
+            return
+
         set_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
@@ -173,6 +185,10 @@ class TimelinePanel(wx.Panel):
         set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
         root = self.timeline.GetRootItem()
+
+        if not root.IsOk():
+            return
+
         pose_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
