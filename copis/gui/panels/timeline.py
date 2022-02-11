@@ -47,6 +47,7 @@ class TimelinePanel(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.timeline = None
+        self._buttons = {}
 
         self.init_gui()
         self.update_timeline()
@@ -128,6 +129,7 @@ class TimelinePanel(wx.Panel):
 
         if self.timeline.GetFocusedItem() == set_node:
             self.timeline.ClearFocusedItem()
+            self._toggle_buttons()
 
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
@@ -150,13 +152,13 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_deselected(self, pose_index):
-        set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
             return
 
+        set_index, idx_in_set = self._place_pose_in_sets(pose_index)
         set_node, cookie = self.timeline.GetFirstChild(root)
 
         if set_index > 0:
@@ -177,6 +179,7 @@ class TimelinePanel(wx.Panel):
 
         if self.timeline.GetFocusedItem() == pose_node:
             self.timeline.ClearFocusedItem()
+            self._toggle_buttons()
 
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
@@ -220,6 +223,24 @@ class TimelinePanel(wx.Panel):
 
         return set_index, idx_in_set
 
+    def _toggle_buttons(self, item=None):
+        for key in self._buttons:
+            self._buttons[key].Enable(False)
+
+        if item:
+            self._buttons['add_btn'].Enable(True)
+            self._buttons['delete_btn'].Enable(True)
+            self._buttons['play_btn'].Enable(True)
+            self._buttons['image_btn'].Enable(True)
+
+            if item == 'set':
+                self._buttons['set_up_btn'].Enable(True)
+                self._buttons['set_down_btn'].Enable(True)
+
+            if item == 'pose':
+                self._buttons['copy_pose_btn'].Enable(True)
+                self._buttons['paste_pose_btn'].Enable(True)
+
     def _on_selection_changed(self, event: wx.TreeEvent) -> None:
         obj = event.EventObject
         item = event.GetItem()
@@ -227,6 +248,8 @@ class TimelinePanel(wx.Panel):
 
         if not data:
             return
+
+        self._toggle_buttons(data['item'])
 
         if data['item'] == 'pose':
             set_index = data['set index']
@@ -240,13 +263,13 @@ class TimelinePanel(wx.Panel):
 
             self.core.select_pose(idx_in_poses)
         elif data['item'] == 'set':
-            self.core.select_pose_set(data["index"])
+            self.core.select_pose_set(data['index'])
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
-
         self.timeline = wx.TreeCtrl(self)
+        btn_size = (75, -1)
 
         # Bind events
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
@@ -255,27 +278,35 @@ class TimelinePanel(wx.Panel):
         self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
         btn_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        set_up_btn = wx.Button(self, label='Set up')
+        set_up_btn = wx.Button(self, label='Set up', size=btn_size)
         set_up_btn.direction = 'up'
         set_up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        self._buttons['set_up_btn'] = set_up_btn
 
-        set_down_btn = wx.Button(self, label='Set down')
+        set_down_btn = wx.Button(self, label='Set down', size=btn_size)
         set_down_btn.direction = 'down'
         set_down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        self._buttons['set_down_btn'] = set_down_btn
 
-        copy_pose_btn = wx.Button(self, label='Copy pose')
-        paste_pose_btn = wx.Button(self, label='Paste pose')
+        copy_pose_btn = wx.Button(self, label='Copy pose', size=btn_size)
+        self._buttons['copy_pose_btn'] = copy_pose_btn
+        paste_pose_btn = wx.Button(self, label='Paste pose', size=btn_size)
+        self._buttons['paste_pose_btn'] = paste_pose_btn
 
         # Set & pose operations.
-        add_btn = wx.Button(self, label='Add')
+        add_btn = wx.Button(self, label='Add', size=btn_size)
+        self._buttons['add_btn'] = add_btn
 
-        delete_btn = wx.Button(self, label='Delete')
+        delete_btn = wx.Button(self, label='Delete', size=btn_size)
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
+        self._buttons['delete_btn'] = delete_btn
 
-        play_btn = wx.Button(self, label='Play')
+        play_btn = wx.Button(self, label='Play', size=btn_size)
+        self._buttons['play_btn'] = play_btn
+
+        image_btn = wx.Button(self, label='Play all', size=btn_size)
+        self._buttons['image_btn'] = image_btn
         # ----
-
-        image_btn = wx.Button(self, label='Play all')
 
         btn_sizer.AddMany([
             (set_up_btn, 0, 0, 0),
@@ -288,32 +319,30 @@ class TimelinePanel(wx.Panel):
             (image_btn, 0, 0, 0)
         ])
 
-        set_up_btn.Enable(False)
-        set_down_btn.Enable(False)
-        copy_pose_btn.Enable(False)
-        paste_pose_btn.Enable(False)
-        add_btn.Enable(False)
-        delete_btn.Enable(False)
-        play_btn.Enable(False)
-        image_btn.Enable(False)
+        self._toggle_buttons()
 
         self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
-        selected = self.timeline.StringSelection
+        data = self.timeline.GetItemData(self.timeline.Selection)
 
-        if selected != '':
+        if data and data['item'] == 'set':
+            index = data['index']
             direction = event.EventObject.direction
-            index = self.timeline.Selection
-            self.timeline.Delete(index)
+            set_count = len(self.core.project.pose_sets)
+            new_index = None
 
-            if direction == 'up':
-                index -= 1
-            else:
-                index += 1
+            if direction == 'up' and index > 0:
+                self.core.project.move_set(index, -1)
+                new_index = index - 1
+            elif direction == 'down' and index < set_count - 1:
+                self.core.project.move_set(index, 1)
+                new_index = index + 1
 
-            self.timeline.InsertItems([selected], index)
+            if new_index is not None and new_index >= 0:
+                self.core.select_pose_set(new_index)
+                self._toggle_buttons(data['item'])
 
     def on_delete_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
@@ -331,6 +360,7 @@ class TimelinePanel(wx.Panel):
         """
         sets = self.core.project.pose_sets
         self.timeline.DeleteAllItems()
+        self._toggle_buttons()
 
         if sets:
             root = self.timeline.AddRoot('Imaging path')

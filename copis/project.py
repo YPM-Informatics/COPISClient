@@ -347,3 +347,15 @@ class Project:
         pose = self._pose_sets[set_index].pop(pose_index)
         # dispatcher.send('ntf_a_list_changed')
         return pose
+
+    def move_set(self, index, step):
+        """Moves a pose set up or down by step amount."""
+        new_index = index + step
+
+        if 0 <= new_index and new_index < len(self._pose_sets):
+            sets = self._pose_sets.copy()
+            pose_set = sets.pop(index)
+            sets.insert(new_index, pose_set)
+
+            self._pose_sets.clear(False)
+            self._pose_sets.extend(sets)
