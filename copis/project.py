@@ -342,13 +342,23 @@ class Project:
     #     # dispatcher.send('ntf_a_list_changed')
     #     return pose
 
+    def add_pose(self, set_index: int, pose: Pose):
+        """Adds a pose to a pose set in the pose set list."""
+
+        if self.can_add_pose(set_index, pose.position.device):
+            pose_set = self._pose_sets[set_index]
+            pose_set.append(pose)
+            pose_set.sort(key=lambda p: p.position.device)
+
+            self._pose_sets[set_index] = pose_set
+
     def remove_pose(self, set_index: int, pose_index: int) -> Action:
         """Removes a pose given pose set and pose indexes."""
         pose = self._pose_sets[set_index].pop(pose_index)
         # dispatcher.send('ntf_a_list_changed')
         return pose
 
-    def move_set(self, index, step):
+    def move_set(self, index: int, step: int):
         """Moves a pose set up or down by step amount."""
         new_index = index + step
 
@@ -359,3 +369,22 @@ class Project:
 
             self._pose_sets.clear(False)
             self._pose_sets.extend(sets)
+
+    def can_add_pose(self, set_index: int, device_id: int):
+        """Returns a flag indicating where a pose with the specified device
+            can be added to the pose."""
+        if not self._pose_sets or set_index >= len(self._pose_sets):
+            return False
+
+        if not self._devices or not any(d.device_id == device_id for d in self._devices):
+            return False
+
+        pose_set = self._pose_sets[set_index]
+
+        if not pose_set or len(pose_set) >= len(self._devices):
+            return False
+
+        if any(p.position.device == device_id for p in pose_set):
+            return False
+
+        return True

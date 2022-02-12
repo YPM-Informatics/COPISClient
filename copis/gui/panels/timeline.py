@@ -20,6 +20,7 @@ TODO: Overhaul timeline panel visually
 """
 
 import wx
+import copy
 from pydispatch import dispatcher
 from copis.command_processor import serialize_command
 from copis.globals import ActionType
@@ -48,6 +49,7 @@ class TimelinePanel(wx.Panel):
 
         self.timeline = None
         self._buttons = {}
+        self._copied_pose = None
 
         self.init_gui()
         self.update_timeline()
@@ -149,6 +151,9 @@ class TimelinePanel(wx.Panel):
         self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
         self.timeline.SelectItem(set_node, True)
         self.timeline.EnsureVisible(set_node)
+        data = self.timeline.GetItemData(set_node)
+        self._toggle_buttons(data)
+
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_deselected(self, pose_index):
@@ -206,6 +211,9 @@ class TimelinePanel(wx.Panel):
         self.timeline.Unbind(wx.EVT_TREE_SEL_CHANGED)
         self.timeline.SelectItem(dvc_node, True)
         self.timeline.EnsureVisible(dvc_node)
+        data = self.timeline.GetItemData(dvc_node)
+        self._toggle_buttons(data)
+
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _place_pose_in_sets(self, pose_index):
@@ -223,23 +231,30 @@ class TimelinePanel(wx.Panel):
 
         return set_index, idx_in_set
 
-    def _toggle_buttons(self, item=None):
+    def _toggle_buttons(self, data=None):
         for key in self._buttons:
             self._buttons[key].Enable(False)
 
-        if item:
+        if data:
             self._buttons['add_btn'].Enable(True)
             self._buttons['delete_btn'].Enable(True)
             self._buttons['play_btn'].Enable(True)
             self._buttons['image_btn'].Enable(True)
 
-            if item == 'set':
+            if data['item'] == 'set':
+                set_index = data['index']
                 self._buttons['set_up_btn'].Enable(True)
                 self._buttons['set_down_btn'].Enable(True)
 
-            if item == 'pose':
+            if data['item'] == 'pose':
+                set_index = data['set index']
                 self._buttons['copy_pose_btn'].Enable(True)
-                self._buttons['paste_pose_btn'].Enable(True)
+
+            if self._copied_pose:
+                device_id = self._copied_pose.position.device
+
+                if self.core.project.can_add_pose(set_index, device_id):
+                    self._buttons['paste_pose_btn'].Enable(True)
 
     def _on_selection_changed(self, event: wx.TreeEvent) -> None:
         obj = event.EventObject
@@ -249,7 +264,7 @@ class TimelinePanel(wx.Panel):
         if not data:
             return
 
-        self._toggle_buttons(data['item'])
+        self._toggle_buttons(data)
 
         if data['item'] == 'pose':
             set_index = data['set index']
@@ -289,8 +304,11 @@ class TimelinePanel(wx.Panel):
         self._buttons['set_down_btn'] = set_down_btn
 
         copy_pose_btn = wx.Button(self, label='Copy pose', size=btn_size)
+        copy_pose_btn.Bind(wx.EVT_BUTTON, self.on_copy_command)
         self._buttons['copy_pose_btn'] = copy_pose_btn
+
         paste_pose_btn = wx.Button(self, label='Paste pose', size=btn_size)
+        paste_pose_btn.Bind(wx.EVT_BUTTON, self.on_paste_command)
         self._buttons['paste_pose_btn'] = paste_pose_btn
 
         # Set & pose operations.
@@ -323,8 +341,28 @@ class TimelinePanel(wx.Panel):
 
         self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
 
+    def on_copy_command(self, _):
+        """Copies the selected pose."""
+        data = self.timeline.GetItemData(self.timeline.Selection)
+
+        if data['item'] == 'pose':
+            set_index = data['set index']
+            index = data['index']
+            self._copied_pose = copy.deepcopy(self.core.project.pose_sets[set_index][index])
+            self._toggle_buttons(data)
+
+    def on_paste_command(self, _):
+        """Pastes the copied pose into the selected set if possible. """
+        data = self.timeline.GetItemData(self.timeline.Selection)
+
+        if data and self._copied_pose:
+            set_index = data['index'] if data['item'] == 'set' else data['set index']
+
+            if self.core.project.can_add_pose(set_index, self._copied_pose.position.device):
+                self.core.project.add_pose(set_index, self._copied_pose)
+
     def on_move_command(self, event: wx.CommandEvent) -> None:
-        """TODO"""
+        """Moves a set up or down"""
         data = self.timeline.GetItemData(self.timeline.Selection)
 
         if data and data['item'] == 'set':
@@ -342,7 +380,7 @@ class TimelinePanel(wx.Panel):
 
             if new_index is not None and new_index >= 0:
                 self.core.select_pose_set(new_index)
-                self._toggle_buttons(data['item'])
+                self._toggle_buttons(data)
 
     def on_delete_command(self, event: wx.CommandEvent) -> None:
         """TODO"""
