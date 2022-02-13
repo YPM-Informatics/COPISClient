@@ -195,14 +195,17 @@ class COPISCore(
 
         if self._serial.is_port_open:
 
-            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
-                    .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
+            if cmd_lines:
+                print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
+                        .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
+                    f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
-            for dvc in dvcs:
-                dvc.set_is_writing()
+                for dvc in dvcs:
+                    dvc.set_is_writing()
 
-            self._serial.write(cmd_lines)
+                self._serial.write(cmd_lines)
+            else:
+                print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
 
             if self._work_type == WorkType.IMAGING:
                 if self._start_pose_set <= self._current_mainqueue_item and \

@@ -335,34 +335,31 @@ class Project:
         self._path = path
         self._unset_dirty_flag()
 
-    # def add_pose(self, set_index: int, atype: ActionType, device_id: int, *args) -> bool:
-    #     """TODO: validate args given atype"""
-    #     pose = Pose(Action(atype, device_id, len(args), list(args)), [])
-    #     self._pose_sets[set_index].append(pose)
-    #     # dispatcher.send('ntf_a_list_changed')
-    #     return pose
-
     def add_pose(self, set_index: int, pose: Pose):
         """Adds a pose to a pose set in the pose set list."""
-
         if self.can_add_pose(set_index, pose.position.device):
-            pose_set = self._pose_sets[set_index]
+            pose_set = self._pose_sets[set_index].copy()
             pose_set.append(pose)
             pose_set.sort(key=lambda p: p.position.device)
 
             self._pose_sets[set_index] = pose_set
 
-    def remove_pose(self, set_index: int, pose_index: int) -> Action:
+    def delete_pose(self, set_index: int, pose_index: int):
         """Removes a pose given pose set and pose indexes."""
-        pose = self._pose_sets[set_index].pop(pose_index)
-        # dispatcher.send('ntf_a_list_changed')
-        return pose
+        pose_set = self._pose_sets[set_index].copy()
+        pose_set.pop(pose_index)
+
+        self._pose_sets[set_index] = pose_set
+
+    def delete_pose_set(self, set_index: int):
+        """Removes a pose set given its index."""
+        self._pose_sets.pop(set_index)
 
     def move_set(self, index: int, step: int):
         """Moves a pose set up or down by step amount."""
         new_index = index + step
 
-        if 0 <= new_index and new_index < len(self._pose_sets):
+        if 0 <= new_index < len(self._pose_sets):
             sets = self._pose_sets.copy()
             pose_set = sets.pop(index)
             sets.insert(new_index, pose_set)
