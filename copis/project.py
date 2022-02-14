@@ -344,6 +344,13 @@ class Project:
 
             self._pose_sets[set_index] = pose_set
 
+    def add_pose_set(self):
+        """Adds an empty pose set to the pose set list."""
+        set_index = len(self._pose_sets)
+        self._pose_sets.append([])
+
+        return set_index
+
     def delete_pose(self, set_index: int, pose_index: int):
         """Removes a pose given pose set and pose indexes."""
         pose_set = self._pose_sets[set_index].copy()

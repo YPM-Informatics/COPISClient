@@ -238,9 +238,9 @@ class TimelinePanel(wx.Panel):
 
         if self.timeline.GetCount() > 0:
             self._buttons['image_btn'].Enable(True)
+            self._buttons['add_btn'].Enable(True)
 
         if data:
-            self._buttons['add_btn'].Enable(True)
             self._buttons['delete_btn'].Enable(True)
             self._buttons['play_btn'].Enable(True)
 
@@ -276,6 +276,7 @@ class TimelinePanel(wx.Panel):
         data = obj.GetItemData(item)
 
         if not data:
+            self._toggle_buttons()
             return
 
         self._toggle_buttons(data)
@@ -342,6 +343,7 @@ class TimelinePanel(wx.Panel):
         self._buttons['paste_pose_btn'] = paste_pose_btn
 
         add_btn = wx.Button(self, label='Add', size=btn_size)
+        add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
         self._buttons['add_btn'] = add_btn
 
         delete_btn = wx.Button(self, label='Delete', size=btn_size)
@@ -373,6 +375,21 @@ class TimelinePanel(wx.Panel):
 
         self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
 
+    def on_add_command(self, _):
+        """Adds a pose or pose set."""
+        data = None
+        if self.timeline.Selection.IsOk():
+            data = self.timeline.GetItemData(self.timeline.Selection)
+
+        if data:
+            # Launch add dialog. choices:
+            #   1 - add pose set
+            #   2 - add pose to the current set it possible
+            print('Launch add dialog. choices')
+        else:
+            set_index = self._core.project.add_pose_set()
+            self._core.select_pose_set(set_index)
+
     def on_play_command(self, _):
         """Plays the selected pose or pose set."""
         can_image = self._assert_can_image()
@@ -401,7 +418,7 @@ class TimelinePanel(wx.Panel):
         """Copies the selected pose."""
         data = self.timeline.GetItemData(self.timeline.Selection)
 
-        if data['item'] == 'pose':
+        if data and data['item'] == 'pose':
             set_index = data['set index']
             index = data['index']
             self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
@@ -411,7 +428,7 @@ class TimelinePanel(wx.Panel):
         """Cuts the selected pose."""
         data = self.timeline.GetItemData(self.timeline.Selection)
 
-        if data['item'] == 'pose':
+        if data and data['item'] == 'pose':
             set_index = data['set index']
             index = data['index']
             self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
