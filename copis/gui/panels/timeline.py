@@ -252,6 +252,7 @@ class TimelinePanel(wx.Panel):
             if data['item'] == 'pose':
                 set_index = data['set index']
                 self._buttons['copy_pose_btn'].Enable(True)
+                self._buttons['cut_pose_btn'].Enable(True)
 
             if self._copied_pose:
                 device_id = self._copied_pose.position.device
@@ -332,11 +333,14 @@ class TimelinePanel(wx.Panel):
         copy_pose_btn.Bind(wx.EVT_BUTTON, self.on_copy_command)
         self._buttons['copy_pose_btn'] = copy_pose_btn
 
+        cut_pose_btn = wx.Button(self, label='Cut pose', size=btn_size)
+        cut_pose_btn.Bind(wx.EVT_BUTTON, self.on_cut_command)
+        self._buttons['cut_pose_btn'] = cut_pose_btn
+
         paste_pose_btn = wx.Button(self, label='Paste pose', size=btn_size)
         paste_pose_btn.Bind(wx.EVT_BUTTON, self.on_paste_command)
         self._buttons['paste_pose_btn'] = paste_pose_btn
 
-        # Set & pose operations.
         add_btn = wx.Button(self, label='Add', size=btn_size)
         self._buttons['add_btn'] = add_btn
 
@@ -357,6 +361,7 @@ class TimelinePanel(wx.Panel):
             (set_up_btn, 0, 0, 0),
             (set_down_btn, 0, 0, 0),
             (copy_pose_btn, 0, 0, 0),
+            (cut_pose_btn, 0, 0, 0),
             (paste_pose_btn, 0, 0, 0),
             (add_btn, 0, 0, 0),
             (delete_btn, 0, 0, 0),
@@ -401,6 +406,16 @@ class TimelinePanel(wx.Panel):
             index = data['index']
             self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
             self._toggle_buttons(data)
+
+    def on_cut_command(self, _):
+        """Cuts the selected pose."""
+        data = self.timeline.GetItemData(self.timeline.Selection)
+
+        if data['item'] == 'pose':
+            set_index = data['set index']
+            index = data['index']
+            self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
+            self.on_delete_command(self)
 
     def on_paste_command(self, _):
         """Pastes the copied pose into the selected set if possible. """

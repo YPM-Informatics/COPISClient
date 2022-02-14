@@ -659,11 +659,11 @@ class MainWindow(wx.Frame):
         self._mgr.AddPane(
             self.panels['console'],
             aui.AuiPaneInfo().Name('console').Caption('Console').
-            Dock().Bottom().Position(0).Layer(0).MinSize(280, 180).Show(True))
+            Dock().Bottom().Position(0).Layer(0).MinSize(280, 205).Show(True))
         self._mgr.AddPane(
             self.panels['timeline'],
             aui.AuiPaneInfo().Name('timeline').Caption('Timeline').
-            Dock().Bottom().Position(1).Layer(0).MinSize(280, 180).Show(True),
+            Dock().Bottom().Position(1).Layer(0).MinSize(280, 205).Show(True),
             target=self._mgr.GetPane('console'))
 
         # Add properties and controller panel.
