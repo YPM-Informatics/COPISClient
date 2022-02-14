@@ -142,3 +142,4 @@ class WorkType(Enum):
     HOMING = 1
     JOGGING = 2
     SET_READY = 3
+    STEPPING = 4

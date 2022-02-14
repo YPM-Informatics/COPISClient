@@ -17,9 +17,10 @@
 
 import threading
 
+from typing import List
 # from math import cos, sin
 
-from copis.classes import Action
+from copis.classes import Action, Pose
 from copis.command_processor import deserialize_command
 from copis.globals import ActionType, ComStatus, WorkType # , Point5
 from copis.helpers import print_debug_msg, print_error_msg # , print_info_msg, dd_to_rad,
@@ -255,8 +256,17 @@ class MachineMembersMixin:
 
     def jog(self, action: Action):
         """Jogs the machine according to the provided action."""
+        if not self.is_serial_port_connected:
+            print_error_msg(self.console,
+                'The machine needs to be connected before jogging can start.')
+            return
+
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot jog. The machine is busy.')
+            return
+
+        if not self.is_machine_idle:
+            print_error_msg(self.console, 'The machine needs to be homed before jogging can start.')
             return
 
         header = self._get_move_commands(False, action.device)
@@ -268,6 +278,35 @@ class MachineMembersMixin:
         self._mainqueue.append(body)
         self._mainqueue.extend(footer)
         self._work_type = WorkType.JOGGING
+
+        self._keep_working = True
+        self._clear_to_send = True
+        self._working_thread = threading.Thread(
+            target=self._worker,
+            name='working thread'
+        )
+        self._working_thread.start()
+
+    def play_poses(self, poses: List[Pose]):
+        """Play the given pose set."""
+        if not self.is_serial_port_connected:
+            print_error_msg(self.console,
+                'The machine needs to be connected before stepping can start.')
+            return
+
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot step. The machine is busy.')
+            return
+
+        if not self.is_machine_idle:
+            print_error_msg(self.console,
+                'The machine needs to be homed before stepping can start.')
+            return
+
+        packet = [a for p in poses for a in p.get_actions()]
+        self._mainqueue = []
+        self._mainqueue.append(packet)
+        self._work_type = WorkType.STEPPING
 
         self._keep_working = True
         self._clear_to_send = True

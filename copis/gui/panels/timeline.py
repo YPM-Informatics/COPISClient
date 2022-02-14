@@ -43,8 +43,8 @@ class TimelinePanel(wx.Panel):
     def __init__(self, parent, *args, **kwargs) -> None:
         """Initializes TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self.parent = parent
-        self.core = self.parent.core
+        self._parent = parent
+        self._core = self._parent.core
 
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -65,7 +65,7 @@ class TimelinePanel(wx.Panel):
         self.Layout()
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self.core.project.devices),
+        return next(filter(lambda d: d.device_id == device_id, self._core.project.devices),
             None)
 
     def _get_device_caption(self, device_id):
@@ -218,7 +218,7 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _place_pose_in_sets(self, pose_index):
-        sets = self.core.project.pose_sets
+        sets = self._core.project.pose_sets
         set_index = 0
         idx_in_set = pose_index
 
@@ -236,11 +236,13 @@ class TimelinePanel(wx.Panel):
         for key in self._buttons:
             self._buttons[key].Enable(False)
 
+        if self.timeline.GetCount() > 0:
+            self._buttons['image_btn'].Enable(True)
+
         if data:
             self._buttons['add_btn'].Enable(True)
             self._buttons['delete_btn'].Enable(True)
             self._buttons['play_btn'].Enable(True)
-            self._buttons['image_btn'].Enable(True)
 
             if data['item'] == 'set':
                 set_index = data['index']
@@ -254,11 +256,11 @@ class TimelinePanel(wx.Panel):
             if self._copied_pose:
                 device_id = self._copied_pose.position.device
 
-                if self.core.project.can_add_pose(set_index, device_id):
+                if self._core.project.can_add_pose(set_index, device_id):
                     self._buttons['paste_pose_btn'].Enable(True)
 
     def _get_index_poses(self, set_index, pose_index):
-        sets = self.core.project.pose_sets
+        sets = self._core.project.pose_sets
 
         if set_index > 0:
             idx_in_poses = sum([len(s) for s in sets[:set_index]]) + pose_index
@@ -282,9 +284,26 @@ class TimelinePanel(wx.Panel):
             index = data['index']
             idx_in_poses = self._get_index_poses(set_index, index)
 
-            self.core.select_pose(idx_in_poses)
+            self._core.select_pose(idx_in_poses)
         elif data['item'] == 'set':
-            self.core.select_pose_set(data['index'])
+            self._core.select_pose_set(data['index'])
+
+    def _assert_can_image(self):
+        is_connected = self._core.is_serial_port_connected
+        has_path = len(self._core.project.pose_sets)
+        is_homed = self._core.is_machine_homed
+        can_image = is_connected and has_path and is_homed
+
+        if not can_image:
+            msg = 'The machine needs to be homed before imaging.'
+            if not is_connected:
+                msg = 'The machine needs to be connected for imaging.'
+            elif not has_path:
+                msg = 'The machine needs a path for imaging.'
+
+            show_msg_dialog(msg, 'Imaging')
+
+        return can_image
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
@@ -326,9 +345,11 @@ class TimelinePanel(wx.Panel):
         self._buttons['delete_btn'] = delete_btn
 
         play_btn = wx.Button(self, label='Play', size=btn_size)
+        play_btn.Bind(wx.EVT_BUTTON, self.on_play_command)
         self._buttons['play_btn'] = play_btn
 
         image_btn = wx.Button(self, label='Play all', size=btn_size)
+        image_btn.Bind(wx.EVT_BUTTON, self.on_image_command)
         self._buttons['image_btn'] = image_btn
         # ----
 
@@ -347,6 +368,30 @@ class TimelinePanel(wx.Panel):
 
         self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
 
+    def on_play_command(self, _):
+        """Plays the selected pose or pose set."""
+        can_image = self._assert_can_image()
+
+        if can_image:
+            data = self.timeline.GetItemData(self.timeline.Selection)
+
+            if data:
+                if data['item'] == 'set':
+                    poses = self._core.project.pose_sets[data['index']]
+                elif data['item'] == 'pose':
+                    set_index = data['set index']
+                    pose_index = data['index']
+                    poses = [self._core.project.pose_sets[set_index][pose_index]]
+
+                self._core.play_poses(poses)
+
+    def on_image_command(self, _):
+        """Start the imaging run (plays all poses)."""
+        can_image = self._assert_can_image()
+
+        if can_image:
+            self._core.start_imaging()
+
     def on_copy_command(self, _):
         """Copies the selected pose."""
         data = self.timeline.GetItemData(self.timeline.Selection)
@@ -354,7 +399,7 @@ class TimelinePanel(wx.Panel):
         if data['item'] == 'pose':
             set_index = data['set index']
             index = data['index']
-            self._copied_pose = self.core.project.pose_sets[set_index][index]
+            self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
             self._toggle_buttons(data)
 
     def on_paste_command(self, _):
@@ -364,9 +409,9 @@ class TimelinePanel(wx.Panel):
         if data and self._copied_pose:
             set_index = data['index'] if data['item'] == 'set' else data['set index']
 
-            if self.core.project.can_add_pose(set_index, self._copied_pose.position.device):
-                self.core.project.add_pose(set_index, copy.deepcopy(self._copied_pose))
-                self.core.select_pose_set(set_index)
+            if self._core.project.can_add_pose(set_index, self._copied_pose.position.device):
+                self._core.project.add_pose(set_index, copy.deepcopy(self._copied_pose))
+                self._core.select_pose_set(set_index)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """Moves a set up or down"""
@@ -375,18 +420,18 @@ class TimelinePanel(wx.Panel):
         if data and data['item'] == 'set':
             index = data['index']
             direction = event.EventObject.direction
-            set_count = len(self.core.project.pose_sets)
+            set_count = len(self._core.project.pose_sets)
             new_index = None
 
             if direction == 'up' and index > 0:
-                self.core.project.move_set(index, -1)
+                self._core.project.move_set(index, -1)
                 new_index = index - 1
             elif direction == 'down' and index < set_count - 1:
-                self.core.project.move_set(index, 1)
+                self._core.project.move_set(index, 1)
                 new_index = index + 1
 
             if new_index is not None and new_index >= 0:
-                self.core.select_pose_set(new_index)
+                self._core.select_pose_set(new_index)
                 self._toggle_buttons(data)
 
     def on_delete_command(self, _) -> None:
@@ -397,22 +442,22 @@ class TimelinePanel(wx.Panel):
             if data['item'] == 'set':
                 set_index = data['index']
 
-                self.core.select_pose_set(-1)
-                self.core.project.delete_pose_set(set_index)
-                self.core.select_pose_set(set_index - 1)
+                self._core.select_pose_set(-1)
+                self._core.project.delete_pose_set(set_index)
+                self._core.select_pose_set(set_index - 1)
             elif data['item'] == 'pose':
                 set_index = data['set index']
                 pose_index = data['index']
                 prev_pose_index = pose_index - 1
 
-                self.core.select_pose(-1)
-                self.core.project.delete_pose(set_index, pose_index)
+                self._core.select_pose(-1)
+                self._core.project.delete_pose(set_index, pose_index)
 
                 if prev_pose_index < 0:
-                    self.core.select_pose_set(set_index)
+                    self._core.select_pose_set(set_index)
                 else:
                     idx_in_poses = self._get_index_poses(set_index, prev_pose_index)
-                    self.core.select_pose(idx_in_poses)
+                    self._core.select_pose(idx_in_poses)
 
 
     def update_timeline(self) -> None:
@@ -420,9 +465,8 @@ class TimelinePanel(wx.Panel):
 
         Handles ntf_a_list_changed signal sent by self.core.
         """
-        sets = self.core.project.pose_sets
+        sets = self._core.project.pose_sets
         self.timeline.DeleteAllItems()
-        self._toggle_buttons()
 
         if sets:
             root = self.timeline.AddRoot('Imaging path')
@@ -453,3 +497,5 @@ class TimelinePanel(wx.Panel):
 
                 self.timeline.Expand(node)
             self.timeline.Expand(root)
+
+        self._toggle_buttons()
