@@ -18,11 +18,12 @@
 import math
 
 from collections import defaultdict
-from typing import Tuple
+from typing import List, Tuple
 from glm import vec3
 
 import wx
 import wx.lib.agw.aui as aui
+from copis.classes.device import Device
 
 from copis.globals import PathIds
 from copis.gui.wxutils import (
@@ -203,7 +204,7 @@ class PathgenToolbar(aui.AuiToolBar):
                     self._extend_actions(vertices, count, lookat, (device_id,))
 
         elif event.Id == PathIds.POINT.value:
-            with _PathgenPoint(self) as dlg:
+            with PathgenPoint(self, self.parent.core.project.devices) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     print_debug_msg(self.core.console, 'Point path added', self.core.is_dev_env)
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
@@ -630,15 +631,15 @@ class _PathgenLine(wx.Dialog):
         self._affirmative_button.SetDefault()
 
 
-class _PathgenPoint(wx.Dialog):
+class PathgenPoint(wx.Dialog):
     """Dialog to generate a single point."""
 
-    def __init__(self, parent, *args, **kwargs):
-        """Initializes _PathgenPoint with constructors."""
+    def __init__(self, parent, allowed_devices: List[Device], *args, **kwargs):
+        """Initializes PathgenPoint with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Path Point', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', allowed_devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -648,18 +649,18 @@ class _PathgenPoint(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
-        self.x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
+        self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+                default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -702,7 +703,7 @@ class _PathgenPoint(wx.Dialog):
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (self.device_choice.CurrentSelection == wx.NOT_FOUND):
+        if self.device_choice.CurrentSelection == wx.NOT_FOUND:
             self._affirmative_button.Disable()
             return
 

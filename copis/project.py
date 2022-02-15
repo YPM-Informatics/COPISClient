@@ -335,14 +335,17 @@ class Project:
         self._path = path
         self._unset_dirty_flag()
 
-    def add_pose(self, set_index: int, pose: Pose):
-        """Adds a pose to a pose set in the pose set list."""
+    def add_pose(self, set_index: int, pose: Pose) -> int:
+        """Adds a pose to a pose set in the pose set list.
+            Returns the index of the added pose"""
         if self.can_add_pose(set_index, pose.position.device):
             pose_set = self._pose_sets[set_index].copy()
             pose_set.append(pose)
             pose_set.sort(key=lambda p: p.position.device)
 
             self._pose_sets[set_index] = pose_set
+
+            return pose_set.index(pose)
 
     def add_pose_set(self):
         """Adds an empty pose set to the pose set list."""
@@ -385,10 +388,19 @@ class Project:
 
         pose_set = self._pose_sets[set_index]
 
-        if not pose_set or len(pose_set) >= len(self._devices):
+        if len(pose_set) >= len(self._devices):
             return False
 
         if any(p.position.device == device_id for p in pose_set):
             return False
 
         return True
+
+    def get_allowed_devices(self, set_index: int):
+        """Returns the devices not already in the set."""
+        if not self._pose_sets or set_index >= len(self._pose_sets):
+            return []
+
+        set_dvc_ids = [p.position.device for p in self._pose_sets[set_index]]
+
+        return [d for d in self._devices if d.device_id not in set_dvc_ids]

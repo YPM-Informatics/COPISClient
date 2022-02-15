@@ -23,11 +23,16 @@ import copy
 import wx
 
 from pydispatch import dispatcher
+from glm import vec3
+from copis.classes.action import Action
+from copis.classes.pose import Pose
+
 from copis.command_processor import serialize_command
 from copis.globals import ActionType
-
+from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import is_number, rad_to_dd
+from copis.helpers import (create_action_args, get_heading, is_number, print_debug_msg,
+    rad_to_dd, sanitize_number, sanitize_point)
 
 
 class TimelinePanel(wx.Panel):
@@ -44,7 +49,7 @@ class TimelinePanel(wx.Panel):
         """Initializes TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self._parent = parent
-        self._core = self._parent.core
+        self.core = self._parent.core
 
         self.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -65,7 +70,7 @@ class TimelinePanel(wx.Panel):
         self.Layout()
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self._core.project.devices),
+        return next(filter(lambda d: d.device_id == device_id, self.core.project.devices),
             None)
 
     def _get_device_caption(self, device_id):
@@ -218,7 +223,7 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _place_pose_in_sets(self, pose_index):
-        sets = self._core.project.pose_sets
+        sets = self.core.project.pose_sets
         set_index = 0
         idx_in_set = pose_index
 
@@ -257,11 +262,11 @@ class TimelinePanel(wx.Panel):
             if self._copied_pose:
                 device_id = self._copied_pose.position.device
 
-                if self._core.project.can_add_pose(set_index, device_id):
+                if self.core.project.can_add_pose(set_index, device_id):
                     self._buttons['paste_pose_btn'].Enable(True)
 
     def _get_index_poses(self, set_index, pose_index):
-        sets = self._core.project.pose_sets
+        sets = self.core.project.pose_sets
 
         if set_index > 0:
             idx_in_poses = sum([len(s) for s in sets[:set_index]]) + pose_index
@@ -286,14 +291,14 @@ class TimelinePanel(wx.Panel):
             index = data['index']
             idx_in_poses = self._get_index_poses(set_index, index)
 
-            self._core.select_pose(idx_in_poses)
+            self.core.select_pose(idx_in_poses)
         elif data['item'] == 'set':
-            self._core.select_pose_set(data['index'])
+            self.core.select_pose_set(data['index'])
 
     def _assert_can_image(self):
-        is_connected = self._core.is_serial_port_connected
-        has_path = len(self._core.project.pose_sets)
-        is_homed = self._core.is_machine_homed
+        is_connected = self.core.is_serial_port_connected
+        has_path = len(self.core.project.pose_sets)
+        is_homed = self.core.is_machine_homed
         can_image = is_connected and has_path and is_homed
 
         if not can_image:
@@ -377,18 +382,90 @@ class TimelinePanel(wx.Panel):
 
     def on_add_command(self, _):
         """Adds a pose or pose set."""
+        def on_add_pose_set(event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            set_index = self.core.project.add_pose_set()
+            self.core.select_pose_set(set_index)
+
+        def on_add_pose(event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            with PathgenPoint(self, devices) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
+                        .split(' ')[0])
+                    device = self.core.project.devices[device_id]
+                    point = vec3(dlg.x_ctrl.num_value,
+                        dlg.y_ctrl.num_value,
+                        dlg.z_ctrl.num_value)
+                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                        dlg.lookat_y_ctrl.num_value,
+                        dlg.lookat_z_ctrl.num_value)
+
+                    if device and device.range_3d.vec3_intersect(point, 0.0):
+                        pan, tilt = get_heading(point, lookat)
+                        s_point = sanitize_point(point)
+                        s_pan = sanitize_number(pan)
+                        s_tilt = sanitize_number(tilt)
+
+                        g_args = create_action_args(
+                            [s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
+                        c_args = create_action_args([1.5], 'S')
+                        payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+
+                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
+                        pose_index = self.core.project.add_pose(set_index, pose)
+                        idx_in_poses = self._get_index_poses(set_index, pose_index)
+                        self.core.select_pose(idx_in_poses)
+
+                        print_debug_msg(self.core.console,
+                            f'Pose added to set {set_index}', self.core.is_dev_env)
+
         data = None
         if self.timeline.Selection.IsOk():
             data = self.timeline.GetItemData(self.timeline.Selection)
 
         if data:
-            # Launch add dialog. choices:
-            #   1 - add pose set
-            #   2 - add pose to the current set it possible
-            print('Launch add dialog. choices')
+            if data['item'] == 'set':
+                set_index = data['index']
+            elif data['item'] == 'pose':
+                set_index = data['set index']
+
+            devices = self.core.project.get_allowed_devices(set_index)
+            dialog_size = (100, -1)
+            btn_size = (85, -1)
+
+            dialog = wx.Dialog(self, wx.ID_ADD, 'Add path item', size=dialog_size)
+            dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+            choice_grid = wx.GridSizer(2, (8, -1))
+
+            dialog.add_set_btn = wx.Button(dialog, label='Add pose set', size=btn_size)
+            dialog.add_set_btn.Bind(wx.EVT_BUTTON, on_add_pose_set)
+
+            dialog.add_pose_btn = wx.Button(dialog, label='Add pose', size=btn_size)
+
+            if not devices:
+                dialog.add_pose_btn.Enable(False)
+
+            dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
+
+            choice_grid.AddMany([
+                (dialog.add_set_btn, 0, 0, 0),
+                (dialog.add_pose_btn, 0, 0, 0)
+            ])
+
+            dialog.Sizer.Add(choice_grid, 1, wx.ALL, 4)
+
+            dialog.Layout()
+            dialog.SetMinSize(dialog_size)
+            dialog.Fit()
+            dialog.ShowModal()
         else:
-            set_index = self._core.project.add_pose_set()
-            self._core.select_pose_set(set_index)
+            set_index = self.core.project.add_pose_set()
+            self.core.select_pose_set(set_index)
 
     def on_play_command(self, _):
         """Plays the selected pose or pose set."""
@@ -399,20 +476,20 @@ class TimelinePanel(wx.Panel):
 
             if data:
                 if data['item'] == 'set':
-                    poses = self._core.project.pose_sets[data['index']]
+                    poses = self.core.project.pose_sets[data['index']]
                 elif data['item'] == 'pose':
                     set_index = data['set index']
                     pose_index = data['index']
-                    poses = [self._core.project.pose_sets[set_index][pose_index]]
+                    poses = [self.core.project.pose_sets[set_index][pose_index]]
 
-                self._core.play_poses(poses)
+                self.core.play_poses(poses)
 
     def on_image_command(self, _):
         """Start the imaging run (plays all poses)."""
         can_image = self._assert_can_image()
 
         if can_image:
-            self._core.start_imaging()
+            self.core.start_imaging()
 
     def on_copy_command(self, _):
         """Copies the selected pose."""
@@ -421,7 +498,7 @@ class TimelinePanel(wx.Panel):
         if data and data['item'] == 'pose':
             set_index = data['set index']
             index = data['index']
-            self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
+            self._copied_pose = copy.deepcopy(self.core.project.pose_sets[set_index][index])
             self._toggle_buttons(data)
 
     def on_cut_command(self, _):
@@ -431,7 +508,7 @@ class TimelinePanel(wx.Panel):
         if data and data['item'] == 'pose':
             set_index = data['set index']
             index = data['index']
-            self._copied_pose = copy.deepcopy(self._core.project.pose_sets[set_index][index])
+            self._copied_pose = copy.deepcopy(self.core.project.pose_sets[set_index][index])
             self.on_delete_command(self)
 
     def on_paste_command(self, _):
@@ -441,9 +518,11 @@ class TimelinePanel(wx.Panel):
         if data and self._copied_pose:
             set_index = data['index'] if data['item'] == 'set' else data['set index']
 
-            if self._core.project.can_add_pose(set_index, self._copied_pose.position.device):
-                self._core.project.add_pose(set_index, copy.deepcopy(self._copied_pose))
-                self._core.select_pose_set(set_index)
+            if self.core.project.can_add_pose(set_index, self._copied_pose.position.device):
+                pose_index = self.core.project.add_pose(
+                    set_index, copy.deepcopy(self._copied_pose))
+                idx_in_poses = self._get_index_poses(set_index, pose_index)
+                self.core.select_pose(idx_in_poses)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """Moves a set up or down"""
@@ -452,18 +531,18 @@ class TimelinePanel(wx.Panel):
         if data and data['item'] == 'set':
             index = data['index']
             direction = event.EventObject.direction
-            set_count = len(self._core.project.pose_sets)
+            set_count = len(self.core.project.pose_sets)
             new_index = None
 
             if direction == 'up' and index > 0:
-                self._core.project.move_set(index, -1)
+                self.core.project.move_set(index, -1)
                 new_index = index - 1
             elif direction == 'down' and index < set_count - 1:
-                self._core.project.move_set(index, 1)
+                self.core.project.move_set(index, 1)
                 new_index = index + 1
 
             if new_index is not None and new_index >= 0:
-                self._core.select_pose_set(new_index)
+                self.core.select_pose_set(new_index)
                 self._toggle_buttons(data)
 
     def on_delete_command(self, _) -> None:
@@ -474,22 +553,22 @@ class TimelinePanel(wx.Panel):
             if data['item'] == 'set':
                 set_index = data['index']
 
-                self._core.select_pose_set(-1)
-                self._core.project.delete_pose_set(set_index)
-                self._core.select_pose_set(set_index - 1)
+                self.core.select_pose_set(-1)
+                self.core.project.delete_pose_set(set_index)
+                self.core.select_pose_set(set_index - 1)
             elif data['item'] == 'pose':
                 set_index = data['set index']
                 pose_index = data['index']
                 prev_pose_index = pose_index - 1
 
-                self._core.select_pose(-1)
-                self._core.project.delete_pose(set_index, pose_index)
+                self.core.select_pose(-1)
+                self.core.project.delete_pose(set_index, pose_index)
 
                 if prev_pose_index < 0:
-                    self._core.select_pose_set(set_index)
+                    self.core.select_pose_set(set_index)
                 else:
                     idx_in_poses = self._get_index_poses(set_index, prev_pose_index)
-                    self._core.select_pose(idx_in_poses)
+                    self.core.select_pose(idx_in_poses)
 
 
     def update_timeline(self) -> None:
@@ -497,7 +576,7 @@ class TimelinePanel(wx.Panel):
 
         Handles ntf_a_list_changed signal sent by self.core.
         """
-        sets = self._core.project.pose_sets
+        sets = self.core.project.pose_sets
         self.timeline.DeleteAllItems()
 
         if sets:

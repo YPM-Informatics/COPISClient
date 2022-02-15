@@ -20,10 +20,9 @@ TODO: Signify via color or border when action is selected
 """
 from collections import defaultdict, namedtuple
 
-import math
 import numpy as np
 
-from glm import vec2, vec3, vec4, mat4
+from glm import vec3, vec4, mat4
 import glm
 
 from OpenGL.GL import (
@@ -37,7 +36,7 @@ from OpenGL.GLU import ctypes
 from copis.globals import ActionType
 from copis.helpers import (
     create_cuboid, create_device_features, fade_color,
-    get_action_args_values, point5_to_mat4, shade_color, xyzpt_to_mat4)
+    get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4)
 
 ArrayInfo = namedtuple('ArrayInfo', 'name key')
 
@@ -291,15 +290,6 @@ class GLActionVis:
 
         # TODO: process other pose ids
         """
-
-        def get_heading(start: vec3, end: vec3):
-            direction = start - end
-            dir_x, dir_y, dir_z = direction
-
-            pan = math.atan2(dir_x, dir_y)
-            tilt = -math.atan2(dir_z, math.sqrt(dir_x * dir_x + dir_y * dir_y))
-
-            return vec2(pan, tilt)
 
         self._items['line'].clear()
         self._items['point'].clear()

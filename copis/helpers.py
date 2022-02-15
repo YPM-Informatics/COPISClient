@@ -21,13 +21,13 @@ import threading
 
 from collections import OrderedDict
 from functools import wraps
-from math import cos, sin, pi
+from math import cos, sin, pi, atan2, sqrt
 from time import time
 from typing import Any, Callable, Iterable, List
 from itertools import zip_longest
 
 import glm
-from glm import mat4, vec3, vec4
+from glm import mat4, vec2, vec3, vec4
 
 from copis.classes import Action, Pose
 
@@ -281,3 +281,13 @@ def pose_from_json_map(set_data: Iterable[Any]) -> Pose:
         p_set.append(Pose(position, payload))
 
     return p_set
+
+def get_heading(start: vec3, end: vec3):
+    """Returns the heading (pan and tilt) between two points."""
+    direction = start - end
+    dir_x, dir_y, dir_z = direction
+
+    pan = atan2(dir_x, dir_y)
+    tilt = -atan2(dir_z, sqrt(dir_x * dir_x + dir_y * dir_y))
+
+    return vec2(pan, tilt)

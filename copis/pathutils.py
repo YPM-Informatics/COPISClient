@@ -16,17 +16,19 @@
 """Helper functions for path generation."""
 
 import math
-import glm
-import numpy as np
 
 from collections import defaultdict
 from typing import List, Tuple
 from itertools import groupby
+
+import numpy as np
+import glm
 from glm import vec2, vec3
 
 from copis.classes import Action, Object3D, Pose
 from copis.globals import ActionType
-from copis.helpers import create_action_args, interleave_lists, sanitize_number, sanitize_point
+from copis.helpers import (create_action_args, get_heading, interleave_lists,
+    sanitize_number, sanitize_point)
 from .mathutils import orthonormal_basis_of
 
 
@@ -172,9 +174,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
 
     for device_id in ordered_points:
         for i, point in enumerate(ordered_points[device_id]):
-            dx, dy, dz = point.x - lookat.x, point.y - lookat.y, point.z - lookat.z
-            pan = math.atan2(dx, dy)
-            tilt = -math.atan2(dz, math.sqrt(dx * dx + dy * dy))
+            pan, tilt = get_heading(point, lookat)
 
             # Add action. skip feed rate for now.
             s_point = sanitize_point(point)
