@@ -205,17 +205,17 @@ class EDSDKController():
 
     @property
     def is_waiting_for_image(self) -> bool:
-        """Return a flag indicating whether we are waiting for an image."""
+        """Returns a flag indicating whether we are waiting for an image."""
         return self._is_waiting_for_image
 
     @property
     def is_enabled(self) -> bool:
-        """Return a flag indicating whether EDSDK is enabled."""
+        """Returns a flag indicating whether EDSDK is enabled."""
         return self._edsdk is not None
 
     @property
     def device_list(self) -> List[EdsDeviceInfo]:
-        """Return a list of descriptions of devices connected via edsdk."""
+        """Returns a list of descriptions of devices connected via edsdk."""
         devices = []
         self._update_camera_list()
 
@@ -373,20 +373,20 @@ terminate = _instance.terminate
 
 @mproperty
 def camera_count(mod) -> int:
-    """Return camera count from the module."""
+    """Returns camera count from the module."""
     return mod._instance.camera_count
 
 @mproperty
 def is_waiting_for_image(mod) -> bool:
-    """Return a flag indicating whether we are waiting for an image; from the module."""
+    """Returns a flag indicating whether we are waiting for an image; from the module."""
     return mod._instance.is_waiting_for_image
 
 @mproperty
 def is_enabled(mod) -> bool:
-    """Return a flag indicating whether EDSDK is enabled; from the module."""
+    """Returns a flag indicating whether EDSDK is enabled; from the module."""
     return mod._instance.is_enabled
 
 @mproperty
 def device_list(mod) -> List[EdsDeviceInfo]:
-    """Return a list of descriptions of devices connected via edsdk; from the module."""
+    """Returns a list of descriptions of devices connected via edsdk; from the module."""
     return mod._instance.device_list

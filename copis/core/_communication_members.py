@@ -78,7 +78,7 @@ class CommunicationMembersMixin:
 
     @property
     def is_serial_port_connected(self):
-        """Return a flag indicating whether the active serial port is connected."""
+        """Returns a flag indicating whether the active serial port is connected."""
         return self._serial.is_port_open
 
     def _get_active_serial_port_name(self):
