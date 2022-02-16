@@ -365,8 +365,9 @@ class Project:
         """Removes a pose set given its index."""
         self._pose_sets.pop(set_index)
 
-    def move_set(self, index: int, step: int):
-        """Moves a pose set up or down by step amount."""
+    def move_set(self, index: int, step: int) -> int:
+        """Moves a pose set up or down by step amount.
+            Returns the pose set's new index."""
         new_index = index + step
 
         if 0 <= new_index < len(self._pose_sets):
@@ -376,6 +377,10 @@ class Project:
 
             self._pose_sets.clear(False)
             self._pose_sets.extend(sets)
+
+            return new_index
+        else:
+            return index
 
     def can_add_pose(self, set_index: int, device_id: int):
         """Returns a flag indicating where a pose with the specified device

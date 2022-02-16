@@ -21,6 +21,7 @@ TODO: Overhaul timeline panel visually
 
 import copy
 import wx
+import wx.lib.scrolledpanel as scrolled
 
 from pydispatch import dispatcher
 from glm import vec3
@@ -251,8 +252,10 @@ class TimelinePanel(wx.Panel):
 
             if data['item'] == 'set':
                 set_index = data['index']
+                self._buttons['set_top_btn'].Enable(True)
                 self._buttons['set_up_btn'].Enable(True)
                 self._buttons['set_down_btn'].Enable(True)
+                self._buttons['set_bottom_btn'].Enable(True)
 
             if data['item'] == 'pose':
                 set_index = data['set index']
@@ -316,7 +319,9 @@ class TimelinePanel(wx.Panel):
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
         self.timeline = wx.TreeCtrl(self)
-        btn_size = (75, -1)
+        btn_panel = scrolled.ScrolledPanel(self)
+        btn_panel.SetupScrolling(scroll_x=False, scrollIntoView=False)
+        btn_size = (85, -1)
 
         # Bind events
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
@@ -325,48 +330,61 @@ class TimelinePanel(wx.Panel):
         self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
         btn_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        set_up_btn = wx.Button(self, label='Set up', size=btn_size)
+        set_top_btn = wx.Button(btn_panel, label='Set to top', size=btn_size)
+        set_top_btn.direction = 'top'
+        set_top_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        self._buttons['set_top_btn'] = set_top_btn
+
+        set_up_btn = wx.Button(btn_panel, label='Set up', size=btn_size)
         set_up_btn.direction = 'up'
         set_up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_up_btn'] = set_up_btn
 
-        set_down_btn = wx.Button(self, label='Set down', size=btn_size)
+        set_down_btn = wx.Button(btn_panel, label='Set down', size=btn_size)
         set_down_btn.direction = 'down'
         set_down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_down_btn'] = set_down_btn
 
-        copy_pose_btn = wx.Button(self, label='Copy pose', size=btn_size)
+        set_bottom_btn = wx.Button(btn_panel, label='Set to bottom', size=btn_size)
+        set_bottom_btn.direction = 'bottom'
+        set_bottom_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
+        self._buttons['set_bottom_btn'] = set_bottom_btn
+
+        copy_pose_btn = wx.Button(btn_panel, label='Copy pose', size=btn_size)
         copy_pose_btn.Bind(wx.EVT_BUTTON, self.on_copy_command)
         self._buttons['copy_pose_btn'] = copy_pose_btn
 
-        cut_pose_btn = wx.Button(self, label='Cut pose', size=btn_size)
+        cut_pose_btn = wx.Button(btn_panel, label='Cut pose', size=btn_size)
         cut_pose_btn.Bind(wx.EVT_BUTTON, self.on_cut_command)
         self._buttons['cut_pose_btn'] = cut_pose_btn
 
-        paste_pose_btn = wx.Button(self, label='Paste pose', size=btn_size)
+        paste_pose_btn = wx.Button(
+            btn_panel, label='Paste pose', size=btn_size)
         paste_pose_btn.Bind(wx.EVT_BUTTON, self.on_paste_command)
         self._buttons['paste_pose_btn'] = paste_pose_btn
 
-        add_btn = wx.Button(self, label='Add', size=btn_size)
+        add_btn = wx.Button(btn_panel, label='Add', size=btn_size)
         add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
         self._buttons['add_btn'] = add_btn
 
-        delete_btn = wx.Button(self, label='Delete', size=btn_size)
+        delete_btn = wx.Button(btn_panel, label='Delete', size=btn_size)
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
         self._buttons['delete_btn'] = delete_btn
 
-        play_btn = wx.Button(self, label='Play', size=btn_size)
+        play_btn = wx.Button(btn_panel, label='Play', size=btn_size)
         play_btn.Bind(wx.EVT_BUTTON, self.on_play_command)
         self._buttons['play_btn'] = play_btn
 
-        image_btn = wx.Button(self, label='Play all', size=btn_size)
+        image_btn = wx.Button(btn_panel, label='Play all', size=btn_size)
         image_btn.Bind(wx.EVT_BUTTON, self.on_image_command)
         self._buttons['image_btn'] = image_btn
         # ----
 
         btn_sizer.AddMany([
+            (set_top_btn, 0, 0, 0),
             (set_up_btn, 0, 0, 0),
             (set_down_btn, 0, 0, 0),
+            (set_bottom_btn, 0, 0, 0),
             (copy_pose_btn, 0, 0, 0),
             (cut_pose_btn, 0, 0, 0),
             (paste_pose_btn, 0, 0, 0),
@@ -378,7 +396,10 @@ class TimelinePanel(wx.Panel):
 
         self._toggle_buttons()
 
-        self.Sizer.Add(btn_sizer, 0, wx.EXPAND, 0)
+        btn_panel.SetSizer(btn_sizer)
+        btn_panel.Layout()
+
+        self.Sizer.Add(btn_panel, 0, wx.EXPAND, 0)
 
     def on_add_command(self, _):
         """Adds a pose or pose set."""
@@ -534,12 +555,17 @@ class TimelinePanel(wx.Panel):
             set_count = len(self.core.project.pose_sets)
             new_index = None
 
-            if direction == 'up' and index > 0:
-                self.core.project.move_set(index, -1)
-                new_index = index - 1
-            elif direction == 'down' and index < set_count - 1:
-                self.core.project.move_set(index, 1)
-                new_index = index + 1
+            is_at_top = index <= 0
+            is_at_bottom = index >= set_count - 1
+
+            if direction == 'up' and not is_at_top:
+                new_index = self.core.project.move_set(index, -1)
+            elif direction == 'down' and not is_at_bottom:
+                new_index = self.core.project.move_set(index, 1)
+            elif direction == 'top' and not is_at_top:
+                new_index = self.core.project.move_set(index, -1 * index)
+            elif direction == 'bottom' and not is_at_bottom:
+                new_index = self.core.project.move_set(index, set_count - 1 - index)
 
             if new_index is not None and new_index >= 0:
                 self.core.select_pose_set(new_index)
