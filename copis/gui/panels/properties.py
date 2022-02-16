@@ -44,10 +44,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     """
 
     config = {
-        'Default': ['viewport'],
-        'Device': ['device_info', 'device_config', 'viewport'],
-        'Point': ['transform', 'viewport'],
-        'Object': ['viewport'],
+        'Default': ['default'],
+        'Device': ['device_info', 'device_config'],
+        'Point': ['transform'],
+        'Object': ['default']
     }
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -82,11 +82,11 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
+        self._property_panels['default'] = _DefaultPanel(self)
         self._property_panels['transform'] = _PropTransform(self)
         self._property_panels['device_info'] = _PropDeviceInfo(self)
         self._property_panels['device_config'] = _PropDeviceConfig(self)
         self._property_panels['quick_actions'] = _PropQuickActions(self)
-        self._property_panels['viewport'] = _PropViewport(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
@@ -145,47 +145,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.update_to_selected('Default')
 
 
-class _PropViewport(wx.Panel):
+class _DefaultPanel(wx.Panel):
 
     def __init__(self, parent, *args, **kwargs) -> None:
-        """Initialize _PropViewport with constructors."""
-        super().__init__(parent, style=wx.BORDER_DEFAULT)
+        """Initialize _DefaultPanel with constructors."""
+        super().__init__(parent, style=wx.BORDER_NONE)
         self.parent = parent
-
-        self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Viewport'), wx.VERTICAL)
-
-        grid_check = wx.CheckBox(self, label='Show chamber &grid', name='grid')
-        grid_check.Value = True
-        axes_check = wx.CheckBox(self, label='Show chamber &axes', name='axes')
-        axes_check.Value = True
-        bbox_check = wx.CheckBox(self, label='Show chamber &boundaries', name='bbox')
-        bbox_check.Value = True
-
-        box_sizer.AddMany([
-            (grid_check, 0, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, 4),
-            (4, 4, 0),
-            (axes_check, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 4),
-            (4, 4, 0),
-            (bbox_check, 0, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.BOTTOM, 4),
-        ])
-
-        # ---
-
-        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
-        self.Layout()
-
-        self.Bind(wx.EVT_CHECKBOX, self.on_checkbox)
-
-    def on_checkbox(self, event: wx.CommandEvent) -> None:
-        name = event.EventObject.Name
-        if name == 'grid':
-            self.parent.parent.viewport_panel.grid_shown = event.Int
-        elif name == 'axes':
-            self.parent.parent.viewport_panel.axes_shown = event.Int
-        else: # name == 'bbox'
-            self.parent.parent.viewport_panel.bbox_shown = event.Int
-
 
 class _PropTransform(wx.Panel):
     """Transform panel. Default display units are mm and dd.
