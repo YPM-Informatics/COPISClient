@@ -236,7 +236,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             poses.append(
                 # TODO: allow user customization of poses at each point
                 # https://github.com/YPM-Informatics/COPISClient/issues/102
-                Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
+                Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload, lookat.to_tuple())
             )
 
     return poses

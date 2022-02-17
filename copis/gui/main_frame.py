@@ -511,6 +511,8 @@ class MainWindow(wx.Frame):
                 self.core.save_project(path)
                 self._populate_recent_projects()
             except Exception as err:
+                store.delete_path(path)
+
                 wx.LogError(f'Could not save the project as "{path}".')
 
                 print_error_msg(self.core.console,
@@ -656,26 +658,27 @@ class MainWindow(wx.Frame):
             Dock().Center().MaximizeButton().MinimizeButton().DefaultPane().MinSize(350, 250))
 
         # Add console, timeline panel.
-        pane_size = wx.Size(280, 150)
+        bottom_pane_size = wx.Size(280, 150)
+        right_paine_size = wx.Size(280, 200)
         self._mgr.AddPane(
             self.panels['console'],
             aui.AuiPaneInfo().Name('console').Caption('Console').
-            Dock().Bottom().Position(0).Layer(0).MinSize(pane_size).Show(True))
+            Dock().Bottom().Position(0).Layer(0).MinSize(bottom_pane_size).Show(True))
         self._mgr.AddPane(
             self.panels['timeline'],
             aui.AuiPaneInfo().Name('timeline').Caption('Timeline').
-            Dock().Bottom().Position(1).Layer(0).MinSize(pane_size).Show(True),
+            Dock().Bottom().Position(1).Layer(0).MinSize(bottom_pane_size).Show(True),
             target=self._mgr.GetPane('console'))
 
         # Add properties and controller panel.
         self._mgr.AddPane(
             self.panels['properties'],
             aui.AuiPaneInfo().Name('properties').Caption('Properties').
-            Dock().Right().Position(0).Layer(1).MinSize(280, 200).Show(True))
+            Dock().Right().Position(0).Layer(1).MinSize(right_paine_size).Show(True))
         self._mgr.AddPane(
             self.panels['controller'],
             aui.AuiPaneInfo().Name('controller').Caption('Controller').
-            Dock().Right().Position(1).Layer(1).MinSize(280, 200).Show(True))
+            Dock().Right().Position(1).Layer(1).MinSize(right_paine_size).Show(True))
 
         # Set first tab of all auto notebooks as the one selected.
         for notebook in self._mgr.GetNotebooks():

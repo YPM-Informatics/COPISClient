@@ -106,6 +106,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     @property
     def current(self) -> str:
+        """Returns the selected pane."""
         return self._current
 
     @current.setter

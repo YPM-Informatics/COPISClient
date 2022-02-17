@@ -165,6 +165,12 @@ def path_exists(filename: str) -> bool:
     return os.path.exists(filename)
 
 
+def delete_path(filename: str) -> None:
+    """Deletes the given path."""
+    if path_exists(filename):
+        os.remove(filename)
+
+
 def _pickle_remodule_load(file_obj):
     return _RemoduleUnpickler(file_obj).load()
 

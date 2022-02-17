@@ -436,13 +436,22 @@ class TimelinePanel(wx.Panel):
                         c_args = create_action_args([1.5], 'S')
                         payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
-                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
+                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload,
+                            lookat.to_tuple())
+
                         pose_index = self.core.project.add_pose(set_index, pose)
-                        idx_in_poses = self._get_index_poses(set_index, pose_index)
+
+                        idx_in_poses = self._get_index_poses(set_index, pose_index) \
+                            if pose_index >= 0 else pose_index
+
                         self.core.select_pose(idx_in_poses)
 
-                        print_debug_msg(self.core.console,
-                            f'Pose added to set {set_index}', self.core.is_dev_env)
+                        if pose_index >= 0:
+                            print_debug_msg(self.core.console,
+                                f'Pose added to set {set_index}', self.core.is_dev_env)
+                        else:
+                            print_debug_msg(self.core.console,
+                                f'Could not add pose to set {set_index}', self.core.is_dev_env)
 
         data = None
         if self.timeline.Selection.IsOk():
@@ -542,7 +551,10 @@ class TimelinePanel(wx.Panel):
             if self.core.project.can_add_pose(set_index, self._copied_pose.position.device):
                 pose_index = self.core.project.add_pose(
                     set_index, copy.deepcopy(self._copied_pose))
-                idx_in_poses = self._get_index_poses(set_index, pose_index)
+
+                idx_in_poses = self._get_index_poses(set_index, pose_index) \
+                    if pose_index >= 0 else pose_index
+
                 self.core.select_pose(idx_in_poses)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:

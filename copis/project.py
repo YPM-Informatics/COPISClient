@@ -346,6 +346,8 @@ class Project:
             self._pose_sets[set_index] = pose_set
 
             return pose_set.index(pose)
+        else:
+            return -1
 
     def add_pose_set(self):
         """Adds an empty pose set to the pose set list."""
