@@ -24,7 +24,6 @@ class Pose(NamedTuple):
     """Device pose data structure."""
     position: Action = None
     payload: List[Action] = None
-    target: tuple = None
 
     def get_actions(self) -> List[Action]:
         """Flattens the pose into its constituent list of actions and returns it."""

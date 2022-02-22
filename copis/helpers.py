@@ -278,9 +278,7 @@ def pose_from_json_map(set_data: Iterable[Any]) -> Pose:
         for action in payload:
             action.args = tupleify(action.args)
 
-        target = tuple(pose_data[2])  if len(pose_data) > 2 else None
-
-        p_set.append(Pose(position, payload, target))
+        p_set.append(Pose(position, payload))
 
     return p_set
 

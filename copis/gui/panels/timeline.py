@@ -436,8 +436,7 @@ class TimelinePanel(wx.Panel):
                         c_args = create_action_args([1.5], 'S')
                         payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
-                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload,
-                            lookat.to_tuple())
+                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
                         pose_index = self.core.project.add_pose(set_index, pose)
 
