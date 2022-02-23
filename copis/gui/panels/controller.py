@@ -287,25 +287,28 @@ class ControllerPanel(scrolled.ScrolledPanel):
         step_feedrate_grid.AddGrowableCol(0, 2)
         step_feedrate_grid.AddGrowableCol(1, 1)
 
+        xyz_unit = 'mm'
+        pt_unit = 'dd'
+
         self.xyz_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=50, size=(48, -1),
-            style=wx.TE_PROCESS_ENTER, name='xyz_step', max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+            style=wx.TE_PROCESS_ENTER, name='xyz_step', max_precision=3,
+                default_unit=xyz_unit, unit_conversions=xyz_units)
         self.pt_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=5, size=(48, -1),
-            style=wx.TE_PROCESS_ENTER, name='pt_step', max_precision=0,
-            default_unit='dd', unit_conversions=pt_units)
+            style=wx.TE_PROCESS_ENTER, name='pt_step', max_precision=3,
+            default_unit=pt_unit, unit_conversions=pt_units)
         self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1000", size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([
-            (simple_statictext(jog_sizer.StaticBox, 'XYZ distance:', 72), 0,
+            (simple_statictext(jog_sizer.StaticBox, f'XYZ distance ({xyz_unit}):', 72), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(jog_sizer.StaticBox, 'PT distance:', 72), 0,
+            (simple_statictext(jog_sizer.StaticBox, f'PT distance ({pt_unit}):', 72), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.pt_step_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(jog_sizer.StaticBox, 'Feed rate:', 72), 0,
+            (simple_statictext(jog_sizer.StaticBox, f'Feed rate (<unit>/s):', 72), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.feed_rate_ctrl, 0, wx.EXPAND, 0),
         ])

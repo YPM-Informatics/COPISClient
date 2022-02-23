@@ -98,7 +98,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
         if self._default_unit not in self._units:
             raise KeyError(f'Default unit {self._default_unit} not in unit_conversions')
-        self.Value = f'{self._num_value} {self._default_unit}'
+        self._update_value()
 
         self._selected_dirty = False
         self._text_dirty = False
@@ -113,19 +113,19 @@ class FancyTextCtrl(wx.TextCtrl):
         """On EVT_LEFT_UP, if not already focused, select digits."""
         if not self._selected_dirty:
             self._selected_dirty = True
-            self.SetSelection(0, self.Value.find(' '))
+            self.SelectAll()
         event.Skip()
 
     def on_set_focus(self, event: wx.CommandEvent) -> None:
         """On EVT_SET_FOCUS, select digits."""
-        self.SetSelection(0, self.Value.find(' '))
+        self.SelectAll()
         event.Skip()
 
     def on_kill_focus(self, event: wx.CommandEvent) -> None:
         """On EVT_KILL_FOCUS, process the updated value."""
         if self._text_dirty:
-            self.Undo()
-            self._text_dirty = False
+            self._process_text()
+
         self._selected_dirty = False
         event.Skip()
 
@@ -138,11 +138,11 @@ class FancyTextCtrl(wx.TextCtrl):
         """On EVT_KEY_DOWN, process the text if enter or tab is pressed."""
         keycode = event.KeyCode
         if not event.HasAnyModifiers() and \
-            (keycode == wx.WXK_RETURN or keycode == wx.WXK_NUMPAD_ENTER or keycode == wx.WXK_TAB):
-            if self._process_text():
-                # handle if shift is held
-                event.EventObject.Navigate(flags=
-                    wx.NavigationKeyEvent.IsBackward if event.shiftDown else wx.NavigationKeyEvent.IsForward)
+            keycode in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER, wx.WXK_TAB) and \
+                self._process_text():
+                # Handle if "Shift" key is held.
+            event.EventObject.Navigate(flags=wx.NavigationKeyEvent.IsBackward \
+                if event.shiftDown else wx.NavigationKeyEvent.IsForward)
 
         else:
             event.Skip()
@@ -173,7 +173,7 @@ class FancyTextCtrl(wx.TextCtrl):
 
     def _update_value(self) -> None:
         """Update control text."""
-        self.Value = f'{self._num_value:.{self._max_precision}f} {self._current_unit}'
+        self.Value = f'{self._num_value:.{self._max_precision}f}'
         self._text_dirty = False
 
     @property

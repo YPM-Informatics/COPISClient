@@ -34,39 +34,52 @@ class ProxygenCylinder(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(7, 2, 12, 8)
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(9, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.start_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.start_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.start_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.end_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.end_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.end_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=50, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.start_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.end_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Start X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.start_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Start:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'End X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.end_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'End:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.radius_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.radius_ctrl, 0, wx.EXPAND, 0)
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL|wx.EXPAND, 4)
@@ -92,41 +105,56 @@ class ProxygenAABB(wx.Dialog):
 
     def __init__(self, parent, *args, **kwargs):
         """Initializes ProxygenAABB with constructors."""
-        super().__init__(parent, wx.ID_ANY, 'Add Box Proxy Object', size=(250, -1))
+        super().__init__(parent, wx.ID_ANY, 'Add Box Proxy Object', size=(200, -1))
         self.parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
 
-        options_grid = wx.FlexGridSizer(6, 2, 12, 8)
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(8, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.lower_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=-50, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lower_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=-50, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lower_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.upper_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=50, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.upper_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=50, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.upper_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lower_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.lower_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.lower_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.upper_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.upper_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
+        self.upper_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Lower Corner X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.lower_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Lower Corner:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lower_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lower_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lower_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Upper Corner X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.upper_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Upper Corner:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.upper_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.upper_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.upper_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
@@ -145,5 +173,5 @@ class ProxygenAABB(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
-        self.SetMinSize((250, -1))
+        self.SetMinSize((200, -1))
         self.Fit()

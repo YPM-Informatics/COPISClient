@@ -23,7 +23,7 @@ import wx.lib.scrolledpanel as scrolled
 
 from pydispatch import dispatcher
 
-from copis.helpers import get_action_args_values, xyz_units, pt_units
+from copis.helpers import dd_to_rad, get_action_args_values, rad_to_dd, xyz_units, pt_units
 from copis.gui.wxutils import (
     FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
@@ -96,7 +96,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         if selected not in self.config:
             return
 
-        # show/hide appropriate panels
+        # Show/hide appropriate panels.
         for name, panel in self._property_panels.items():
             panel.Show(name in self.config[selected])
 
@@ -193,30 +193,38 @@ class _PropTransform(wx.Panel):
         grid.AddGrowableCol(1, 0)
         grid.AddGrowableCol(3, 0)
 
+        xyz_unit = 'mm'
+        pt_unit = 'dd'
+
         self.x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='x', default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='x', default_unit=xyz_unit, unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='y', default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='y', default_unit=xyz_unit, unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='z', default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), name='z', default_unit=xyz_unit, unit_conversions=xyz_units)
         self.p_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='p', default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='p', default_unit=pt_unit, unit_conversions=pt_units)
         self.t_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='t', default_unit='dd', unit_conversions=pt_units)
+            self, size=(48, -1), name='t', default_unit=pt_unit, unit_conversions=pt_units)
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
-            (simple_statictext(self, 'X:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'X ({xyz_unit}):', 45), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Pan:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Pan: ({pt_unit})', 50), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.p_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Y:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Y ({xyz_unit}):', 45), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.y_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Tilt:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Tilt: ({pt_unit})', 50), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.t_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Z:', 32), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Z ({xyz_unit}):', 45), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_ctrl, 0, wx.EXPAND, 0),
             (0, 0),
             (more_btn, 0, wx.ALIGN_RIGHT, 0)
@@ -232,19 +240,20 @@ class _PropTransform(wx.Panel):
         self._step_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
         self._step_sizer.AddSpacer(8)
 
-        self.xyz_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='xyz_step', max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.pt_step_ctrl = FancyTextCtrl(
-            self, size=(48, -1), name='pt_step', max_precision=0, default_unit='dd', unit_conversions=pt_units)
+        self.xyz_step_ctrl = FancyTextCtrl(self, size=(48, -1), name='xyz_step',
+            max_precision=3, default_unit=xyz_unit, unit_conversions=xyz_units)
+        self.pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), name='pt_step',
+            max_precision=3, default_unit=pt_unit, unit_conversions=pt_units)
 
-        step_size_grid = wx.FlexGridSizer(1, 4, 4, 8)
+        step_size_grid = wx.FlexGridSizer(2, 2, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)
-        step_size_grid.AddGrowableCol(3, 0)
 
         step_size_grid.AddMany([
-            (simple_statictext(self, 'XYZ step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'XYZ step ({xyz_unit}):', 180), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'PT step:', 56), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'PT step ({pt_unit}):', 180), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.pt_step_ctrl, 0, wx.EXPAND, 0),
         ])
 
@@ -324,7 +333,8 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.core.update_selected_pose([self.x, self.y, self.z, self.p, self.t])
+        self.parent.core.update_selected_pose([
+            self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def on_text_update(self, event: wx.Event) -> None:
         """On EVT_FANCY_TEXT_UPDATED_EVENT, set dirty flag true."""
@@ -333,11 +343,12 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_pose([self.x, self.y, self.z, self.p, self.t])
+            self.parent.core.update_selected_pose([
+                self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
         """Set text controls given a x, y, z, p, t."""
-        self.x, self.y, self.z, self.p, self.t = x, y, z, p, t
+        self.x, self.y, self.z, self.p, self.t = x, y, z, rad_to_dd(p), rad_to_dd(t)
 
     def set_value(self, name: str, value: float) -> None:
         """Set value indicated by name.
@@ -419,7 +430,7 @@ class _PropTransform(wx.Panel):
     @p.setter
     def p(self, value: float) -> None:
         self._p = value
-        self.p_ctrl.num_value = value*180/math.pi
+        self.p_ctrl.num_value = value
 
     @property
     def t(self) -> float:
@@ -428,7 +439,7 @@ class _PropTransform(wx.Panel):
     @t.setter
     def t(self, value: float) -> None:
         self._t = value
-        self.t_ctrl.num_value = value*180/math.pi
+        self.t_ctrl.num_value = value
 
     @property
     def xyz_step(self) -> float:
@@ -446,7 +457,7 @@ class _PropTransform(wx.Panel):
     @pt_step.setter
     def pt_step(self, value: float) -> None:
         self._pt_step = value
-        self.pt_step_ctrl.num_value = value*180/math.pi
+        self.pt_step_ctrl.num_value = value
 
 
 class _PropDeviceInfo(wx.Panel):
@@ -540,7 +551,8 @@ class _PropDeviceConfig(wx.Panel):
         # ---
 
         vbox1 = wx.BoxSizer(wx.VERTICAL)
-        self.remoteRb = wx.RadioButton(self.box_sizer.StaticBox, label='Remote Shutter', style=wx.RB_GROUP)
+        self.remoteRb = wx.RadioButton(
+            self.box_sizer.StaticBox, label='Remote Shutter', style=wx.RB_GROUP)
         vbox1.Add(self.remoteRb)
 
         vboxAFShutter = wx.BoxSizer()

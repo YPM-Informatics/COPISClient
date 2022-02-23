@@ -28,7 +28,7 @@ from copis.classes.device import Device
 from copis.globals import PathIds
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
-from copis.helpers import print_debug_msg, xyz_units
+from copis.helpers import is_number, print_debug_msg, xyz_units
 from copis.pathutils import (build_pose_sets, create_circle, create_helix, create_line,
     interleave_poses, process_path)
 
@@ -94,6 +94,8 @@ class PathgenToolbar(aui.AuiToolBar):
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
         if len(self.core.project.pose_sets) > 0:
+            self.core.select_pose_set(-1)
+            self.core.select_pose(-1)
             self.core.project.pose_sets.clear()
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
@@ -264,7 +266,7 @@ class _PathgenCylinder(wx.Dialog):
 
     def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenCylinder with constructors."""
-        super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(250, -1))
+        super().__init__(parent, wx.ID_ANY, 'Add Cylinder Path', size=(200, -1))
         self.parent = parent
 
         self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
@@ -274,51 +276,68 @@ class _PathgenCylinder(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(13, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
+        unit = 'mm'
+        indent = '    '
+
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.base_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.base_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.base_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.height_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.lookat_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_checklist, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.base_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Base:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.base_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.base_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Height:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Height ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.height_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Z Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Z Divisions:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_div_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Points Per Circle:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Points Per Circle:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Lookat:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
@@ -337,7 +356,7 @@ class _PathgenCylinder(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
-        self.SetMinSize((250, -1))
+        self.SetMinSize((200, -1))
         self.Fit()
 
         # ---
@@ -349,7 +368,8 @@ class _PathgenCylinder(wx.Dialog):
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
         if (not self.device_checklist.CheckedItems or
-            self.z_div_ctrl.Value == '' or self.points_ctrl.Value == ''):
+            self.z_div_ctrl.Value == '' or self.points_ctrl.Value == '' or
+            not is_number(self.z_div_ctrl.Value) or not is_number(self.points_ctrl.Value)):
             self._affirmative_button.Disable()
             return
 
@@ -362,60 +382,78 @@ class _PathgenHelix(wx.Dialog):
 
     def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenHelix with constructors."""
-        super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(250, -1))
+        super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
+            self.parent.core.project.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
 
-        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
+        unit = 'mm'
+        indent = '    '
+
+        options_grid = wx.FlexGridSizer(13, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.base_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.base_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.base_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.height_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
         self.rotation_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.lookat_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_checklist, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Base X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.base_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Base:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.base_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.base_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.base_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Height:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Height ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.height_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Number of Rotations:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Number of Rotations:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.rotation_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Points per Rotation:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Points per Rotation:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Lookat:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
@@ -434,7 +472,7 @@ class _PathgenHelix(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
-        self.SetMinSize((250, -1))
+        self.SetMinSize((200, -1))
         self.Fit()
 
         # ---
@@ -446,7 +484,8 @@ class _PathgenHelix(wx.Dialog):
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
         if (not self.device_checklist.CheckedItems or
-            self.rotation_ctrl.Value == '' or self.points_ctrl.Value == ''):
+            self.rotation_ctrl.Value == '' or self.points_ctrl.Value == '' or
+            not is_number(self.rotation_ctrl.Value) or not is_number(self.points_ctrl.Value)):
             self._affirmative_button.Disable()
             return
 
@@ -459,45 +498,57 @@ class _PathgenSphere(wx.Dialog):
 
     def __init__(self, parent, *args, **kwargs):
         """Initializes _PathgenSphere with constructors."""
-        super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(250, -1))
+        super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
+            self.parent.core.project.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
 
-        options_grid = wx.FlexGridSizer(7, 2, 12, 8)
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(8, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.center_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.center_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.center_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=100, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.center_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.center_y_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.center_z_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.distance_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=10, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+        self.distance_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=10, max_precision=0,
+            default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_checklist, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Center X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.center_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Center:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.center_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.center_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.center_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Radius:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Z Divisions:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Z Divisions:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_div_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Spacing Distance:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Spacing Distance ({unit}):', 130), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.distance_ctrl, 0, wx.EXPAND, 0),
         ])
 
@@ -516,7 +567,7 @@ class _PathgenSphere(wx.Dialog):
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
 
         self.Layout()
-        self.SetMinSize((250, -1))
+        self.SetMinSize((200, -1))
         self.Fit()
 
         # ---
@@ -526,7 +577,8 @@ class _PathgenSphere(wx.Dialog):
 
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
-        if (not self.device_checklist.CheckedItems or self.z_div_ctrl.Value == ''):
+        if (not self.device_checklist.CheckedItems or self.z_div_ctrl.Value == '' or
+            not is_number(self.z_div_ctrl.Value)):
             self._affirmative_button.Disable()
             return
 
@@ -542,58 +594,68 @@ class _PathgenLine(wx.Dialog):
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
+            self.parent.core.project.devices))
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
 
-        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(14, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
         self.start_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.start_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.start_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.end_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.end_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.end_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.lookat_x_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.lookat_y_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
         self.lookat_z_ctrl = FancyTextCtrl(
-            self, size=(48, -1), num_value=0, max_precision=0, default_unit='mm', unit_conversions=xyz_units)
+            self, size=(48, -1), num_value=0, max_precision=0, default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_choice, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Start X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.start_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Start:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'End X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.end_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'End:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'Number of Points:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Lookat:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent} X ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Y ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent} Z ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
@@ -623,7 +685,7 @@ class _PathgenLine(wx.Dialog):
     def _on_ctrl_update(self, _) -> None:
         """Enable the affirmative (OK) button if all fields have values."""
         if (self.device_choice.CurrentSelection == wx.NOT_FOUND or
-            self.points_ctrl.Value == ''):
+            self.points_ctrl.Value == '' or not is_number(self.points_ctrl.Value)):
             self._affirmative_button.Disable()
             return
 
@@ -645,37 +707,50 @@ class PathgenPoint(wx.Dialog):
 
         # ---
 
-        options_grid = wx.FlexGridSizer(7, 2, 12, 8)
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(9, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
         self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-            default_unit='mm', unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+                default_unit=unit, unit_conversions=xyz_units)
         self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+                default_unit=unit, unit_conversions=xyz_units)
         self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+                default_unit=unit, unit_conversions=xyz_units)
         self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+                default_unit=unit, unit_conversions=xyz_units)
         self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
-                default_unit='mm', unit_conversions=xyz_units)
+                default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_choice, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Position X:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Position:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 72), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 72), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 72), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Lookat X:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.lookat_x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, 'Lookat:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.lookat_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Z:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
