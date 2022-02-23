@@ -32,9 +32,7 @@ from glm import mat4, vec2, vec3, vec4
 from copis.classes import Action, Pose
 
 
-xyz_steps = [10, 1, 0.1, 0.01]
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
-pt_steps = [10, 5, 1, 0.1, 0.01]
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
