@@ -175,7 +175,7 @@ class _PropTransform(wx.Panel):
         self._p: float = 0.0
         self._t: float = 0.0
         self._xyz_step: float = 1.0
-        self._pt_step: float = math.pi/180
+        self._pt_step: float = 1.0
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.init_gui()
@@ -240,10 +240,10 @@ class _PropTransform(wx.Panel):
         self._step_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
         self._step_sizer.AddSpacer(8)
 
-        self.xyz_step_ctrl = FancyTextCtrl(self, size=(48, -1), name='xyz_step',
-            max_precision=3, default_unit=xyz_unit, unit_conversions=xyz_units)
-        self.pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), name='pt_step',
-            max_precision=3, default_unit=pt_unit, unit_conversions=pt_units)
+        self.xyz_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.xyz_step,
+            name='xyz_step', default_unit=xyz_unit, unit_conversions=xyz_units)
+        self.pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.pt_step,
+            name='pt_step', default_unit=pt_unit, unit_conversions=pt_units)
 
         step_size_grid = wx.FlexGridSizer(2, 2, 4, 8)
         step_size_grid.AddGrowableCol(1, 0)
