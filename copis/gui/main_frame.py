@@ -729,6 +729,7 @@ class MainWindow(wx.Frame):
     def update_properties_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide properties panel."""
         self._mgr.ShowPane(self.properties_panel, event.IsChecked())
+        # self._mgr.GetPane(self.properties_panel).Caption("Hell yeah!")
 
     def update_timeline_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide timeline panel."""

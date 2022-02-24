@@ -17,7 +17,6 @@
 
 from typing import Union
 
-import math
 import wx
 import wx.lib.scrolledpanel as scrolled
 
