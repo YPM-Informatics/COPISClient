@@ -288,7 +288,7 @@ class MainWindow(wx.Frame):
         _item.Bitmap = create_scaled_bitmap('save', 16)
         self.Bind(wx.EVT_MENU, self.on_save, self._file_menu.Append(_item))
 
-        _item = wx.MenuItem(None, wx.ID_SAVEAS, 'Save Project &As...\tCtrl+Shift+S',
+        _item = wx.MenuItem(None, wx.ID_SAVEAS, 'Save Project &as...\tCtrl+Shift+S',
             'Save project as')
         _item.Bitmap = create_scaled_bitmap('save', 16)
         self.Bind(wx.EVT_MENU, self.on_save_as, self._file_menu.Append(_item))
@@ -405,7 +405,7 @@ class MainWindow(wx.Frame):
 
     def on_new_project(self, _) -> None:
         """Starts a new project with defaults."""
-        proceed = self._prompt_saving('New project', _)
+        proceed = self._prompt_saving('New Project', _)
 
         if proceed:
             self.core.start_new_project()
@@ -415,12 +415,12 @@ class MainWindow(wx.Frame):
         current_poses = self.core.project.poses
         if current_poses is not None and len(current_poses) > 0:
             if show_prompt_dialog('This will overwrite the current path. Proceed?',
-                'Import legacy actions') == wx.ID_NO:
+                'Import Legacy Actions') == wx.ID_NO:
                 return
 
         wildcard = f'{self._FILES_LEGACY_ACTIONS}|{self._FILES_WILDCARD}'
 
-        with wx.FileDialog(self, 'Import legacy actions', wildcard=wildcard,
+        with wx.FileDialog(self, 'Import Legacy Actions', wildcard=wildcard,
             defaultDir=self._get_default_dir(), style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
             ) as file_dialog:
 
@@ -435,7 +435,7 @@ class MainWindow(wx.Frame):
 
     def on_project_selected(self, event: wx.CommandEvent):
         """Opens the selected recent project."""
-        caption = 'Open recent project'
+        caption = 'Open Recent Project'
         item_text = event.EventObject.GetLabelText(event.Id)
         path = item_text.split(':', 1)[1].strip()
 
@@ -455,7 +455,7 @@ class MainWindow(wx.Frame):
 
     def on_open_project(self, _) -> None:
         """Opens 'open' dialog for existing COPIS projects."""
-        if not self._prompt_saving('Open project', _):
+        if not self._prompt_saving('Open Project', _):
             return
 
         wildcard = f'{self._FILES_PROJECT}|{self._FILES_WILDCARD}'
@@ -470,7 +470,7 @@ class MainWindow(wx.Frame):
             did_open, msg = self.core.open_project(file_dialog.Path)
 
             if not did_open:
-                show_msg_dialog(f'{msg}.', 'Open project')
+                show_msg_dialog(f'{msg}.', 'Open Project')
             else:
                 self._populate_recent_projects()
 
@@ -496,10 +496,10 @@ class MainWindow(wx.Frame):
         if not self.core.project.is_dirty:
             if show_prompt_dialog(
                 'The project was not modified. Would you still like to save it?',
-                    'Save project') == wx.ID_NO:
+                    'Save Project') == wx.ID_NO:
                 return
 
-        with wx.FileDialog(self, 'Save project as', wildcard=self._FILES_PROJECT,
+        with wx.FileDialog(self, 'Save Project as', wildcard=self._FILES_PROJECT,
             defaultDir=self._get_default_dir(), style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT
             ) as file_dialog:
 
