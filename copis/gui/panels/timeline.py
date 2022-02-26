@@ -330,36 +330,36 @@ class TimelinePanel(wx.Panel):
         self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
         btn_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        set_top_btn = wx.Button(btn_panel, label='Set to top', size=btn_size)
+        set_top_btn = wx.Button(btn_panel, label='Set to Top', size=btn_size)
         set_top_btn.direction = 'top'
         set_top_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_top_btn'] = set_top_btn
 
-        set_up_btn = wx.Button(btn_panel, label='Set up', size=btn_size)
+        set_up_btn = wx.Button(btn_panel, label='Set Up', size=btn_size)
         set_up_btn.direction = 'up'
         set_up_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_up_btn'] = set_up_btn
 
-        set_down_btn = wx.Button(btn_panel, label='Set down', size=btn_size)
+        set_down_btn = wx.Button(btn_panel, label='Set Down', size=btn_size)
         set_down_btn.direction = 'down'
         set_down_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_down_btn'] = set_down_btn
 
-        set_bottom_btn = wx.Button(btn_panel, label='Set to bottom', size=btn_size)
+        set_bottom_btn = wx.Button(btn_panel, label='Set to Bottom', size=btn_size)
         set_bottom_btn.direction = 'bottom'
         set_bottom_btn.Bind(wx.EVT_BUTTON, self.on_move_command)
         self._buttons['set_bottom_btn'] = set_bottom_btn
 
-        copy_pose_btn = wx.Button(btn_panel, label='Copy pose', size=btn_size)
+        copy_pose_btn = wx.Button(btn_panel, label='Copy Pose', size=btn_size)
         copy_pose_btn.Bind(wx.EVT_BUTTON, self.on_copy_command)
         self._buttons['copy_pose_btn'] = copy_pose_btn
 
-        cut_pose_btn = wx.Button(btn_panel, label='Cut pose', size=btn_size)
+        cut_pose_btn = wx.Button(btn_panel, label='Cut Pose', size=btn_size)
         cut_pose_btn.Bind(wx.EVT_BUTTON, self.on_cut_command)
         self._buttons['cut_pose_btn'] = cut_pose_btn
 
         paste_pose_btn = wx.Button(
-            btn_panel, label='Paste pose', size=btn_size)
+            btn_panel, label='Paste Pose', size=btn_size)
         paste_pose_btn.Bind(wx.EVT_BUTTON, self.on_paste_command)
         self._buttons['paste_pose_btn'] = paste_pose_btn
 
@@ -375,7 +375,7 @@ class TimelinePanel(wx.Panel):
         play_btn.Bind(wx.EVT_BUTTON, self.on_play_command)
         self._buttons['play_btn'] = play_btn
 
-        image_btn = wx.Button(btn_panel, label='Play all', size=btn_size)
+        image_btn = wx.Button(btn_panel, label='Play All', size=btn_size)
         image_btn.Bind(wx.EVT_BUTTON, self.on_image_command)
         self._buttons['image_btn'] = image_btn
         # ----

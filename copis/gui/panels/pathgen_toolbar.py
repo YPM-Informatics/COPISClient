@@ -77,10 +77,10 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddSeparator()
 
         self.Bind(wx.EVT_BUTTON, self.on_interleave_paths,
-            self.AddControl(wx.Button(self, wx.ID_ANY, label='Interleave paths', size=(110, -1))))
+            self.AddControl(wx.Button(self, wx.ID_ANY, label='Interleave Paths', size=(110, -1))))
         self.AddSpacer(8)
         self.Bind(wx.EVT_BUTTON, self.on_clear_path,
-            self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear path', size=(75, -1))))
+            self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear Path', size=(75, -1))))
 
     def on_interleave_paths(self, _) -> None:
         """On interleave paths button pressed, rearrange poses to alternate by
