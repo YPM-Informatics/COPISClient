@@ -93,6 +93,8 @@ class Device:
         """Sets the device's IsWriting flag."""
         self._is_writing = True
 
+        dispatcher.send('ntf_device_updated', device=self)
+
     def set_is_homed(self) -> None:
         """Sets the device's IsHomed flag and notifies."""
         self._is_homed = True
@@ -109,3 +111,5 @@ class Device:
             self._last_reported_on = None
 
         self._is_writing = False
+
+        dispatcher.send('ntf_device_updated', device=self)
