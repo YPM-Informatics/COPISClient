@@ -499,7 +499,7 @@ class MainWindow(wx.Frame):
                     'Save Project') == wx.ID_NO:
                 return
 
-        with wx.FileDialog(self, 'Save Project as', wildcard=self._FILES_PROJECT,
+        with wx.FileDialog(self, 'Save Project As', wildcard=self._FILES_PROJECT,
             defaultDir=self._get_default_dir(), style=wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT
             ) as file_dialog:
 
