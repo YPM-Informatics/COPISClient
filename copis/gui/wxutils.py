@@ -60,12 +60,17 @@ def create_scaled_bitmap(bmp_name: str,
     return image
 
 
-def simple_statictext(parent: Any, label: str = '', width: int = -1) -> wx.StaticText:
+def simple_statictext(
+    parent: Any,
+    label: str='',
+    width: int=-1,
+    style: Any=wx.ALIGN_LEFT) -> wx.StaticText:
+    """Helper function for a simple static text control."""
     return wx.StaticText(
         parent,
         label=label,
         size=(width, -1),
-        style=wx.ALIGN_LEFT
+        style=style
     )
 
 
