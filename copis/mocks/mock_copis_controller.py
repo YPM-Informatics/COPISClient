@@ -209,7 +209,7 @@ class MockCopisController():
                         feedrate = self._MAX_FEEDRATE / 2 \
                             if data['f'] is None else min(data['f'], self._MAX_FEEDRATE)
                     for key in pos:
-                        if data[key] is not None:
+                        if data and data[key] is not None:
                             if self._is_absolute_move_mode[action.device]:
                                 position[key] = data[key]
                             else:

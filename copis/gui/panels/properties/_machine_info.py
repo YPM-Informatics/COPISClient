@@ -142,7 +142,7 @@ class MachineInfo(wx.Panel):
         wx.CallAfter(self._update_device, device)
 
     def _on_machine_idle(self):
-        self._machine_status_caption.SetLabel('idle')
+        wx.CallAfter(self._machine_status_caption.SetLabel, 'idle')
 
     def _update_device(self, device):
         format_num = lambda n: f'{n:.3f}'
