@@ -83,7 +83,7 @@ class ThreadTargetsMixin:
                         if not machine_queried and \
                             self._connected_on >= self._machine_last_reported_on:
                             print_debug_msg(self.console,
-                            f'Machine status stale (last: {self._machine_status}).',
+                            f'Machine status stale (last: {self.machine_status}).',
                             self._is_dev_env)
 
                             self._query_machine()
@@ -99,7 +99,7 @@ class ThreadTargetsMixin:
                         self._connected_on >= self._machine_last_reported_on:
                         print_debug_msg(self.console,
                             'Machine status stale (last: {0}) for {1} seconds.'
-                                .format(self._machine_status, round(no_report_span, 2)),
+                                .format(self.machine_status, round(no_report_span, 2)),
                             self._is_dev_env)
 
                     # If no device has reported for 1 second since connecting, query the devices.
