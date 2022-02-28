@@ -56,8 +56,8 @@ class ProxygenCylinder(wx.Dialog):
             default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Start:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Start', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
@@ -67,8 +67,8 @@ class ProxygenCylinder(wx.Dialog):
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'End:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'End', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
@@ -78,7 +78,8 @@ class ProxygenCylinder(wx.Dialog):
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'Radius ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0)
         ])
 
@@ -132,9 +133,9 @@ class ProxygenAABB(wx.Dialog):
             default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
-            (simple_statictext(self, 'Lower corner', 120), 0,
+            (simple_statictext(self, 'Lower Corner', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lower_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
@@ -144,9 +145,9 @@ class ProxygenAABB(wx.Dialog):
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lower_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Upper corner', 120), 0,
+            (simple_statictext(self, 'Upper Corner', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (simple_statictext(self, ' ', 1), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.upper_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
