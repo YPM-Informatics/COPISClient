@@ -33,17 +33,6 @@ class MachineMembersMixin:
     @property
     def _is_machine_busy(self):
         return self._working_thread is not None or self._is_machine_paused
-    @property
-    def _machine_status(self):
-        status = 'unknown'
-        statuses = list(set(dvc.serial_status for dvc in self.project.devices))
-
-        if len(statuses) == 1 and statuses[0]:
-            status = statuses[0].name.lower()
-        elif len(statuses) > 1:
-            status = 'mixed'
-
-        return status
 
     @property
     def _machine_last_reported_on(self):
@@ -77,6 +66,19 @@ class MachineMembersMixin:
         actions = []
         actions.append(cmds)
         return actions
+
+    @property
+    def machine_status(self):
+        """Returns the machine's status."""
+        status = 'unknown'
+        statuses = list(set(dvc.serial_status for dvc in self.project.devices))
+
+        if len(statuses) == 1 and statuses[0]:
+            status = statuses[0].name.lower()
+        elif len(statuses) > 1:
+            status = 'mixed'
+
+        return status
 
     @property
     def is_machine_idle(self):
