@@ -44,12 +44,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._current = 'No Selection'
-        self._current_text = wx.StaticText(self, label=self._current)
-        self.Sizer.AddSpacer(16)
-        self.Sizer.Add(self._current_text, 0, wx.EXPAND |
-                    wx.LEFT | wx.RIGHT, 16)
-        self.Sizer.AddSpacer(4)
+        self.Sizer.AddSpacer(10)
 
         self._property_panels = {}
 
@@ -70,7 +65,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
-        self._property_panels['default'] = MachineInfo(self)
+        self._property_panels['machine_info'] = MachineInfo(self)
         # self._property_panels['transform'] = _PropTransform(self)
         # self._property_panels['device_info'] = _PropDeviceInfo(self)
         # self._property_panels['device_config'] = _PropDeviceConfig(self)
