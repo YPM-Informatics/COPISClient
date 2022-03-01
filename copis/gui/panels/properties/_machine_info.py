@@ -35,8 +35,9 @@ class MachineInfo(wx.Panel):
             style=s)
 
         super().__init__(parent, style=wx.BORDER_DEFAULT)
-        self._parent = parent
+
         self._core = parent.core
+        self._font = wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_BOLD)
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Machine Info'), wx.VERTICAL)
@@ -44,11 +45,7 @@ class MachineInfo(wx.Panel):
         machine_grid = wx.FlexGridSizer(3, 2, 0, 0)
         machine_grid.AddGrowableCol(1, 0)
 
-        devices = parent.core.project.devices
-        font = wx.Font(7, wx.FONTFAMILY_DEFAULT,
-            wx.FONTSTYLE_MAX, wx.FONTWEIGHT_BOLD)
-
-        device_grid = wx.FlexGridSizer(len(devices) + 1, 7, 0, 0)
+        device_grid = wx.FlexGridSizer(len(self._core.project.devices) + 1, 7, 0, 0)
 
         self._device_count_caption = get_new_text_ctrl()
         self._machine_status_caption = get_new_text_ctrl()
@@ -73,7 +70,7 @@ class MachineInfo(wx.Panel):
         status_label = simple_statictext(self, 'Status', 50, style=wx.ALIGN_RIGHT)
 
         for label in [x_label, y_label, z_label, p_label, t_label, status_label]:
-            label.Font = font
+            label.Font = self._font
 
         device_grid.AddMany([
             (0, 0),
@@ -85,7 +82,7 @@ class MachineInfo(wx.Panel):
             (status_label, 0, wx.EXPAND, 0)
         ])
 
-        for dvc in devices:
+        for dvc in self._core.project.devices:
             self._dvc_captions[dvc.device_id]['name'] = get_new_text_ctrl(
                 wx.ALIGN_LEFT|wx.TEXT_ALIGNMENT_LEFT|wx.ST_ELLIPSIZE_END)
             self._dvc_captions[dvc.device_id]['x'] = get_new_text_ctrl()
@@ -96,7 +93,7 @@ class MachineInfo(wx.Panel):
             self._dvc_captions[dvc.device_id]['status'] = get_new_text_ctrl()
 
             for key in self._dvc_captions[dvc.device_id]:
-                self._dvc_captions[dvc.device_id][key].Font = font
+                self._dvc_captions[dvc.device_id][key].Font = self._font
                 device_grid.AddMany([
                     (self._dvc_captions[dvc.device_id][key], 0, wx.EXPAND, 0),
                 ])
@@ -113,15 +110,13 @@ class MachineInfo(wx.Panel):
         self.Layout()
 
         # Bind listeners.
-        dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
-        dispatcher.connect(self._on_machine_idle, signal='ntf_machine_idle')
+        dispatcher.connect(self.on_device_updated, signal='ntf_device_updated')
+        dispatcher.connect(self.on_machine_idle, signal='ntf_machine_idle')
 
-        poll_thread = threading.Thread(
+        threading.Thread(
             target=self._poll_machine_stats,
             name='machine status polling thread',
-            daemon=True)
-
-        poll_thread.start()
+            daemon=True).start()
 
     def _poll_machine_stats(self):
         while True:
@@ -131,18 +126,12 @@ class MachineInfo(wx.Panel):
                     status = 'clear'
 
                 self._device_count_caption.SetLabel(str(len(
-                    self._parent.core.project.devices
+                    self._core.project.devices
                 )))
                 self._machine_status_caption.SetLabel(status)
                 self._machine_is_homed_caption.SetLabel(str(self._core.is_machine_homed).lower())
 
             time.sleep(.5)
-
-    def _on_device_updated(self, device):
-        wx.CallAfter(self._update_device, device)
-
-    def _on_machine_idle(self):
-        wx.CallAfter(self._machine_status_caption.SetLabel, 'idle')
 
     def _update_device(self, device):
         format_num = lambda n: f'{n:.3f}'
@@ -170,3 +159,11 @@ class MachineInfo(wx.Panel):
         self._dvc_captions[device.device_id]['status'].SetLabel(status)
         self._dvc_captions[device.device_id]['status'].SetToolTip(
             wx.ToolTip(status))
+
+    def on_device_updated(self, device):
+        """Handles device updated event."""
+        wx.CallAfter(self._update_device, device)
+
+    def on_machine_idle(self):
+        """Handles machine idle event."""
+        wx.CallAfter(self._machine_status_caption.SetLabel, 'idle')
