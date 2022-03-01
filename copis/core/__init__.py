@@ -243,11 +243,12 @@ class COPISCore(
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
 
-        last_homed_statuses = [(d.device_id, d.is_homed) for d in self.project.devices]
+        last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
+            for d in self.project.devices]
 
         self.project.start()
 
-        self._reconcile_machine(last_homed_statuses)
+        self._reconcile_machine(last_dvc_statuses)
 
     def open_project(self, path) -> Tuple:
         """Opens an existing project."""
@@ -260,7 +261,8 @@ class COPISCore(
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
 
-        last_homed_statuses = [(d.device_id, d.is_homed) for d in self.project.devices]
+        last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
+            for d in self.project.devices]
 
         resp = self.project.open(path)
         did_open, _ = resp
@@ -268,7 +270,7 @@ class COPISCore(
         if did_open:
             self._update_recent_projects(path)
 
-        self._reconcile_machine(last_homed_statuses)
+        self._reconcile_machine(last_dvc_statuses)
         return resp
 
     def save_project(self, path) -> None:
