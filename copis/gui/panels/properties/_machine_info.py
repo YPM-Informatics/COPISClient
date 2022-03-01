@@ -30,7 +30,7 @@ class MachineInfo(wx.Panel):
     """Show information related to the machine, in the properties panel."""
 
     def __init__(self, parent):
-        get_new_text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT: wx.StaticText(
+        text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT: simple_statictext(
             self, label='',
             style=s)
 
@@ -47,9 +47,9 @@ class MachineInfo(wx.Panel):
 
         device_grid = wx.FlexGridSizer(len(self._core.project.devices) + 1, 7, 0, 0)
 
-        self._device_count_caption = get_new_text_ctrl()
-        self._machine_status_caption = get_new_text_ctrl()
-        self._machine_is_homed_caption = get_new_text_ctrl()
+        self._device_count_caption = text_ctrl()
+        self._machine_status_caption = text_ctrl()
+        self._machine_is_homed_caption = text_ctrl()
 
         machine_grid.AddMany([
             (simple_statictext(self, 'Status:', 80), 0, wx.EXPAND, 0),
@@ -83,30 +83,30 @@ class MachineInfo(wx.Panel):
         ])
 
         for dvc in self._core.project.devices:
-            self._dvc_captions[dvc.device_id]['name'] = get_new_text_ctrl(
+            self._dvc_captions[dvc.device_id]['name'] = text_ctrl(
                 wx.ALIGN_LEFT|wx.TEXT_ALIGNMENT_LEFT|wx.ST_ELLIPSIZE_END)
-            self._dvc_captions[dvc.device_id]['x'] = get_new_text_ctrl()
-            self._dvc_captions[dvc.device_id]['y'] = get_new_text_ctrl()
-            self._dvc_captions[dvc.device_id]['z'] = get_new_text_ctrl()
-            self._dvc_captions[dvc.device_id]['p'] = get_new_text_ctrl()
-            self._dvc_captions[dvc.device_id]['t'] = get_new_text_ctrl()
-            self._dvc_captions[dvc.device_id]['status'] = get_new_text_ctrl()
+            self._dvc_captions[dvc.device_id]['x'] = text_ctrl()
+            self._dvc_captions[dvc.device_id]['y'] = text_ctrl()
+            self._dvc_captions[dvc.device_id]['z'] = text_ctrl()
+            self._dvc_captions[dvc.device_id]['p'] = text_ctrl()
+            self._dvc_captions[dvc.device_id]['t'] = text_ctrl()
+            self._dvc_captions[dvc.device_id]['status'] = text_ctrl()
 
             for key in self._dvc_captions[dvc.device_id]:
                 self._dvc_captions[dvc.device_id][key].Font = self._font
-                device_grid.AddMany([
-                    (self._dvc_captions[dvc.device_id][key], 0, wx.EXPAND, 0),
-                ])
+                device_grid.Add(self._dvc_captions[dvc.device_id][key], 0, wx.EXPAND, 0)
 
             self._update_device(dvc)
 
-        box_sizer.Add(machine_grid, 0, wx.ALL|wx.EXPAND, 4)
+        box_sizer.Add(machine_grid, 0,
+            wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
         box_sizer.AddSpacer(5)
         box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
         box_sizer.AddSpacer(5)
-        box_sizer.Add(device_grid, 0, wx.ALL|wx.EXPAND, 4)
+        box_sizer.Add(device_grid, 0,
+            wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
 
-        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
+        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
         # Bind listeners.

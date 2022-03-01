@@ -21,6 +21,7 @@ import wx.lib.scrolledpanel as scrolled
 # from pydispatch import dispatcher
 
 from ._machine_info import MachineInfo
+from ._path_info import PathInfo
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -28,7 +29,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         current selection."""
 
     _CONFIG = {
-        'Default': ['machine_info']
+        'Default': ['path_info', 'machine_info']
         # 'Device': ['device_info', 'device_config'],
         # 'Point': ['transform'],
         # 'Object': ['default']
@@ -65,11 +66,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
-        self._property_panels['machine_info'] = MachineInfo(self)
         # self._property_panels['transform'] = _PropTransform(self)
         # self._property_panels['device_info'] = _PropDeviceInfo(self)
         # self._property_panels['device_config'] = _PropDeviceConfig(self)
         # self._property_panels['quick_actions'] = _PropQuickActions(self)
+        self._property_panels['path_info'] = PathInfo(self)
+        self._property_panels['machine_info'] = MachineInfo(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 0)
