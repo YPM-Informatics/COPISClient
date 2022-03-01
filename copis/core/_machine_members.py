@@ -226,18 +226,15 @@ class MachineMembersMixin:
         actions.append(step_2)
         return actions
 
-    def _reconcile_machine(self, last_homed_statuses):
-        if last_homed_statuses and any(s[1] for s in last_homed_statuses):
-            self._query_machine()
+    def _reconcile_machine(self, dvc_statuses):
+        for status in dvc_statuses:
+            if status:
+                did, is_homed, resp = status
+                device = self._get_device(did)
 
-        for dvc in self.project.devices:
-            status = next(filter(
-                lambda s, d = dvc: s[0] == d.device_id, last_homed_statuses),
-                None)
-
-            if status and status[1]:
-                self._get_device(status[0]).set_is_homed()
-
+                if is_homed and device and resp:
+                    device.set_serial_response(resp)
+                    device.set_is_homed()
 
     def set_ready(self):
         """Initializes the gantries to their current positions."""
