@@ -73,7 +73,7 @@ class PathInfo(wx.Panel):
         self._box_sizer.Add(device_grid, 0,
             wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
 
-        self.Sizer.Add(self._box_sizer, 0, wx.ALL |wx.EXPAND, 5)
+        self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
         self._toggle_show()
