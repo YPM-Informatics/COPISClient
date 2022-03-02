@@ -64,14 +64,20 @@ def simple_statictext(
     parent: Any,
     label: str='',
     width: int=-1,
-    style: Any=wx.ALIGN_LEFT) -> wx.StaticText:
+    style: Any=wx.ALIGN_LEFT,
+    font: wx.Font=None) -> wx.StaticText:
     """Helper function for a simple static text control."""
-    return wx.StaticText(
+    text_ctrl = wx.StaticText(
         parent,
         label=label,
         size=(width, -1),
         style=style
     )
+
+    if font:
+        text_ctrl.Font = font
+
+    return text_ctrl
 
 
 class FancyTextCtrl(wx.TextCtrl):
