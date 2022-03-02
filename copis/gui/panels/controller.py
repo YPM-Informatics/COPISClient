@@ -296,7 +296,7 @@ class ControllerPanel(scrolled.ScrolledPanel):
         self.pt_step_ctrl = FancyTextCtrl(jog_sizer.StaticBox, num_value=5, size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='pt_step', max_precision=3,
             default_unit=pt_unit, unit_conversions=pt_units)
-        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="1000", size=(48, -1),
+        self.feed_rate_ctrl = wx.TextCtrl(jog_sizer.StaticBox, value="2500", size=(48, -1),
             style=wx.TE_PROCESS_ENTER, name='feed_rate')
 
         step_feedrate_grid.AddMany([
