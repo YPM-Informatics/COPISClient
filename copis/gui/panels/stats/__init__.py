@@ -36,7 +36,7 @@ class StatsPanel(scrolled.ScrolledPanel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._property_panels = {}
+        self._stats_panels = {}
         self._font = wx.Font(7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_BOLD)
 
         self.build_panels()
@@ -55,19 +55,19 @@ class StatsPanel(scrolled.ScrolledPanel):
     def _sync_path_stats_panel(self):
         is_shown = bool(self.core.project.pose_sets)
 
-        if self._property_panels['path_stats'].IsShown() != is_shown:
-            self._property_panels['path_stats'].Show(is_shown)
+        if self._stats_panels['path_stats'].IsShown() != is_shown:
+            self._stats_panels['path_stats'].Show(is_shown)
             self.Sizer.RepositionChildren(self.Sizer.MinSize)
 
             self.parent.update_right_dock()
 
     def build_panels(self) -> None:
         """Initialize all stats panels."""
-        self._property_panels['path_stats'] = PathStats(self)
-        self._property_panels['path_stats'].Hide()
-        self._property_panels['machine_stats'] = MachineStats(self)
+        self._stats_panels['path_stats'] = PathStats(self)
+        self._stats_panels['path_stats'].Hide()
+        self._stats_panels['machine_stats'] = MachineStats(self)
 
-        for _, panel in self._property_panels.items():
+        for _, panel in self._stats_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
 
     def on_path_changed(self):
