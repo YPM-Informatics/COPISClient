@@ -35,6 +35,7 @@ from .panels.pathgen_toolbar import PathgenToolbar
 from .panels.properties import PropertiesPanel
 from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
+from .panels.stats import StatsPanel
 from .pref_frame import PreferenceFrame
 from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
 from .wxutils import create_scaled_bitmap, show_msg_dialog, show_prompt_dialog
@@ -53,6 +54,7 @@ class MainWindow(wx.Frame):
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
         viewport_panel: A pointer to the viewport panel.
+        stats_panel: A pointer to the stats panel.
         machine_toolbar: A pointer to the machine toolbar.
         pathgen_toolbar: A pointer to the pathgen toolbar.
     """
@@ -61,6 +63,9 @@ class MainWindow(wx.Frame):
     _FILES_LEGACY_ACTIONS = 'COPIS legacy actions files (*.copis)|*.copis'
     _FILES_PROJECT = 'COPIS project files (*.cproj)|*.cproj'
     _COPIS_WEBSITE = 'http://www.copis3d.org/'
+
+    _BOTTOM_PANE_MIN_SIZE = wx.Size(280, 150)
+    _RIGHT_PANE_MIN_SIZE = wx.Size(280, 145)
 
     def __init__(self, chamber_dimensions, *args, **kwargs) -> None:
         """Initializes MainWindow with constructors."""
@@ -135,6 +140,11 @@ class MainWindow(wx.Frame):
     def viewport_panel(self) -> ViewportPanel:
         """Returns the viewport panel."""
         return self.panels['viewport']
+
+    @property
+    def stats_panel(self) -> StatsPanel:
+        """Returns the stats panel."""
+        return self.panels['stats']
 
     @property
     def machine_toolbar(self) -> MachineToolbar:
@@ -373,6 +383,10 @@ class MainWindow(wx.Frame):
             'Show/hide viewport window', wx.ITEM_CHECK)
         self.menuitems['viewport'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_viewport_panel, self.menuitems['viewport'])
+        self.menuitems['stats'] = window_menu.Append(wx.ID_ANY, 'Statistics',
+            'Show/hide statistics window', wx.ITEM_CHECK)
+        self.menuitems['stats'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_stats_panel, self.menuitems['stats'])
         window_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
@@ -648,6 +662,7 @@ class MainWindow(wx.Frame):
         self.panels['timeline'] = TimelinePanel(self)
         self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
+        self.panels['stats'] = StatsPanel(self)
         self.panels['machine_toolbar'] = MachineToolbar(self)
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
 
@@ -658,27 +673,30 @@ class MainWindow(wx.Frame):
             Dock().Center().MaximizeButton().MinimizeButton().DefaultPane().MinSize(350, 250))
 
         # Add console, timeline panel.
-        bottom_pane_size = wx.Size(280, 150)
-        right_pane_size = wx.Size(280, 200)
         self._mgr.AddPane(
             self.panels['console'],
             aui.AuiPaneInfo().Name('console').Caption('Console').
-            Dock().Bottom().Position(0).Layer(0).MinSize(bottom_pane_size).Show(True))
+            Dock().Bottom().Position(0).Layer(0).MinSize(self._BOTTOM_PANE_MIN_SIZE).Show(True))
         self._mgr.AddPane(
             self.panels['timeline'],
             aui.AuiPaneInfo().Name('timeline').Caption('Timeline').
-            Dock().Bottom().Position(1).Layer(0).MinSize(bottom_pane_size).Show(True),
+            Dock().Bottom().Position(1).Layer(0).MinSize(self._BOTTOM_PANE_MIN_SIZE).Show(True),
             target=self._mgr.GetPane('console'))
 
         # Add properties and controller panel.
         self._mgr.AddPane(
             self.panels['properties'],
             aui.AuiPaneInfo().Name('properties').Caption('Properties').
-            Dock().Right().Position(0).Layer(1).MinSize(right_pane_size).Show(True))
+            Dock().Right().Position(0).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(True))
         self._mgr.AddPane(
             self.panels['controller'],
             aui.AuiPaneInfo().Name('controller').Caption('Controller').
-            Dock().Right().Position(1).Layer(1).MinSize(right_pane_size).Show(True))
+            Dock().Right().Position(1).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(True))
+        self._mgr.AddPane(
+            self.panels['stats'],
+            aui.AuiPaneInfo().Name('stats').Caption('Statistics').
+            Dock().Bottom().Right().Position(2).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE)
+            .Show(True))
 
         # Set first tab of all auto notebooks as the one selected.
         for notebook in self._mgr.GetNotebooks():
@@ -695,6 +713,30 @@ class MainWindow(wx.Frame):
             self.panels['pathgen_toolbar'],
             aui.AuiPaneInfo().Name('pathgen_toolbar').Caption('Pathgen Toolbar').
             ToolbarPane().BottomDockable(False).Top().Layer(10))
+
+        self._mgr.Update()
+        self.update_right_dock()
+
+    def update_right_dock(self) -> None:
+        """Redraws the right dock pane to fit updated children's contents."""
+        panels = [self.properties_panel, self.controller_panel, self.stats_panel]
+        total_height = sum([p.GetVirtualSize()[1] for p in panels])
+        stats_height = self.stats_panel.Sizer.ComputeFittingClientSize(self.stats_panel)[1]
+        min_size = (self._RIGHT_PANE_MIN_SIZE.width, stats_height)
+
+        stats_proportion = 100 * stats_height / total_height
+        other_proportion = (100 - stats_proportion) / 2
+
+        stats_proportion = round(stats_proportion, 1)
+        other_proportion = round(other_proportion, 1)
+
+        self._mgr.GetPane(self.properties_panel).MinSize(min_size)
+        self._mgr.GetPane(self.controller_panel).MinSize(min_size)
+        self._mgr.GetPane(self.stats_panel).MinSize(min_size)
+
+        self._mgr.GetPane(self.properties_panel).dock_proportion = other_proportion
+        self._mgr.GetPane(self.controller_panel).dock_proportion = other_proportion
+        self._mgr.GetPane(self.stats_panel).dock_proportion = stats_proportion
 
         self._mgr.Update()
 
@@ -738,6 +780,10 @@ class MainWindow(wx.Frame):
         """Show or hide viewport panel."""
         self._mgr.ShowPane(self.viewport_panel, event.IsChecked())
 
+    def update_stats_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide stats panel."""
+        self._mgr.ShowPane(self.stats_panel, event.IsChecked())
+
     def on_pane_close(self, event: aui.framemanager.AuiManagerEvent) -> None:
         """Update menu items in the Window menu when a pane has been closed."""
         pane = event.GetPane()
@@ -758,8 +804,6 @@ class MainWindow(wx.Frame):
         #     pane.window.on_destroy()
         #     self.DetachPane(pane.window)
         #     pane.window.Destroy()
-
-        print('hidden', pane.name)
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""

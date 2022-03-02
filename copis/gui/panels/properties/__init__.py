@@ -49,8 +49,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         self._property_panels = {}
 
-        self.init_all_property_panels()
-        self.update_to_selected('Default')
+        # self.init_all_property_panels()
+        # self.update_to_selected('Default')
 
         self.SetupScrolling(scroll_x=False)
         self.Layout()
