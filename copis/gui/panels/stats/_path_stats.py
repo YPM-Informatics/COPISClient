@@ -20,10 +20,7 @@ import wx
 
 from pydispatch import dispatcher
 
-from copis.classes import Action
-from copis.globals import ActionType
 from copis.gui.wxutils import simple_statictext
-from copis.helpers import is_number
 
 
 class PathStats(wx.Panel):
