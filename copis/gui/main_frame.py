@@ -822,3 +822,11 @@ class MainWindow(wx.Frame):
 
     def __del__(self) -> None:
         pass
+
+    def update_properties_panel_title(self, title: str) -> None:
+        """Updates the properties panel's title."""
+        if title:
+            title = title.title()
+
+            self._mgr.GetPane(self.properties_panel).Caption(title)
+            self._mgr.Update()
