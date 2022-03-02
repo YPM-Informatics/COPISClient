@@ -34,17 +34,15 @@ class ViewportPanel(wx.Panel):
         axes_shown: A boolean indicating if the canvas axes is shown or not.
     """
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Initialize ViewportPanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT|wx.NO_FULL_REPAINT_ON_RESIZE)
-        self.parent = parent
-        self.core = self.parent.core
+        self.core = parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        self._selected_cam = NotImplemented
         self._build_dimensions = parent.chamber_dimensions
-        self.zoom_slider = None
+        self._zoom_slider = None
 
         self._glcanvas = GLCanvas3D(
             self,
@@ -72,10 +70,10 @@ class ViewportPanel(wx.Panel):
         navbar_left_sizer.Add(wx.StaticText(navbar, wx.ID_ANY, 'Zoom'),
             0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 5)
 
-        self.zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self._glcanvas.zoom_min * 10,
+        self._zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self._glcanvas.zoom_min * 10,
             self._glcanvas.zoom_max * 10, size=(150, -1), style=wx.SL_HORIZONTAL)
-        self.zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
-        navbar_left_sizer.Add(self.zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5)
+        self._zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
+        navbar_left_sizer.Add(self._zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5)
 
         grid_check = wx.CheckBox(navbar, label='Show &plane', name='grid')
         grid_check.Value = True
@@ -107,7 +105,7 @@ class ViewportPanel(wx.Panel):
             self.grid_shown = event.Int
         elif name == 'axes':
             self.axes_shown = event.Int
-        else:  # name == 'bbox'
+        else:
             self.bbox_shown = event.Int
 
     def set_perspective_projection(self, _: wx.CommandEvent) -> None:
@@ -126,7 +124,7 @@ class ViewportPanel(wx.Panel):
 
     def set_zoom_slider(self, value: float) -> None:
         """Update slider value."""
-        self.zoom_slider.Value = value * 10
+        self._zoom_slider.Value = value * 10
 
     # --------------------------------------------------------------------------
     # Accessor methods
