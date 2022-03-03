@@ -369,7 +369,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
         self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller',
             'Show/hide controller window', wx.ITEM_CHECK)
-        self.menuitems['controller'].Check(True)
+        self.menuitems['controller'].Check(False)
         self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties',
             'Show/hide camera properties window', wx.ITEM_CHECK)
@@ -691,7 +691,7 @@ class MainWindow(wx.Frame):
         self._mgr.AddPane(
             self.panels['controller'],
             aui.AuiPaneInfo().Name('controller').Caption('Controller').
-            Dock().Right().Position(1).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(True))
+            Dock().Right().Position(1).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(False))
         self._mgr.AddPane(
             self.panels['stats'],
             aui.AuiPaneInfo().Name('stats').Caption('Statistics').
@@ -719,23 +719,21 @@ class MainWindow(wx.Frame):
 
     def update_right_dock(self) -> None:
         """Redraws the right dock pane to fit updated children's contents."""
-        panels = [self.properties_panel, self.controller_panel, self.stats_panel]
+        panels = [self.properties_panel, self.stats_panel]
         total_height = sum([p.GetVirtualSize()[1] for p in panels])
         stats_height = self.stats_panel.Sizer.ComputeFittingClientSize(self.stats_panel)[1]
         min_size = (self._RIGHT_PANE_MIN_SIZE.width, stats_height)
 
         stats_proportion = 100 * stats_height / total_height
-        other_proportion = (100 - stats_proportion) / 2
+        other_proportion = (100 - stats_proportion) / (len(panels) / 2)
 
         stats_proportion = round(stats_proportion, 1)
         other_proportion = round(other_proportion, 1)
 
         self._mgr.GetPane(self.properties_panel).MinSize(min_size)
-        self._mgr.GetPane(self.controller_panel).MinSize(min_size)
         self._mgr.GetPane(self.stats_panel).MinSize(min_size)
 
         self._mgr.GetPane(self.properties_panel).dock_proportion = other_proportion
-        self._mgr.GetPane(self.controller_panel).dock_proportion = other_proportion
         self._mgr.GetPane(self.stats_panel).dock_proportion = stats_proportion
 
         self._mgr.Update()
