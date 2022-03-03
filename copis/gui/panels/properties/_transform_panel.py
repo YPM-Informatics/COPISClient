@@ -18,7 +18,8 @@
 import wx
 from copis.globals import Point5
 
-from copis.gui.wxutils import EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, simple_statictext
+from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
+    simple_statictext)
 from copis.helpers import dd_to_rad, rad_to_dd, xyz_units, pt_units
 
 
@@ -37,8 +38,8 @@ class TransformPanel(wx.Panel):
         self._z: float = 0.0
         self._p: float = 0.0
         self._t: float = 0.0
-        self._xyz_step: float = 1.0
-        self._pt_step: float = 1.0
+        self._xyz_step: float = 50.0
+        self._pt_step: float = 5.0
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
@@ -46,33 +47,35 @@ class TransformPanel(wx.Panel):
         self.init_gui()
 
         # Bind events.
-        for ctrl in (self._x_ctrl, self._y_ctrl, self._z_ctrl, self._p_ctrl, self._t_ctrl):#,
-            # self.xyz_step_ctrl, self.pt_step_ctrl):
+        for ctrl in (self._x_ctrl, self._y_ctrl, self._z_ctrl, self._p_ctrl, self._t_ctrl,
+            self._xyz_step_ctrl, self._pt_step_ctrl):
             ctrl.Bind(EVT_FANCY_TEXT_UPDATED_EVENT, self.on_text_update)
 
     def _add_freestyle_transform_controls(self):
-        grid = wx.FlexGridSizer(3, 4, 0, 0)
-        grid.AddGrowableCol(1, 0)
-        grid.AddGrowableCol(3, 0)
+        grid = wx.FlexGridSizer(3, 5, 0, 0)
+        grid.AddGrowableCol(2, 0)
 
         grid.AddMany([
-            (simple_statictext(self, f'X ({self._XYZ_UNIT}):', 45), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 0),
-            (self._x_ctrl, 0, wx.EXPAND|wx.RIGHT, 60),
-            (simple_statictext(self, f'Pan ({self._PT_UNIT}):', 50), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 30),
-            (self._p_ctrl, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0),
+            (simple_statictext(self, f'X ({self._XYZ_UNIT}):', 50), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._x_ctrl, 0, wx.EXPAND, 0),
+            (10, 0),
+            (simple_statictext(self, f'P ({self._PT_UNIT}):', 50), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._p_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Y ({self._XYZ_UNIT}):', 45), 0,
-                wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 0),
-            (self._y_ctrl, 0, wx.EXPAND|wx.RIGHT, 60),
-            (simple_statictext(self, f'Tilt ({self._PT_UNIT}):', 50), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 30),
-            (self._t_ctrl, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0),
+            (simple_statictext(self, f'Y ({self._XYZ_UNIT}):', 50), 0,
+                wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._y_ctrl, 0, wx.EXPAND, 0),
+            (10, 0),
+            (simple_statictext(self, f'T ({self._PT_UNIT}):', 50), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._t_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Z ({self._XYZ_UNIT}):', 45), 0,
-                wx.EXPAND | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 0),
-            (self._z_ctrl, 0, wx.EXPAND|wx.RIGHT, 60),
+            (simple_statictext(self, f'Z ({self._XYZ_UNIT}):', 50), 0,
+                wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._z_ctrl, 0, wx.EXPAND, 0),
+            (10, 0),
             (0, 0),
             (0, 0)
         ])
@@ -80,63 +83,110 @@ class TransformPanel(wx.Panel):
         self._box_sizer.Add(grid, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
 
     def _add_step_transform_controls(self):
-        pass
+        step_sizer = wx.BoxSizer(wx.VERTICAL)
+        step_size_grid = wx.FlexGridSizer(4, 2, 0, 0)
+        step_size_grid.AddGrowableCol(0, 2)
 
-    def init_gui(self) -> None:
-        """Initialize gui elements."""
-        self._x_ctrl = FancyTextCtrl(
-            self, size=(80, -1), name='x', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
-        self._y_ctrl = FancyTextCtrl(
-            self, size=(80, -1), name='y', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
-        self._z_ctrl = FancyTextCtrl(
-            self, size=(80, -1), name='z', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
-        self._p_ctrl = FancyTextCtrl(
-            self, size=(80, -1), name='p', default_unit=self._PT_UNIT, unit_conversions=pt_units)
-        self._t_ctrl = FancyTextCtrl(
-            self, size=(80, -1), name='t', default_unit=self._PT_UNIT, unit_conversions=pt_units)
+        feed_rate_ctrl = wx.TextCtrl(self, value="2500", size=(80, -1), name='feed_rate')
 
-        self._add_freestyle_transform_controls()
-        self._add_step_transform_controls()
+        step_size_grid.AddMany([
+            (simple_statictext(self, 'Increments', 180), 0,
+                wx.EXPAND, 0),
+            (0, 0),
+            (simple_statictext(self, f'XYZ ({self._XYZ_UNIT}):', 80), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+            (self._xyz_step_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, f'PT ({self._PT_UNIT}):', 80), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+            (self._pt_step_ctrl, 0, wx.EXPAND, 0),
+            (simple_statictext(self, 'Feed Rate (<unit>/s):', 80), 0,
+                wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
+            (feed_rate_ctrl, 0, wx.EXPAND, 0),
+        ])
 
-        self._box_sizer.AddSpacer(5)
-        self._box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
-        self._box_sizer.AddSpacer(5)
+        step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
+        step_sizer.AddSpacer(8)
+        font = wx.Font(
+            8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_NORMAL)
 
-        self._step_sizer = wx.BoxSizer(wx.VERTICAL)
+        x_pos_btn = wx.Button(self, label='X', size=(20, -1), name='x+')
+        x_pos_btn.SetBitmap(create_scaled_bitmap('arrow_e', 15), wx.RIGHT)
+        x_pos_btn.SetBitmapMargins(-20, 0)
+        x_pos_btn.Font = font
+        x_neg_btn = wx.Button(self, label='X', size=(20, -1), name='x-')
+        x_neg_btn.SetBitmap(create_scaled_bitmap('arrow_w', 15))
+        x_neg_btn.Font = font
+        y_pos_btn = wx.Button(self, label='Y', size=(20, -1), name='y+')
+        y_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
+        y_pos_btn.SetBitmapMargins(-20, 0)
+        y_pos_btn.Font = font
+        y_neg_btn = wx.Button(self, label='Y', size=(20, -1), name='y-')
+        y_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        y_neg_btn.Font = font
+        z_pos_btn = wx.Button(self, label='Z', size=(20, -1), name='z+')
+        z_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
+        z_pos_btn.Font = font
+        z_neg_btn = wx.Button(self, label='Z', size=(20, -1), name='z-')
+        z_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        z_neg_btn.Font = font
+        p_pos_btn = wx.Button(self, label='P', size=(20, -1), name='p+')
+        p_pos_btn.SetBitmap(create_scaled_bitmap('arrow_w', 15), wx.LEFT)
+        p_pos_btn.Font = font
+        p_neg_btn = wx.Button(self, label='P', size=(20, -1), name='p-')
+        p_neg_btn.SetBitmap(create_scaled_bitmap('arrow_e', 15), wx.RIGHT)
+        p_neg_btn.Font = font
+        t_pos_btn = wx.Button(self, label='T', size=(20, -1), name='t+')
+        t_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
+        t_pos_btn.Font = font
+        t_neg_btn = wx.Button(self, label='T', size=(20, -1), name='t-')
+        t_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        t_neg_btn.Font = font
+        arrow_nw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_nw', 20),
+            size=(24, 24), name='nw')
+        arrow_ne_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_ne', 20),
+            size=(24, 24), name='ne')
+        arrow_sw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_sw', 20),
+            size=(24, 24), name='sw')
+        arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 20),
+            size=(24, 24), name='se')
 
-        # self.xyz_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.xyz_step,
-        #     name='xyz_step', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
-        # self.pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.pt_step,
-        #     name='pt_step', default_unit=self._PT_UNIT, unit_conversions=pt_units)
+        for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
+                    t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn,
+                    arrow_ne_btn, arrow_nw_btn, arrow_se_btn, arrow_sw_btn):
+            btn.Bind(wx.EVT_BUTTON, self.on_step_button)
 
-        # step_size_grid = wx.FlexGridSizer(2, 2, 4, 8)
-        # step_size_grid.AddGrowableCol(1, 0)
+        xyzpt_grid = wx.FlexGridSizer(6, 4, 0, 0)
+        for col in (0, 1, 2, 3):
+            xyzpt_grid.AddGrowableCol(col)
 
-        # step_size_grid.AddMany([
-        #     (simple_statictext(self, f'XYZ step ({self._XYZ_UNIT}):', 180), 0,
-        #         wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-        #     (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
-        #     (simple_statictext(self, f'PT step ({self._PT_UNIT}):', 180), 0,
-        #         wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-        #     (self.pt_step_ctrl, 0, wx.EXPAND, 0),
-        # ])
+        xyzpt_grid.AddMany([
+            (arrow_nw_btn, 0, wx.EXPAND, 0),
+            (y_pos_btn, 0, wx.EXPAND, 0),
+            (arrow_ne_btn, 0, wx.EXPAND, 0),
+            (z_pos_btn, 0, wx.EXPAND, 0),
 
-        # self._step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
-        # self._step_sizer.AddSpacer(8)
+            (x_neg_btn, 0, wx.EXPAND, 0),
+            (0, 38),
+            (x_pos_btn, 0, wx.EXPAND, 0),
+            (0, 0),
 
-        # x_pos_btn = wx.Button(self, label='X+', size=(20, -1), name='x+')
-        # x_neg_btn = wx.Button(self, label='X-', size=(20, -1), name='x-')
-        # y_pos_btn = wx.Button(self, label='Y+', size=(20, -1), name='y+')
-        # y_neg_btn = wx.Button(self, label='Y-', size=(20, -1), name='y-')
-        # z_pos_btn = wx.Button(self, label='Z+', size=(20, -1), name='z+')
-        # z_neg_btn = wx.Button(self, label='Z-', size=(20, -1), name='z-')
-        # p_pos_btn = wx.Button(self, label='P+', size=(20, -1), name='p+')
-        # p_neg_btn = wx.Button(self, label='P-', size=(20, -1), name='p-')
-        # t_pos_btn = wx.Button(self, label='T+', size=(20, -1), name='t+')
-        # t_neg_btn = wx.Button(self, label='T-', size=(20, -1), name='t-')
-        # for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
-        #             t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn):
-        #     btn.Bind(wx.EVT_BUTTON, self.on_step_button)
+            (arrow_sw_btn, 0, wx.EXPAND, 0),
+            (y_neg_btn, 0, wx.EXPAND, 0),
+            (arrow_se_btn, 0, wx.EXPAND, 0),
+            (z_neg_btn, 0, wx.EXPAND, 0),
+
+            (0, 5), (0, 0), (0, 0), (0, 0),
+
+            (0, 0),
+            (t_pos_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+            (0, 0),
+
+            (p_pos_btn, 0, wx.EXPAND, 0),
+            (t_neg_btn, 0, wx.EXPAND, 0),
+            (p_neg_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+        ])
 
         # step_xyzpt_grid = wx.GridBagSizer()
         # step_xyzpt_grid.AddMany([
@@ -154,10 +204,10 @@ class TransformPanel(wx.Panel):
 
         #     (4, 0, wx.GBPosition(0, 6)),    # vertical spacer
 
-        #     (p_neg_btn, wx.GBPosition(0, 7), wx.GBSpan(2, 1), wx.EXPAND, 0),
+        #     (p_pos_btn, wx.GBPosition(0, 7), wx.GBSpan(2, 1), wx.EXPAND, 0),
         #     (t_pos_btn, wx.GBPosition(0, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
         #     (t_neg_btn, wx.GBPosition(1, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (p_pos_btn, wx.GBPosition(0, 9), wx.GBSpan(2, 1), wx.EXPAND, 0),
+        #     (p_neg_btn, wx.GBPosition(0, 9), wx.GBSpan(2, 1), wx.EXPAND, 0),
         # ])
 
         # for col in (1, 3, 7, 9):
@@ -165,9 +215,36 @@ class TransformPanel(wx.Panel):
         # for col in (2, 5, 8):
         #     step_xyzpt_grid.AddGrowableCol(col, 3)
 
-        # self._step_sizer.Add(step_xyzpt_grid, 0, wx.EXPAND, 0)
+        step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
-        # box_sizer.Add(self._step_sizer, 0, wx.ALL|wx.EXPAND, 4)
+        self._box_sizer.Add(step_sizer, 0, wx.ALL|wx.EXPAND, 5)
+
+
+    def init_gui(self) -> None:
+        """Initialize gui elements."""
+        self._x_ctrl = FancyTextCtrl(
+            self, size=(80, -1), name='x', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+        self._y_ctrl = FancyTextCtrl(
+            self, size=(80, -1), name='y', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+        self._z_ctrl = FancyTextCtrl(
+            self, size=(80, -1), name='z', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+        self._p_ctrl = FancyTextCtrl(
+            self, size=(80, -1), name='p', default_unit=self._PT_UNIT, unit_conversions=pt_units)
+        self._t_ctrl = FancyTextCtrl(
+            self, size=(80, -1), name='t', default_unit=self._PT_UNIT, unit_conversions=pt_units)
+
+        self._xyz_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.xyz_step,
+            name='xyz_step', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+        self._pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.pt_step,
+            name='pt_step', default_unit=self._PT_UNIT, unit_conversions=pt_units)
+
+        self._add_freestyle_transform_controls()
+
+        self._box_sizer.AddSpacer(5)
+        self._box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
+        self._box_sizer.AddSpacer(5)
+
+        self._add_step_transform_controls()
 
         self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
@@ -301,7 +378,7 @@ class TransformPanel(wx.Panel):
     @xyz_step.setter
     def xyz_step(self, value: float) -> None:
         self._xyz_step = value
-        self.xyz_step_ctrl.num_value = value
+        self._xyz_step_ctrl.num_value = value
 
     @property
     def pt_step(self) -> float:
@@ -310,4 +387,4 @@ class TransformPanel(wx.Panel):
     @pt_step.setter
     def pt_step(self, value: float) -> None:
         self._pt_step = value
-        self.pt_step_ctrl.num_value = value
+        self._pt_step_ctrl.num_value = value

@@ -100,7 +100,7 @@ class MachineMembersMixin:
     #     pos2 = Point5(*[float(arg[1]) for arg in device_360[1].args])
 
     #     # The right formula for this is new_x = x + (dist * cos(pan)) &
-    #     # new_y = y + (dist * cos(pan)). but since our pan angle is measured
+    #     # new_y = y + (dist * sin(pan)). but since our pan angle is measured
     #     # relative to the positive y axis, we have to flip sine and cosine.
     #     x1 = sanitize_number(pos1.x + (dist * sin(dd_to_rad(pos1.p))))
     #     y1 = sanitize_number(pos1.y + (dist * cos(dd_to_rad(pos1.p))))

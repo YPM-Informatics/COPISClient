@@ -194,7 +194,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             #     if abs(next_pan - last_pan) > 180 and dist > 0:
             #         # Back off
             #         # The right formula for this is new_x = x + (dist * cos(pan)) &
-            #         # new_y = y + (dist * cos(pan)). but since our pan angle is measured
+            #         # new_y = y + (dist * sin(pan)). but since our pan angle is measured
             #         # relative to the positive y axis, we have to flip sine and cosine.
             #         next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
 
