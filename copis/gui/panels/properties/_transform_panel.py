@@ -15,12 +15,16 @@
 
 """COPIS transform properties panel."""
 
-import wx
-from copis.globals import Point5
+from math import cos, sin
 
+import wx
+
+from glm import vec3
+
+from copis.globals import Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
-from copis.helpers import dd_to_rad, rad_to_dd, xyz_units, pt_units
+from copis.helpers import dd_to_rad, get_heading, rad_to_dd, sanitize_number, xyz_units, pt_units
 
 
 class TransformPanel(wx.Panel):
@@ -106,6 +110,7 @@ class TransformPanel(wx.Panel):
 
         step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
         step_sizer.AddSpacer(5)
+        btn_size = (30, 30)
         font = wx.Font(
             7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_SEMIBOLD)
 
@@ -147,13 +152,25 @@ class TransformPanel(wx.Panel):
             size=(24, 24), name='sw')
         arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 15),
             size=(24, 24), name='se')
+        target_closer_btn = wx.BitmapButton(self,
+            bitmap=create_scaled_bitmap('target_closer', 24),
+            size=btn_size, name='closer')
+        re_target_btn = wx.BitmapButton(self,
+            bitmap=create_scaled_bitmap('center_focus_strong', 24),
+            size=btn_size, name='target')
+        target_farther_btn = wx.BitmapButton(self,
+            bitmap=create_scaled_bitmap('target_farther', 24),
+            size=btn_size, name='farther')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
                     t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn,
                     arrow_ne_btn, arrow_nw_btn, arrow_se_btn, arrow_sw_btn):
             btn.Bind(wx.EVT_BUTTON, self.on_step_button)
 
-        xyzpt_grid = wx.FlexGridSizer(6, 4, 0, 0)
+        for btn in (target_closer_btn, target_farther_btn, re_target_btn):
+            btn.Bind(wx.EVT_BUTTON, self.on_target_button)
+
+        xyzpt_grid = wx.FlexGridSizer(8, 4, 0, 0)
         for col in (0, 1, 2, 3):
             xyzpt_grid.AddGrowableCol(col)
 
@@ -164,7 +181,7 @@ class TransformPanel(wx.Panel):
             (z_pos_btn, 0, wx.EXPAND, 0),
 
             (x_neg_btn, 0, wx.EXPAND, 0),
-            (0, 31),
+            btn_size,
             (x_pos_btn, 0, wx.EXPAND, 0),
             (0, 0),
 
@@ -183,6 +200,13 @@ class TransformPanel(wx.Panel):
             (p_pos_btn, 0, wx.EXPAND, 0),
             (t_neg_btn, 0, wx.EXPAND, 0),
             (p_neg_btn, 0, wx.EXPAND, 0),
+            (0, 0),
+
+            (0, 5), (0, 0), (0, 0), (0, 0),
+
+            (target_closer_btn, 0, wx.EXPAND, 0),
+            (re_target_btn, 0, wx.EXPAND, 0),
+            (target_farther_btn, 0, wx.EXPAND, 0),
             (0, 0),
         ])
 
@@ -218,6 +242,40 @@ class TransformPanel(wx.Panel):
 
         self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
+
+    def on_target_button(self, event: wx.CommandEvent) -> None:
+        """On EVT_BUTTONs, target accordingly."""
+        button = event.EventObject
+        task = button.Name
+
+        if task == 'target':
+            print('Do targetting')
+        else:
+            dist = self.xyz_step
+            if task == 'closer':
+                dist = -1 * dist
+
+            # The right formula for this is new_x = x + (dist * cos(pan)) &
+            # new_y = y + (dist * sin(pan)). but since our pan angle is measured
+            # relative to the positive y axis, we have to flip sine and cosine.
+            pan = dd_to_rad(self.p)
+            tilt = dd_to_rad(self.t)
+            end_x = sanitize_number(self.x + (dist * sin(pan)))
+            end_y = sanitize_number(self.y + (dist * cos(pan)))
+            end_z = sanitize_number(self.z - (dist * sin(tilt)))
+
+            end_pan, end_tilt = get_heading(
+                vec3(end_x, end_y, end_z), vec3())
+
+            self.x = end_x
+            self.y = end_y
+            self.z = end_z
+            self.p = rad_to_dd(end_pan)
+            self.t = rad_to_dd(end_tilt)
+
+            self.parent.core.update_selected_pose_position([
+                end_x, end_y, end_z, end_pan, end_tilt])
+
 
     def on_step_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
