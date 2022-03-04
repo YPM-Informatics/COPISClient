@@ -332,7 +332,7 @@ class _PropTransform(wx.Panel):
             step *= -1
 
         self.step_value(button.Name[0], step)
-        self.parent.core.update_selected_pose([
+        self.parent.core.update_selected_pose_position([
             self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def on_text_update(self, event: wx.Event) -> None:
@@ -342,7 +342,7 @@ class _PropTransform(wx.Panel):
 
         # update point
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_pose([
+            self.parent.core.update_selected_pose_position([
                 self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def set_point(self, x: int, y: int, z: int, p: int, t: int) -> None:
