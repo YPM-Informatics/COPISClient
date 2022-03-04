@@ -17,6 +17,7 @@
 
 from pydispatch import dispatcher
 
+from copis.classes import Action
 from copis.command_processor import serialize_command
 from copis.helpers import create_action_args, print_error_msg
 
@@ -125,7 +126,7 @@ class ComponentMembersMixin:
         else:
             print_error_msg(self.console, f'Pose index {index} is out of range.')
 
-    def update_selected_pose(self, args) -> None:
+    def update_selected_pose_position(self, args) -> None:
         """Update position of selected pose."""
         args = create_action_args(args)
         pose = self.project.poses[self._selected_pose].position
@@ -133,6 +134,25 @@ class ComponentMembersMixin:
             pose.args[i] = args[i]
 
         dispatcher.send('ntf_a_list_changed')
+
+    def add_to_selected_pose_payload(self, item: Action) -> bool:
+        """Appends an action to the selected pose's payload."""
+        pose = self.project.poses[self._selected_pose]
+        pose.payload.append(item)
+
+        dispatcher.send('ntf_a_list_changed')
+
+        return True
+
+    def delete_from_selected_pose_payload(self, index: int) -> bool:
+        """Deletes an action from the selected pose's payload, given an index."""
+        pose = self.project.poses[self._selected_pose]
+        pose.payload.pop(index)
+
+        dispatcher.send('ntf_a_list_changed')
+
+        return True
+
 
     def export_poses(self, filename: str = None) -> list:
         """Serialize action list and write to file.

@@ -25,6 +25,7 @@ from copis.helpers import get_action_args_values
 
 from ._default_panel import DefaultPanel
 from ._transform_panel import TransformPanel
+from ._payload_panel import PayloadPanel
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -33,7 +34,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     _CONFIG = {
         'Default': ['default'],
-        'Pose': ['transform']
+        'Pose': ['transform', 'payload']
         # 'Device': ['device_info', 'device_config'],
         # 'Object': ['default']
     }
@@ -71,6 +72,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         # self._property_panels['device_config'] = _PropDeviceConfig(self)
         # self._property_panels['quick_actions'] = _PropQuickActions(self)
         self._property_panels['transform'] = TransformPanel(self)
+        self._property_panels['payload'] = PayloadPanel(self)
         self._property_panels['default'] = DefaultPanel(self)
 
         for _, panel in self._property_panels.items():
@@ -92,11 +94,13 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_pose_selected(self, pose_index: int) -> None:
         """On ntf_a_selected, set to pose view."""
 
-        pose = self.core.project.poses[pose_index].position
-        if pose.atype == ActionType.G0 or pose.atype == ActionType.G1:
-            args = get_action_args_values(pose.args)
+        pose = self.core.project.poses[pose_index]
+        if pose.position.atype == ActionType.G0 or \
+            pose.position.atype == ActionType.G1:
+            args = get_action_args_values(pose.position.args)
 
-            self._property_panels['transform'].set_pose(Point5(*args[:5]))
+            self._property_panels['transform'].set_pose_position(Point5(*args[:5]))
+            self._property_panels['payload'].set_pose(pose)
             self.update_to_selected('Pose')
             self.parent.update_properties_panel_title('pose properties')
 
