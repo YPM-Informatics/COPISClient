@@ -107,47 +107,45 @@ class TransformPanel(wx.Panel):
         step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
         step_sizer.AddSpacer(8)
         font = wx.Font(
-            8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_NORMAL)
+            7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_SEMIBOLD)
 
         x_pos_btn = wx.Button(self, label='X', size=(20, -1), name='x+')
-        x_pos_btn.SetBitmap(create_scaled_bitmap('arrow_e', 15), wx.RIGHT)
-        x_pos_btn.SetBitmapMargins(-20, 0)
+        x_pos_btn.SetBitmap(create_scaled_bitmap('arrow_e', 12), wx.RIGHT)
         x_pos_btn.Font = font
         x_neg_btn = wx.Button(self, label='X', size=(20, -1), name='x-')
-        x_neg_btn.SetBitmap(create_scaled_bitmap('arrow_w', 15))
+        x_neg_btn.SetBitmap(create_scaled_bitmap('arrow_w', 12))
         x_neg_btn.Font = font
         y_pos_btn = wx.Button(self, label='Y', size=(20, -1), name='y+')
-        y_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
-        y_pos_btn.SetBitmapMargins(-20, 0)
+        y_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 12), wx.TOP)
         y_pos_btn.Font = font
         y_neg_btn = wx.Button(self, label='Y', size=(20, -1), name='y-')
-        y_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        y_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 12), wx.BOTTOM)
         y_neg_btn.Font = font
         z_pos_btn = wx.Button(self, label='Z', size=(20, -1), name='z+')
-        z_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
+        z_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 12), wx.TOP)
         z_pos_btn.Font = font
         z_neg_btn = wx.Button(self, label='Z', size=(20, -1), name='z-')
-        z_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        z_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 12), wx.BOTTOM)
         z_neg_btn.Font = font
         p_pos_btn = wx.Button(self, label='P', size=(20, -1), name='p+')
-        p_pos_btn.SetBitmap(create_scaled_bitmap('arrow_w', 15), wx.LEFT)
+        p_pos_btn.SetBitmap(create_scaled_bitmap('arrow_w', 12), wx.LEFT)
         p_pos_btn.Font = font
         p_neg_btn = wx.Button(self, label='P', size=(20, -1), name='p-')
-        p_neg_btn.SetBitmap(create_scaled_bitmap('arrow_e', 15), wx.RIGHT)
+        p_neg_btn.SetBitmap(create_scaled_bitmap('arrow_e', 12), wx.RIGHT)
         p_neg_btn.Font = font
         t_pos_btn = wx.Button(self, label='T', size=(20, -1), name='t+')
-        t_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 15), wx.TOP)
+        t_pos_btn.SetBitmap(create_scaled_bitmap('arrow_n', 12), wx.TOP)
         t_pos_btn.Font = font
         t_neg_btn = wx.Button(self, label='T', size=(20, -1), name='t-')
-        t_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 15), wx.BOTTOM)
+        t_neg_btn.SetBitmap(create_scaled_bitmap('arrow_s', 12), wx.BOTTOM)
         t_neg_btn.Font = font
-        arrow_nw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_nw', 20),
+        arrow_nw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_nw', 15),
             size=(24, 24), name='nw')
-        arrow_ne_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_ne', 20),
+        arrow_ne_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_ne', 15),
             size=(24, 24), name='ne')
-        arrow_sw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_sw', 20),
+        arrow_sw_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_sw', 15),
             size=(24, 24), name='sw')
-        arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 20),
+        arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 15),
             size=(24, 24), name='se')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
@@ -166,7 +164,7 @@ class TransformPanel(wx.Panel):
             (z_pos_btn, 0, wx.EXPAND, 0),
 
             (x_neg_btn, 0, wx.EXPAND, 0),
-            (0, 38),
+            (0, 31),
             (x_pos_btn, 0, wx.EXPAND, 0),
             (0, 0),
 
@@ -187,33 +185,6 @@ class TransformPanel(wx.Panel):
             (p_neg_btn, 0, wx.EXPAND, 0),
             (0, 0),
         ])
-
-        # step_xyzpt_grid = wx.GridBagSizer()
-        # step_xyzpt_grid.AddMany([
-        #     (0, 0, wx.GBPosition(0, 0)),    # vertical spacer
-
-        #     (x_neg_btn, wx.GBPosition(0, 1), wx.GBSpan(2, 1), wx.EXPAND, 0),
-        #     (y_pos_btn, wx.GBPosition(0, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (y_neg_btn, wx.GBPosition(1, 2), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (x_pos_btn, wx.GBPosition(0, 3), wx.GBSpan(2, 1), wx.EXPAND, 0),
-
-        #     (0, 0, wx.GBPosition(0, 4)),    # vertical spacer
-
-        #     (z_pos_btn, wx.GBPosition(0, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (z_neg_btn, wx.GBPosition(1, 5), wx.GBSpan(1, 1), wx.EXPAND, 0),
-
-        #     (4, 0, wx.GBPosition(0, 6)),    # vertical spacer
-
-        #     (p_pos_btn, wx.GBPosition(0, 7), wx.GBSpan(2, 1), wx.EXPAND, 0),
-        #     (t_pos_btn, wx.GBPosition(0, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (t_neg_btn, wx.GBPosition(1, 8), wx.GBSpan(1, 1), wx.EXPAND, 0),
-        #     (p_neg_btn, wx.GBPosition(0, 9), wx.GBSpan(2, 1), wx.EXPAND, 0),
-        # ])
-
-        # for col in (1, 3, 7, 9):
-        #     step_xyzpt_grid.AddGrowableCol(col, 1)
-        # for col in (2, 5, 8):
-        #     step_xyzpt_grid.AddGrowableCol(col, 3)
 
         step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
@@ -252,14 +223,16 @@ class TransformPanel(wx.Panel):
     def on_step_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
         button = event.EventObject
-        if button.Name[0] in 'xyz':
+        if button.Name[0] in 'xyzns':
             step = self.xyz_step
         else:  # button.Name in 'pt':
             step = self.pt_step
         if button.Name[1] == '-':
             step *= -1
 
-        self.step_value(button.Name[0], step)
+        btn_name = button.Name[0] if button.Name[1] in '+-' else button.Name
+
+        self.step_value(btn_name, step)
         self.parent.core.update_selected_pose([
             self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
@@ -323,6 +296,18 @@ class TransformPanel(wx.Panel):
             self.p += value
         elif name == 't':
             self.t += value
+        elif name == 'nw':
+            self.y += value
+            self.x -= value
+        elif name == 'ne':
+            self.y += value
+            self.x += value
+        elif name == 'sw':
+            self.y -= value
+            self.x -= value
+        elif name == 'se':
+            self.y -= value
+            self.x += value
         else:
             return
 
