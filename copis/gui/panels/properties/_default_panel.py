@@ -23,7 +23,7 @@ class DefaultPanel(wx.Panel):
 
     def __init__(self, parent) -> None:
         super().__init__(parent, style=wx.BORDER_NONE)
-        self.parent = parent
+        self._parent = parent
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self.Layout()

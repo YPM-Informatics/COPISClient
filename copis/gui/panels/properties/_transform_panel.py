@@ -85,7 +85,7 @@ class TransformPanel(wx.Panel):
     def _add_step_transform_controls(self):
         step_sizer = wx.BoxSizer(wx.VERTICAL)
         step_size_grid = wx.FlexGridSizer(4, 2, 0, 0)
-        step_size_grid.AddGrowableCol(0, 2)
+        step_size_grid.AddGrowableCol(0)
 
         feed_rate_ctrl = wx.TextCtrl(self, value="2500", size=(80, -1), name='feed_rate')
 
@@ -105,7 +105,7 @@ class TransformPanel(wx.Panel):
         ])
 
         step_sizer.Add(step_size_grid, 0, wx.EXPAND, 0)
-        step_sizer.AddSpacer(8)
+        step_sizer.AddSpacer(5)
         font = wx.Font(
             7, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_MAX, wx.FONTWEIGHT_SEMIBOLD)
 
@@ -188,7 +188,7 @@ class TransformPanel(wx.Panel):
 
         step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
-        self._box_sizer.Add(step_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        self._box_sizer.Add(step_sizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
 
 
     def init_gui(self) -> None:
@@ -213,7 +213,6 @@ class TransformPanel(wx.Panel):
 
         self._box_sizer.AddSpacer(5)
         self._box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
-        self._box_sizer.AddSpacer(5)
 
         self._add_step_transform_controls()
 
@@ -233,7 +232,7 @@ class TransformPanel(wx.Panel):
         btn_name = button.Name[0] if button.Name[1] in '+-' else button.Name
 
         self.step_value(btn_name, step)
-        self.parent.core.update_selected_pose([
+        self.parent.core.update_selected_pose_position([
             self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def on_text_update(self, event: wx.Event) -> None:
@@ -243,10 +242,10 @@ class TransformPanel(wx.Panel):
 
         # Update pose.
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_pose([
+            self.parent.core.update_selected_pose_position([
                 self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
-    def set_pose(self, position: Point5) -> None:
+    def set_pose_position(self, position: Point5) -> None:
         """Set text controls given a position."""
         x, y, z, p, t = position
 
