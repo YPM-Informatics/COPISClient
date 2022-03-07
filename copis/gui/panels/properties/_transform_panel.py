@@ -270,12 +270,17 @@ class TransformPanel(wx.Panel):
             #   new_z = z + (dist * cos(pan) * cos(tilt))
             # But since our axis is rotated 90dd clockwise around the x axis so
             # that z points up we have to adjust the formula accordingly.
-            end_x = sanitize_number(self.x + (dist * sin(pan) * cos(tilt)))
-            end_y = sanitize_number(self.y + (dist * cos(pan) * cos(tilt)))
-            end_z = sanitize_number(self.z - (dist * sin(tilt)))
+            d_places = 3
+            sin_p = round(sin(pan), d_places)
+            cos_p = round(cos(pan), d_places)
+            sin_t = round(sin(tilt), d_places)
+            cos_t = round(cos(tilt), d_places)
+            end_x = sanitize_number(self.x + (dist * sin_p * cos_t))
+            end_y = sanitize_number(self.y + (dist * cos_p * cos_t))
+            end_z = sanitize_number(self.z - (dist * sin_t))
 
-            end_pan, end_tilt = get_heading(
-                vec3(end_x, end_y, end_z), vec3())
+            end_pan, end_tilt = get_heading(vec3(end_x, end_y, end_z),
+                self.parent.core.imaging_target)
 
             self.x = end_x
             self.y = end_y
