@@ -255,13 +255,16 @@ class TransformPanel(wx.Panel):
             if task == 'closer':
                 dist = -1 * dist
 
-            # The right formula for this is new_x = x + (dist * cos(pan)) &
-            # new_y = y + (dist * sin(pan)). but since our pan angle is measured
-            # relative to the positive y axis, we have to flip sine and cosine.
             pan = dd_to_rad(self.p)
             tilt = dd_to_rad(self.t)
-            end_x = sanitize_number(self.x + (dist * sin(pan)))
-            end_y = sanitize_number(self.y + (dist * cos(pan)))
+            # The right formula for this is:
+            #   new_x = x + (dist * sin(pan) * cos(tilt))
+            #   new_y = y + (dist * sin(tilt))
+            #   new_z = z + (dist * cos(pan) * cos(tilt))
+            # But since our axis is rotated 90dd clockwise around the x axis so
+            # that z points up we have to adjust the formula accordingly.
+            end_x = sanitize_number(self.x + (dist * sin(pan) * cos(tilt)))
+            end_y = sanitize_number(self.y + (dist * cos(pan) * cos(tilt)))
             end_z = sanitize_number(self.z - (dist * sin(tilt)))
 
             end_pan, end_tilt = get_heading(
