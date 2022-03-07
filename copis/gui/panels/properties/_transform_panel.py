@@ -249,7 +249,14 @@ class TransformPanel(wx.Panel):
         task = button.Name
 
         if task == 'target':
-            print('Do targetting')
+            end_pan, end_tilt = get_heading(
+                vec3(self.x, self.y, self.z), vec3())
+
+            self.p = rad_to_dd(end_pan)
+            self.t = rad_to_dd(end_tilt)
+
+            self.parent.core.update_selected_pose_position([self.x, self.y, self.z,
+                sanitize_number(end_pan), sanitize_number(end_tilt)])
         else:
             dist = self.xyz_step
             if task == 'closer':
@@ -276,8 +283,8 @@ class TransformPanel(wx.Panel):
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
 
-            self.parent.core.update_selected_pose_position([
-                end_x, end_y, end_z, end_pan, end_tilt])
+            self.parent.core.update_selected_pose_position([end_x, end_y, end_z,
+                sanitize_number(end_pan), sanitize_number(end_tilt)])
 
 
     def on_step_button(self, event: wx.CommandEvent) -> None:
