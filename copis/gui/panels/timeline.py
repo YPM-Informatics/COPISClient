@@ -298,6 +298,15 @@ class TimelinePanel(wx.Panel):
         elif data['item'] == 'set':
             self.core.select_pose_set(data['index'])
 
+    def _on_key_up(self, event: wx.KeyEvent):
+        keycode = event.KeyCode
+
+        # Delete selected treeview item on delete key pressed.
+        if keycode == wx.WXK_DELETE:
+            self.on_delete_command(event)
+        else:
+            event.Skip()
+
     def _assert_can_image(self):
         is_connected = self.core.is_serial_port_connected
         has_path = len(self.core.project.pose_sets)
@@ -325,6 +334,7 @@ class TimelinePanel(wx.Panel):
 
         # Bind events
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
+        self.timeline.Bind(wx.EVT_KEY_UP, self._on_key_up)
 
         timeline_sizer.Add(self.timeline, 1, wx.EXPAND)
         self.Sizer.Add(timeline_sizer, 2, wx.EXPAND)
@@ -378,6 +388,7 @@ class TimelinePanel(wx.Panel):
         image_btn = wx.Button(btn_panel, label='Play All', size=btn_size)
         image_btn.Bind(wx.EVT_BUTTON, self.on_image_command)
         self._buttons['image_btn'] = image_btn
+
         # ----
 
         btn_sizer.AddMany([
