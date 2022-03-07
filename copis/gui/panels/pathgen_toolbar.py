@@ -256,6 +256,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
         self.core.project.pose_sets.extend(pose_sets)
+        self.core.imaging_target = lookat
 
     def __del__(self) -> None:
         pass

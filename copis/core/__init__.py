@@ -30,7 +30,7 @@ import threading
 import time
 import warnings
 
-from glm import vec2
+from glm import vec2, vec3
 
 from copis.command_processor import serialize_command
 from copis.helpers import print_error_msg, print_debug_msg, print_info_msg
@@ -103,6 +103,8 @@ class COPISCore(
         self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
         self._selected_device: int = -1
+
+        self._imaging_target: vec3 = vec3()
 
 
     @property

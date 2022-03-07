@@ -16,6 +16,7 @@
 """COPIS Core component (actions, points, devices, proxy objects) related class members."""
 
 from pydispatch import dispatcher
+from glm import vec3
 
 from copis.classes import Action
 from copis.command_processor import serialize_command
@@ -25,6 +26,16 @@ from copis.helpers import create_action_args, print_error_msg
 class ComponentMembersMixin:
     """Implement COPIS Core component (actions, points, devices, proxy objects)
         related class members using mixins."""
+
+    @property
+    def imaging_target(self) -> vec3:
+        """Returns the coordinates of the last target; (0,0,0) if application just started."""
+        return self._imaging_target
+
+    @imaging_target.setter
+    def imaging_target(self, value: vec3) -> None:
+        self._imaging_target = value
+
 
     # @property
     # def selected_device(self) -> int:
