@@ -249,8 +249,8 @@ class TransformPanel(wx.Panel):
         task = button.Name
 
         if task == 'target':
-            end_pan, end_tilt = get_heading(
-                vec3(self.x, self.y, self.z), vec3())
+            end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
+                self.parent.core.imaging_target)
 
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
@@ -264,17 +264,19 @@ class TransformPanel(wx.Panel):
 
             pan = dd_to_rad(self.p)
             tilt = dd_to_rad(self.t)
+
+            d_places = 3
+            sin_p = round(sin(pan), d_places)
+            cos_p = round(cos(pan), d_places)
+            sin_t = round(sin(tilt), d_places)
+            cos_t = round(cos(tilt), d_places)
+
             # The right formula for this is:
             #   new_x = x + (dist * sin(pan) * cos(tilt))
             #   new_y = y + (dist * sin(tilt))
             #   new_z = z + (dist * cos(pan) * cos(tilt))
             # But since our axis is rotated 90dd clockwise around the x axis so
             # that z points up we have to adjust the formula accordingly.
-            d_places = 3
-            sin_p = round(sin(pan), d_places)
-            cos_p = round(cos(pan), d_places)
-            sin_t = round(sin(tilt), d_places)
-            cos_t = round(cos(tilt), d_places)
             end_x = sanitize_number(self.x + (dist * sin_p * cos_t))
             end_y = sanitize_number(self.y + (dist * cos_p * cos_t))
             end_z = sanitize_number(self.z - (dist * sin_t))

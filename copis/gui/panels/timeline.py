@@ -448,6 +448,7 @@ class TimelinePanel(wx.Panel):
                         if pose_index >= 0:
                             print_debug_msg(self.core.console,
                                 f'Pose added to set {set_index}', self.core.is_dev_env)
+                            self.core.imaging_target = lookat
                         else:
                             print_debug_msg(self.core.console,
                                 f'Could not add pose to set {set_index}', self.core.is_dev_env)
