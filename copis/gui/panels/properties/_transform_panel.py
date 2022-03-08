@@ -16,6 +16,8 @@
 """COPIS transform properties panel."""
 
 from math import cos, sin
+from functools import partial
+from collections import namedtuple
 
 import wx
 
@@ -25,12 +27,22 @@ from copis.globals import Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
 from copis.helpers import dd_to_rad, get_heading, rad_to_dd, sanitize_number, xyz_units, pt_units
+from copis.store import get_file_base_name_no_ext
 
 
 class TransformPanel(wx.Panel):
     """Show transform properties panel"""
+    target_ctx_choices = namedtuple('TargetContextChoices',
+        'center, floor_center, ceiling_center')
+
     _XYZ_UNIT = 'mm'
     _PT_UNIT = 'dd'
+
+    _TARGET_CTX_CHOICES = target_ctx_choices(
+        'Bounding Box Center',
+        'Bounding Box Floor Center',
+        'Bounding Box Ceiling center'
+    )
 
     def __init__(self, parent) -> None:
         """Initialize _PropTransform with constructors."""
@@ -85,6 +97,61 @@ class TransformPanel(wx.Panel):
         ])
 
         self._box_sizer.Add(grid, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
+
+    def _get_proxy_name(self, idx: int):
+        proxies = self.parent.core.project.proxies
+        proxy = proxies[idx]
+
+        if hasattr(proxy, 'obj'):
+            name = get_file_base_name_no_ext(proxy.obj.file_name)
+            name = f'{name[0].upper()}{name[1:]}'
+        else:
+            names = [(i, type(p).__qualname__) for i, p in enumerate(proxies)
+                        if isinstance(p, type(proxy))]
+            names = [(t[0], f'{t[1]}_{i}') if i >
+                        0 else t for i, t in enumerate(names)]
+
+            name = next(filter(lambda t: t[0] == idx, names))[1]
+
+        return name
+
+    def _on_target_ctx_menu(self, event: wx.ContextMenuEvent):
+        pos = event.GetPosition()
+        pos = self.ScreenToClient(pos)
+
+        target_menu = self._build_target_ctx_menu()
+        self.PopupMenu(target_menu, pos)
+
+    def _on_target_type_selected(self, proxy_index, event: wx.CommandEvent):
+        item: wx.MenuItem = event.EventObject.FindItemById(event.Id)
+
+        if proxy_index is not None:
+            proxy_name = self._get_proxy_name(proxy_index)
+            if item.ItemLabel == self._TARGET_CTX_CHOICES.ceiling_center:
+                print(f'Target proxy object "{proxy_name}" bounding box ceiling center.')
+            elif item.ItemLabel == self._TARGET_CTX_CHOICES.floor_center:
+                print(f'Target proxy object "{proxy_name}" bounding box floor center.')
+            else: # Target center of proxy object's bounding box.
+                print(f'Target proxy object "{proxy_name}" bounding box center.')
+        else:
+            print(f'Target custom position.')
+
+    def _build_target_ctx_menu(self):
+        target_menu = wx.Menu()
+
+        item: wx.MenuItem = target_menu.Append(wx.ID_ANY, 'Target Custom Position')
+        self.Bind(wx.EVT_MENU, partial(self._on_target_type_selected, None), item)
+
+        for i in range(0, len(self.parent.core.project.proxies)):
+            submenu = wx.Menu()
+            for _, caption in self._TARGET_CTX_CHOICES._asdict().items():
+                item = submenu.Append(-1, caption)
+                handler = partial(self._on_target_type_selected, i)
+                self.Bind(wx.EVT_MENU, handler, item)
+
+            target_menu.Append(wx.ID_ANY, f'Target {self._get_proxy_name(i)}', submenu)
+
+        return target_menu
 
     def _add_step_transform_controls(self):
         step_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -170,6 +237,8 @@ class TransformPanel(wx.Panel):
         for btn in (target_closer_btn, target_farther_btn, re_target_btn):
             btn.Bind(wx.EVT_BUTTON, self.on_target_button)
 
+        re_target_btn.Bind(wx.EVT_CONTEXT_MENU, self._on_target_ctx_menu)
+
         xyzpt_grid = wx.FlexGridSizer(8, 4, 0, 0)
         for col in (0, 1, 2, 3):
             xyzpt_grid.AddGrowableCol(col)
@@ -213,7 +282,6 @@ class TransformPanel(wx.Panel):
         step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
         self._box_sizer.Add(step_sizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
-
 
     def init_gui(self) -> None:
         """Initialize gui elements."""
