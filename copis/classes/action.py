@@ -47,3 +47,13 @@ class Action(dict):
         a_dict['atype'] = a_type_name
 
         dict.__init__(self, a_dict)
+
+    def update(self):
+        """Updates the action instance's dictionary store."""
+        a_type = self.atype
+
+        a_type_name = a_type.name
+        a_dict = deepcopy(self.__dict__)
+        a_dict['atype'] = a_type_name
+
+        dict.update(self, a_dict)
