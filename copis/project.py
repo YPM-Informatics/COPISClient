@@ -16,7 +16,7 @@
 """COPIS Application project manager."""
 
 from importlib import import_module
-from typing import List, Tuple
+from typing import Any, Iterable, List, Tuple
 from pydispatch import dispatcher
 from glm import vec3
 
@@ -25,7 +25,7 @@ from copis.classes import (
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
-from copis.helpers import collapse_whitespaces, pose_from_json_map
+from copis.helpers import collapse_whitespaces
 from .store import Store, get_file_base_name_no_ext, load_json, path_exists, save_json
 
 
@@ -262,7 +262,7 @@ class Project:
 
         proj_data = load_json(path)
 
-        p_sets = list(map(pose_from_json_map, proj_data['imaging_path']))
+        p_sets = list(map(_pose_from_json_map, proj_data['imaging_path']))
         proxies = []
 
         for proxy in proj_data['proxies']:
@@ -411,3 +411,22 @@ class Project:
         set_dvc_ids = [p.position.device for p in self._pose_sets[set_index]]
 
         return [d for d in self._devices if d.device_id not in set_dvc_ids]
+
+
+def _pose_from_json_map(set_data: Iterable[Any]) -> Pose:
+    """Parses an iterable of JSON result dictionaries into a Pose and returns it."""
+    tupleify = lambda l: list(map(tuple, l))
+
+    p_set = []
+
+    for pose_data in set_data:
+        position = Action(**pose_data[0])
+        position.args = tupleify(position.args)
+
+        payload = [Action(**a) for a in pose_data[1]]
+        for action in payload:
+            action.args = tupleify(action.args)
+
+        p_set.append(Pose(position, payload))
+
+    return p_set
