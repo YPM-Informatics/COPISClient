@@ -140,9 +140,14 @@ class ComponentMembersMixin:
     def update_selected_pose_position(self, args) -> None:
         """Update position of selected pose."""
         args = create_action_args(args)
-        pose = self.project.poses[self._selected_pose].position
-        for i in range(min(len(pose.args), len(args))):
-            pose.args[i] = args[i]
+        pose_position = self.project.poses[self._selected_pose].position
+        argc = min(len(pose_position.args), len(args))
+
+        for i in range(argc):
+            pose_position.args[i] = args[i]
+
+        pose_position.argc = argc
+        pose_position.update()
 
         dispatcher.send('ntf_a_list_changed')
 
