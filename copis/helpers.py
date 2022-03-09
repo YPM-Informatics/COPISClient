@@ -23,13 +23,11 @@ from collections import OrderedDict
 from functools import wraps
 from math import cos, sin, pi, atan2, sqrt
 from time import time
-from typing import Any, Callable, Iterable, List
+from typing import Callable, List
 from itertools import zip_longest
 
 import glm
 from glm import mat4, vec2, vec3, vec4
-
-from copis.classes import Action, Pose
 
 
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
@@ -261,24 +259,6 @@ def collapse_whitespaces(string: str) -> str:
     output = _OPEN_PAREN_SPACE_PATTERN.sub('(', output)
 
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
-
-def pose_from_json_map(set_data: Iterable[Any]) -> Pose:
-    """Parses an iterable of JSON result dictionaries into a Pose and returns it."""
-    tupleify = lambda l: list(map(tuple, l))
-
-    p_set = []
-
-    for pose_data in set_data:
-        position = Action(**pose_data[0])
-        position.args = tupleify(position.args)
-
-        payload = [Action(**a) for a in pose_data[1]]
-        for action in payload:
-            action.args = tupleify(action.args)
-
-        p_set.append(Pose(position, payload))
-
-    return p_set
 
 def get_heading(start: vec3, end: vec3):
     """Returns the heading (pan and tilt) between two points."""
