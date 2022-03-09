@@ -18,8 +18,10 @@
 from dataclasses import dataclass
 from math import inf
 
-from glm import vec3
 import glm
+from glm import vec3
+
+from copis.helpers import round_point
 
 
 @dataclass
@@ -32,6 +34,27 @@ class BoundingBox:
     """
     lower: vec3 = vec3(inf)
     upper: vec3 = vec3(-inf)
+
+    @property
+    def volume_center(self):
+        """Returns the center of the proxy object's bounding box volume."""
+        return _get_mid_diagonal(self.lower, self.upper)
+
+    @property
+    def ceiling_center(self):
+        """Returns the center of the proxy object's bounding box ceiling."""
+        ceiling_upper = self.upper
+        ceiling_lower = vec3(self.lower.xy, ceiling_upper.z)
+
+        return _get_mid_diagonal(ceiling_lower, ceiling_upper)
+
+    @property
+    def floor_center(self):
+        """Returns the center of the proxy object's bounding box floor."""
+        floor_lower = self.lower
+        floor_upper = vec3(self.upper.xy, floor_lower.z)
+
+        return _get_mid_diagonal(floor_lower, floor_upper)
 
     def bbox_intersect(self, bbox) -> bool:
         """Return whether bbox intersects bbox or not."""
@@ -69,13 +92,13 @@ class BoundingBox:
         candidate_plane = [0.0 for _ in range(3)]
 
         # Find candidate planes this loop can be avoided if
-        # rays cast all from the eye(assume perpsective view)
+        # rays cast all from the eye(assume perspective view)
         for i in range(3):
-            if(origin[i] < self.lower[i]):
+            if origin[i] < self.lower[i]:
                 quadrant[i] = LEFT
                 candidate_plane[i] = self.lower[i]
                 inside = False
-            elif (origin[i] > self.upper[i]):
+            elif origin[i] > self.upper[i]:
                 quadrant[i] = RIGHT
                 candidate_plane[i] = self.upper[i]
                 inside = False
@@ -97,13 +120,15 @@ class BoundingBox:
         # Get largest of the maxT's for final choice of intersection
         which_plane = 0
         for i in range(1, 3):
-            if (maxT[which_plane] < maxT[i]):
+            if maxT[which_plane] < maxT[i]:
                 which_plane = i
 
         # Check final candidate actually inside box
-        if (maxT[which_plane] < 0.0): return False
+        if maxT[which_plane] < 0.0:
+            return False
+
         for i in range(3):
-            if (which_plane != i):
+            if which_plane != i:
                 coord[i] = origin[i] + maxT[which_plane] * direction[i]
                 if (coord[i] < self.lower[i] or coord[i] > self.upper[i]):
                     return False
@@ -120,3 +145,7 @@ class BoundingBox:
                 self.lower[i] = point[i]
             if point[i] > self.upper[i]:
                 self.upper[i] = point[i]
+
+
+def _get_mid_diagonal(lower, upper):
+    return round_point((lower + upper) / 2, 3)

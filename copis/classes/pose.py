@@ -17,7 +17,7 @@
 
 from typing import List, NamedTuple
 
-from copis.classes.action import Action
+from copis.classes import Action
 
 
 class Pose(NamedTuple):
