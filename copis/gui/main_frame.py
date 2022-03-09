@@ -28,7 +28,6 @@ from copis.globals import WindowState
 from copis.classes import AABoxObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
 from .panels.console import ConsolePanel
-from .panels.controller import ControllerPanel
 from .panels.evf import EvfPanel
 from .panels.machine_toolbar import MachineToolbar
 from .panels.pathgen_toolbar import PathgenToolbar
@@ -49,7 +48,6 @@ class MainWindow(wx.Frame):
 
     Attributes:
         console_panel: A pointer to the console panel.
-        controller_panel: A pointer to the controller panel.
         evf_panel: A pointer to the electronic viewfinder panel.
         properties_panel: A pointer to the properties panel.
         timeline_panel: A pointer to the timeline management panel.
@@ -115,11 +113,6 @@ class MainWindow(wx.Frame):
     def console_panel(self) -> ConsolePanel:
         """Returns the console panel."""
         return self.panels['console']
-
-    @property
-    def controller_panel(self) -> ControllerPanel:
-        """Returns the controller panel."""
-        return self.panels['controller']
 
     @property
     def evf_panel(self) -> EvfPanel:
@@ -253,10 +246,10 @@ class MainWindow(wx.Frame):
             - &Window
                 - [ ] Camera EVF
                 - [x] Console
-                - [x] Controller
                 - [x] Properties
                 - [x] Timeline
                 - [x] Viewport
+                - [x] Statistics
                 ---
                 - Window &Preferences...
             - Help
@@ -367,10 +360,6 @@ class MainWindow(wx.Frame):
             'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
-        self.menuitems['controller'] = window_menu.Append(wx.ID_ANY, 'Controller',
-            'Show/hide controller window', wx.ITEM_CHECK)
-        self.menuitems['controller'].Check(False)
-        self.Bind(wx.EVT_MENU, self.update_controller_panel, self.menuitems['controller'])
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties',
             'Show/hide camera properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
@@ -660,7 +649,6 @@ class MainWindow(wx.Frame):
         self.panels['viewport'] = ViewportPanel(self)
         self.panels['console'] = ConsolePanel(self)
         self.panels['timeline'] = TimelinePanel(self)
-        self.panels['controller'] = ControllerPanel(self)
         self.panels['properties'] = PropertiesPanel(self)
         self.panels['stats'] = StatsPanel(self)
         self.panels['machine_toolbar'] = MachineToolbar(self)
@@ -683,15 +671,11 @@ class MainWindow(wx.Frame):
             Dock().Bottom().Position(1).Layer(0).MinSize(self._BOTTOM_PANE_MIN_SIZE).Show(True),
             target=self._mgr.GetPane('console'))
 
-        # Add properties and controller panel.
+        # Add properties and stats panels.
         self._mgr.AddPane(
             self.panels['properties'],
             aui.AuiPaneInfo().Name('properties').Caption('Properties').
             Dock().Right().Position(0).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(True))
-        self._mgr.AddPane(
-            self.panels['controller'],
-            aui.AuiPaneInfo().Name('controller').Caption('Controller').
-            Dock().Right().Position(1).Layer(1).MinSize(self._RIGHT_PANE_MIN_SIZE).Show(False))
         self._mgr.AddPane(
             self.panels['stats'],
             aui.AuiPaneInfo().Name('stats').Caption('Statistics').
@@ -757,10 +741,6 @@ class MainWindow(wx.Frame):
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""
         self._mgr.ShowPane(self.console_panel, event.IsChecked())
-
-    def update_controller_panel(self, event: wx.CommandEvent) -> None:
-        """Show or hide controller panel."""
-        self._mgr.ShowPane(self.controller_panel, event.IsChecked())
 
     def update_evf_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide evf panel."""
