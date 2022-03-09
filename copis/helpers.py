@@ -129,6 +129,10 @@ def sanitize_point(value: vec3) -> vec3:
     """Sanitizes a vec3 point with coordinates approaching zero."""
     return vec3(list(map(sanitize_number, list(value))))
 
+def round_point(value: vec3, places: int=None) -> vec3:
+    """Rounds the vertices of a vec3 point."""
+    return vec3(list(map(lambda v: round(v, places), list(value))))
+
 def get_timestamp() -> str:
     """Returns a formatted string representation of the current date and time."""
     now = datetime.datetime.now()

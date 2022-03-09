@@ -124,17 +124,75 @@ class TransformPanel(wx.Panel):
 
     def _on_target_type_selected(self, proxy_index, event: wx.CommandEvent):
         item: wx.MenuItem = event.EventObject.FindItemById(event.Id)
+        menu: wx.Menu = item.Menu
+        pos = menu.GetInvokingWindow().GetScreenPosition()
 
-        if proxy_index is not None:
-            proxy_name = self._get_proxy_name(proxy_index)
-            if item.ItemLabel == self._TARGET_CTX_CHOICES.ceiling_center:
-                print(f'Target proxy object "{proxy_name}" bounding box ceiling center.')
-            elif item.ItemLabel == self._TARGET_CTX_CHOICES.floor_center:
-                print(f'Target proxy object "{proxy_name}" bounding box floor center.')
-            else: # Target center of proxy object's bounding box.
-                print(f'Target proxy object "{proxy_name}" bounding box center.')
+        if proxy_index is None:
+            dialog_size = (100, -1)
+            target_dialog = wx.Dialog(self, wx.ID_ANY, 'Target Position', size=dialog_size, pos=pos)
+            target_dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
+            grid = wx.FlexGridSizer(3, 2, 10, 0)
+            img_target = self.parent.core.imaging_target
+
+            target_dialog.target_x_ctrl = FancyTextCtrl(target_dialog, size=(70, -1),
+                num_value=img_target.x, default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+            target_dialog.target_y_ctrl = FancyTextCtrl(target_dialog, size=(70, -1),
+                num_value=img_target.y, default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+            target_dialog.target_z_ctrl = FancyTextCtrl(target_dialog, size=(70, -1),
+                num_value=img_target.z, default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
+
+            grid.AddMany([
+                (simple_statictext(target_dialog, f'X ({self._XYZ_UNIT}):', 60), 0,
+                    wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+                (target_dialog.target_x_ctrl, 0, wx.EXPAND, 0),
+                (simple_statictext(target_dialog, f'Y ({self._XYZ_UNIT}):', 60), 0,
+                    wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+                (target_dialog.target_y_ctrl, 0, wx.EXPAND, 0),
+                (simple_statictext(target_dialog, f'Z ({self._XYZ_UNIT}):', 60), 0,
+                    wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+                (target_dialog.target_z_ctrl, 0, wx.EXPAND, 0)
+            ])
+
+            target_dialog.Sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 10)
+
+            button_sizer = target_dialog.CreateStdDialogButtonSizer(0)
+            target_dialog.affirmative_button = wx.Button(target_dialog, wx.ID_OK)
+            button_sizer.SetAffirmativeButton(target_dialog.affirmative_button)
+            button_sizer.SetCancelButton(wx.Button(target_dialog, wx.ID_CANCEL))
+            button_sizer.Realize()
+
+            target_dialog.Sizer.Add(button_sizer, 0, wx.ALL|wx.EXPAND, 10)
+
+            target_dialog.Layout()
+            target_dialog.SetMinSize(dialog_size)
+            target_dialog.Fit()
+
+            with target_dialog as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    target = vec3(
+                        dlg.target_x_ctrl.num_value,
+                        dlg.target_y_ctrl.num_value,
+                        dlg.target_z_ctrl.num_value)
+
+                    self.parent.core.imaging_target = target
         else:
-            print(f'Target custom position.')
+            proxy_bbox = self.parent.core.project.proxies[proxy_index].bbox
+
+            if item.ItemLabel == self._TARGET_CTX_CHOICES.ceiling_center:
+                self.parent.core.imaging_target = proxy_bbox.ceiling_center
+            elif item.ItemLabel == self._TARGET_CTX_CHOICES.floor_center:
+                self.parent.core.imaging_target = proxy_bbox.floor_center
+            else: # Target center of proxy object's bounding box.
+                self.parent.core.imaging_target = proxy_bbox.volume_center
+
+        end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
+            self.parent.core.imaging_target)
+
+        self.p = rad_to_dd(end_pan)
+        self.t = rad_to_dd(end_tilt)
+
+        self.parent.core.update_selected_pose_position([self.x, self.y, self.z,
+            sanitize_number(end_pan), sanitize_number(end_tilt)])
 
     def _build_target_ctx_menu(self):
         target_menu = wx.Menu()
