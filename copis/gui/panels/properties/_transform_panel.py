@@ -379,6 +379,13 @@ class TransformPanel(wx.Panel):
         target_menu = self._build_target_ctx_menu()
         self.PopupMenu(target_menu, pos)
 
+    def _play_position(self, values, keys):
+        g_args = create_action_args(values, keys)
+        pose = Pose(Action(ActionType.G1, self._device.device_id,
+                len(g_args), g_args), [])
+
+        self.parent.core.play_poses([pose])
+
     def _on_target_type_selected(self, proxy_index, event: wx.CommandEvent):
         item: wx.MenuItem = event.EventObject.FindItemById(event.Id)
         menu: wx.Menu = item.Menu
@@ -425,6 +432,8 @@ class TransformPanel(wx.Panel):
             target_dialog.Fit()
 
             with target_dialog as dlg:
+                is_custom = False
+
                 if dlg.ShowModal() == wx.ID_OK:
                     target = vec3(
                         dlg.target_x_ctrl.num_value,
@@ -432,6 +441,7 @@ class TransformPanel(wx.Panel):
                         dlg.target_z_ctrl.num_value)
 
                     self.parent.core.imaging_target = target
+                    is_custom = True
         else:
             proxy_bbox = self.parent.core.project.proxies[proxy_index].bbox
 
@@ -442,14 +452,20 @@ class TransformPanel(wx.Panel):
             else: # Target center of proxy object's bounding box.
                 self.parent.core.imaging_target = proxy_bbox.volume_center
 
-        end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
-            self.parent.core.imaging_target)
+        if proxy_index is not None or is_custom:
+            end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
+                self.parent.core.imaging_target)
 
-        self.p = rad_to_dd(end_pan)
-        self.t = rad_to_dd(end_tilt)
+            self.p = rad_to_dd(end_pan)
+            self.t = rad_to_dd(end_tilt)
 
-        self.parent.core.update_selected_pose_position([self.x, self.y, self.z,
-            sanitize_number(end_pan), sanitize_number(end_tilt)])
+            position = [self.x, self.y, self.z,
+                sanitize_number(end_pan), sanitize_number(end_tilt)]
+
+            if self._is_live:
+                self._play_position(position, 'XYZPT')
+            else:
+                self.parent.core.update_selected_pose_position(position)
 
     def _on_target_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, target accordingly."""
@@ -463,8 +479,8 @@ class TransformPanel(wx.Panel):
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
 
-            self.parent.core.update_selected_pose_position([self.x, self.y, self.z,
-                sanitize_number(end_pan), sanitize_number(end_tilt)])
+            position = [self.x, self.y, self.z,
+                sanitize_number(end_pan), sanitize_number(end_tilt)]
         else:
             dist = self.xyz_step
             if task == 'closer':
@@ -498,8 +514,13 @@ class TransformPanel(wx.Panel):
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
 
-            self.parent.core.update_selected_pose_position([end_x, end_y, end_z,
-                sanitize_number(end_pan), sanitize_number(end_tilt)])
+            position = [end_x, end_y, end_z,
+                sanitize_number(end_pan), sanitize_number(end_tilt)]
+
+        if self._is_live:
+            self._play_position(position, 'XYZPT')
+        else:
+            self.parent.core.update_selected_pose_position(position)
 
     def _generate_commands(self, name, args = None):
         if args == None:
@@ -599,11 +620,7 @@ class TransformPanel(wx.Panel):
                     keys = keys + 'F'
                     values.append(float(self._feed_rate_ctrl.Value))
 
-                g_args = create_action_args(values, keys)
-                pose = Pose(Action(ActionType.G1, self._device.device_id,
-                    len(g_args), g_args), [])
-
-                self.parent.core.play_poses([pose])
+                self._play_position(values, keys)
             else:
                 self.parent.core.update_selected_pose_position([
                     self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
