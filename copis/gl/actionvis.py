@@ -33,9 +33,9 @@ from OpenGL.GL import (
     glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
 
-from copis.globals import ActionType
+from copis.globals import ActionType, Point5
 from copis.helpers import (
-    create_cuboid, create_device_features, fade_color,
+    create_cuboid, create_device_features, dd_to_rad, fade_color,
     get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4)
 
 ArrayInfo = namedtuple('ArrayInfo', 'name key')
@@ -341,7 +341,10 @@ class GLActionVis:
         self._items['device'].clear()
 
         for device in self.core.project.devices:
-            self._items['device'][device.device_id].append(point5_to_mat4(device.position))
+            args = get_action_args_values(device.position)
+            args = [a if i < 3 else dd_to_rad(a) for i, a in enumerate(args)]
+
+            self._items['device'][device.device_id].append(point5_to_mat4(Point5(*args)))
 
         self.update_device_vaos()
 
