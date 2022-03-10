@@ -22,6 +22,7 @@ from collections import namedtuple
 import wx
 
 from glm import vec3
+from pydispatch import dispatcher
 
 from copis.globals import ActionType, Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
@@ -68,6 +69,11 @@ class TransformPanel(wx.Panel):
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
 
         self._init_gui()
+
+        # Bind listeners
+
+        if self._is_live:
+            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
 
         # Bind events.
         for ctrl in (self._x_ctrl, self._y_ctrl, self._z_ctrl, self._p_ctrl, self._t_ctrl,
@@ -630,6 +636,10 @@ class TransformPanel(wx.Panel):
             else:
                 self.parent.core.update_selected_pose_position([
                     self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
+
+    def _on_device_updated(self, device):
+        if self._device and self._device.device_id == device.device_id:
+            self.set_device(device)
 
     def _set_text_controls(self, position: Point5) -> None:
         """Set text controls given a position."""
