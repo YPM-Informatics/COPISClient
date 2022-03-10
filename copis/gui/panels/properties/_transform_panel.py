@@ -589,10 +589,24 @@ class TransformPanel(wx.Panel):
         ctrl = event.GetEventObject()
         self.set_value(ctrl.Name, ctrl.num_value)
 
-        # Update pose.
+        # Update pose or jog device.
         if ctrl.Name in 'xyzpt':
-            self.parent.core.update_selected_pose_position([
-                self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
+            if self._is_live:
+                keys = ctrl.Name.upper()
+                values = [float(ctrl.num_value)]
+
+                if keys != 'Z':
+                    keys = keys + 'F'
+                    values.append(float(self._feed_rate_ctrl.Value))
+
+                g_args = create_action_args(values, keys)
+                pose = Pose(Action(ActionType.G1, self._device.device_id,
+                    len(g_args), g_args), [])
+
+                self.parent.core.play_poses([pose])
+            else:
+                self.parent.core.update_selected_pose_position([
+                    self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def _set_text_controls(self, position: Point5) -> None:
         """Set text controls given a position."""
