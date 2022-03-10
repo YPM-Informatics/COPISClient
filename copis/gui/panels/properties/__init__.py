@@ -26,6 +26,7 @@ from ._default_panel import DefaultPanel
 from ._transform_panel import TransformPanel
 from ._payload_panel import PayloadPanel
 from ._device_info_panel import DeviceInfoPanel
+from ._device_actions_panel import DeviceActionsPanel
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -35,7 +36,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     _CONFIG = {
         'Default': ['default'],
         'Pose': ['transform', 'payload'],
-        'Device': ['device_info', 'live_transform']
+        'Device': ['device_info', 'live_transform', 'device_actions']
         # 'Object': ['default']
     }
 
@@ -74,6 +75,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['transform'] = TransformPanel(self)
         self._property_panels['device_info'] = DeviceInfoPanel(self)
         self._property_panels['live_transform'] = TransformPanel(self, True)
+        self._property_panels['device_actions'] = DeviceActionsPanel(self)
         self._property_panels['payload'] = PayloadPanel(self)
         self._property_panels['default'] = DefaultPanel(self)
 
@@ -118,5 +120,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.parent.update_properties_panel_title('properties')
 
     def on_device_homed(self) -> None:
+        """On ntf_device_homed, enable appropiate panels."""
         if self._property_panels['live_transform']:
             self._property_panels['live_transform'].Enable()
