@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
-"""COPIS default properties panel."""
+"""COPIS pose payload properties panel."""
 
 import wx
 
@@ -25,7 +25,7 @@ from copis.helpers import create_action_args
 
 
 class PayloadPanel(wx.Panel):
-    """Show default properties panel."""
+    """Show pose payload properties panel."""
 
     def __init__(self, parent) -> None:
         super().__init__(parent, style=wx.BORDER_NONE)
