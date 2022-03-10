@@ -615,7 +615,12 @@ class TransformPanel(wx.Panel):
         if ctrl.Name in 'xyzpt':
             if self._is_live:
                 keys = ctrl.Name.upper()
-                values = [float(ctrl.num_value)]
+                value = float(ctrl.num_value)
+
+                if keys in 'PT':
+                    value = dd_to_rad(value)
+
+                values = [value]
 
                 if keys != 'Z':
                     keys = keys + 'F'
@@ -644,8 +649,9 @@ class TransformPanel(wx.Panel):
         """Parses the selected device into the panel."""
         self._device = device
         args = get_action_args_values(device.position)
+        args = [a if i < 3 else dd_to_rad(a) for i, a in enumerate(args)]
 
-        self._set_text_controls(Point5(*args[:5]))
+        self._set_text_controls(Point5(*args))
 
     def set_value(self, name: str, value: float) -> None:
         """Set value indicated by name.
