@@ -152,6 +152,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_colors, signal='ntf_s_selected')
         dispatcher.connect(self._update_colors, signal='ntf_s_deselected')
         dispatcher.connect(self._update_devices, signal='ntf_d_list_changed')
+        dispatcher.connect(self._update_devices, signal='ntf_device_updated')
         dispatcher.connect(self._update_objects, signal='ntf_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='ntf_o_deselected')
 
@@ -311,7 +312,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         Handles ntf_d_list_changed signal.
         """
         self._num_devices = len(self.core.project.devices)
-        self._actionvis.update_devices()
+        wx.CallAfter(self._actionvis.update_devices)
         self._dirty = True
 
     def _update_objects(self) -> None:
