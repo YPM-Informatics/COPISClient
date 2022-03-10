@@ -31,7 +31,7 @@ class DeviceInfoPanel(wx.Panel):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Info'), wx.VERTICAL)
 
-        grid = wx.FlexGridSizer(4, 2, 4, 8)
+        grid = wx.FlexGridSizer(4, 2, 0, 0)
         grid.AddGrowableCol(1, 0)
 
         self._id_text = wx.StaticText(self, label='')
@@ -50,8 +50,8 @@ class DeviceInfoPanel(wx.Panel):
             (self._desc_text, 0, wx.EXPAND, 0)
         ])
 
-        box_sizer.Add(grid, 0, wx.ALL | wx.EXPAND, 4)
-        self.Sizer.Add(box_sizer, 0, wx.ALL | wx.EXPAND, 7)
+        box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 5)
+        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
     def set_device(self, device):
