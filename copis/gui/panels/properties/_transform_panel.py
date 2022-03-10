@@ -472,13 +472,14 @@ class TransformPanel(wx.Panel):
         button = event.EventObject
         task = button.Name
 
+        # Face the target, first and foremost.
+        end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
+            self.parent.core.imaging_target)
+
+        self.p = rad_to_dd(end_pan)
+        self.t = rad_to_dd(end_tilt)
+
         if task == 'target':
-            end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
-                self.parent.core.imaging_target)
-
-            self.p = rad_to_dd(end_pan)
-            self.t = rad_to_dd(end_tilt)
-
             position = [self.x, self.y, self.z,
                 sanitize_number(end_pan), sanitize_number(end_tilt)]
         else:
