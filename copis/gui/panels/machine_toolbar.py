@@ -21,7 +21,7 @@ import wx.lib.agw.aui as aui
 
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
-from copis.gui.wxutils import create_scaled_bitmap, show_msg_dialog
+from copis.gui.wxutils import create_scaled_bitmap, show_folder_dialog, show_msg_dialog
 from copis.helpers import print_debug_msg, print_info_msg
 
 
@@ -187,7 +187,12 @@ class MachineToolbar(aui.AuiToolBar):
                 show_msg_dialog(msg, 'Imaging')
                 return
 
-            self._core.start_imaging()
+            path = show_folder_dialog('Save Images to Folder')
+
+            if not path:
+                return
+
+            self._core.start_imaging(path)
 
         elif event.Id == ToolIds.PAUSE.value:
             self._core.pause_work()
@@ -197,7 +202,8 @@ class MachineToolbar(aui.AuiToolBar):
 
         elif event.Id == ToolIds.SETTINGS.value:
             with MachineSettingsDialog(self) as dlg:
-                print_debug_msg(self._core.console, 'Machine Settings opened.', self._core.is_dev_env)
+                print_debug_msg(self._core.console, 'Machine Settings opened.',
+                    self._core.is_dev_env)
 
         elif event.Id == ToolIds.EXPORT.value:
             self._core.export_poses('actions.txt')

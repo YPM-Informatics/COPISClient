@@ -108,6 +108,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On ntf_d_selected, set to device view."""
         self._property_panels['live_transform'].set_device(device)
         self._property_panels['device_info'].set_device(device)
+        self._property_panels['device_actions'].set_device(device)
         self.update_to_selected('Device')
         self.parent.update_properties_panel_title('device properties')
 
@@ -120,6 +121,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self.parent.update_properties_panel_title('properties')
 
     def on_device_homed(self) -> None:
-        """On ntf_device_homed, enable appropiate panels."""
+        """On ntf_device_homed, enable appropriate panels."""
         if self._property_panels['live_transform']:
             self._property_panels['live_transform'].Enable()

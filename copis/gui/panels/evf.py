@@ -15,7 +15,9 @@
 
 """EvfPanel class."""
 
+from concurrent.futures import thread
 import io
+import time
 import wx
 from PIL import Image
 
@@ -29,28 +31,27 @@ class EvfPanel(wx.Panel):
 
     def __init__(self, parent, *args, **kwargs):
         """Initializes EvfPanel with constructors."""
-        super().__init__(parent, style=wx.BORDER_DEFAULT, size=wx.Size(600, 420))
-        self.parent = parent
-        self.core = self.parent.core
-        # self.timer = wx.CallLater(10, self.update)
-
+        super().__init__(parent, style=wx.BORDER_THEME, *args, **kwargs)
+        self._parent = parent
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
-        # self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.timer = wx.CallLater(10, self.update)
 
-        self.core.edsdk.connect(0)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
 
-        # self.update()
+        self._parent.core._edsdk.start_liveview()
+        self.update()
 
     def update(self):
-        self.Refresh()
-        self.Update()
-        self.timer.Start()
+        if self:
+            self.Refresh()
+            self.Update()
+            self.timer.Start()
 
     def get_bitmap(self):
-        self.cam.download_evf()
-        if self.cam.img_byte_data:
-            img = (Image.open(io.BytesIO(self.cam.img_byte_data)))
-            img.resize(self.Size)
+        img_bytes = self._parent.core._edsdk.download_evf_data()
+        if img_bytes:
+            img = Image.open(io.BytesIO(img_bytes))
+            img = img.resize(self.Size)
             width, height = img.size
             buffer = img.convert('RGB').tobytes()
             bitmap = wx.Bitmap.FromBuffer(width, height, buffer)
@@ -63,6 +64,6 @@ class EvfPanel(wx.Panel):
         dc.DrawBitmap(bitmap, 0, 0)
 
     def on_close(self):
-        # self.cam.end_evf()
-        self.core.edsdk.end_evf()
         self.timer.Stop()
+        self._parent.core._edsdk.end_liveview()
+        self._parent.core._edsdk.disconnect()

@@ -281,7 +281,7 @@ class COPISCore(
 
         self._update_recent_projects(path)
 
-    def start_imaging(self) -> bool:
+    def start_imaging(self, save_path) -> bool:
         """Starts the imaging sequence, following the define action path."""
         if not self.is_serial_port_connected:
             print_error_msg(self.console,

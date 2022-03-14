@@ -27,12 +27,19 @@ from copis.store import Store
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
 
+def show_folder_dialog(caption: str, path: str='') -> str:
+    """Shows a wx.DirDialog to prompt for a folder."""
+    dialog = wx.DirDialog(None, caption, path)
+    choice = dialog.ShowModal()
+
+    return None if choice == wx.ID_CANCEL else dialog.Path
+
 def show_msg_dialog(msg: str, caption=' ') -> None:
     """Shows a wx.MessageDialog informational message."""
     dialog = wx.MessageDialog(None, msg, caption, wx.OK)
     dialog.ShowModal()
 
-def show_prompt_dialog(msg: str, caption=' ', show_cancel_btn=False) -> None:
+def show_prompt_dialog(msg: str, caption=' ', show_cancel_btn=False) -> Any:
     """Show a wx.MessageDialog confirmation prompt."""
     style = wx.YES_NO
     if show_cancel_btn:

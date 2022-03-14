@@ -723,20 +723,23 @@ class MainWindow(wx.Frame):
         self._mgr.Update()
 
     def add_evf_pane(self) -> None:
-        """Initialize camera liveview panel.
+        """Initialize camera liveview panel."""
+        if 'evf' not in self.panels:
+            evf_size = (600, 420)
+            self.panels['evf'] = EvfPanel(self, size=evf_size)
+            self._mgr.AddPane(
+                self.panels['evf'],
+                aui.AuiPaneInfo().Name('evf').Caption('Live View').
+                Float().Right().Position(1).Layer(0).MinSize(evf_size).
+                MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
 
-        TODO!
-        """
-        if self.core.edsdk.camera_count == 0:
-            return
+            self._mgr.Update()
+            self.menuitems['evf'].Enable(True)
+            self._mgr.ShowPane(self.evf_panel, True)
+        elif not self.evf_panel.IsShownOnScreen():
+            self._mgr.ShowPane(self.evf_panel, True)
 
-        self.panels['evf'] = EvfPanel(self)
-        self._mgr.AddPane(
-            self.panels['evf'],
-            aui.AuiPaneInfo().Name('Evf').Caption('Live View').
-            Float().Right().Position(1).Layer(0).MinSize(600, 420).
-            MinimizeButton(True).DestroyOnClose(True).MaximizeButton(True))
-        self.Update()
+        self.menuitems['evf'].Check(True)
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""
@@ -777,11 +780,14 @@ class MainWindow(wx.Frame):
             self._mgr.ShowPane(self.panels[pane.name], False)
             self.menuitems[pane.name].Check(False)
 
-        # if pane.name == 'Evf':
-        #     pane.window.timer.Stop()
-        #     pane.window.on_destroy()
-        #     self.DetachPane(pane.window)
-        #     pane.window.Destroy()
+        if pane.name == 'evf':
+            pane.window.on_close()
+            self._mgr.DetachPane(pane.window)
+            self._mgr.Update()
+
+            pane.window.Destroy()
+            self.panels.pop('evf')
+            self.menuitems['evf'].Enable(False)
 
     def on_close(self, event: wx.CloseEvent) -> None:
         """On EVT_CLOSE, exit application."""

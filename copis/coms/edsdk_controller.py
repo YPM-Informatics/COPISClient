@@ -18,13 +18,14 @@
 import os
 import datetime
 
-from ctypes import c_int, c_uint, c_void_p, sizeof, WINFUNCTYPE
+from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string_at
 from dataclasses import dataclass
+import time
 from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsCapacity, EdsDeviceInfo, EdsPoint, EdsRect, EdsSaveTo,
+    EDSDK, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
 from copis.helpers import print_error_msg, print_info_msg
@@ -41,9 +42,12 @@ class EDSDKController():
         self._is_waiting_for_image = False
         self._print_error_msg = print_error_msg
         self._print_info_msg = print_info_msg
+        self._string_at = string_at
 
         self._camera = CameraSettings()
         self._image = ImageSettings()
+        self._evf_image_ref = None
+        self._evf_stream = None
 
         # Locally aliasing WINFUNCTYPE is required to avoid NameError cause
         # by the use of @mproperty.
@@ -81,7 +85,6 @@ class EDSDKController():
 
         # already connected
         if self._is_connected and index == cam_index:
-            self._print_error_msg(self._console, f'Already connected to camera {cam_index}.')
             return True
 
         # disconnect from previously connected camera
@@ -128,7 +131,7 @@ class EDSDKController():
             cam_ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, cam_ref)
 
         self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
-            0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT)
+            0, sizeof(c_uint), self._edsdk.EvfOutputDevice_PC)
 
         self._is_connected = True
         self._print_info_msg(self._console, f'Connected to camera {self._camera.index}')
@@ -239,17 +242,42 @@ class EDSDKController():
     #     """
     #     return False
 
-    # def start_liveview(self):
-    #     """TODO"""
-    #     return
+    def start_liveview(self) -> None:
+        """Starts the live view for the connected camera."""
+        self._evf_stream = self._edsdk.EdsCreateMemoryStream(sizeof(c_void_p))
+        self._evf_image_ref = self._edsdk.EdsCreateEvfImageRef(self._evf_stream)
 
-    # def download_evf_data(self):
-    #     """TODO"""
-    #     return
+    def download_evf_data(self) -> None:
+        """Downloads the live view stream."""
+        err = EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY
 
-    # def end_liveview(self):
-    #     """TODO"""
-    #     return
+        # Wait for images to start coming in.
+        keel_waiting = True
+        error_count = 0
+
+        while keel_waiting:
+            try:
+                self._edsdk.EdsDownloadEvfImage(self._camera.ref, self._evf_image_ref)
+                keel_waiting = False
+            except Exception as err:
+                if EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY.name in err.args[0] and error_count < 10:
+                    time.sleep(.1)
+                    error_count += 1
+                else:
+                    keel_waiting = False
+                    raise err
+
+        img_byte_length = self._edsdk.EdsGetLength(self._evf_stream)
+        image_data = (c_ubyte * img_byte_length.value)()
+        p_image_data = self._edsdk.EdsGetPointer(self._evf_stream, image_data)
+
+        arr_bytes = bytearray(self._string_at(p_image_data, img_byte_length.value))
+        return arr_bytes
+
+    def end_liveview(self):
+        """Ends the live view for the connected camera."""
+        self._edsdk.EdsRelease(self._evf_stream)
+        self._edsdk.EdsRelease(self._evf_image_ref)
 
     def _update_camera_list(self):
         """Update camera list and camera count."""
@@ -370,6 +398,9 @@ disconnect = _instance.disconnect
 initialize = _instance.initialize
 take_picture = _instance.take_picture
 terminate = _instance.terminate
+start_liveview = _instance.start_liveview
+end_liveview = _instance.end_liveview
+download_evf_data = _instance.download_evf_data
 
 @mproperty
 def camera_count(mod) -> int:
