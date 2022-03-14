@@ -26,9 +26,9 @@ import glm
 from glm import vec2, vec3
 
 from copis.classes import Action, Object3D, Pose
-from copis.globals import ActionType
+from copis.globals import ActionType, Point5
 from copis.helpers import (create_action_args, get_heading, interleave_lists,
-    sanitize_number, sanitize_point)
+    sanitize_number, sanitize_point, rad_to_dd)
 from .mathutils import orthonormal_basis_of
 
 
@@ -170,7 +170,7 @@ def build_pose_sets(poses: List[Pose]) -> List[List[Pose]]:
 def _build_poses(ordered_points, clearance_indexes, lookat):
     poses = []
 
-    # pos_records = {}
+    pos_records = {}
 
     for device_id in ordered_points:
         for i, point in enumerate(ordered_points[device_id]):
@@ -180,6 +180,8 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             s_point = sanitize_point(point)
             s_pan = sanitize_number(pan)
             s_tilt = sanitize_number(tilt)
+
+            #region backoff
             # record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
 
             # if device_id in pos_records.keys():
@@ -194,7 +196,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             #     if abs(next_pan - last_pan) > 180 and dist > 0:
             #         # Back off
             #         # The right formula for this is new_x = x + (dist * cos(pan)) &
-            #         # new_y = y + (dist * sin(pan)). but since our pan angle is measured
+            #         # new_y = y + (dist * cos(pan)). but since our pan angle is measured
             #         # relative to the positive y axis, we have to flip sine and cosine.
             #         next_record = Point5(s_point.x, s_point.y, s_point.z, s_pan, s_tilt)
 
@@ -212,19 +214,20 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             #         args1 = create_action_args([pt1.x, pt1.y, pt1.z, pt1.p, pt1.t])
             #         args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
 
-            #         interlaced_actions.append(
+            #         poses.append(
             #             Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
-            #         interlaced_actions.append(
+            #         poses.append(
             #             Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
 
-            #         print_debug_msg(
-            #             self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
-            #         print_debug_msg(
-            #             self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
+            #         # print_debug_msg(
+            #         #     self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
+            #         # print_debug_msg(
+            #         #     self.core.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}, center distance: {dist}', True)
 
             #     pos_records[device_id] = record
             # else:
             #     pos_records.update({device_id: record})
+            #endregion
 
             g_args = create_action_args([s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
             payload = []
