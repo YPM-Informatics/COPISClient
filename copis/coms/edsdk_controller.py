@@ -145,8 +145,7 @@ class EDSDKController():
             True if successful, False otherwise.
         """
         if not self._is_connected:
-            self._print_error_msg(self._console, 'No cameras currently connected.')
-            return False
+            return True
 
         self._edsdk.EdsCloseSession(self._camera.ref)
         self._print_info_msg(self._console, f'Disconnected from camera {self._camera.index}')

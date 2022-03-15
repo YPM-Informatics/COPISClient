@@ -130,7 +130,7 @@ class CommunicationMembersMixin:
         return selected
 
     @locked
-    def connect(self, baud: int = serial_controller.BAUDS[-1]) -> bool:
+    def connect_serial(self, baud: int = serial_controller.BAUDS[-1]) -> bool:
         """Connects to the active serial port."""
         if not self._is_serial_enabled:
             print_error_msg(self.console, 'Serial is not enabled.')
@@ -159,7 +159,7 @@ class CommunicationMembersMixin:
         return connected
 
     @locked
-    def disconnect(self):
+    def disconnect_serial(self):
         """disconnects from the active serial port."""
         self._keep_working = False
 

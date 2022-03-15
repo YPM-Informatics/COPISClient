@@ -88,7 +88,7 @@ class _CommandProcessor:
                 baud = str(self._core.serial_bauds[-1]) if len(opts) < 1 else opts[1]
 
                 if baud.isdigit():
-                    if self._core.connect(int(baud)):
+                    if self._core.connect_serial(int(baud)):
                         self._print(f'Connected via serial at baud rate {baud}.')
                 else:
                     self._print('Invalid operation. Usage: \'connect -b[--baudrate] <baud_rate>\';',

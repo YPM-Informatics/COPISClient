@@ -65,8 +65,8 @@ class MachineToolbar(aui.AuiToolBar):
             self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.AddControl(self.baud_cb, label='Baud combobox')
         self.AddSpacer(8)
-        self.connect_btn = wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))
-        self.Bind(wx.EVT_BUTTON, self.on_connect, self.AddControl(self.connect_btn))
+        self.connect_serial_btn = wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_connect_serial, self.AddControl(self.connect_serial_btn))
         self.AddSpacer(8)
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
@@ -112,7 +112,7 @@ class MachineToolbar(aui.AuiToolBar):
         self.port_cb.Selection = -1
         self.baud_cb.Selection = -1
         self.baud_cb.Items = []
-        self.connect_btn.Label = 'Connect'
+        self.connect_serial_btn.Label = 'Connect'
 
         self._core.update_serial_ports()
         print_info_msg(self._core.console, 'Serial ports refreshed.')
@@ -134,9 +134,9 @@ class MachineToolbar(aui.AuiToolBar):
             selected_port = self.port_cb.Items[selection]
             if self._core.select_serial_port(selected_port):
                 is_port_connected = self._core.is_serial_port_connected
-                self.connect_btn.Label = 'Disconnect' if is_port_connected else 'Connect'
+                self.connect_serial_btn.Label = 'Disconnect' if is_port_connected else 'Connect'
 
-    def on_connect(self, event: wx.CommandEvent) -> None:
+    def on_connect_serial(self, event: wx.CommandEvent) -> None:
         """On connect button pressed, updates serial connection and button text"""
         caption = 'Connect'
         connect_btn = self.FindControl(event.Id)
@@ -146,13 +146,13 @@ class MachineToolbar(aui.AuiToolBar):
                 if selection >= 0 else self._core.serial_bauds[-1]
 
             if connect_btn.Label == caption:
-                if self._core.connect(baud):
+                if self._core.connect_serial(baud):
                     connect_btn.Label = 'Disconnect'
                 else:
                     connect_btn.Label = caption
                     show_msg_dialog('Unable to connect.', caption)
             else:
-                self._core.disconnect()
+                self._core.disconnect_serial()
                 connect_btn.Label = caption
         else:
             show_msg_dialog('Please select a port to connect to.', caption)

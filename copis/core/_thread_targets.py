@@ -40,7 +40,6 @@ class ThreadTargetsMixin:
 
         while continue_listening():
             time.sleep(self._YIELD_TIMEOUT)
-            #if not self._edsdk.is_waiting_for_image:
             resp = self._serial.read(read_thread.port)
             controllers_unlocked = False
 
