@@ -44,8 +44,8 @@ class EDSDKController():
         self._print_info_msg = print_info_msg
         self._string_at = string_at
 
-        self._camera = CameraSettings()
-        self._image = ImageSettings()
+        self._camera_settings = CameraSettings()
+        self._image_settings = ImageSettings()
         self._evf_image_ref = None
         self._evf_stream = None
 
@@ -81,7 +81,7 @@ class EDSDKController():
         """
         self._update_camera_list()
 
-        cam_count, cam_index, cam_items, cam_ref = self._camera
+        cam_count, cam_index, cam_items, cam_ref = self._camera_settings
 
         # already connected
         if self._is_connected and index == cam_index:
@@ -100,10 +100,10 @@ class EDSDKController():
             self._print_error_msg(self._console, f'Invalid camera index: {index}.')
             return False
 
-        self._camera.index = index
-        self._camera.ref = self._edsdk.EdsGetChildAtIndex(cam_items, index)
+        self._camera_settings.index = index
+        self._camera_settings.ref = self._edsdk.EdsGetChildAtIndex(cam_items, index)
 
-        *_, cam_ref = self._camera
+        *_, cam_ref = self._camera_settings
 
         self._edsdk.EdsOpenSession(cam_ref)
         self._edsdk.EdsSetPropertyData(
@@ -134,11 +134,11 @@ class EDSDKController():
             0, sizeof(c_uint), self._edsdk.EvfOutputDevice_PC)
 
         self._is_connected = True
-        self._print_info_msg(self._console, f'Connected to camera {self._camera.index}')
+        self._print_info_msg(self._console, f'Connected to camera {self._camera_settings.index}')
 
         return self._is_connected
 
-    def disconnect(self) -> bool:
+    def disconnect(self, close_session: bool=True) -> bool:
         """Disconnect from camera.
 
         Returns:
@@ -147,11 +147,14 @@ class EDSDKController():
         if not self._is_connected:
             return True
 
-        self._edsdk.EdsCloseSession(self._camera.ref)
-        self._print_info_msg(self._console, f'Disconnected from camera {self._camera.index}')
+        if close_session:
+            self._edsdk.EdsCloseSession(self._camera_settings.ref)
 
-        self._camera.ref = None
-        self._camera.index = -1
+        self._print_info_msg(self._console,
+            f'Disconnected from camera {self._camera_settings.index}')
+
+        self._camera_settings.ref = None
+        self._camera_settings.index = -1
 
         self._is_connected = False
 
@@ -170,11 +173,11 @@ class EDSDKController():
         try:
             self._is_waiting_for_image = True
 
-            self._edsdk.EdsSendCommand(self._camera.ref,
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Completely.value)
 
-            self._edsdk.EdsSendCommand(self._camera.ref,
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
@@ -186,7 +189,7 @@ class EDSDKController():
         except Exception as err:
             self._print_error_msg(self._console,
                 'An exception occurred while taking a photo with camera '
-                f'{self._camera.index}: {err.args[0]}')
+                f'{self._camera_settings.index}: {err.args[0]}')
             return False
 
     def terminate(self):
@@ -202,8 +205,13 @@ class EDSDKController():
 
     @property
     def camera_count(self) -> int:
-        """Return camera count."""
-        return self._camera.count
+        """Returns camera count."""
+        return self._camera_settings.count
+
+    @property
+    def is_connected(self) -> int:
+        """Returns a flag indicating whether a device is connected."""
+        return self._is_connected
 
     @property
     def is_waiting_for_image(self) -> bool:
@@ -221,15 +229,15 @@ class EDSDKController():
         devices = []
         self._update_camera_list()
 
-        cam_count, cam_index, cam_items, *_ = self._camera
+        cam_count, cam_index, cam_items, *_ = self._camera_settings
 
         for i in range(cam_count):
             ref = self._edsdk.EdsGetChildAtIndex(cam_items, i)
             info = self._edsdk.EdsGetDeviceInfo(ref)
 
-            is_connected = self._is_connected and i == cam_index
+            connected = self._is_connected and i == cam_index
 
-            devices.append((info, is_connected))
+            devices.append((info, connected))
 
         return devices
 
@@ -241,7 +249,7 @@ class EDSDKController():
     #     """
     #     return False
 
-    def start_liveview(self) -> None:
+    def start_live_view(self) -> None:
         """Starts the live view for the connected camera."""
         self._evf_stream = self._edsdk.EdsCreateMemoryStream(sizeof(c_void_p))
         self._evf_image_ref = self._edsdk.EdsCreateEvfImageRef(self._evf_stream)
@@ -251,42 +259,50 @@ class EDSDKController():
         err = EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY
 
         # Wait for images to start coming in.
-        keel_waiting = True
+        keep_waiting = True
         error_count = 0
 
-        while keel_waiting:
+        while keep_waiting and self._is_connected:
             try:
-                self._edsdk.EdsDownloadEvfImage(self._camera.ref, self._evf_image_ref)
-                keel_waiting = False
+                self._edsdk.EdsDownloadEvfImage(self._camera_settings.ref, self._evf_image_ref)
+                keep_waiting = False
             except Exception as err:
-                if EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY.name in err.args[0] and error_count < 10:
+                if EdsErrorCodes.EDS_ERR_COMM_DISCONNECTED.name in err.args[0]:
+                    keep_waiting = False
+                    self.disconnect(False)
+                # If camera not ready keep waiting for 5s while checking every 100ms.
+                elif EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY.name in err.args[0] and error_count < 50:
                     time.sleep(.1)
                     error_count += 1
                 else:
-                    keel_waiting = False
+                    keep_waiting = False
                     raise err
 
-        img_byte_length = self._edsdk.EdsGetLength(self._evf_stream)
-        image_data = (c_ubyte * img_byte_length.value)()
-        p_image_data = self._edsdk.EdsGetPointer(self._evf_stream, image_data)
+        if self._is_connected:
+            img_byte_length = self._edsdk.EdsGetLength(self._evf_stream)
+            image_data = (c_ubyte * img_byte_length.value)()
+            p_image_data = self._edsdk.EdsGetPointer(self._evf_stream, image_data)
 
-        arr_bytes = bytearray(self._string_at(p_image_data, img_byte_length.value))
-        return arr_bytes
+            arr_bytes = bytearray(self._string_at(p_image_data, img_byte_length.value))
+            return arr_bytes
 
-    def end_liveview(self):
+        return None
+
+    def end_live_view(self):
         """Ends the live view for the connected camera."""
         self._edsdk.EdsRelease(self._evf_stream)
         self._edsdk.EdsRelease(self._evf_image_ref)
 
     def _update_camera_list(self):
         """Update camera list and camera count."""
-        self._camera.items = self._edsdk.EdsGetCameraList()
-        self._camera.count = self._edsdk.EdsGetChildCount(self._camera.items)
+        self._camera_settings.items = self._edsdk.EdsGetCameraList()
+        self._camera_settings.count = self._edsdk.EdsGetChildCount(self._camera_settings.items)
 
     def _generate_file_name(self):
         """Set the filename for an image."""
         now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
-        self._image.filename = os.path.abspath(f'./{self._image.PREFIX}_{now}.jpg')
+        self._image_settings.filename = os.path.abspath(
+            f'./{self._image_settings.PREFIX}_{now}.jpg')
 
     def _download_image(self, image) -> None:
         """Download image from camera buffer to host computer.
@@ -298,7 +314,7 @@ class EDSDKController():
             self._generate_file_name()
 
             dir_info = self._edsdk.EdsGetDirectoryItemInfo(image)
-            stream = self._edsdk.EdsCreateFileStream(self._image.filename, 1, 2)
+            stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename, 1, 2)
 
             self._edsdk.EdsDownload(image, dir_info.size, stream)
             self._edsdk.EdsDownloadComplete(image)
@@ -306,7 +322,7 @@ class EDSDKController():
 
             self._is_waiting_for_image = False
 
-            self._print_info_msg(self._console, f'Image saved at {self._image.filename}')
+            self._print_info_msg(self._console, f'Image saved at {self._image_settings.filename}')
 
         except Exception as err:
             self._print_error_msg(self._console,
@@ -331,12 +347,15 @@ class EDSDKController():
         """Handle the group of events where notifications are issued regarding
         changes in the state of a camera, such as activation of a shut-down timer.
         """
-        if event == self._edsdk.StateEvent_WillSoonShutDown:
-            try:
-                self._edsdk.EdsSendCommand(context, 1, 0)
-            except Exception as err:
-                self._print_error_msg(self._console,
-                    f'An exception occurred while handling the state change event: {err.args[0]}')
+        try:
+            if event == self._edsdk.StateEvent_WillSoonShutDown:
+                if self._is_connected and self._camera_settings.ref == context:
+                    self._edsdk.EdsSendCommand(context, 1, 0)
+            elif event == self._edsdk.StateEvent_Shutdown:
+                self.disconnect(False)
+        except Exception as err:
+            self._print_error_msg(self._console,
+                f'An exception occurred while handling the state change event: {err.args[0]}')
 
         return 0
 
@@ -397,14 +416,20 @@ disconnect = _instance.disconnect
 initialize = _instance.initialize
 take_picture = _instance.take_picture
 terminate = _instance.terminate
-start_liveview = _instance.start_liveview
-end_liveview = _instance.end_liveview
+start_live_view = _instance.start_live_view
+end_live_view = _instance.end_live_view
 download_evf_data = _instance.download_evf_data
+
 
 @mproperty
 def camera_count(mod) -> int:
     """Returns camera count from the module."""
     return mod._instance.camera_count
+
+@mproperty
+def is_connected(mod) -> bool:
+    """Returns a flag indicating whether a device is connected."""
+    return mod._instance.is_connected
 
 @mproperty
 def is_waiting_for_image(mod) -> bool:

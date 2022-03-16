@@ -15,9 +15,7 @@
 
 """EvfPanel class."""
 
-from concurrent.futures import thread
 import io
-import time
 import wx
 from PIL import Image
 
@@ -34,21 +32,25 @@ class EvfPanel(wx.Panel):
         super().__init__(parent, style=wx.BORDER_THEME, *args, **kwargs)
         self._parent = parent
         self.BackgroundStyle = wx.BG_STYLE_CUSTOM
-        self.timer = wx.CallLater(10, self.update)
+        self.timer = wx.CallLater(10, self._update)
 
-        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
 
-        self._parent.core._edsdk.start_liveview()
-        self.update()
+        self._parent.core.start_edsdk_live_view()
+        self._update()
 
-    def update(self):
+    def _update(self):
         if self:
-            self.Refresh()
-            self.Update()
-            self.timer.Start()
+            if self._parent.core.is_edsdk_connected:
+                self.Refresh()
+                self.Update()
+                self.timer.Start()
+            else:
+                self._parent.remove_evf_pane()
 
-    def get_bitmap(self):
-        img_bytes = self._parent.core._edsdk.download_evf_data()
+    def _get_bitmap(self):
+        img_bytes = self._parent.core.download_edsdk_evf_data()
+
         if img_bytes:
             img = Image.open(io.BytesIO(img_bytes))
             img = img.resize(self.Size)
@@ -56,14 +58,17 @@ class EvfPanel(wx.Panel):
             buffer = img.convert('RGB').tobytes()
             bitmap = wx.Bitmap.FromBuffer(width, height, buffer)
             return bitmap
+
         return None
 
-    def on_paint(self, event):
-        bitmap = self.get_bitmap()
-        dc = wx.AutoBufferedPaintDC(self)
-        dc.DrawBitmap(bitmap, 0, 0)
+    def _on_paint(self, _):
+        bitmap = self._get_bitmap()
+        if bitmap:
+            dc = wx.AutoBufferedPaintDC(self)
+            dc.DrawBitmap(bitmap, 0, 0)
 
     def on_close(self):
+        """Handles EVF panel close event."""
         self.timer.Stop()
-        self._parent.core._edsdk.end_liveview()
-        self._parent.core._edsdk.disconnect()
+        self._parent.core.end_edsdk_live_view()
+        self._parent.core.disconnect_edsdk()

@@ -33,6 +33,23 @@ class CommunicationMembersMixin:
     # Canon EDSDK methods
     # --------------------------------------------------------------------------
 
+    @property
+    def edsdk_device_list(self) -> List:
+        """Returns the list of detected EDSDK devices."""
+        device_list = []
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            device_list = self._edsdk.device_list
+
+        return device_list
+
+    @property
+    def is_edsdk_connected(self):
+        """Returns a flag indicating whether a device is connected via edsdk."""
+        return self._edsdk.is_connected
+
     def init_edsdk(self) -> None:
         """Initializes the Canon EDSDK controller."""
         if self._is_edsdk_enabled:
@@ -47,6 +64,56 @@ class CommunicationMembersMixin:
         """Disconnects all EDSDK connections; and terminates the Canon EDSDK."""
         if self._is_edsdk_enabled:
             self._edsdk.terminate()
+
+    def connect_edsdk(self, cam_index):
+        """Connects to the provided camera via EDSDK."""
+        connected = False
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            connected = self._edsdk.connect(cam_index)
+
+        return connected
+
+    def disconnect_edsdk(self):
+        """Disconnects from the currently connect camera via EDSDK."""
+        if self._is_edsdk_enabled:
+            return self._edsdk.disconnect()
+
+        return True
+
+    def start_edsdk_live_view(self):
+        """Start EDSDK Live View."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.start_live_view()
+
+    def end_edsdk_live_view(self):
+        """Stop EDSDK Live View."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.end_live_view()
+
+    def download_edsdk_evf_data(self):
+        """Download EDSDK Live View image frame data."""
+        data = None
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            data = self._edsdk.download_evf_data()
+
+        return data
+
+    def snap_edsdk_picture(self):
+        """Take a picture via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.take_picture()
 
     # --------------------------------------------------------------------------
     # Serial methods

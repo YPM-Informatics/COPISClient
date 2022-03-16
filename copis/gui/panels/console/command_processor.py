@@ -59,7 +59,7 @@ class _CommandProcessor:
 
         def release():
             if self._protocol == 'edsdk':
-                self._core._edsdk.disconnect()
+                self._core.disconnect_edsdk()
             elif self._protocol == 'serial':
                 self._core.terminate_serial()
             self._print(f'Protocol {self._protocol} released.')
@@ -72,7 +72,7 @@ class _CommandProcessor:
                 cam_index = '0' if len(opts) < 1 else opts[0]
 
                 if cam_index.isdigit():
-                    if self._core._edsdk.connect(int(cam_index)):
+                    if self._core.connect_edsdk(int(cam_index)):
                         self._print(f'Connected to camera {cam_index}')
                     else:
                         self._print(f'Unable to connect to camera {cam_index}')
@@ -98,7 +98,7 @@ class _CommandProcessor:
             if self._protocol == '':
                 self._print('No protocol to disconnect from.')
             elif self._protocol == 'edsdk':
-                self._core._edsdk.disconnect()
+                self._core.disconnect_edsdk()
             else:
                 self._core._serial.close_port()
 
@@ -109,10 +109,10 @@ class _CommandProcessor:
                 self._print('No protocol to shoot from.')
             elif self._protocol == 'edsdk':
                 if len(opts) < 1:
-                    self._core._edsdk.take_picture()
+                    self._core.snap_edsdk_picture()
                 elif opts[0].isdigit():
-                    if self._core._edsdk.connect(int(opts[0])):
-                        self._core._edsdk.take_picture()
+                    if self._core.connect_edsdk(int(opts[0])):
+                        self._core.snap_edsdk_picture()
                 else:
                     self._print('Invalid operation. Usage: \'shoot <device_index>\';',
                         ' where <device_index> in an integer.')
@@ -137,7 +137,7 @@ class _CommandProcessor:
             if self._protocol == '':
                 self._print('No protocol to list items for.')
             elif self._protocol == 'edsdk':
-                devices = self._core._edsdk.device_list
+                devices = self._core.edsdk_device_list
 
                 if len(devices) > 0:
                     for i, item in enumerate(devices):
