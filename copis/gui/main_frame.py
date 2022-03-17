@@ -19,7 +19,7 @@ import wx
 import wx.lib.agw.aui as aui
 
 from pydispatch import dispatcher
-from glm import vec3
+from glm import vec2, vec3
 
 import copis.store as store
 
@@ -92,9 +92,6 @@ class MainWindow(wx.Frame):
         self.init_mgr()
         self.init_statusbar()
         self.init_menubar()
-
-        # TODO: re-enable liveview
-        # self.add_evf_pane()
 
         self._mgr.Bind(aui.EVT_AUI_PANE_CLOSE, self.on_pane_close)
         self.Bind(wx.EVT_CLOSE, self.on_close)
@@ -725,7 +722,9 @@ class MainWindow(wx.Frame):
     def add_evf_pane(self) -> None:
         """Initialize camera liveview panel."""
         if 'evf' not in self.panels:
-            evf_size = (600, 420)
+            # Live view jpg comes out at (960, 640) on Canon EOS 80D.
+            evf_size = (vec2(960, 640) * .75).to_tuple()
+
             self.panels['evf'] = EvfPanel(self, size=evf_size)
             self._mgr.AddPane(
                 self.panels['evf'],
