@@ -30,18 +30,35 @@ class MachineStats(wx.Panel):
     """Show info related to the machine, in the stats panel."""
 
     def __init__(self, parent):
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
+
+        self._parent = parent
+        self._core = parent.core
+        self._keep_polling = True
+
+        self._build_panel()
+
+        self._polling_thread = threading.Thread(
+            target=self._poll_machine_stats,
+            name='machine status polling thread',
+            daemon=True)
+
+        self._polling_thread.start()
+
+        # Bind listeners.
+        dispatcher.connect(self.on_device_updated, signal='ntf_device_updated')
+        dispatcher.connect(self.on_machine_idle, signal='ntf_machine_idle')
+        dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
+
+    def _build_panel(self):
         text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, f=None: simple_statictext(
             self, label='',
             style=s,
             font=f)
 
-        super().__init__(parent, style=wx.BORDER_DEFAULT)
-
-        self._parent = parent
-        self._core = parent.core
-
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Machine Stats'), wx.VERTICAL)
+        self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Machine Stats'),
+            wx.VERTICAL)
 
         machine_grid = wx.FlexGridSizer(3, 2, 0, 0)
         machine_grid.AddGrowableCol(1, 0)
@@ -96,28 +113,35 @@ class MachineStats(wx.Panel):
 
             self._update_device(dvc)
 
-        box_sizer.Add(machine_grid, 0,
+        self._box_sizer.Add(machine_grid, 0,
             wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
-        box_sizer.AddSpacer(5)
-        box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
-        box_sizer.AddSpacer(5)
-        box_sizer.Add(device_grid, 0,
+        self._box_sizer.AddSpacer(5)
+        self._box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
+        self._box_sizer.AddSpacer(5)
+        self._box_sizer.Add(device_grid, 0,
             wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
 
-        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
-        # Bind listeners.
-        dispatcher.connect(self.on_device_updated, signal='ntf_device_updated')
-        dispatcher.connect(self.on_machine_idle, signal='ntf_machine_idle')
+    def _on_device_list_changed(self):
+        self._keep_polling = False
+        self._polling_thread.join(3)
 
-        threading.Thread(
+        self.DestroyChildren()
+        self._build_panel()
+
+        self._keep_polling = True
+
+        self._polling_thread = threading.Thread(
             target=self._poll_machine_stats,
             name='machine status polling thread',
-            daemon=True).start()
+            daemon=True)
+
+        self._polling_thread.start()
 
     def _poll_machine_stats(self):
-        while True:
+        while self._keep_polling:
             if self._device_count_caption:
                 status = self._core.machine_status
                 if status == 'idle' and self._machine_status_caption.GetLabel() != 'idle':

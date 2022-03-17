@@ -27,15 +27,23 @@ class PathStats(wx.Panel):
     """Show info related to the path, in the stats panel."""
 
     def __init__(self, parent):
-        text_ctrl = lambda s=wx.ALIGN_RIGHT | wx.TEXT_ALIGNMENT_RIGHT, f=None: simple_statictext(
-            self, label='',
-            style=s,
-            font=f)
-
         super().__init__(parent, style=wx.BORDER_DEFAULT)
 
         self._parent = parent
         self._core = parent.core
+
+        self._build_panel()
+
+        # Bind listeners.
+        dispatcher.connect(self.on_path_changed, signal='ntf_a_list_changed')
+        dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
+
+    def _build_panel(self):
+        text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, f=None: simple_statictext(
+            self, label='',
+            style=s,
+            font=f)
+
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Path Stats'), wx.VERTICAL)
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -77,13 +85,14 @@ class PathStats(wx.Panel):
         self._box_sizer.Add(device_grid, 0,
             wx.EXPAND|wx.LEFT|wx.RIGHT, 5)
 
-        self.Sizer.Add(self._box_sizer, 0, wx.ALL |wx.EXPAND, 5)
+        self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
         self._update_path_stats()
 
-        # Bind listeners.
-        dispatcher.connect(self.on_path_changed, signal='ntf_a_list_changed')
+    def _on_device_list_changed(self):
+        self.DestroyChildren()
+        self._build_panel()
 
     def _update_path_stats(self):
         c_key = lambda p: p.position.device
