@@ -831,7 +831,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsSendStatusCommand(self, inCameraRef, inCameraState, inParam):
-		err = self.dll.EdsSendStatusCommand(c_int(inCameraRef), c_uint(inCameraState), c_int(inParam))
+		err = self.dll.EdsSendStatusCommand(inCameraRef, c_uint(inCameraState), c_int(inParam))
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	

@@ -71,4 +71,4 @@ class EvfPanel(wx.Panel):
         """Handles EVF panel close event."""
         self.timer.Stop()
         self._parent.core.end_edsdk_live_view()
-        self._parent.core.disconnect_edsdk()
+        # self._parent.core.disconnect_edsdk()

@@ -70,6 +70,11 @@ class EDSDKController():
             msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
 
+        cam_count, _, cam_items, *_ = self._camera_settings
+
+        for i in range(cam_count):
+            self.connect(i)
+
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.
 
@@ -88,8 +93,8 @@ class EDSDKController():
             return True
 
         # disconnect from previously connected camera
-        if self._is_connected:
-            self.disconnect()
+        # if self._is_connected:
+        #     self.disconnect()
 
         if cam_count == 0:
             self._print_error_msg(self._console, 'No cameras detected.')
@@ -129,9 +134,6 @@ class EDSDKController():
 
         self._edsdk.EdsSetCameraStateEventHandler(
             cam_ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, cam_ref)
-
-        self._edsdk.EdsSetPropertyData(cam_ref, self._edsdk.PropID_Evf_OutputDevice,
-            0, sizeof(c_uint), self._edsdk.EvfOutputDevice_PC)
 
         self._is_connected = True
         self._print_info_msg(self._console, f'Connected to camera {self._camera_settings.index}')
@@ -251,6 +253,11 @@ class EDSDKController():
 
     def start_live_view(self) -> None:
         """Starts the live view for the connected camera."""
+
+        self._edsdk.EdsSetPropertyData(
+            self._camera_settings.ref, self._edsdk.PropID_Evf_OutputDevice,
+            0, sizeof(c_uint), self._edsdk.EvfOutputDevice_TFT|self._edsdk.EvfOutputDevice_PC)
+
         self._evf_stream = self._edsdk.EdsCreateMemoryStream(sizeof(c_void_p))
         self._evf_image_ref = self._edsdk.EdsCreateEvfImageRef(self._evf_stream)
 
@@ -290,6 +297,9 @@ class EDSDKController():
 
     def end_live_view(self):
         """Ends the live view for the connected camera."""
+        self._edsdk.EdsSetPropertyData(
+            self._camera_settings.ref, self._edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), 0)
+
         self._edsdk.EdsRelease(self._evf_stream)
         self._edsdk.EdsRelease(self._evf_image_ref)
 
