@@ -46,10 +46,10 @@ class DeviceActionsPanel(wx.Panel):
     def _on_live_view(self, event: wx.CommandEvent) -> None:
         cam_index = self._device.device_id
 
-        # if self._parent.core.connect_edsdk(cam_index):
-        self._parent.parent.add_evf_pane()
-        # else:
-        #     show_msg_dialog('Please connect the camera to start live view.', 'Start Live View')
+        if self._parent.core.connect_edsdk(cam_index):
+            self._parent.parent.add_evf_pane()
+        else:
+            show_msg_dialog('Please connect the camera to start live view.', 'Start Live View')
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""

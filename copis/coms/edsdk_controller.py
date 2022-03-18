@@ -72,9 +72,6 @@ class EDSDKController():
 
         cam_count, _, cam_items, *_ = self._camera_settings
 
-        for i in range(cam_count):
-            self.connect(i)
-
     def connect(self, index: int = 0) -> bool:
         """Connect to camera at index, and init it for capturing images.
 
@@ -93,8 +90,8 @@ class EDSDKController():
             return True
 
         # disconnect from previously connected camera
-        # if self._is_connected:
-        #     self.disconnect()
+        if self._is_connected:
+            self.disconnect()
 
         if cam_count == 0:
             self._print_error_msg(self._console, 'No cameras detected.')

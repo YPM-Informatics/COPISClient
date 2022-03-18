@@ -57,9 +57,9 @@ class StatsPanel(scrolled.ScrolledPanel):
 
         if self._stats_panels['path_stats'].IsShown() != is_shown:
             self._stats_panels['path_stats'].Show(is_shown)
-            self.Sizer.RepositionChildren(self.Sizer.MinSize)
 
-            self.parent.update_right_dock()
+        self.Sizer.RepositionChildren(self.Sizer.MinSize)
+        self.parent.update_right_dock()
 
     def build_panels(self) -> None:
         """Initialize all stats panels."""
