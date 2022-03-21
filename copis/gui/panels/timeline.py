@@ -13,11 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
-"""TimelinePanel class.
-
-TODO: Get timeline buttons to actually modify the action list
-TODO: Overhaul timeline panel visually
-"""
+"""TimelinePanel class."""
 
 import copy
 import wx
@@ -46,7 +42,7 @@ class TimelinePanel(wx.Panel):
     _MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
     _SNAP_COMMANDS = [ActionType.C0, ActionType.C1]
 
-    def __init__(self, parent, *args, **kwargs) -> None:
+    def __init__(self, parent) -> None:
         """Initializes TimelinePanel with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self._parent = parent
@@ -67,6 +63,7 @@ class TimelinePanel(wx.Panel):
         dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
         dispatcher.connect(self._on_pose_set_selected, signal='ntf_s_selected')
         dispatcher.connect(self._on_pose_set_deselected, signal='ntf_s_deselected')
+        dispatcher.connect(self._on_device_position_copied, signal='ntf_device_position_copied')
 
         self.Layout()
 
@@ -118,6 +115,15 @@ class TimelinePanel(wx.Panel):
             caption = f'{key}: {value} {units}'
 
         return caption
+
+
+    def _on_device_position_copied(self, data):
+        device_id, x, y, z, p, t = data
+        g_args = create_action_args([x, y, z, p, t])
+        c_args = create_action_args([1.5], 'S')
+        payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+
+        self._copied_pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
     def _on_pose_set_deselected(self, set_index):
         root = self.timeline.GetRootItem()

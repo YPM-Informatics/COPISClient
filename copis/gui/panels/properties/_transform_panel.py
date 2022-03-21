@@ -71,7 +71,6 @@ class TransformPanel(wx.Panel):
         self._init_gui()
 
         # Bind listeners
-
         if self._is_live:
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
 
@@ -82,6 +81,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def x(self) -> float:
+        """Returns X coordinate control value."""
         return self._x
 
     @x.setter
@@ -91,6 +91,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def y(self) -> float:
+        """Returns Y coordinate control value."""
         return self._y
 
     @y.setter
@@ -100,6 +101,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def z(self) -> float:
+        """Returns Z coordinate control value."""
         return self._z
 
     @z.setter
@@ -109,6 +111,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def p(self) -> float:
+        """Returns pan heading control value."""
         return self._p
 
     @p.setter
@@ -118,6 +121,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def t(self) -> float:
+        """Returns tilt heading control value."""
         return self._t
 
     @t.setter
@@ -127,6 +131,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def xyz_step(self) -> float:
+        """Returns xyz step control value."""
         return self._xyz_step
 
     @xyz_step.setter
@@ -136,6 +141,7 @@ class TransformPanel(wx.Panel):
 
     @property
     def pt_step(self) -> float:
+        """Returns pan/tilt step control value."""
         return self._pt_step
 
     @pt_step.setter
@@ -168,9 +174,15 @@ class TransformPanel(wx.Panel):
                 wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
             (self._z_ctrl, 0, wx.EXPAND, 0),
             (10, 0),
-            (0, 0),
             (0, 0)
         ])
+
+        if self._is_live:
+            self._copy_pos_btn.Show()
+            grid.Add(self._copy_pos_btn)
+        else:
+            self._copy_pos_btn.Hide()
+            grid.Add(0, 0)
 
         self._box_sizer.Add(grid, 0, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
 
@@ -329,7 +341,11 @@ class TransformPanel(wx.Panel):
             name='pt_step', default_unit=self._PT_UNIT, unit_conversions=pt_units)
         self._feed_rate_ctrl = wx.TextCtrl(self, value="2500", size=(80, -1),
             name='feed_rate')
+        self._copy_pos_btn = wx.Button(self, label='Copy Position')
+        self.Bind(wx.EVT_BUTTON, self._on_copy_position)
+
         self._feed_rate_ctrl.Hide()
+        self._copy_pos_btn.Hide()
 
         self._add_freestyle_transform_controls()
 
@@ -340,6 +356,12 @@ class TransformPanel(wx.Panel):
 
         self.Sizer.Add(self._box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
+
+    def _on_copy_position(self, _) -> None:
+        copy = (self._device.device_id, self.x, self.y, self.z,
+            dd_to_rad(self.p), dd_to_rad(self.t))
+
+        dispatcher.send('ntf_device_position_copied', data=copy)
 
     def _get_proxy_name(self, idx: int):
         proxies = self.parent.core.project.proxies
@@ -388,7 +410,7 @@ class TransformPanel(wx.Panel):
     def _play_position(self, values, keys):
         g_args = create_action_args(values, keys)
         pose = Pose(Action(ActionType.G1, self._device.device_id,
-                len(g_args), g_args), [])
+            len(g_args), g_args), [])
 
         self.parent.core.play_poses([pose])
 
