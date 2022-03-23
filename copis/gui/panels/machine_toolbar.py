@@ -187,10 +187,10 @@ class MachineToolbar(aui.AuiToolBar):
                 show_msg_dialog(msg, 'Imaging')
                 return
 
-            path = show_folder_dialog('Save Images to Folder')
+            path = '' # show_folder_dialog('Save Images to Folder')
 
-            if not path:
-                return
+            # if not path:
+            #     return
 
             self._core.start_imaging(path)
 

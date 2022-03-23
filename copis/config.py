@@ -46,11 +46,11 @@ class Config():
             'debug_env': 'prod'
         },
         'Machine': {
-            'size_x': '700',
-            'size_y': '800',
-            'size_z': '450',
-            'origin_x': '350',
-            'origin_y': '400',
+            'size_x': '800',
+            'size_y': '900',
+            'size_z': '500',
+            'origin_x': '400',
+            'origin_y': '450',
             'origin_z': '0'
         }
     }

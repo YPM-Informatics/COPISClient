@@ -536,10 +536,10 @@ class TimelinePanel(wx.Panel):
         can_image = self._assert_can_image()
 
         if can_image:
-            path = show_folder_dialog('Save Images to Folder')
+            path = '' #show_folder_dialog('Save Images to Folder')
 
-            if not path:
-                return
+            # if not path:
+            #     return
 
             self.core.start_imaging(path)
 
