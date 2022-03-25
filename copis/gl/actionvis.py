@@ -233,6 +233,10 @@ class GLActionVis:
 
             for key, value in self._items['point'].items():
                 mats = glm.array([p[1] * scale for p in value])
+                feat_mats = []
+
+                if any(p[2] for p in value):
+                    feat_mats = glm.array([p[1] * scale for p in value if p[2]])
 
                 color = shade_color(vec4(self.colors[key % len(self.colors)]), -0.3)
                 cols = glm.array([color] * len(value))
@@ -242,20 +246,26 @@ class GLActionVis:
                 # If point is selected (individually or highlighted in a set), darken its color.
                 # If it's imaged, gray it out.
                 for i, v in enumerate(value):
+                    feat_offset = len(list(filter(lambda p: not p[2], value[:i])))
+
                     # Un-offset ids.
                     pose_index = v[0] - self._num_devices
                     if selected_poses and pose_index in selected_poses:
                         shade_factor = .6
                         cols[i] = shade_color(vec4(cols[i]), shade_factor)
-                        feat_color_mods[i] = vec3(2, shade_factor, 0)
+
+                        if v[2]:
+                            feat_color_mods[i - feat_offset] = vec3(2, shade_factor, 0)
                     elif imaged_poses and pose_index in imaged_poses:
                         cols[i] = vec4(vec3(.75), 1)
-                        feat_color_mods[i] = vec3(3, 1, 1)
+
+                        if v[2]:
+                            feat_color_mods[i - feat_offset] = vec3(3, 1, 1)
 
                 ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
                 self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
-                self._bind_device_features(('pt_feature', key), mats, feat_color_mods)
+                self._bind_device_features(('pt_feature', key), feat_mats, feat_color_mods)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -304,15 +314,17 @@ class GLActionVis:
             for action in pose.get_actions():
                 if action.atype in (ActionType.G0, ActionType.G1):
                     args = get_action_args_values(action.args)
-                    self._items['line'][action.device].append(
-                        (i + self._num_devices, xyzpt_to_mat4(*args[:5])))
+                    data = (i + self._num_devices, xyzpt_to_mat4(*args[:5]))
+
+                    self._items['line'][action.device].append(data)
+                    self._items['point'][action.device].append(data + (False,))
                 elif action.atype in (ActionType.C0, ActionType.C1):
                     if action.device not in self._items['line'].keys():
                         continue
 
-                    data = self._items['line'][action.device][-1]
-                    self._items['point'][action.device].append(data)
-
+                    data = list(self._items['point'][action.device][-1])
+                    data[2] = True
+                    self._items['point'][action.device][-1] = tuple(data)
                 else:
                     # TODO!
                     pass
@@ -509,7 +521,11 @@ class GLActionVis:
         vao = self._vaos[name][key]
         vbo = glGenBuffers(2)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
-        glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
+
+        if mat:
+            glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
+        else:
+            glBufferData(GL_ARRAY_BUFFER, 0, ctypes.c_void_p(0), GL_STATIC_DRAW)
         glBindVertexArray(vao)
 
         # Modelmats.
