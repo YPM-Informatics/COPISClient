@@ -90,52 +90,6 @@ class MachineMembersMixin:
         """Returns a value indicating whether the machine is homed."""
         return all(dvc.is_homed for dvc in self.project.devices)
 
-    # def _back_off(self, device_360):
-    #     device_id = device_360[0]
-    #     # TODO: make this: device radius - (dist(cam/proxy) - proxy object radius).
-    #     dist = 25
-    #     dvc = self._get_device(device_id)
-
-    #     pos1 = dvc.serial_response.position
-    #     pos2 = Point5(*[float(arg[1]) for arg in device_360[1].args])
-
-    #     # The right formula for this is new_x = x + (dist * cos(pan)) &
-    #     # new_y = y + (dist * sin(pan)). but since our pan angle is measured
-    #     # relative to the positive y axis, we have to flip sine and cosine.
-    #     x1 = sanitize_number(pos1.x + (dist * sin(dd_to_rad(pos1.p))))
-    #     y1 = sanitize_number(pos1.y + (dist * cos(dd_to_rad(pos1.p))))
-    #     z1 = pos1.z
-
-    #     x2 = sanitize_number(pos2.x + (dist * sin(pos2.p)))
-    #     y2 = sanitize_number(pos2.y + (dist * cos(pos2.p)))
-    #     z2 = pos2.z
-
-    #     pt1 = Point5(x1, y1, z1, dd_to_rad(pos1.p), dd_to_rad(pos1.t))
-    #     pt2 = Point5(x2, y2, z2, pos2.p, pos2.t)
-
-    #     return[pt1, pt2]
-
-    # def _get_imminent_360s(self, actions):
-    #     device_ids = list(set(a.device for a in actions))
-    #     move_codes = [ActionType.G0, ActionType.G1]
-
-    #     results = []
-    #     for did in device_ids:
-    #         dvc = self._get_device(did)
-    #         move_actions = [a for a in actions if a.device == did and a.atype in move_codes]
-    #         move_action = move_actions[0] if len(move_actions) > 0 else None
-
-    #         if move_action and dvc.serial_response:
-    #             last_pan = dvc.serial_response.position.p
-    #             pan_arg = [a for a in move_action.args if a[0].lower() == 'p']
-    #             next_pan = rad_to_dd(float(pan_arg[0][1])) if pan_arg else None
-
-    #             if next_pan is not None and abs(next_pan - last_pan) > 180:
-    #                 print_info_msg(self.console, f'last: {last_pan}, next: {next_pan}, diff: {next_pan - last_pan}')
-    #                 results.append((did, move_action))
-
-    #     return results
-
     def _get_move_commands(self, is_absolute, *device_ids):
         actions = []
         all_device_ids = [dvc.device_id for dvc in self.project.devices]

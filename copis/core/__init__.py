@@ -31,13 +31,16 @@ import time
 import warnings
 
 from glm import vec2, vec3
+from pydispatch import dispatcher
 
 from copis.command_processor import serialize_command
-from copis.helpers import print_error_msg, print_debug_msg, print_info_msg
-from copis.globals import ActionType, DebugEnv, WorkType
+from copis.helpers import (args_to_dict, get_timestamp, print_error_msg, print_debug_msg,
+    print_info_msg)
+from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
+from copis.store import load_json_2, save_json_2
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -105,6 +108,10 @@ class COPISCore(
         self._selected_device: int = -1
 
         self._imaging_target: vec3 = vec3()
+        self._imaging_session_path = None
+        self._imaging_session_queue = None
+        self._save_imaging_session = False
+
 
 
     @property
@@ -157,18 +164,6 @@ class COPISCore(
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
 
-            # dvc_360s = self._get_imminent_360s(packet)
-            # for dvc_360 in dvc_360s:
-            #     did = dvc_360[0]
-            #     print_debug_msg(self.console, f'**** DEVICE: {did} IS ABOUT TO TURN!!! ****',
-            #         self._is_dev_env)
-            #     pts = self._back_off(dvc_360)
-
-            #     for i, pt in enumerate(pts):
-            #         args = create_action_args(list(pt))
-            #         jog = Action(ActionType.G1, did, len(args), args)
-            #         packet.insert(i, jog)
-
             print_debug_msg(self.console, f'Packet size is: {len(packet)}',
                 self._is_dev_env)
 
@@ -196,6 +191,7 @@ class COPISCore(
         cmd_lines = '\r'.join(cmds)
 
         if self._serial.is_port_open:
+            img_start_time = get_timestamp(True)
 
             if cmd_lines:
                 print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
@@ -205,6 +201,29 @@ class COPISCore(
                 for dvc in dvcs:
                     dvc.set_is_writing()
 
+                if self._work_type == WorkType.IMAGING:
+                    if self._start_pose_set <= self._current_mainqueue_item and \
+                        self._current_mainqueue_item <= self._end_pose_set:
+                        current_pose_set = self._current_mainqueue_item - self._start_pose_set
+                        previous_pose_set = current_pose_set - 1
+
+                        if self._save_imaging_session:
+                            pose_set = self.project.pose_sets[current_pose_set]
+
+                            for pose in pose_set:
+                                if pose.payload and any(a.atype ==
+                                    ActionType.C0 for a in pose.payload):
+                                    file_name = \
+                                        f'IMG_C_{pose.position.device}_{current_pose_set + 1}.json'
+
+                                    data = {}
+                                    data['position'] = args_to_dict(pose.position.args)
+                                    data['start time'] = img_start_time
+
+                                    save_json_2(self._imaging_session_path, file_name, data)
+                                    self._imaging_session_queue.append(
+                                        (pose.position.device, file_name))
+
                 self._serial.write(cmd_lines)
             else:
                 print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
@@ -212,9 +231,6 @@ class COPISCore(
             if self._work_type == WorkType.IMAGING:
                 if self._start_pose_set <= self._current_mainqueue_item and \
                     self._current_mainqueue_item <= self._end_pose_set:
-                    current_pose_set = self._current_mainqueue_item - self._start_pose_set
-                    previous_pose_set = current_pose_set - 1
-
                     if previous_pose_set > -1:
                         self._imaged_pose_sets.append(previous_pose_set)
 
@@ -233,6 +249,17 @@ class COPISCore(
 
         if path.lower() not in recent_projects:
             self.config.update_recent_projects(path)
+
+    def _on_device_updated(self, device):
+        if len(self._imaging_session_queue) and not device.is_writing and \
+            device.serial_status == ComStatus.IDLE and \
+            device.device_id == self._imaging_session_queue[0][0]:
+            _, file_name = self._imaging_session_queue.pop(0)
+
+            data = load_json_2(self._imaging_session_path, file_name)
+            data['end time'] = get_timestamp(True)
+
+            save_json_2(self._imaging_session_path, file_name, data)
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
@@ -281,8 +308,12 @@ class COPISCore(
 
         self._update_recent_projects(path)
 
-    def start_imaging(self, save_path) -> bool:
+    def start_imaging(self, save_path, keep_last_path) -> bool:
         """Starts the imaging sequence, following the define action path."""
+        def imaging_callback():
+            if self._save_imaging_session:
+                dispatcher.disconnect(self._on_device_updated, signal='ntf_device_updated')
+
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before imaging can start.')
@@ -295,6 +326,17 @@ class COPISCore(
         if not self.is_machine_idle:
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
+
+        if keep_last_path:
+            self._save_imaging_session = False
+        else:
+            self._imaging_session_path = save_path
+            self._save_imaging_session = bool(self._imaging_session_path)
+
+        if self._save_imaging_session:
+            self._imaging_session_queue = []
+            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = list(map(lambda p_set: [a for p in p_set for a in p.get_actions()],
@@ -315,7 +357,10 @@ class COPISCore(
         self._clear_to_send = True
         self._working_thread = threading.Thread(
             target=self._worker,
-            name='working thread'
+            name='working thread',
+            kwargs={
+                "extra_callback": imaging_callback
+            }
         )
         self._working_thread.start()
         return True

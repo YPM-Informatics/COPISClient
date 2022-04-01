@@ -123,6 +123,12 @@ def save_json(filename: str, obj: dict) -> None:
         json.dump(obj, file, indent='\t')
 
 
+def save_json_2(file_dir: str, file_name: str, obj: dict) -> None:
+    """Saves a JSON object to file; with a path join."""
+    filename = os.path.join(file_dir, file_name)
+    save_json(filename, obj)
+
+
 def load_json(filename: str) -> dict:
     """Loads a JSON object from file."""
     with open(filename, 'r') as file:
@@ -130,6 +136,12 @@ def load_json(filename: str) -> dict:
 
     return obj
 
+
+def load_json_2(file_dir: str, file_name: str) -> dict:
+    """Loads a JSON object from file; with a path join."""
+    filename = os.path.join(file_dir, file_name)
+
+    return load_json(filename)
 
 def save_data(filename: str, data: str) -> None:
     """Saves some string data to file."""
