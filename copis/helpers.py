@@ -52,6 +52,7 @@ def timing(f: Callable) -> Callable:
         return result
     return wrap
 
+
 def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
     """Convert x, y, z, pan, tilt into a 4x4 transformation matrix."""
     translation_mat = glm.translate(mat4(), vec3(x, y, z))
@@ -65,9 +66,11 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
 
     return model
 
+
 def point5_to_mat4(point) -> mat4:
     """Convert Point5 into a 4x4 transformation matrix."""
     return xyzpt_to_mat4(point.x, point.y, point.z, point.p, point.t)
+
 
 def shade_color(color: vec4, shade_factor: float) -> vec4:
     """Return darker or lighter shade of color by a shade factor."""
@@ -75,6 +78,7 @@ def shade_color(color: vec4, shade_factor: float) -> vec4:
     color.y = min(1.0, color.y * (1 - shade_factor))    # green
     color.z = min(1.0, color.z * (1 - shade_factor))    # blue
     return color
+
 
 def fade_color(color: vec4, fade_pct: float, alpha: float=None) -> vec4:
     """Returns color faded by fade percentage (0 to 1).
@@ -91,9 +95,11 @@ def fade_color(color: vec4, fade_pct: float, alpha: float=None) -> vec4:
         *map(lambda v: fade_pct + v * (1 - fade_pct), vec3(color)),
         alpha)
 
+
 def get_action_args_values(args: List[tuple]) -> List[float]:
     """Extracts and returns the values for an action arguments' list of tuples."""
     return [float(a[1]) if isinstance(a, tuple) else a for a in args]
+
 
 def create_action_args(values: List[float], keys: str = 'XYZPTFSV'):
     """Given a list of values in the same order as the default keys,
@@ -103,19 +109,23 @@ def create_action_args(values: List[float], keys: str = 'XYZPTFSV'):
     return list(zip(keys, [str(round(c, 3))
         for c in values]))
 
+
 def rad_to_dd(value: float) -> float:
     """Converts radians to decimal degrees."""
     return round(value * pt_units['rad'], 3)
 
+
 def dd_to_rad(value: float) -> float:
     """Converts decimal degrees to radians."""
     return round(value / pt_units['rad'], 3)
+
 
 def is_number(value: str) -> bool:
     """Checks to see if a string is a number (signed int of float).
     Because apparently that's a foreign concept to python -_-"""
     matched = _NUMBER_PATTERN.match(value) is not None
     return len(value) > 0 and matched
+
 
 def sanitize_number(value: float) -> float:
     """Sanitizes a number approaching zero:
@@ -125,26 +135,36 @@ def sanitize_number(value: float) -> float:
 
     return value if value != 0.0 else 0.0
 
+
 def sanitize_point(value: vec3) -> vec3:
     """Sanitizes a vec3 point with coordinates approaching zero."""
     return vec3(list(map(sanitize_number, list(value))))
+
 
 def round_point(value: vec3, places: int=None) -> vec3:
     """Rounds the vertices of a vec3 point."""
     return vec3(list(map(lambda v: round(v, places), list(value))))
 
-def get_timestamp() -> str:
+
+def get_timestamp(add_date:bool=False) -> str:
     """Returns a formatted string representation of the current date and time."""
     now = datetime.datetime.now()
-    return now.strftime('%H:%M:%S.%f')[:-3]
+
+    if add_date:
+        return now.strftime('%m/%d/%Y, %H:%M:%S.%f')[:-3]
+    else:
+        return now.strftime('%H:%M:%S.%f')[:-3]
+
 
 def get_timestamped(msg) -> str:
     """Returns given messages with a timestamp."""
     return f'({get_timestamp()}) {msg}'
 
+
 def interleave_lists(*args):
     """Interleaves items from provided lists into one list."""
     return [val for tup in zip_longest(*args) for val in tup if val is not None]
+
 
 def get_notification_msg(signal, msg) -> str:
     """Returns a notification message tagged based on the signal."""
@@ -154,26 +174,32 @@ def get_notification_msg(signal, msg) -> str:
 
     return f'{padded_tag} {msg}'.strip()
 
+
 def print_debug_msg(console, msg, is_dev_env) -> None:
     """Prints a debug message to the console, if we are in a dev environment."""
     if is_dev_env:
         dispatch_msg(console, 'msg_debug', msg)
 
+
 def print_error_msg(console, msg) -> None:
     """Prints an error message to the console."""
     dispatch_msg(console, 'msg_error', msg)
+
 
 def print_info_msg(console, msg):
     """Prints an info message to the console."""
     dispatch_msg(console, 'msg_info', msg)
 
+
 def print_raw_msg(console, msg):
     """Echos COPIS controller output to the console."""
     dispatch_msg(console, 'msg_raw', msg.strip('\r\n'))
 
+
 def print_echo_msg(console, msg):
     """Echos console command to the console."""
     dispatch_msg(console, 'msg_echo', msg)
+
 
 def dispatch_msg(console, signal, msg):
     """Dispatches a message to the GUI console or standard console if no GUI."""
@@ -183,6 +209,7 @@ def dispatch_msg(console, signal, msg):
     else:
         print(get_notification_msg(signal, ts_msg))
 
+
 def locked(func):
     """Provides thread locking mechanism."""
     @wraps(func)
@@ -191,6 +218,7 @@ def locked(func):
             return func(*args, **kw)
     inner.lock = threading.Lock()
     return inner
+
 
 def create_cuboid(size: vec3) -> List[vec3]:
     """Returns a cuboid centered at 0,0,0 given its size."""
@@ -217,6 +245,7 @@ def create_cuboid(size: vec3) -> List[vec3]:
     vertices.append(vec3(corner.x + size.x, corner.y + size.y, corner.z + size.z))
 
     return list(map(lambda e: vertices[e], face_map))
+
 
 def create_device_features(size: vec3, scale: float, offset: vec3 = vec3(0)):
     """Returns imaging device features (axes & lens lines) centered at 0,0,0
@@ -257,12 +286,14 @@ def create_device_features(size: vec3, scale: float, offset: vec3 = vec3(0)):
 
     return [round(i, 1) for i in points]
 
+
 def collapse_whitespaces(string: str) -> str:
     """Collapses whitespaces to one in a string."""
     output = _WHITESPACE_PATTERN.sub(' ', string)
     output = _OPEN_PAREN_SPACE_PATTERN.sub('(', output)
 
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
+
 
 def get_heading(start: vec3, end: vec3):
     """Returns the heading (pan and tilt) between two points."""
@@ -273,3 +304,14 @@ def get_heading(start: vec3, end: vec3):
     tilt = -atan2(dir_z, sqrt(dir_x * dir_x + dir_y * dir_y))
 
     return vec2(pan, tilt)
+
+
+def args_to_dict(args: List[tuple]) -> dict:
+    """Turns the provided list of args tuples into a dictionary."""
+    dict_args = {}
+
+    if args:
+        for arg_tup in args:
+            dict_args[arg_tup[0]] = float(arg_tup[1])
+
+    return dict_args

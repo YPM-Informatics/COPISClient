@@ -27,7 +27,7 @@ from copis.classes.pose import Pose
 from copis.command_processor import serialize_command
 from copis.globals import ActionType
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
-from copis.gui.wxutils import show_folder_dialog, show_msg_dialog
+from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
 from copis.helpers import (create_action_args, get_heading, is_number, print_debug_msg,
     rad_to_dd, sanitize_number, sanitize_point)
 
@@ -536,12 +536,13 @@ class TimelinePanel(wx.Panel):
         can_image = self._assert_can_image()
 
         if can_image:
-            path = '' #show_folder_dialog('Save Images to Folder')
+            proceed, path, keep_last = prompt_for_imaging_session_path(
+                self.core.imaging_session_path)
 
-            # if not path:
-            #     return
+            if not proceed:
+                return
 
-            self.core.start_imaging(path)
+            self.core.start_imaging(path, keep_last)
 
     def on_copy_command(self, _):
         """Copies the selected pose."""

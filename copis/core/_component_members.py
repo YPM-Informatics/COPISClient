@@ -28,6 +28,11 @@ class ComponentMembersMixin:
         related class members using mixins."""
 
     @property
+    def imaging_session_path(self) -> str:
+        """Returns the user-defined imaging session folder location."""
+        return self._imaging_session_path
+
+    @property
     def imaging_target(self) -> vec3:
         """Returns the coordinates of the last target; (0,0,0) if application just started."""
         return self._imaging_target
