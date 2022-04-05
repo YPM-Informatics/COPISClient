@@ -126,7 +126,7 @@ class MachineStats(wx.Panel):
 
     def _on_device_list_changed(self):
         self._keep_polling = False
-        self._polling_thread.join(3)
+        self._polling_thread.join()
 
         self.DestroyChildren()
         self._build_panel()

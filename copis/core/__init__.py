@@ -30,11 +30,12 @@ import threading
 import time
 import warnings
 
+from itertools import zip_longest
 from glm import vec2, vec3
 from pydispatch import dispatcher
 
 from copis.command_processor import serialize_command
-from copis.helpers import (args_to_dict, get_timestamp, print_error_msg, print_debug_msg,
+from copis.helpers import (point5_to_dict, get_timestamp, print_error_msg, print_debug_msg,
     print_info_msg)
 from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
@@ -57,10 +58,6 @@ class COPISCore(
     """COPISCore. Connects and interacts with devices in system."""
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
-    _G_COMMANDS = [ActionType.G0, ActionType.G1, ActionType.G2, ActionType.G3,
-            ActionType.G4, ActionType.G17, ActionType.G18, ActionType.G19,
-            ActionType.G90, ActionType.G91, ActionType.G92]
-    _C_COMMANDS = [ActionType.C0, ActionType.C1]
 
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
@@ -98,8 +95,8 @@ class COPISCore(
         self._working_thread = None
 
         self._mainqueue = []
-        self._start_pose_set: int = -1
-        self._end_pose_set: int = -1
+        self._pose_set_offset_start: int = -1
+        self._pose_set_offset_end: int = -1
         self._current_mainqueue_item: int = -1
         self._imaged_pose_sets: List[int] = MonitoredList('ntf_i_list_changed', [])
         self._selected_pose: int = -1
@@ -164,7 +161,10 @@ class COPISCore(
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
 
-            print_debug_msg(self.console, f'Packet size is: {len(packet)}',
+            packet_size = len(packet)
+            if isinstance(packet, tuple) and list(map(type, packet)) == [int, list]:
+                packet_size = len(packet[1])
+            print_debug_msg(self.console, f'Packet size is: {packet_size}',
                 self._is_dev_env)
 
             self._send(*packet)
@@ -182,6 +182,13 @@ class COPISCore(
 
         dvcs = []
         cmds = []
+        current_pose_set = -1
+
+        if isinstance(commands, tuple) and \
+            list(map(type, commands)) == [int, list]:
+            current_pose_set = commands[0]
+            commands = commands[1]
+
         for command in commands:
             if not any(d.device_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
@@ -201,43 +208,36 @@ class COPISCore(
                 for dvc in dvcs:
                     dvc.set_is_writing()
 
-                if self._work_type == WorkType.IMAGING:
-                    if self._start_pose_set <= self._current_mainqueue_item and \
-                        self._current_mainqueue_item <= self._end_pose_set:
-                        current_pose_set = self._current_mainqueue_item - self._start_pose_set
-                        previous_pose_set = current_pose_set - 1
+                if self._save_imaging_session:
+                    for command in commands:
+                        if command.atype == ActionType.C0:
+                            device = self._get_device(command.device)
+                            file_name = \
+                                f'IMG_C_{command.device}_{current_pose_set + 1}.json'
 
-                        if self._save_imaging_session:
-                            pose_set = self.project.pose_sets[current_pose_set]
+                            data = {}
+                            data['position'] = point5_to_dict(device.position)
+                            data['start time'] = img_start_time
 
-                            for pose in pose_set:
-                                if pose.payload and any(a.atype ==
-                                    ActionType.C0 for a in pose.payload):
-                                    file_name = \
-                                        f'IMG_C_{pose.position.device}_{current_pose_set + 1}.json'
-
-                                    data = {}
-                                    data['position'] = args_to_dict(pose.position.args)
-                                    data['start time'] = img_start_time
-
-                                    save_json_2(self._imaging_session_path, file_name, data)
-                                    self._imaging_session_queue.append(
-                                        (pose.position.device, file_name))
+                            save_json_2(self._imaging_session_path, file_name, data)
+                            self._imaging_session_queue.append((command.device, file_name))
 
                 self._serial.write(cmd_lines)
             else:
                 print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
 
             if self._work_type == WorkType.IMAGING:
-                if self._start_pose_set <= self._current_mainqueue_item and \
-                    self._current_mainqueue_item <= self._end_pose_set:
+                if self._pose_set_offset_start <= self._current_mainqueue_item and \
+                    self._current_mainqueue_item <= self._pose_set_offset_end:
+                    previous_pose_set = current_pose_set - 1
+
                     if previous_pose_set > -1:
                         self._imaged_pose_sets.append(previous_pose_set)
 
                     self.select_pose_set(current_pose_set)
                 else:
-                    if self._current_mainqueue_item == self._end_pose_set + 1:
-                        self._imaged_pose_sets.append(self._end_pose_set - self._start_pose_set)
+                    if self._current_mainqueue_item == self._pose_set_offset_end + 1:
+                        self._imaged_pose_sets.append(current_pose_set)
 
                     self.select_pose_set(-1)
 
@@ -260,14 +260,15 @@ class COPISCore(
             data['end time'] = get_timestamp(True)
 
             save_json_2(self._imaging_session_path, file_name, data)
+            printed = 'test'
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
-        self._start_pose_set = -1
-        self._end_pose_set = -1
+        self._pose_set_offset_start = -1
+        self._pose_set_offset_end = -1
         self._current_mainqueue_item = -1
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
@@ -284,8 +285,8 @@ class COPISCore(
         self.select_pose(-1)
         self.select_device(-1)
         self.select_proxy(-1)
-        self._start_pose_set = -1
-        self._end_pose_set = -1
+        self._pose_set_offset_start = -1
+        self._pose_set_offset_end = -1
         self._current_mainqueue_item = -1
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
@@ -313,6 +314,17 @@ class COPISCore(
         def imaging_callback():
             if self._save_imaging_session:
                 dispatcher.disconnect(self._on_device_updated, signal='ntf_device_updated')
+                self._save_imaging_session = False
+
+        def process_pose_sets():
+            packets = []
+
+            for i, p_set in enumerate(self.project.pose_sets):
+                zipped = [(i, [val for val in tup if val is not None]) for tup in
+                    zip_longest(*[p.get_seq_actions() for p in p_set])]
+                packets.extend(zipped)
+
+            return packets
 
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
@@ -337,10 +349,8 @@ class COPISCore(
             self._imaging_session_queue = []
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
 
-
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
-        body = list(map(lambda p_set: [a for p in p_set for a in p.get_actions()],
-            self.project.pose_sets))
+        body = process_pose_sets()
         footer = self._get_initialization_commands(ActionType.G1)
         footer.extend(self._disengage_motors_commands)
 
@@ -348,8 +358,8 @@ class COPISCore(
         self._mainqueue.extend(header)
         self._mainqueue.extend(body)
         self._mainqueue.extend(footer)
-        self._start_pose_set = len(header)
-        self._end_pose_set = self._start_pose_set + len(body) - 1
+        self._pose_set_offset_start = len(header)
+        self._pose_set_offset_end = self._pose_set_offset_start + len(body) - 1
         self._current_mainqueue_item = 0
         self._work_type = WorkType.IMAGING
 
@@ -423,8 +433,8 @@ class COPISCore(
             self._mainqueue = []
             self._is_machine_paused = False
             self._clear_to_send = True
-            self._start_pose_set = -1
-            self._end_pose_set = -1
+            self._pose_set_offset_start = -1
+            self._pose_set_offset_end = -1
             self._current_mainqueue_item = -1
             self.select_pose_set(-1)
             self._imaged_pose_sets.clear()

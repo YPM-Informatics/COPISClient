@@ -33,3 +33,14 @@ class Pose(NamedTuple):
             actions.extend(self.payload)
 
         return actions
+
+    def get_seq_actions(self) -> List[Action]:
+        """Works like get_actions except it still holds a spot in the list
+            even if there's no position."""
+
+        actions = [self.position] if self.position else [None]
+
+        if self.payload and len(self.payload) > 0:
+            actions.extend(self.payload)
+
+        return actions

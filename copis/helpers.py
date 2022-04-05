@@ -306,12 +306,15 @@ def get_heading(start: vec3, end: vec3):
     return vec2(pan, tilt)
 
 
-def args_to_dict(args: List[tuple]) -> dict:
+def point5_to_dict(point) -> dict:
     """Turns the provided list of args tuples into a dictionary."""
     dict_args = {}
 
-    if args:
-        for arg_tup in args:
-            dict_args[arg_tup[0]] = float(arg_tup[1])
+    if point:
+        dict_args['X'] = point.x
+        dict_args['Y'] = point.y
+        dict_args['Z'] = point.z
+        dict_args['Pan'] = point.p
+        dict_args['Tilt'] = point.t
 
     return dict_args
