@@ -84,21 +84,21 @@ class CommunicationMembersMixin:
         return True
 
     def start_edsdk_live_view(self):
-        """Start EDSDK Live View."""
+        """Starts EDSDK Live View."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             self._edsdk.start_live_view()
 
     def end_edsdk_live_view(self):
-        """Stop EDSDK Live View."""
+        """Stops EDSDK Live View."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             self._edsdk.end_live_view()
 
     def download_edsdk_evf_data(self):
-        """Download EDSDK Live View image frame data."""
+        """Downloads EDSDK Live View image frame data."""
         data = None
 
         if not self._is_edsdk_enabled:
@@ -109,11 +109,18 @@ class CommunicationMembersMixin:
         return data
 
     def snap_edsdk_picture(self):
-        """Take a picture via EDSDK."""
+        """Takes a picture via EDSDK."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             self._edsdk.take_picture()
+
+    def do_edsdk_focus(self):
+        """Focuses the camera via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.focus()
 
     # --------------------------------------------------------------------------
     # Serial methods

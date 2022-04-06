@@ -19,6 +19,10 @@ import io
 import wx
 from PIL import Image
 
+from copis.helpers import create_action_args
+from copis.classes import Action, Pose
+from copis.globals import ActionType
+
 
 class EvfPanel(wx.Panel):
     """Electronic viewfinder panel. Shows live feed of connected device.
@@ -35,6 +39,7 @@ class EvfPanel(wx.Panel):
         self.timer = wx.CallLater(10, self._update)
 
         self.Bind(wx.EVT_PAINT, self._on_paint)
+        self.Bind(wx.EVT_LEFT_DCLICK, self._on_left_dclick)
 
         self._parent.core.start_edsdk_live_view()
         self._update()
@@ -66,6 +71,9 @@ class EvfPanel(wx.Panel):
         if bitmap:
             dc = wx.AutoBufferedPaintDC(self)
             dc.DrawBitmap(bitmap, 0, 0)
+
+    def _on_left_dclick(self, _):
+        self._parent.core.do_edsdk_focus()
 
     def on_close(self):
         """Handles EVF panel close event."""

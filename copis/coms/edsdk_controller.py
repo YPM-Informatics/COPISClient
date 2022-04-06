@@ -248,6 +248,31 @@ class EDSDKController():
     #     """
     #     return False
 
+    def focus(self) -> None:
+        """Focuses the camera."""
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+            return False
+
+        try:
+            self._is_waiting_for_image = True
+
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_PressShutterButton,
+                EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
+
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_PressShutterButton,
+                EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
+
+            return None
+
+        except Exception as err:
+            self._print_error_msg(self._console,
+                'An exception occurred while taking a photo with camera '
+                f'{self._camera_settings.index}: {err.args[0]}')
+            return False
+
     def start_live_view(self) -> None:
         """Starts the live view for the connected camera."""
 
@@ -426,6 +451,7 @@ terminate = _instance.terminate
 start_live_view = _instance.start_live_view
 end_live_view = _instance.end_live_view
 download_evf_data = _instance.download_evf_data
+focus = _instance.focus
 
 
 @mproperty
