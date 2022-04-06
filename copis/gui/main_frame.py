@@ -742,17 +742,18 @@ class MainWindow(wx.Frame):
 
     def remove_evf_pane(self) -> None:
         """Removes camera liveview panel."""
-        evf_pane = self._mgr.GetPane(self.evf_panel)
-        self._mgr.ShowPane(self.evf_panel, False)
-        self.menuitems[evf_pane.name].Check(False)
+        if 'evf' in self.panels:
+            evf_pane = self._mgr.GetPane(self.evf_panel)
+            self._mgr.ShowPane(self.evf_panel, False)
+            self.menuitems[evf_pane.name].Check(False)
 
-        evf_pane.window.on_close()
-        self._mgr.DetachPane(evf_pane.window)
-        self._mgr.Update()
+            evf_pane.window.on_close()
+            self._mgr.DetachPane(evf_pane.window)
+            self._mgr.Update()
 
-        evf_pane.window.Destroy()
-        self.panels.pop('evf')
-        self.menuitems['evf'].Enable(False)
+            evf_pane.window.Destroy()
+            self.panels.pop('evf')
+            self.menuitems['evf'].Enable(False)
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""

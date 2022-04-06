@@ -43,7 +43,9 @@ class DeviceActionsPanel(wx.Panel):
         self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 5)
         self.Layout()
 
-    def _on_live_view(self, event: wx.CommandEvent) -> None:
+    def _on_live_view(self, _) -> None:
+        self._parent.parent.remove_evf_pane()
+
         if self._parent.core.connect_edsdk(self._device.device_id):
             self._parent.parent.add_evf_pane()
         else:

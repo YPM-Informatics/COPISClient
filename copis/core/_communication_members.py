@@ -65,14 +65,19 @@ class CommunicationMembersMixin:
         if self._is_edsdk_enabled:
             self._edsdk.terminate()
 
-    def connect_edsdk(self, cam_index):
+    def connect_edsdk(self, device_id):
         """Connects to the provided camera via EDSDK."""
         connected = False
 
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            connected = self._edsdk.connect(cam_index)
+            device = self._get_device(device_id)
+
+            if device:
+                connected = self._edsdk.connect(device.port, device_id)
+            else:
+                print_error_msg(self.console, f'Camera {device_id} cannot be found.')
 
         return connected
 

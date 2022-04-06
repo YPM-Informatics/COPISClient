@@ -38,6 +38,7 @@ _SCIENTIFIC_NOTATION_PATTERN = re.compile(r'[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)
 _WHITESPACE_PATTERN = re.compile(r'\s+')
 _OPEN_PAREN_SPACE_PATTERN = re.compile(r'\(\s+')
 _CLOSE_PAREN_SPACE_PATTERN = re.compile(r'\s+\)')
+_HARDWARE_ID_PATTERN = re.compile(r'(?<=\?\\)(.*)(?=#)')
 
 
 def timing(f: Callable) -> Callable:
@@ -318,3 +319,14 @@ def point5_to_dict(point) -> dict:
         dict_args['Tilt'] = point.t
 
     return dict_args
+
+
+def get_hardware_id(port_name: str='') -> str:
+    """Extracts and returns the hardware id from an EDSDK device's port name."""
+    h_id = ''
+    result = _HARDWARE_ID_PATTERN.search(port_name)
+
+    if result and result.group():
+        h_id = result.group().replace('#', '\\')
+
+    return h_id

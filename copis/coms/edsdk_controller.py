@@ -28,7 +28,7 @@ from canon.EDSDKLib import (
     EDSDK, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsPoint, EdsRect, EdsSaveTo,
     EdsShutterButton, EdsSize, Structure)
 
-from copis.helpers import print_error_msg, print_info_msg
+from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
 
 
 class EDSDKController():
@@ -43,6 +43,7 @@ class EDSDKController():
         self._print_error_msg = print_error_msg
         self._print_info_msg = print_info_msg
         self._string_at = string_at
+        self._get_hardware_id = get_hardware_id
 
         self._camera_settings = CameraSettings()
         self._image_settings = ImageSettings()
@@ -66,30 +67,44 @@ class EDSDKController():
             self._edsdk.EdsInitializeSDK()
             self._update_camera_list()
 
+            # set handlers
+            object_prototype = self._win_func_type(c_int, c_int, c_void_p, c_void_p)
+            EDSDKController._object_handler = object_prototype(self._handle_object)
+
+            property_prototype = self._win_func_type(c_int, c_int, c_int, c_int, c_void_p)
+            EDSDKController._property_handler = property_prototype(self._handle_property)
+
+            state_prototype = self._win_func_type(c_int, c_int, c_int, c_void_p)
+            EDSDKController._state_handler = state_prototype(self._handle_state)
+
         except Exception as err:
             msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
 
-        cam_count, _, cam_items, *_ = self._camera_settings
 
-    def connect(self, index: int = 0) -> bool:
-        """Connect to camera at index, and init it for capturing images.
+    def connect(self, hard_id: str, soft_id: int) -> bool:
+        """Connects to and initializes a camera at the specified IDs.
 
         Args:
-            index: Defaults to 0.
+            hard_id: Hardware ID set in the device config. It should match
+                the devices identifier on the system.
+            soft_id: Software ID set in the device config. This is the COPIS
+                assigned device ID.
 
         Returns:
             True if successful, False otherwise.
         """
         self._update_camera_list()
 
-        cam_count, cam_index, cam_items, cam_ref = self._camera_settings
+        cam_count, cam_hard_id, *_ = self._camera_settings
+        hard_ids = [self._get_hardware_id(i.szPortName.decode("utf-8")).upper()
+            for i in self._get_device_info_list()]
 
-        # already connected
-        if self._is_connected and index == cam_index:
+        # Already connected.
+        if self._is_connected and hard_id.upper() == cam_hard_id.upper():
             return True
 
-        # disconnect from previously connected camera
+        # Disconnect from previously connected camera.
         if self._is_connected:
             self.disconnect()
 
@@ -97,43 +112,36 @@ class EDSDKController():
             self._print_error_msg(self._console, 'No cameras detected.')
             return False
 
-        # invalid index
-        if index < 0 or index >= cam_count:
-            self._print_error_msg(self._console, f'Invalid camera index: {index}.')
+        # Invalid camera identifier.
+        if hard_id.upper() not in hard_ids:
+            self._print_error_msg(self._console, f'Camera {soft_id} not found.')
             return False
 
-        self._camera_settings.index = index
-        self._camera_settings.ref = self._edsdk.EdsGetChildAtIndex(cam_items, index)
+        self._camera_settings.software_id = soft_id
+        self._camera_settings.hardware_id = hard_id.upper()
+        self._camera_settings.ref = self._get_camera_ref(
+            self._camera_settings.hardware_id)
 
-        *_, cam_ref = self._camera_settings
+        self._edsdk.EdsOpenSession(self._camera_settings.ref)
+        self._edsdk.EdsSetPropertyData(self._camera_settings.ref,
+            self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+        self._edsdk.EdsSetCapacity(self._camera_settings.ref,
+            EdsCapacity(10000000, 512, 1))
 
-        self._edsdk.EdsOpenSession(cam_ref)
-        self._edsdk.EdsSetPropertyData(
-            cam_ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+        self._edsdk.EdsSetObjectEventHandler(self._camera_settings.ref,
+            self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
 
-        self._edsdk.EdsSetCapacity(cam_ref, EdsCapacity(10000000, 512, 1))
+        self._edsdk.EdsSetPropertyEventHandler(self._camera_settings.ref,
+            self._edsdk.PropertyEvent_All, EDSDKController._property_handler,
+            self._camera_settings.ref)
 
-        # set handlers
-        object_prototype = self._win_func_type(c_int, c_int, c_void_p, c_void_p)
-        EDSDKController._object_handler = object_prototype(self._handle_object)
-
-        property_prototype = self._win_func_type(c_int, c_int, c_int, c_int, c_void_p)
-        EDSDKController._property_handler = property_prototype(self._handle_property)
-
-        state_prototype = self._win_func_type(c_int, c_int, c_int, c_void_p)
-        EDSDKController._state_handler = state_prototype(self._handle_state)
-
-        self._edsdk.EdsSetObjectEventHandler(
-            cam_ref, self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
-
-        self._edsdk.EdsSetPropertyEventHandler(
-            cam_ref, self._edsdk.PropertyEvent_All, EDSDKController._property_handler, cam_ref)
-
-        self._edsdk.EdsSetCameraStateEventHandler(
-            cam_ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, cam_ref)
+        self._edsdk.EdsSetCameraStateEventHandler(self._camera_settings.ref,
+            self._edsdk.StateEvent_All, EDSDKController._state_handler,
+            self._camera_settings.ref)
 
         self._is_connected = True
-        self._print_info_msg(self._console, f'Connected to camera {self._camera_settings.index}')
+        self._print_info_msg(self._console,
+            f'Connected to camera {self._camera_settings.software_id}')
 
         return self._is_connected
 
@@ -150,10 +158,11 @@ class EDSDKController():
             self._edsdk.EdsCloseSession(self._camera_settings.ref)
 
         self._print_info_msg(self._console,
-            f'Disconnected from camera {self._camera_settings.index}')
+            f'Disconnected from camera {self._camera_settings.software_id}')
 
         self._camera_settings.ref = None
-        self._camera_settings.index = -1
+        self._camera_settings.software_id = -1
+        self._camera_settings.hardware_id = None
 
         self._is_connected = False
 
@@ -188,7 +197,7 @@ class EDSDKController():
         except Exception as err:
             self._print_error_msg(self._console,
                 'An exception occurred while taking a photo with camera '
-                f'{self._camera_settings.index}: {err.args[0]}')
+                f'{self._camera_settings.software_id}: {err.args[0]}')
             return False
 
     def terminate(self):
@@ -225,16 +234,14 @@ class EDSDKController():
     @property
     def device_list(self) -> List[EdsDeviceInfo]:
         """Returns a list of descriptions of devices connected via edsdk."""
-        devices = []
         self._update_camera_list()
 
-        cam_count, cam_index, cam_items, *_ = self._camera_settings
+        devices = []
+        infos = self._get_device_info_list()
 
-        for i in range(cam_count):
-            ref = self._edsdk.EdsGetChildAtIndex(cam_items, i)
-            info = self._edsdk.EdsGetDeviceInfo(ref)
-
-            connected = self._is_connected and i == cam_index
+        for info in infos:
+            h_id = self._get_hardware_id(info.szPortName.decode("utf-8"))
+            connected = self._is_connected and h_id == self._camera_settings.hardware_id
 
             devices.append((info, connected))
 
@@ -261,6 +268,8 @@ class EDSDKController():
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
 
+            time.sleep(.5)
+
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
@@ -268,9 +277,13 @@ class EDSDKController():
             return None
 
         except Exception as err:
-            self._print_error_msg(self._console,
-                'An exception occurred while taking a photo with camera '
-                f'{self._camera_settings.index}: {err.args[0]}')
+            msg = ' '.join(['An exception occurred while focusing with camera',
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
             return False
 
     def start_live_view(self) -> None:
@@ -324,6 +337,39 @@ class EDSDKController():
 
         self._edsdk.EdsRelease(self._evf_stream)
         self._edsdk.EdsRelease(self._evf_image_ref)
+
+    def _get_device_info_list(self):
+        infos = []
+
+        count = self._camera_settings.count
+        items = self._camera_settings.items
+
+        for i in range(count):
+            ref = self._edsdk.EdsGetChildAtIndex(items, i)
+            info = self._edsdk.EdsGetDeviceInfo(ref)
+
+            infos.append(info)
+
+        return infos
+
+    def _get_camera_info(self, hardware_id):
+        def comparer(c_info):
+            h_id = self._get_hardware_id(c_info.szPortName.decode("utf-8")).upper()
+            return h_id == hardware_id.upper()
+
+        return next(filter(comparer, self._get_device_info_list()), None)
+
+    def _get_camera_ref(self, hardware_id):
+        info = self._get_camera_info(hardware_id)
+        cam_index = -1
+
+        for i, item in enumerate(self._get_device_info_list()):
+            if info.szPortName == item.szPortName:
+                cam_index = i
+                break
+
+        return self._edsdk.EdsGetChildAtIndex(self._camera_settings.items,
+            cam_index)
 
     def _update_camera_list(self):
         """Update camera list and camera count."""
@@ -409,14 +455,16 @@ class CameraSettings():
     """Data structure to hold the COPIS EDSDK camera settings."""
     def __init__(self) -> None:
         self.count = 0
-        self.index = -1
+        self.hardware_id = None
+        self.software_id = -1
         self.items = None
         self.ref = None
 
     def __iter__(self):
         return iter((
             self.count,
-            self.index,
+            self.hardware_id,
+            self.software_id,
             self.items,
             self.ref
         ))
