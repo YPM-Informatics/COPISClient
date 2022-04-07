@@ -30,7 +30,7 @@ import threading
 import time
 import warnings
 
-from itertools import zip_longest
+from itertools import groupby, zip_longest
 from glm import vec2, vec3
 from pydispatch import dispatcher
 
@@ -107,6 +107,7 @@ class COPISCore(
         self._imaging_target: vec3 = vec3()
         self._imaging_session_path = None
         self._imaging_session_queue = None
+        self._imaging_session_manifest = None
         self._save_imaging_session = False
 
 
@@ -127,6 +128,31 @@ class COPISCore(
     def is_dev_env(self):
         """Returns a flag indicating whether we are in a dev environment."""
         return self._is_dev_env
+
+    def _get_image_counts(self):
+        c_key = lambda p: p.position.device
+
+        counts = {}
+        poses = sorted(self.project.poses, key=c_key)
+        groups = groupby(poses, c_key)
+
+        for key, group in groups:
+            pics = [a for p in list(group) for a in p.get_actions()
+                if a.atype == ActionType.C0]
+            device = self._get_device(key)
+            device_key = f'{device.name} {device.type} ({device.device_id})'
+            counts[device_key] = len(pics)
+
+        return ('expected image counts', counts)
+
+    def _update_imaging_manifest(self, pairs):
+        for key, value in pairs:
+            self._imaging_session_manifest[key] = value
+
+        if pairs:
+            file_name = 'copis_imaging_manifest.json'
+            save_json_2(self._imaging_session_path, file_name,
+                self._imaging_session_manifest)
 
     def _check_configs(self) -> None:
         warn = self._is_dev_env
@@ -183,6 +209,7 @@ class COPISCore(
         dvcs = []
         cmds = []
         current_pose_set = -1
+        img_start_time = get_timestamp(True)
 
         if isinstance(commands, tuple) and \
             list(map(type, commands)) == [int, list]:
@@ -198,8 +225,6 @@ class COPISCore(
         cmd_lines = '\r'.join(cmds)
 
         if self._serial.is_port_open:
-            img_start_time = get_timestamp(True)
-
             if cmd_lines:
                 print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
                         .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
@@ -213,14 +238,24 @@ class COPISCore(
                         if command.atype == ActionType.C0:
                             device = self._get_device(command.device)
                             file_name = \
-                                f'IMG_C_{command.device}_{current_pose_set + 1}.json'
+                                f'cam_{command.device}_img_{current_pose_set + 1}.json'
 
                             data = {}
+                            data['file name'] = file_name
+                            data['device type'] = device.type
+                            data['device name'] = device.name
+                            data['device ID'] = device.device_id
+                            data['imaging method'] = 'remote shutter'
                             data['position'] = point5_to_dict(device.position)
-                            data['start time'] = img_start_time
+                            data['stack ID'] = None
+                            data['image start time'] = img_start_time
 
-                            save_json_2(self._imaging_session_path, file_name, data)
-                            self._imaging_session_queue.append((command.device, file_name))
+                            session_images = self._imaging_session_manifest['images']
+                            image_index = len(session_images)
+
+                            session_images.append(data)
+                            self._update_imaging_manifest([('images', session_images)])
+                            self._imaging_session_queue.append((command.device, image_index))
 
                 self._serial.write(cmd_lines)
             else:
@@ -254,12 +289,12 @@ class COPISCore(
         if len(self._imaging_session_queue) and not device.is_writing and \
             device.serial_status == ComStatus.IDLE and \
             device.device_id == self._imaging_session_queue[0][0]:
-            _, file_name = self._imaging_session_queue.pop(0)
+            _, image_index = self._imaging_session_queue.pop(0)
 
-            data = load_json_2(self._imaging_session_path, file_name)
-            data['end time'] = get_timestamp(True)
+            session_images = self._imaging_session_manifest['images']
+            session_images[image_index]['image end time'] = get_timestamp(True)
 
-            save_json_2(self._imaging_session_path, file_name, data)
+            self._update_imaging_manifest([('images', session_images)])
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
@@ -312,6 +347,9 @@ class COPISCore(
         """Starts the imaging sequence, following the define action path."""
         def imaging_callback():
             if self._save_imaging_session:
+                self._update_imaging_manifest(
+                    [('imaging end time', get_timestamp(True))])
+
                 dispatcher.disconnect(self._on_device_updated, signal='ntf_device_updated')
                 self._save_imaging_session = False
 
@@ -346,6 +384,15 @@ class COPISCore(
 
         if self._save_imaging_session:
             self._imaging_session_queue = []
+            self._imaging_session_manifest = {}
+
+            pairs = [('imaging start time', get_timestamp(True)),
+                ('imaging end time', None)]
+            pairs.append(self._get_image_counts())
+            pairs.append(('images', []))
+
+            self._update_imaging_manifest(pairs)
+
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
