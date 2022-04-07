@@ -35,6 +35,7 @@ class MachineStats(wx.Panel):
         self._parent = parent
         self._core = parent.core
         self._keep_polling = True
+        self._num_devices = len(self._core.project.devices)
 
         self._build_panel()
 
@@ -63,7 +64,7 @@ class MachineStats(wx.Panel):
         machine_grid = wx.FlexGridSizer(3, 2, 0, 0)
         machine_grid.AddGrowableCol(1, 0)
 
-        device_grid = wx.FlexGridSizer(len(self._core.project.devices) + 1, 7, 0, 0)
+        device_grid = wx.FlexGridSizer(self._num_devices + 1, 7, 0, 0)
 
         self._device_count_caption = text_ctrl(f=self._parent.font)
         self._machine_status_caption = text_ctrl(f=self._parent.font)
@@ -125,6 +126,7 @@ class MachineStats(wx.Panel):
         self.Layout()
 
     def _on_device_list_changed(self):
+        self._num_devices = len(self._core.project.devices)
         self._keep_polling = False
         self._polling_thread.join()
 
@@ -147,9 +149,7 @@ class MachineStats(wx.Panel):
                 if status == 'idle' and self._machine_status_caption.GetLabel() != 'idle':
                     status = 'clear'
 
-                self._device_count_caption.SetLabel(str(len(
-                    self._core.project.devices
-                )))
+                self._device_count_caption.SetLabel(str(self._num_devices))
                 self._machine_status_caption.SetLabel(status)
                 self._machine_is_homed_caption.SetLabel(str(self._core.is_machine_homed).lower())
 

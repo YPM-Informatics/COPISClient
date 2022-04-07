@@ -284,9 +284,10 @@ class Project:
                 proxies.append(eval(proxy['data']['repr']))
 
         self._profile = proj_data['profile']
+        self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
-        self._init_devices()
+
 
         self._path = path
         self._unset_dirty_flag()

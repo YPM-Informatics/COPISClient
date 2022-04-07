@@ -260,7 +260,6 @@ class COPISCore(
             data['end time'] = get_timestamp(True)
 
             save_json_2(self._imaging_session_path, file_name, data)
-            printed = 'test'
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""

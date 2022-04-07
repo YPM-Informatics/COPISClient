@@ -299,7 +299,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         Handles ntf_a_list_changed signal.
         """
-        self._actionvis.update_poses()
+        wx.CallAfter(self._actionvis.update_poses)
         self._dirty = True
 
     def _update_colors(self) -> None:
@@ -321,7 +321,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         Handles ntf_o_list_changed signal.
         """
         self._num_objects = len(self.core.project.proxies)
-        self._objectvis.update_objects()
+        wx.CallAfter(self._objectvis.update_objects)
         self._dirty = True
 
     # @timing
