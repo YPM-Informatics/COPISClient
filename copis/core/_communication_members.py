@@ -22,8 +22,10 @@ import time
 from datetime import datetime
 from typing import List
 
+from copis.classes import Action, Pose
 from copis.coms import serial_controller
-from copis.helpers import locked, print_error_msg, print_info_msg
+from copis.globals import ActionType
+from copis.helpers import create_action_args, locked, print_error_msg, print_info_msg
 from copis.classes import ReadThread
 
 class CommunicationMembersMixin:
@@ -127,6 +129,13 @@ class CommunicationMembersMixin:
         else:
             self._edsdk.focus()
 
+    def transfer_edsdk_pictures(self):
+        """"Transfers pictures off of the camera via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.transfer_pictures()
+
     # --------------------------------------------------------------------------
     # Serial methods
     # --------------------------------------------------------------------------
@@ -198,6 +207,16 @@ class CommunicationMembersMixin:
     def update_serial_ports(self) -> None:
         """Updates the serial ports list."""
         self._serial.update_port_list()
+
+    def snap_serial_picture(self, device_id):
+        """Takes a picture via serial."""
+        if not self.is_serial_port_connected:
+            print_error_msg(self.console, 'The machine is not connected.')
+        else:
+            c_args = create_action_args([1.5], 'S')
+            payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+
+            self.play_poses([Pose(payload=payload)])
 
     @locked
     def select_serial_port(self, name: str) -> bool:

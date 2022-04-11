@@ -16,8 +16,10 @@
 """COPIS device actions properties panel."""
 
 import wx
-from copis.classes import Device
 
+from pydispatch import dispatcher
+
+from copis.classes import Device
 from copis.gui.wxutils import show_msg_dialog
 
 
@@ -30,26 +32,96 @@ class DeviceActionsPanel(wx.Panel):
         self._device = None
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Actions'), wx.VERTICAL)
+        self._serial_box_sizer = wx.StaticBoxSizer(
+            wx.StaticBox(self, label='Serial Actions'), wx.VERTICAL)
+        self._edsdk_box_sizer = wx.StaticBoxSizer(
+            wx.StaticBox(self, label='EDSDK Actions'), wx.VERTICAL)
 
-        grid = wx.FlexGridSizer(4, 3, 0, 0)
-        grid.AddGrowableCol(1, 0)
+        self._init_gui()
 
-        self._live_view_btn = wx.Button(box_sizer.StaticBox, wx.ID_ANY, label='Live View')
-        grid.Add(self._live_view_btn)
-        self._live_view_btn.Bind(wx.EVT_BUTTON, self._on_live_view)
+        # Bind listeners.
+        dispatcher.connect(self._on_device_homed, signal='ntf_device_homed')
 
-        box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 5)
-        self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        # Bind events.
+        self._start_live_view_btn.Bind(wx.EVT_BUTTON, self._on_start_live_view)
+        self._edsdk_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_edsdk_picture)
+        self._serial_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_serial_picture)
+        self._edsdk_transfer_pics_btn.Bind(wx.EVT_BUTTON, self._on_transfer_edsdk_pictures)
+
+    def _init_gui(self):
+        edsdk_grid = wx.FlexGridSizer(1, 3, 0, 0)
+        self._serial_grid = wx.FlexGridSizer(1, 3, 0, 0)
+        for i in range(3):
+            edsdk_grid.AddGrowableCol(i, 0)
+            if i != 1:
+                self._serial_grid.AddGrowableCol(i, 0)
+
+        self._start_live_view_btn = wx.Button(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Start Live View')
+        self._edsdk_transfer_pics_btn = wx.Button(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Transfer Pictures')
+        self._edsdk_take_pic_btn = wx.Button(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Take a Picture')
+
+        self._serial_take_pic_btn = wx.Button(
+            self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Take a Picture')
+        self._serial_take_pic_btn.Disable()
+
+        edsdk_grid.AddMany([
+            (self._start_live_view_btn, 0, wx.EXPAND, 0),
+            (self._edsdk_take_pic_btn, 0, wx.EXPAND, 0),
+            (self._edsdk_transfer_pics_btn, 0, wx.EXPAND, 0)
+        ])
+
+        self._serial_grid.AddMany([
+            (0, 0),
+            (self._serial_take_pic_btn, 0, wx.EXPAND, 0),
+            (0, 0)
+        ])
+
+        self._edsdk_box_sizer.Add(
+            edsdk_grid, 0, wx.LEFT|wx.TOP|wx.RIGHT|wx.EXPAND, 5)
+        self._serial_box_sizer.Add(
+            self._serial_grid, 0, wx.LEFT|wx.BOTTOM|wx.RIGHT|wx.EXPAND, 5)
+        self.Sizer.Add(self._serial_box_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        self.Sizer.Add(self._edsdk_box_sizer, 0, wx.ALL|wx.EXPAND, 5)
+
         self.Layout()
 
-    def _on_live_view(self, _) -> None:
+    def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()
 
         if self._parent.core.connect_edsdk(self._device.device_id):
             self._parent.parent.add_evf_pane()
         else:
-            show_msg_dialog('Please connect the camera to start live view.', 'Start Live View')
+            show_msg_dialog('Please connect the camera to start live view.',
+                'Start Live View')
+
+    def _on_snap_edsdk_picture(self, _) -> None:
+        if self._parent.core.connect_edsdk(self._device.device_id):
+            self._parent.core.snap_edsdk_picture()
+        else:
+            show_msg_dialog('Please connect the camera to take a picture via EDSDK.',
+                'Take a Picture - EDSDK')
+
+    def _on_transfer_edsdk_pictures(self, _) -> None:
+        if self._parent.core.connect_edsdk(self._device.device_id):
+            self._parent.core.transfer_edsdk_pictures()
+        else:
+            show_msg_dialog('Please connect the camera to tranfer pictures via EDSDK.',
+                'Transfer Pictures - EDSDK')
+
+    def _on_snap_serial_picture(self, _) -> None:
+        can_snap = self._parent.core.is_serial_port_connected
+
+        if can_snap:
+            self._parent.core.snap_serial_picture(self._device.device_id)
+        else:
+            show_msg_dialog('Please connect the machine to take a picture via serial.',
+                'Take a Picture - Serial')
+
+    def _on_device_homed(self):
+        self._serial_take_pic_btn.Enable()
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""

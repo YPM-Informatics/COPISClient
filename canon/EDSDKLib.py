@@ -876,7 +876,13 @@ class EDSDK():
 	#
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
-	#def EdsGetVolumeInfo( IntPtr inCameraRef, out EdsVolumeInfo outVolumeInfo):
+	def EdsGetVolumeInfo(self, inVolumeRef):
+		outVolumeInfo = EdsVolumeInfo()
+		err = self.dll.EdsGetVolumeInfo(inVolumeRef, byref(outVolumeInfo))
+		
+		if err != EdsErrorCodes.EDS_ERR_OK.value:
+			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
+		return outVolumeInfo
 	
 	##############################################################################
 	#  Function:   EdsFormatVolume
@@ -1641,7 +1647,7 @@ class EdsDeviceInfo(Structure):
 			("deviceSubType", c_uint),
 			("reserved", c_uint)]
 
-		
+
 #################### Enum Classes ####################
 class EdsDataType(Enum):
 	Unknown     = 0    
@@ -1690,6 +1696,8 @@ class EdsSeekOrigin(Enum):
 
 class EdsAccess(Enum):
 	Read = 0
+	Write = 1
+	ReadWrite = 2
 	Error = 0xFFFFFFFF
 
 class EdsFileCreateDisposition(Enum):
@@ -2033,3 +2041,9 @@ class EdsErrorCodes(Enum):
 
 	###########################################################################
 
+class EdsVolumeInfo(Structure):
+	_fields_ = [("storageType", c_uint),
+		("access", POINTER(EdsAccess)),
+		("maxCapacity", c_uint64),
+		("freeSpaceInBytes", c_uint64),
+		("szVolumeLabel", c_char*256)]

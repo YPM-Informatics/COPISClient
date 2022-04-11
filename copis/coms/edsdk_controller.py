@@ -195,9 +195,13 @@ class EDSDKController():
             return True
 
         except Exception as err:
-            self._print_error_msg(self._console,
-                'An exception occurred while taking a photo with camera '
-                f'{self._camera_settings.software_id}: {err.args[0]}')
+            msg = ' '.join(['An exception occurred while taking a photo with camera',
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
             return False
 
     def terminate(self):
@@ -254,6 +258,24 @@ class EDSDKController():
     #         True if successful, False otherwise.
     #     """
     #     return False
+
+    def transfer_pictures(self) -> None:
+        """Transfers pictures off of the camera."""
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+
+        v_count = self._edsdk.EdsGetChildCount(self._camera_settings.ref)
+        for i in range(v_count):
+            v_ref = self._edsdk.EdsGetChildAtIndex(self._camera_settings.ref, i)
+            info = self._edsdk.EdsGetVolumeInfo(v_ref)
+
+            self._print_info_msg(self._console, f'volume ref: {v_ref}')
+            self._print_info_msg(self._console, f'storage type: {info.storageType}')
+            self._print_info_msg(self._console, f'access: {info.access}')
+            self._print_info_msg(self._console, f'max capacity: {info.maxCapacity}')
+            self._print_info_msg(self._console, f'free space in bytes: {info.freeSpaceInBytes}')
+            self._print_info_msg(self._console, f'volume label: {info.szVolumeLabel}')
+            self._print_info_msg(self._console, '=================================================')
 
     def focus(self) -> None:
         """Focuses the camera."""
@@ -500,6 +522,7 @@ start_live_view = _instance.start_live_view
 end_live_view = _instance.end_live_view
 download_evf_data = _instance.download_evf_data
 focus = _instance.focus
+transfer_pictures = _instance.transfer_pictures
 
 
 @mproperty
