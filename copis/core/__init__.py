@@ -140,10 +140,10 @@ class COPISCore(
             pics = [a for p in list(group) for a in p.get_actions()
                 if a.atype == ActionType.C0]
             device = self._get_device(key)
-            device_key = f'{device.name} {device.type} ({device.device_id})'
+            device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
             counts[device_key] = len(pics)
 
-        return ('expected image counts', counts)
+        return ('expected_image_counts', counts)
 
     def _update_imaging_manifest(self, pairs):
         for key, value in pairs:
@@ -241,14 +241,15 @@ class COPISCore(
                                 f'cam_{command.device}_img_{current_pose_set + 1}.json'
 
                             data = {}
-                            data['file name'] = file_name
-                            data['device type'] = device.type
-                            data['device name'] = device.name
-                            data['device ID'] = device.device_id
-                            data['imaging method'] = 'remote shutter'
+                            data['file_name'] = file_name
+                            data['device_type'] = device.type
+                            data['device_name'] = device.name
+                            data['device_id'] = device.device_id
+                            data['imaging_method'] = 'remote shutter'
                             data['position'] = point5_to_dict(device.position)
-                            data['stack ID'] = None
-                            data['image start time'] = img_start_time
+                            data['stack_id'] = None
+                            data['stack_index'] = None
+                            data['image_start_time'] = img_start_time
 
                             session_images = self._imaging_session_manifest['images']
                             image_index = len(session_images)
@@ -292,7 +293,7 @@ class COPISCore(
             _, image_index = self._imaging_session_queue.pop(0)
 
             session_images = self._imaging_session_manifest['images']
-            session_images[image_index]['image end time'] = get_timestamp(True)
+            session_images[image_index]['image_end_time'] = get_timestamp(True)
 
             self._update_imaging_manifest([('images', session_images)])
 
@@ -348,7 +349,7 @@ class COPISCore(
         def imaging_callback():
             if self._save_imaging_session:
                 self._update_imaging_manifest(
-                    [('imaging end time', get_timestamp(True))])
+                    [('imaging_end_time', get_timestamp(True))])
 
                 dispatcher.disconnect(self._on_device_updated, signal='ntf_device_updated')
                 self._save_imaging_session = False
@@ -386,8 +387,8 @@ class COPISCore(
             self._imaging_session_queue = []
             self._imaging_session_manifest = {}
 
-            pairs = [('imaging start time', get_timestamp(True)),
-                ('imaging end time', None)]
+            pairs = [('imaging_start_time', get_timestamp(True)),
+                ('imaging_end_time', None)]
             pairs.append(self._get_image_counts())
             pairs.append(('images', []))
 
