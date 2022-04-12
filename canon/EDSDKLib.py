@@ -126,22 +126,22 @@ class EDSDK():
 		################ Event Ids #################
 
 		## Camera Events
-        ## Property Event
-        ## Notifies all property events. 
+		## Property Event
+		## Notifies all property events. 
 		self.PropertyEvent_All                   = 0x00000100
 
-        ## Notifies that a camera property value has been changed. 
-        # The changed property can be retrieved from event data. 
-        # The changed value can be retrieved by means of EdsGetPropertyData. 
-        # In the case of type 1 protocol standard cameras, 
-        # notification of changed properties can only be issued for custom functions (CFn). 
-        # If the property type is 0x0000FFFF, the changed property cannot be identified. 
-        # Thus, retrieve all required properties repeatedly. 
+		## Notifies that a camera property value has been changed. 
+		# The changed property can be retrieved from event data. 
+		# The changed value can be retrieved by means of EdsGetPropertyData. 
+		# In the case of type 1 protocol standard cameras, 
+		# notification of changed properties can only be issued for custom functions (CFn). 
+		# If the property type is 0x0000FFFF, the changed property cannot be identified. 
+		# Thus, retrieve all required properties repeatedly. 
 		self.PropertyEvent_PropertyChanged       = 0x00000101
 
-        ## Notifies of changes in the list of camera properties with configurable values.
-        # The list of configurable values for property IDs indicated in event data
-        # can be retrieved by means of EdsGetPropertyDesc. 
+		## Notifies of changes in the list of camera properties with configurable values.
+		# The list of configurable values for property IDs indicated in event data
+		# can be retrieved by means of EdsGetPropertyDesc. 
 		# For type 1 protocol standard cameras, the property ID is identified as "Unknown"
 		# during notification. 
 		# Thus, you must retrieve a list of configurable values for all properties and
@@ -151,18 +151,18 @@ class EDSDK():
 		# see the description of EdsGetPropertyDesc). 
 		self.PropertyEvent_PropertyDescChanged    = 0x00000102
 
-        ## Object Event
-        ## Notifies all object events. 
+		## Object Event
+		## Notifies all object events. 
 		self.ObjectEvent_All                     = 0x00000200
 
-        ## Notifies that the volume object (memory card) state (VolumeInfo)
+		## Notifies that the volume object (memory card) state (VolumeInfo)
 		# has been changed. 
 		# Changed objects are indicated by event data. 
 		# The changed value can be retrieved by means of EdsGetVolumeInfo. 
 		# Notification of this event is not issued for type 1 protocol standard cameras. 
 		self.ObjectEvent_VolumeInfoChanged       = 0x00000201
 
-        ## Notifies if the designated volume on a camera has been formatted.
+		## Notifies if the designated volume on a camera has been formatted.
 		# If notification of this event is received, get sub-items of the designated
 		# volume again as needed. 
 		# Changed volume objects can be retrieved from event data. 
@@ -171,14 +171,14 @@ class EDSDK():
 		# Thus, these events are subject to notification. 
 		self.ObjectEvent_VolumeUpdateItems       = 0x00000202
 
-        ## Notifies if many images are deleted in a designated folder on a camera.
+		## Notifies if many images are deleted in a designated folder on a camera.
 		# If notification of this event is received, get sub-items of the designated
 		# folder again as needed. 
 		# Changed folders (specifically, directory item objects) can be retrieved
 		# from event data. 
 		self.ObjectEvent_FolderUpdateItems       = 0x00000203
 
-        ## Notifies of the creation of objects such as new folders or files
+		## Notifies of the creation of objects such as new folders or files
 		# on a camera compact flash card or the like. 
 		# This event is generated if the camera has been set to store captured
 		# images simultaneously on the camera and a computer,
@@ -191,7 +191,7 @@ class EDSDK():
 		# identify the new objects. 
 		self.ObjectEvent_DirItemCreated          = 0x00000204
 
-        ## Notifies of the deletion of objects such as folders or files on a camera
+		## Notifies of the deletion of objects such as folders or files on a camera
 		# compact flash card or the like. 
 		# Deleted objects are indicated in event data. 
 		# Because objects are not indicated for type 1 protocol standard cameras, 
@@ -199,19 +199,19 @@ class EDSDK():
 		# identify deleted objects. 
 		self.ObjectEvent_DirItemRemoved          = 0x00000205
 
-        ## Notifies that information of DirItem objects has been changed. 
+		## Notifies that information of DirItem objects has been changed. 
 		# Changed objects are indicated by event data. 
 		# The changed value can be retrieved by means of EdsGetDirectoryItemInfo. 
 		# Notification of this event is not issued for type 1 protocol standard cameras. 
 		self.ObjectEvent_DirItemInfoChanged      = 0x00000206
 
-        ## Notifies that header information has been updated, as for rotation information
+		## Notifies that header information has been updated, as for rotation information
 		# of image files on the camera. 
 		# If this event is received, get the file header information again, as needed. 
 		# This function is for type 2 protocol standard cameras only. 
 		self.ObjectEvent_DirItemContentChanged   = 0x00000207
 
-        ## Notifies that there are objects on a camera to be transferred to a computer. 
+		## Notifies that there are objects on a camera to be transferred to a computer. 
 		# This event is generated after remote release from a computer or local release
 		# from a camera. 
 		# If this event is received, objects indicated in the event data must be downloaded.
@@ -222,7 +222,7 @@ class EDSDK():
 		# in which the events are received. 
 		self.ObjectEvent_DirItemRequestTransfer  = 0x00000208
 
-        ## Notifies if the camera's direct transfer button is pressed. 
+		## Notifies if the camera's direct transfer button is pressed. 
 		# If this event is received, objects indicated in the event data must be downloaded. 
 		# Furthermore, if the application does not require the objects, instead of
 		# downloading them, 
@@ -230,7 +230,7 @@ class EDSDK():
 		# Notification of this event is not issued for type 1 protocol standard cameras. 
 		self.ObjectEvent_DirItemRequestTransferDT    = 0x00000209
 
-        ## Notifies of requests from a camera to cancel object transfer 
+		## Notifies of requests from a camera to cancel object transfer 
 		# if the button to cancel direct transfer is pressed on the camera. 
 		# If the parameter is 0, it means that cancellation of transfer is requested for
 		# objects still not downloaded,
@@ -241,17 +241,17 @@ class EDSDK():
 		self.ObjectEvent_VolumeAdded                 = 0x0000020c
 		self.ObjectEvent_VolumeRemoved				= 0x0000020d
 
-        ## State Event
-        ## Notifies all state events. 
+		## State Event
+		## Notifies all state events. 
 		self.StateEvent_All                      = 0x00000300
 
-        ## Indicates that a camera is no longer connected to a computer, 
+		## Indicates that a camera is no longer connected to a computer, 
 		# whether it was disconnected by unplugging a cord, opening
 		# the compact flash compartment, 
 		# turning the camera off, auto shut-off, or by other means. 
 		self.StateEvent_Shutdown                 = 0x00000301
 
-        ## Notifies of whether or not there are objects waiting to
+		## Notifies of whether or not there are objects waiting to
 		# be transferred to a host computer. 
 		# This is useful when ensuring all shot images have been transferred 
 		# when the application is closed. 
@@ -259,7 +259,7 @@ class EDSDK():
 		# standard cameras. 
 		self.StateEvent_JobStatusChanged         = 0x00000302
 
-        ## Notifies that the camera will shut down after a specific period. 
+		## Notifies that the camera will shut down after a specific period. 
 		# Generated only if auto shut-off is set. 
 		# Exactly when notification is issued (that is, the number of
 		# seconds until shutdown) varies depending on the camera model. 
@@ -269,17 +269,17 @@ class EDSDK():
 		# as the initial value. 
 		self.StateEvent_WillSoonShutDown         = 0x00000303
 
-        ## As the counterpart event to kEdsStateEvent_WillSoonShutDown,
+		## As the counterpart event to kEdsStateEvent_WillSoonShutDown,
 		# this event notifies of updates to the number of seconds until
 		# a camera shuts down. 
 		# After the update, the period until shutdown is model-dependent. 
 		self.StateEvent_ShutDownTimerUpdate      = 0x00000304 
 
-        ## Notifies that a requested release has failed, due to focus
+		## Notifies that a requested release has failed, due to focus
 		# failure or similar factors. 
 		self.StateEvent_CaptureError             = 0x00000305
 
-        ## Notifies of internal SDK errors. 
+		## Notifies of internal SDK errors. 
 		# If this error event is received, the issuing device will probably
 		# not be able to continue working properly,
 		# so cancel the remote connection. 
@@ -347,14 +347,14 @@ class EDSDK():
 		self.CompressQuality_SuperFine = 5
 		self.CompressQuality_Unknown = -1
 
-        ##Battery level
+		##Battery level
 		self.BatteryLevel_Empty    = 1   
 		self.BatteryLevel_Low      = 30      
 		self.BatteryLevel_Half     = 50      
 		self.BatteryLevel_Normal   = 80
 		self.BatteryLevel_AC       = 0xFFFFFFFF     
 
-        ##White Balance
+		##White Balance
 		self.WhiteBalance_Click         = -1
 		self.WhiteBalance_Auto          = 0
 		self.WhiteBalance_Daylight      = 1
@@ -376,12 +376,12 @@ class EDSDK():
 		self.WhiteBalance_PCSet5        = 21
 		self.WhiteBalance_AwbWhite      = 23 
 
-        ##Color Space
+		##Color Space
 		self.ColorSpace_sRGB       = 1
 		self.ColorSpace_AdobeRGB   = 2
 		self.ColorSpace_Unknown    = 0xffffffff
 
-        ##PictureStyle
+		##PictureStyle
 		self.PictureStyle_Standard     = 0x0081
 		self.PictureStyle_Portrait     = 0x0082
 		self.PictureStyle_Landscape    = 0x0083
@@ -397,7 +397,7 @@ class EDSDK():
 		self.PictureStyle_PC2          = 0x0042
 		self.PictureStyle_PC3          = 0x0043
 
-        ##AE Mode
+		##AE Mode
 		self.AEMode_Program          = 0
 		self.AEMode_Tv               = 1
 		self.AEMode_Av               = 2
@@ -458,7 +458,7 @@ class EDSDK():
 		self.AEMode_BackgroundBlur   = 62
 		self.AEMode_Unknown          = 0xffffffff
 
-        ##Bracket
+		##Bracket
 		self.Bracket_AEB             = 0x01
 		self.Bracket_ISOB            = 0x02
 		self.Bracket_WBB             = 0x04
@@ -879,6 +879,7 @@ class EDSDK():
 	def EdsGetVolumeInfo(self, inVolumeRef):
 		outVolumeInfo = EdsVolumeInfo()
 		err = self.dll.EdsGetVolumeInfo(inVolumeRef, byref(outVolumeInfo))
+		outVolumeInfo.ref = inVolumeRef
 		
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
@@ -1622,16 +1623,16 @@ class EdsPropertyDesc(Structure):
 
 class DirectoryItemInfo(Structure):
 	_fields_ = [("size", c_int),
-			 ("isFolder", c_int),
-			 ("groupID",c_int),
-			 ("option",c_int),
-			 ("szFileName",c_char*256),
-			 ("format",c_int)]
+			 ("isFolder", c_bool),
+			 ("groupID", c_int),
+			 ("option", c_int),
+			 ("szFileName", c_char*256),
+			 ("format", c_int)]
 
 class EdsCapacity(Structure):
 	_fields_ = [("numberOfFreeClusters", c_int),
 				("bytesPerSector", c_int),
-				("reset",c_int)]
+				("reset", c_int)]
 
 class EdsImageInfo(Structure):
 	_fields_ = [("width", c_uint),
@@ -1646,6 +1647,42 @@ class EdsDeviceInfo(Structure):
 			("szDeviceDescription", c_char*256),
 			("deviceSubType", c_uint),
 			("reserved", c_uint)]
+
+class EdsVolumeInfo(Structure):
+	_fields_ = [("storageType", c_uint),
+			 ("edsAccess", c_uint),
+			 ("maxCapacity", c_uint64),
+			 ("freeSpaceInBytes", c_uint64),
+			 ("szVolumeLabel", c_char*256),
+			 ("volumeRef", c_void_p)]
+
+	@property
+	def storage_type(self):
+		return EdsStorageType(self.storageType)
+
+	@property
+	def access(self):
+		return EdsAccess(self.edsAccess)
+
+	@property
+	def label(self):
+		return self.szVolumeLabel.decode('utf-8')
+
+	@property
+	def ref(self):
+		return c_void_p(self.volumeRef)
+
+	@ref.setter
+	def ref(self, value):
+		self.volumeRef = value
+
+class EvfDataSet(Structure):
+	_fields_ = [
+		('stream', c_void_p),
+		('zoom', c_uint),
+		('zoomRect', EdsRect),
+		('imagePosition', EdsPoint),
+		('sizeJpgLarge', EdsSize)]
 
 
 #################### Enum Classes ####################
@@ -2040,10 +2077,3 @@ class EdsErrorCodes(Enum):
 	EDS_ERR_LAST_GENERIC_ERROR_PLUS_ONE =                 0x000000F5
 
 	###########################################################################
-
-class EdsVolumeInfo(Structure):
-	_fields_ = [("storageType", c_uint),
-		("access", POINTER(EdsAccess)),
-		("maxCapacity", c_uint64),
-		("freeSpaceInBytes", c_uint64),
-		("szVolumeLabel", c_char*256)]
