@@ -15,11 +15,10 @@
 
 """Manage COPIS EDSDK Communications."""
 
-import ctypes
 import os
 import datetime
 
-from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string_at, cast, POINTER
+from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string_at, cast
 from dataclasses import dataclass
 import time
 from typing import ClassVar, List
@@ -477,11 +476,12 @@ class EDSDKController():
         try:
             self._generate_file_name()
 
-            dir_info = self._edsdk.EdsGetDirectoryItemInfo(image)
+            img_ref = c_void_p(image)
+            dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
             stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename, 1, 2)
 
-            self._edsdk.EdsDownload(image, dir_info.size, stream)
-            self._edsdk.EdsDownloadComplete(image)
+            self._edsdk.EdsDownload(img_ref, dir_info.size, stream)
+            self._edsdk.EdsDownloadComplete(img_ref)
             self._edsdk.EdsRelease(stream)
 
             self._is_waiting_for_image = False

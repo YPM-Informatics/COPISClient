@@ -1,6 +1,7 @@
 from ctypes import *
 import os
 from enum import *
+from datetime import datetime
 
 class EDSDK():
 	def __init__(self):
@@ -916,7 +917,9 @@ class EDSDK():
 	##############################################################################
 	def EdsGetDirectoryItemInfo(self, inDirItemRef):
 		out_dir_item_info = DirectoryItemInfo()
-		err = self.dll.EdsGetDirectoryItemInfo(c_int64(inDirItemRef), byref(out_dir_item_info))
+		err = self.dll.EdsGetDirectoryItemInfo(inDirItemRef, byref(out_dir_item_info))
+		out_dir_item_info.ref = inDirItemRef
+
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 		return out_dir_item_info
@@ -963,7 +966,7 @@ class EDSDK():
 	##############################################################################
 	def EdsDownload(self, inDirItemRef, inReadSize, stream):
 		outStream = stream
-		err = self.dll.EdsDownload(c_int64(inDirItemRef), inReadSize, outStream)
+		err = self.dll.EdsDownload(inDirItemRef, inReadSize, outStream)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 		return outStream
@@ -1004,7 +1007,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsDownloadComplete (self, inDirItemRef):
-		err = self.dll.EdsDownloadComplete(c_int64(inDirItemRef))
+		err = self.dll.EdsDownloadComplete(inDirItemRef)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -1622,12 +1625,31 @@ class EdsPropertyDesc(Structure):
 			 ("propDesc", POINTER(c_int))]
 
 class DirectoryItemInfo(Structure):
-	_fields_ = [("size", c_int),
+	_fields_ = [("size", c_uint64),
 			 ("isFolder", c_bool),
-			 ("groupID", c_int),
-			 ("option", c_int),
+			 ("groupID", c_uint),
+			 ("option", c_uint),
 			 ("szFileName", c_char*256),
-			 ("format", c_int)]
+			 ("format", c_uint),
+			 ("dateTime", c_uint),
+			 ("itemRef", c_void_p)]
+
+	@property
+	def file_name(self):
+		return self.szFileName.decode('utf-8')
+
+	@property
+	def date_time(self):
+		dt = datetime.fromtimestamp(self.dateTime)
+		return dt.strftime('%m/%d/%Y, %H:%M:%S.%f')[:-3]
+
+	@property
+	def ref(self):
+		return c_void_p(self.itemRef)
+
+	@ref.setter
+	def ref(self, value):
+		self.itemRef = value
 
 class EdsCapacity(Structure):
 	_fields_ = [("numberOfFreeClusters", c_int),
