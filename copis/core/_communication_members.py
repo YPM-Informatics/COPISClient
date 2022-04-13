@@ -129,12 +129,12 @@ class CommunicationMembersMixin:
         else:
             self._edsdk.focus()
 
-    def transfer_edsdk_pictures(self):
+    def transfer_edsdk_pictures(self, destination):
         """"Transfers pictures off of the camera via EDSDK."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.transfer_pictures()
+            self._edsdk.transfer_pictures(destination)
 
     # --------------------------------------------------------------------------
     # Serial methods

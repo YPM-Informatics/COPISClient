@@ -110,8 +110,6 @@ class COPISCore(
         self._imaging_session_manifest = None
         self._save_imaging_session = False
 
-
-
     @property
     def imaged_pose_sets(self):
         """Returns a list of pose set indexes that have been imaged

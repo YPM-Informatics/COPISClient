@@ -630,7 +630,7 @@ class EDSDK():
 	#
 	#  Parameters:
 	#       In:    inRef - The reference of the item.
-	#              inPropertyID - The ProprtyID
+	#              inPropertyID - The PropertyID
 	#              inParam - Additional information of property.
 	#                   We use this parameter in order to specify an index
 	#                   in case there are two or more values over the same ID.

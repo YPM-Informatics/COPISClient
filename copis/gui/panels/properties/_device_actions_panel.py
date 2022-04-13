@@ -21,6 +21,7 @@ from pydispatch import dispatcher
 
 from copis.classes import Device
 from copis.gui.wxutils import show_msg_dialog
+from copis.helpers import print_info_msg
 
 
 class DeviceActionsPanel(wx.Panel):
@@ -106,9 +107,20 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_transfer_edsdk_pictures(self, _) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            self._parent.core.transfer_edsdk_pictures()
+            label = self._edsdk_transfer_pics_btn.Label
+            self._edsdk_transfer_pics_btn.Label = 'Transferring...'
+            self._edsdk_transfer_pics_btn.Disable()
+
+            try:
+                # TODO: Promp for imaging session path if not present.
+                destination = self._parent.core.imaging_session_path
+                self._parent.core.transfer_edsdk_pictures(destination)
+            finally:
+                wx.GetApp().Yield()
+                self._edsdk_transfer_pics_btn.Enable()
+                self._edsdk_transfer_pics_btn.Label = label
         else:
-            show_msg_dialog('Please connect the camera to tranfer pictures via EDSDK.',
+            show_msg_dialog('Please connect the camera to transfer pictures via EDSDK.',
                 'Transfer Pictures - EDSDK')
 
     def _on_snap_serial_picture(self, _) -> None:

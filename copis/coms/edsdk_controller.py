@@ -25,7 +25,7 @@ from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsSaveTo,
+    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsFileCreateDisposition, EdsSaveTo,
     EdsShutterButton, EdsStorageType)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
@@ -56,6 +56,198 @@ class EDSDKController():
         # See: https://github.com/josiahcarlson/mprop
         self._win_func_type = WINFUNCTYPE
 
+    @property
+    def camera_count(self) -> int:
+        """Returns camera count."""
+        return self._camera_settings.count
+
+    @property
+    def is_connected(self) -> int:
+        """Returns a flag indicating whether a device is connected."""
+        return self._is_connected
+
+    @property
+    def is_waiting_for_image(self) -> bool:
+        """Returns a flag indicating whether we are waiting for an image."""
+        return self._is_waiting_for_image
+
+    @property
+    def is_enabled(self) -> bool:
+        """Returns a flag indicating whether EDSDK is enabled."""
+        return self._edsdk is not None
+
+    @property
+    def device_list(self) -> List[EdsDeviceInfo]:
+        """Returns a list of descriptions of devices connected via edsdk."""
+        self._update_camera_list()
+
+        devices = []
+        infos = self._get_device_info_list()
+
+        for info in infos:
+            h_id = self._get_hardware_id(info.szPortName.decode("utf-8"))
+            connected = self._is_connected and h_id == self._camera_settings.hardware_id
+
+            devices.append((info, connected))
+
+        return devices
+
+    def _get_device_info_list(self):
+        infos = []
+
+        count = self._camera_settings.count
+        items = self._camera_settings.items
+
+        for i in range(count):
+            ref = self._edsdk.EdsGetChildAtIndex(items, i)
+            info = self._edsdk.EdsGetDeviceInfo(ref)
+
+            infos.append(info)
+
+        return infos
+
+    def _get_camera_info(self, hardware_id):
+        def comparer(c_info):
+            h_id = self._get_hardware_id(
+                c_info.szPortName.decode("utf-8")).upper()
+
+            return h_id == hardware_id.upper()
+
+        return next(filter(comparer, self._get_device_info_list()), None)
+
+    def _get_camera_ref(self, hardware_id):
+        info = self._get_camera_info(hardware_id)
+        cam_index = -1
+
+        for i, item in enumerate(self._get_device_info_list()):
+            if info.szPortName == item.szPortName:
+                cam_index = i
+                break
+
+        return self._edsdk.EdsGetChildAtIndex(self._camera_settings.items,
+            cam_index)
+
+    def _update_camera_list(self):
+        """Update camera list and camera count."""
+        self._camera_settings.items = self._edsdk.EdsGetCameraList()
+        self._camera_settings.count = self._edsdk.EdsGetChildCount(
+            self._camera_settings.items)
+
+    def _generate_file_name(self):
+        """Set the filename for an image."""
+        now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
+        self._image_settings.filename = os.path.abspath(
+            f'./{self._image_settings.PREFIX}_{now}.jpg')
+
+    def _download_image(self, image) -> None:
+        """Download image from camera buffer to host computer.
+
+        Args:
+            image: Pointer to the image.
+        """
+        try:
+            self._generate_file_name()
+
+            img_ref = c_void_p(image)
+            dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
+            stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename,
+                EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
+
+            self._edsdk.EdsDownload(img_ref, dir_info.size, stream)
+            self._edsdk.EdsDownloadComplete(img_ref)
+            self._edsdk.EdsRelease(stream)
+
+            self._is_waiting_for_image = False
+
+            self._print_info_msg(
+                self._console, f'Image saved at {self._image_settings.filename}')
+
+        except Exception as err:
+            self._print_error_msg(self._console,
+                f'An exception occurred while downloading an image: {err.args[0]}')
+
+    def _handle_object(self, event, obj, _context):
+        """Handle the group of events where request notifications are issued to
+        create, delete or transfer image data stored in a camera or image files on
+        the memory card.
+        """
+        if event == self._edsdk.ObjectEvent_DirItemRequestTransfer:
+            self._download_image(obj)
+
+        return 0
+
+    def _handle_property(self, _event, _property, _parameter, _context):
+        """Handle the group of events where notifications are issued regarding
+        changes in the properties of a camera.
+        """
+
+        return 0
+
+    def _handle_state(self, event, _state, context):
+        """Handle the group of events where notifications are issued regarding
+        changes in the state of a camera, such as activation of a shut-down timer.
+        """
+        try:
+            if event == self._edsdk.StateEvent_WillSoonShutDown:
+                if self._is_connected and self._camera_settings.ref == context:
+                    self._edsdk.EdsSendCommand(context, 1, 0)
+            elif event == self._edsdk.StateEvent_Shutdown:
+                self.disconnect(False)
+        except Exception as err:
+            self._print_error_msg(self._console,
+                f'An exception occurred while handling the state change event: {err.args[0]}')
+
+        return 0
+
+    def _get_volumes(self):
+        volumes = []
+        count = self._edsdk.EdsGetChildCount(self._camera_settings.ref)
+
+        for i in range(count):
+            ref = self._edsdk.EdsGetChildAtIndex(self._camera_settings.ref, i)
+            volumes.append(self._edsdk.EdsGetVolumeInfo(ref))
+
+        return volumes
+
+    def _get_volume_folders(self, volume_ref):
+        folders = []
+        count = self._edsdk.EdsGetChildCount(volume_ref)
+
+        for i in range(count):
+            ref = self._edsdk.EdsGetChildAtIndex(volume_ref, i)
+            folders.append(self._edsdk.EdsGetDirectoryItemInfo(ref))
+
+        return folders
+
+    def _get_pictures(self, folder_ref):
+        count = self._edsdk.EdsGetChildCount(folder_ref)
+        pictures = []
+
+        for i in range(count):
+            ref = self._edsdk.EdsGetChildAtIndex(folder_ref, i)
+            entry = self._edsdk.EdsGetDirectoryItemInfo(ref)
+
+            if entry.isFolder:
+                pictures.extend(self._get_pictures(ref))
+            else:
+                pictures.append(entry)
+
+        return pictures
+
+    def _download_pictures(self, destination, pic_info_list):
+        for info in pic_info_list:
+            filename = os.path.abspath(os.path.join(destination, info.file_name))
+            stream = self._edsdk.EdsCreateFileStream(filename,
+                EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
+
+            self._edsdk.EdsDownload(info.ref, info.size, stream)
+            self._edsdk.EdsDownloadComplete(info.ref)
+            self._edsdk.EdsRelease(stream)
+
+    def _delete_pictures(self, pic_info_list):
+        for info in pic_info_list:
+            self._edsdk.EdsDeleteDirectoryItem(info.ref)
+
     def initialize(self, console = None) -> None:
         """Initialize the EDSDK object."""
         if self._is_connected:
@@ -81,7 +273,6 @@ class EDSDKController():
         except Exception as err:
             msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
-
 
     def connect(self, hard_id: str, soft_id: int) -> bool:
         """Connects to and initializes a camera at the specified IDs.
@@ -177,6 +368,7 @@ class EDSDKController():
         """
         if not self._is_connected:
             self._print_error_msg(self._console, 'No cameras currently connected.')
+
             return False
 
         try:
@@ -190,9 +382,6 @@ class EDSDKController():
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
-            # while waiting_for_image:
-            #     pythoncom.PumpWaitingMessages()
-
             return True
 
         except Exception as err:
@@ -203,6 +392,7 @@ class EDSDKController():
                 msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
 
             self._print_error_msg(self._console, msg)
+
             return False
 
     def terminate(self):
@@ -216,42 +406,6 @@ class EDSDKController():
                 'An exception occurred while terminating Canon API: '
                 f'{err.args[0]}')
 
-    @property
-    def camera_count(self) -> int:
-        """Returns camera count."""
-        return self._camera_settings.count
-
-    @property
-    def is_connected(self) -> int:
-        """Returns a flag indicating whether a device is connected."""
-        return self._is_connected
-
-    @property
-    def is_waiting_for_image(self) -> bool:
-        """Returns a flag indicating whether we are waiting for an image."""
-        return self._is_waiting_for_image
-
-    @property
-    def is_enabled(self) -> bool:
-        """Returns a flag indicating whether EDSDK is enabled."""
-        return self._edsdk is not None
-
-    @property
-    def device_list(self) -> List[EdsDeviceInfo]:
-        """Returns a list of descriptions of devices connected via edsdk."""
-        self._update_camera_list()
-
-        devices = []
-        infos = self._get_device_info_list()
-
-        for info in infos:
-            h_id = self._get_hardware_id(info.szPortName.decode("utf-8"))
-            connected = self._is_connected and h_id == self._camera_settings.hardware_id
-
-            devices.append((info, connected))
-
-        return devices
-
     # def step_focus(self) -> bool:
     #     """TODO
 
@@ -260,32 +414,15 @@ class EDSDKController():
     #     """
     #     return False
 
-    def _get_volumes(self):
-        volumes = []
-        v_count = self._edsdk.EdsGetChildCount(self._camera_settings.ref)
-
-        for i in range(v_count):
-            v_ref = self._edsdk.EdsGetChildAtIndex(self._camera_settings.ref, i)
-            volumes.append(self._edsdk.EdsGetVolumeInfo(v_ref))
-
-        return volumes
-
-    def transfer_pictures(self) -> None:
+    def transfer_pictures(self, destination) -> None:
         """Transfers pictures off of the camera."""
         if not self._is_connected:
             self._print_error_msg(self._console, 'No cameras currently connected.')
 
         volumes = self._get_volumes()
+        pictures = []
 
         for vol in volumes:
-            self._print_info_msg(self._console, f'volume ref: {vol.ref}')
-            self._print_info_msg(self._console, f'volume label: {vol.label}')
-            self._print_info_msg(self._console, f'storage type: {vol.storage_type}')
-            self._print_info_msg(self._console, f'access: {vol.access}')
-            self._print_info_msg(self._console, f'max capacity: {vol.maxCapacity}')
-            self._print_info_msg(self._console, f'free space in bytes: {vol.freeSpaceInBytes}')
-            self._print_info_msg(self._console, '=================================================')
-
             if vol.storage_type != EdsStorageType.Non:
                 if vol.access == EdsAccess.Error:
                     self._print_error_msg(self._console,
@@ -297,45 +434,22 @@ class EDSDKController():
                         'Write access to the camera volumes is required.')
                     return
 
-                # dcim_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, 0)
-                # pic_folder_ref = self._edsdk.EdsGetChildAtIndex(dcim_ref, 0)
-                # pic_count = self._edsdk.EdsGetChildCount(pic_folder_ref)
+                folders = self._get_volume_folders(vol.ref)
+                pic_folder = next(filter(lambda f: f.file_name.upper() == 'DCIM', folders), None)
 
-                # self._print_info_msg(self._console, f'picture count: {pic_count}')
+                if pic_folder:
+                    pictures.extend(self._get_pictures(pic_folder.ref))
 
-                d_count = self._edsdk.EdsGetChildCount(vol.ref)
-                for j in range(d_count):
-                    d_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, j)
-                    d_info = self._edsdk.EdsGetDirectoryItemInfo(d_ref)
+        if pictures:
+            count = len(pictures)
 
-                    self._print_info_msg(self._console, f'volume label: {vol.label}')
-                    self._print_info_msg(self._console, f'directory ref: {d_info.ref}')
-                    self._print_info_msg(self._console, f'directory name: {d_info.file_name}')
-                    self._print_info_msg(self._console, f'size: {d_info.size}')
-                    self._print_info_msg(self._console, f'is folder: {d_info.isFolder}')
-                    self._print_info_msg(self._console, f'group id: {d_info.groupID}')
-                    self._print_info_msg(self._console, f'option: {d_info.option}')
-                    self._print_info_msg(self._console, f'format: {d_info.format}')
-                    self._print_info_msg(self._console, f'date time: {d_info.date_time}')
-                    self._print_info_msg(self._console, '=================================================')
+            self._download_pictures(destination, pictures)
+            self._delete_pictures(pictures)
 
-                    s_d_count = self._edsdk.EdsGetChildCount(d_ref)
-                    for k in range(s_d_count):
-                        s_d_ref = self._edsdk.EdsGetChildAtIndex(d_ref, k)
-                        s_d_info = self._edsdk.EdsGetDirectoryItemInfo(s_d_ref)
-
-                        self._print_info_msg(self._console, f'volume label: {vol.label}')
-                        self._print_info_msg(self._console, f'parent directory name: {d_info.file_name}')
-                        self._print_info_msg(self._console, f'directory ref: {s_d_info.ref}')
-                        self._print_info_msg(self._console, f'directory name: {s_d_info.file_name}')
-                        self._print_info_msg(self._console, f'size: {s_d_info.size}')
-                        self._print_info_msg(self._console, f'is folder: {s_d_info.isFolder}')
-                        self._print_info_msg(self._console, f'group id: {s_d_info.groupID}')
-                        self._print_info_msg(self._console, f'option: {s_d_info.option}')
-                        self._print_info_msg(self._console, f'format: {s_d_info.format}')
-                        self._print_info_msg(self._console, f'date time: {s_d_info.date_time}')
-                        
-                        self._print_info_msg(self._console, '=================================================')
+            self._print_info_msg(self._console,
+                f'{count} picture{"s" if count > 1 else ""} tranferred')
+        else:
+            self._print_info_msg(self._console, 'No pictures transferred')
 
     def focus(self) -> None:
         """Focuses the camera."""
@@ -366,6 +480,7 @@ class EDSDKController():
                 msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
 
             self._print_error_msg(self._console, msg)
+
             return False
 
     def start_live_view(self) -> None:
@@ -419,106 +534,6 @@ class EDSDKController():
 
         self._edsdk.EdsRelease(self._evf_stream)
         self._edsdk.EdsRelease(self._evf_image_ref)
-
-    def _get_device_info_list(self):
-        infos = []
-
-        count = self._camera_settings.count
-        items = self._camera_settings.items
-
-        for i in range(count):
-            ref = self._edsdk.EdsGetChildAtIndex(items, i)
-            info = self._edsdk.EdsGetDeviceInfo(ref)
-
-            infos.append(info)
-
-        return infos
-
-    def _get_camera_info(self, hardware_id):
-        def comparer(c_info):
-            h_id = self._get_hardware_id(c_info.szPortName.decode("utf-8")).upper()
-            return h_id == hardware_id.upper()
-
-        return next(filter(comparer, self._get_device_info_list()), None)
-
-    def _get_camera_ref(self, hardware_id):
-        info = self._get_camera_info(hardware_id)
-        cam_index = -1
-
-        for i, item in enumerate(self._get_device_info_list()):
-            if info.szPortName == item.szPortName:
-                cam_index = i
-                break
-
-        return self._edsdk.EdsGetChildAtIndex(self._camera_settings.items,
-            cam_index)
-
-    def _update_camera_list(self):
-        """Update camera list and camera count."""
-        self._camera_settings.items = self._edsdk.EdsGetCameraList()
-        self._camera_settings.count = self._edsdk.EdsGetChildCount(self._camera_settings.items)
-
-    def _generate_file_name(self):
-        """Set the filename for an image."""
-        now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
-        self._image_settings.filename = os.path.abspath(
-            f'./{self._image_settings.PREFIX}_{now}.jpg')
-
-    def _download_image(self, image) -> None:
-        """Download image from camera buffer to host computer.
-
-        Args:
-            image: Pointer to the image.
-        """
-        try:
-            self._generate_file_name()
-
-            img_ref = c_void_p(image)
-            dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
-            stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename, 1, 2)
-
-            self._edsdk.EdsDownload(img_ref, dir_info.size, stream)
-            self._edsdk.EdsDownloadComplete(img_ref)
-            self._edsdk.EdsRelease(stream)
-
-            self._is_waiting_for_image = False
-
-            self._print_info_msg(self._console, f'Image saved at {self._image_settings.filename}')
-
-        except Exception as err:
-            self._print_error_msg(self._console,
-                f'An exception occurred while downloading an image: {err.args[0]}')
-
-    def _handle_object(self, event, obj, _context):
-        """Handle the group of events where request notifications are issued to
-        create, delete or transfer image data stored in a camera or image files on
-        the memory card.
-        """
-        if event == self._edsdk.ObjectEvent_DirItemRequestTransfer:
-            self._download_image(obj)
-        return 0
-
-    def _handle_property(self, _event, _property, _parameter, _context):
-        """Handle the group of events where notifications are issued regarding
-        changes in the properties of a camera.
-        """
-        return 0
-
-    def _handle_state(self, event, _state, context):
-        """Handle the group of events where notifications are issued regarding
-        changes in the state of a camera, such as activation of a shut-down timer.
-        """
-        try:
-            if event == self._edsdk.StateEvent_WillSoonShutDown:
-                if self._is_connected and self._camera_settings.ref == context:
-                    self._edsdk.EdsSendCommand(context, 1, 0)
-            elif event == self._edsdk.StateEvent_Shutdown:
-                self.disconnect(False)
-        except Exception as err:
-            self._print_error_msg(self._console,
-                f'An exception occurred while handling the state change event: {err.args[0]}')
-
-        return 0
 
 
 @dataclass
