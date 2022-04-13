@@ -533,7 +533,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	###################################################################################
 	def EdsRetain(self, inRef):
-		err = self.dll.EdsRetain(c_int(inRef))
+		err = self.dll.EdsRetain(inRef)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -614,7 +614,7 @@ class EDSDK():
 	###################################################################################
 	def EdsGetParent(self, inRef):
 		outParentRef = c_void_p()
-		err = self.dll.EdsGetParent(c_int(inRef), byref(outParentRef))
+		err = self.dll.EdsGetParent(inRef, byref(outParentRef))
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 		return outParentRef
@@ -898,7 +898,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsFormatVolume(self, inVolumeRef):
-		err = self.dll.EdsFormatVolume(c_int(inVolumeRef))
+		err = self.dll.EdsFormatVolume(inVolumeRef)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -941,7 +941,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsDeleteDirectoryItem(self, inDirItemRef):
-		err = self.dll.EdsDeleteDirectoryItem(c_int(inDirItemRef))
+		err = self.dll.EdsDeleteDirectoryItem(inDirItemRef)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -986,7 +986,7 @@ class EDSDK():
 	#  Returns:    Any of the sdk errors.
 	##############################################################################
 	def EdsDownloadCancel (self, inDirItemRef):
-		err = self.dll.EdsDownloadCancel(c_int(inDirItemRef))
+		err = self.dll.EdsDownloadCancel(inDirItemRef)
 		if err != EdsErrorCodes.EDS_ERR_OK.value:
 			raise Exception(self.errorFormat.format(hex(err), EdsErrorCodes(err).name))
 	
@@ -1760,7 +1760,11 @@ class EdsAccess(Enum):
 	Error = 0xFFFFFFFF
 
 class EdsFileCreateDisposition(Enum):
-	CreateNew = 0
+	CreateNew			= 0
+	CreateAlways		= 1
+	OpenExisting		= 2
+	OpenAlways			= 3
+	TruncateExisting	= 4
 
 class EdsTargetImageType(Enum):
 	Unknown = 0x00000000
