@@ -278,17 +278,13 @@ class EDSDKController():
         volumes = self._get_volumes()
 
         for vol in volumes:
-            # self._print_info_msg(self._console, f'EDS storage type: {vol.storageType}')
-            # self._print_info_msg(self._console, f'storage type: {vol.storage_type}')
-            # self._print_info_msg(self._console, f'EDS access: {vol.edsAccess}')
-            # self._print_info_msg(self._console, f'access: {vol.access}')
-            # self._print_info_msg(self._console, f'max capacity: {vol.maxCapacity}')
-            # self._print_info_msg(self._console, f'free space in bytes: {vol.freeSpaceInBytes}')
-            # self._print_info_msg(self._console, f'EDS volume label: {vol.szVolumeLabel}')
-            # self._print_info_msg(self._console, f'volume label: {vol.label}')
-            # self._print_info_msg(self._console, f'volume ref: {vol.volumeRef}')
-            # self._print_info_msg(self._console, f'ref: {vol.ref}')
-            # self._print_info_msg(self._console, '=================================================')
+            self._print_info_msg(self._console, f'volume ref: {vol.ref}')
+            self._print_info_msg(self._console, f'volume label: {vol.label}')
+            self._print_info_msg(self._console, f'storage type: {vol.storage_type}')
+            self._print_info_msg(self._console, f'access: {vol.access}')
+            self._print_info_msg(self._console, f'max capacity: {vol.maxCapacity}')
+            self._print_info_msg(self._console, f'free space in bytes: {vol.freeSpaceInBytes}')
+            self._print_info_msg(self._console, '=================================================')
 
             if vol.storage_type != EdsStorageType.Non:
                 if vol.access == EdsAccess.Error:
@@ -301,44 +297,45 @@ class EDSDKController():
                         'Write access to the camera volumes is required.')
                     return
 
-                dcim_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, 0)
-                pic_folder_ref = self._edsdk.EdsGetChildAtIndex(dcim_ref, 0)
-                pic_count = self._edsdk.EdsGetChildCount(pic_folder_ref)
+                # dcim_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, 0)
+                # pic_folder_ref = self._edsdk.EdsGetChildAtIndex(dcim_ref, 0)
+                # pic_count = self._edsdk.EdsGetChildCount(pic_folder_ref)
 
-                self._print_info_msg(self._console, f'picture count: {pic_count}')
+                # self._print_info_msg(self._console, f'picture count: {pic_count}')
 
-                # for i in range(pic_count):
+                d_count = self._edsdk.EdsGetChildCount(vol.ref)
+                for j in range(d_count):
+                    d_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, j)
+                    d_info = self._edsdk.EdsGetDirectoryItemInfo(d_ref)
 
-                # d_count = self._edsdk.EdsGetChildCount(vol.ref)
-                # for j in range(d_count):
-                #     d_ref = self._edsdk.EdsGetChildAtIndex(vol.ref, j)
-                #     self._print_info_msg(self._console, f'directory ref: {d_ref}')
-                #     self._print_info_msg(self._console, f'directory ref value: {d_ref.value}')
-                #     d_info = self._edsdk.EdsGetDirectoryItemInfo(d_ref.value)
+                    self._print_info_msg(self._console, f'volume label: {vol.label}')
+                    self._print_info_msg(self._console, f'directory ref: {d_info.ref}')
+                    self._print_info_msg(self._console, f'directory name: {d_info.file_name}')
+                    self._print_info_msg(self._console, f'size: {d_info.size}')
+                    self._print_info_msg(self._console, f'is folder: {d_info.isFolder}')
+                    self._print_info_msg(self._console, f'group id: {d_info.groupID}')
+                    self._print_info_msg(self._console, f'option: {d_info.option}')
+                    self._print_info_msg(self._console, f'format: {d_info.format}')
+                    self._print_info_msg(self._console, f'date time: {d_info.date_time}')
+                    self._print_info_msg(self._console, '=================================================')
 
-                #     self._print_info_msg(self._console, f'volume label: {vol.label}')
-                #     self._print_info_msg(self._console, f'size: {d_info.size}')
-                #     self._print_info_msg(self._console, f'is folder: {d_info.isFolder}')
-                #     self._print_info_msg(self._console, f'group id: {d_info.groupID}')
-                #     self._print_info_msg(self._console, f'option: {d_info.option}')
-                #     self._print_info_msg(self._console, f'raw file name: {d_info.szFileName}')
-                #     self._print_info_msg(self._console, f'format: {d_info.format}')
-                #     self._print_info_msg(self._console, '=================================================')
+                    s_d_count = self._edsdk.EdsGetChildCount(d_ref)
+                    for k in range(s_d_count):
+                        s_d_ref = self._edsdk.EdsGetChildAtIndex(d_ref, k)
+                        s_d_info = self._edsdk.EdsGetDirectoryItemInfo(s_d_ref)
 
-                    # s_d_count = self._edsdk.EdsGetChildCount(d_ref)
-                    # for k in range(s_d_count):
-                    #     s_d_ref = self._edsdk.EdsGetChildAtIndex(d_ref, k)
-                    #     s_d_info = self._edsdk.EdsGetDirectoryItemInfo(
-                    #         s_d_ref.value)
-
-                    #     self._print_info_msg(self._console, f'folder name: {d_info.szFileName}')
-                    #     self._print_info_msg(self._console, f'size: {s_d_info.size}')
-                    #     self._print_info_msg(self._console, f'is folder: {s_d_info.isFolder}')
-                    #     self._print_info_msg(self._console, f'group id: {s_d_info.groupID}')
-                    #     self._print_info_msg(self._console, f'option: {s_d_info.option}')
-                    #     self._print_info_msg(self._console, f'raw file name: {s_d_info.szFileName}')
-                    #     self._print_info_msg(self._console, f'format: {s_d_info.format}')
-                    #     self._print_info_msg(self._console, '=================================================')
+                        self._print_info_msg(self._console, f'volume label: {vol.label}')
+                        self._print_info_msg(self._console, f'parent directory name: {d_info.file_name}')
+                        self._print_info_msg(self._console, f'directory ref: {s_d_info.ref}')
+                        self._print_info_msg(self._console, f'directory name: {s_d_info.file_name}')
+                        self._print_info_msg(self._console, f'size: {s_d_info.size}')
+                        self._print_info_msg(self._console, f'is folder: {s_d_info.isFolder}')
+                        self._print_info_msg(self._console, f'group id: {s_d_info.groupID}')
+                        self._print_info_msg(self._console, f'option: {s_d_info.option}')
+                        self._print_info_msg(self._console, f'format: {s_d_info.format}')
+                        self._print_info_msg(self._console, f'date time: {s_d_info.date_time}')
+                        
+                        self._print_info_msg(self._console, '=================================================')
 
     def focus(self) -> None:
         """Focuses the camera."""
