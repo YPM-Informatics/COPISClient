@@ -112,7 +112,7 @@ class DeviceActionsPanel(wx.Panel):
             self._edsdk_transfer_pics_btn.Disable()
 
             try:
-                # TODO: Promp for imaging session path if not present.
+                # TODO: Prompt for imaging session path if not present.
                 destination = self._parent.core.imaging_session_path
                 self._parent.core.transfer_edsdk_pictures(destination)
             finally:

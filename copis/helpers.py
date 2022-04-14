@@ -312,11 +312,11 @@ def point5_to_dict(point) -> dict:
     dict_args = {}
 
     if point:
-        dict_args['X'] = point.x
-        dict_args['Y'] = point.y
-        dict_args['Z'] = point.z
-        dict_args['Pan'] = point.p
-        dict_args['Tilt'] = point.t
+        dict_args['x'] = point.x
+        dict_args['y'] = point.y
+        dict_args['z'] = point.z
+        dict_args['pan'] = point.p
+        dict_args['tilt'] = point.t
 
     return dict_args
 
