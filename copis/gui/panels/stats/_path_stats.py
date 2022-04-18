@@ -21,6 +21,7 @@ import wx
 from pydispatch import dispatcher
 
 from copis.gui.wxutils import simple_statictext
+from copis.globals import ActionType
 
 
 class PathStats(wx.Panel):
@@ -97,17 +98,30 @@ class PathStats(wx.Panel):
     def _update_path_stats(self):
         c_key = lambda p: p.position.device
 
+        count_imgs = lambda p_list: len(
+            [a for p in p_list for a in p.get_actions()
+                if a.atype == ActionType.C0])
+
+        def get_counts_lbl(p_count, i_count):
+            return f'{p_count or "No"} ({i_count} image{"s" if i_count != 1 else ""})'
+
         sets = self._core.project.pose_sets
 
         if sets:
             poses = sorted(self._core.project.poses, key=c_key)
             groups = groupby(poses, c_key)
 
+            pose_count = len(poses)
+            img_count = count_imgs(poses)
+
             self._set_count_caption.SetLabel(str(len(sets)))
-            self._pose_count_caption.SetLabel(str(len(poses)))
+            self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
 
             for key, group in groups:
-                self._dvc_captions[key].SetLabel(str(len(list(group))))
+                poses = list(group)
+                pose_count = len(poses)
+                img_count = count_imgs(poses)
+                self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
 
     def _estimate_execution_time(self):
         # TODO
