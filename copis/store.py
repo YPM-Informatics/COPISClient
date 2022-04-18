@@ -177,6 +177,13 @@ def path_exists(filename: str) -> bool:
     return os.path.exists(filename)
 
 
+def path_exists_2(file_dir: str, file_name: str) -> dict:
+    """Checks whether the given path exists; with a path join."""
+    filename = os.path.join(file_dir, file_name)
+
+    return path_exists(filename)
+
+
 def delete_path(filename: str) -> None:
     """Deletes the given path."""
     if path_exists(filename):

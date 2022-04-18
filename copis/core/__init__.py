@@ -41,7 +41,7 @@ from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
-from copis.store import save_json_2
+from copis.store import path_exists_2, save_json_2
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -109,6 +109,7 @@ class COPISCore(
         self._imaging_session_queue = None
         self._imaging_session_manifest = None
         self._save_imaging_session = False
+        self._imaging_manifest_file_name = None
         self._image_counters = {}
 
     @property
@@ -159,8 +160,8 @@ class COPISCore(
             self._imaging_session_manifest[key] = value
 
         if pairs:
-            file_name = 'copis_imaging_manifest.json'
-            save_json_2(self._imaging_session_path, file_name,
+            save_json_2(self._imaging_session_path,
+                self._imaging_manifest_file_name,
                 self._imaging_session_manifest)
 
     def _check_configs(self) -> None:
@@ -374,6 +375,16 @@ class COPISCore(
 
             return packets
 
+        def get_file_name():
+            f_name = 'copis_imaging_manifest.json'
+            count = 0
+
+            while path_exists_2(self._imaging_session_path, f_name):
+                count = count + 1
+                f_name = f'copis_imaging_manifest_{count}.json'
+
+            return f_name
+
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before imaging can start.')
@@ -402,6 +413,7 @@ class COPISCore(
             pairs.append(self._get_image_counts())
             pairs.append(('images', []))
 
+            self._imaging_manifest_file_name = get_file_name()
             self._update_imaging_manifest(pairs)
 
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
