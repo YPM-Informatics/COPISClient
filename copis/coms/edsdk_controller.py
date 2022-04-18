@@ -447,7 +447,7 @@ class EDSDKController():
             self._delete_pictures(pictures)
 
             self._print_info_msg(self._console,
-                f'{count} picture{"s" if count > 1 else ""} tranferred')
+                f'{count or "No"} picture{"s" if count != 1 else ""} tranferred')
         else:
             self._print_info_msg(self._console, 'No pictures transferred')
 
