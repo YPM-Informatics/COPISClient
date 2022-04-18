@@ -41,7 +41,7 @@ from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
-from copis.store import load_json_2, save_json_2
+from copis.store import save_json_2
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -109,6 +109,7 @@ class COPISCore(
         self._imaging_session_queue = None
         self._imaging_session_manifest = None
         self._save_imaging_session = False
+        self._image_counters = {}
 
     @property
     def imaged_pose_sets(self):
@@ -126,6 +127,16 @@ class COPISCore(
     def is_dev_env(self):
         """Returns a flag indicating whether we are in a dev environment."""
         return self._is_dev_env
+
+    def _get_next_img_rank(self, device_id):
+        counter = 1
+
+        if device_id in self._image_counters:
+            counter = self._image_counters[device_id] + counter
+
+        self._image_counters[device_id] = counter
+
+        return counter
 
     def _get_image_counts(self):
         c_key = lambda p: p.position.device
@@ -235,8 +246,9 @@ class COPISCore(
                     for command in commands:
                         if command.atype == ActionType.C0:
                             device = self._get_device(command.device)
+                            rank = self._get_next_img_rank(command.device)
                             file_name = \
-                                f'cam_{command.device}_img_{current_pose_set + 1}.json'
+                                f'cam_{command.device}_img_{rank}.json'
 
                             data = {}
                             data['file_name'] = file_name
