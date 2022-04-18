@@ -27,7 +27,7 @@ from copis.store import Store
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
 def prompt_for_imaging_session_path(path: str=None) -> Tuple:
-    """Takes the user throughthe imaging saving path prompt tree.
+    """Takes the user through the imaging saving path prompt tree.
         Returns a tuple that says whether to proceed and, if so where to save."""
     new_path = None
     proceed = True
