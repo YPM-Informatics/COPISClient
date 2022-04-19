@@ -83,10 +83,10 @@ class COPISCore(
 
         self._check_configs()
 
-        # clear to send, enabled after responses
+        # Clear to send, enabled after responses.
         self._clear_to_send = False
 
-        # True if sending actions, false if paused
+        # True if sending actions, false if paused.
         self._keep_working = False
         self._is_machine_paused = False
         self._work_type = None
@@ -139,11 +139,11 @@ class COPISCore(
 
         return counter
 
-    def _get_image_counts(self):
-        c_key = lambda p: p.position.device
+    def _get_image_counts(self, pose_list=None):
+        c_key = lambda p: (p.position or p.payload[0]).device
 
         counts = {}
-        poses = sorted(self.project.poses, key=c_key)
+        poses = sorted(pose_list or self.project.poses, key=c_key)
         groups = groupby(poses, c_key)
 
         for key, group in groups:
@@ -203,8 +203,11 @@ class COPISCore(
             print_debug_msg(self.console, f'Packet size is: {packet_size}',
                 self._is_dev_env)
 
-            self._send(*packet)
-            self._clear_to_send = False
+            if packet:
+                self._send(*packet)
+                self._clear_to_send = False
+            else:
+                print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
 
         else:
             self._keep_working = False
@@ -257,7 +260,8 @@ class COPISCore(
                             data['device_name'] = device.name
                             data['device_id'] = device.device_id
                             data['imaging_method'] = 'remote shutter'
-                            data['position'] = point5_to_dict(device.position)
+                            data['position'] = point5_to_dict(
+                                device.position) if device.is_homed else None
                             data['stack_id'] = None
                             data['stack_index'] = None
                             data['image_start_time'] = img_start_time
@@ -270,8 +274,6 @@ class COPISCore(
                             self._imaging_session_queue.append((command.device, image_index))
 
                 self._serial.write(cmd_lines)
-            else:
-                print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
 
             if self._work_type == WorkType.IMAGING:
                 if self._pose_set_offset_start <= self._current_mainqueue_item and \
@@ -307,6 +309,25 @@ class COPISCore(
             session_images[image_index]['image_end_time'] = get_timestamp(True)
 
             self._update_imaging_manifest([('images', session_images)])
+
+    def _get_file_name(self, template: str):
+        f_name = template.format('')
+        count = 0
+
+        while path_exists_2(self._imaging_session_path, f_name):
+            count = count + 1
+            f_name = template.format(f'_{count}')
+
+        return f_name
+
+    def _imaging_callback(self):
+        if self._save_imaging_session:
+            self._update_imaging_manifest(
+                [('imaging_end_time', get_timestamp(True))])
+
+            dispatcher.disconnect(
+                self._on_device_updated, signal='ntf_device_updated')
+            self._save_imaging_session = False
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
@@ -356,15 +377,7 @@ class COPISCore(
         self._update_recent_projects(path)
 
     def start_imaging(self, save_path, keep_last_path) -> bool:
-        """Starts the imaging sequence, following the define action path."""
-        def imaging_callback():
-            if self._save_imaging_session:
-                self._update_imaging_manifest(
-                    [('imaging_end_time', get_timestamp(True))])
-
-                dispatcher.disconnect(self._on_device_updated, signal='ntf_device_updated')
-                self._save_imaging_session = False
-
+        """Starts the imaging sequence, following the defined action path."""
         def process_pose_sets():
             packets = []
 
@@ -374,16 +387,6 @@ class COPISCore(
                 packets.extend(zipped)
 
             return packets
-
-        def get_file_name():
-            f_name = 'copis_imaging_manifest.json'
-            count = 0
-
-            while path_exists_2(self._imaging_session_path, f_name):
-                count = count + 1
-                f_name = f'copis_imaging_manifest_{count}.json'
-
-            return f_name
 
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
@@ -413,7 +416,8 @@ class COPISCore(
             pairs.append(self._get_image_counts())
             pairs.append(('images', []))
 
-            self._imaging_manifest_file_name = get_file_name()
+            self._imaging_manifest_file_name = self._get_file_name(
+                'copis_imaging_manifest{}.json')
             self._update_imaging_manifest(pairs)
 
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
@@ -438,7 +442,7 @@ class COPISCore(
             target=self._worker,
             name='working thread',
             kwargs={
-                "extra_callback": imaging_callback
+                "extra_callback": self._imaging_callback
             }
         )
         self._working_thread.start()

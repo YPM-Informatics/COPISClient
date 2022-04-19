@@ -529,7 +529,13 @@ class TimelinePanel(wx.Panel):
                     pose_index = data['index']
                     poses = [self.core.project.pose_sets[set_index][pose_index]]
 
-                self.core.play_poses(poses)
+                proceed, path, keep_last = prompt_for_imaging_session_path(
+                self._parent.core.imaging_session_path)
+
+                if not proceed:
+                    return
+
+                self.core.play_poses(poses, path, keep_last)
 
     def on_image_command(self, _):
         """Start the imaging run (plays all poses)."""

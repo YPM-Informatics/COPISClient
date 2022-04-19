@@ -18,13 +18,13 @@
 import threading
 
 from typing import List
-# from math import cos, sin
+from pydispatch import dispatcher
+from itertools import zip_longest
 
 from copis.classes import Action, Pose
 from copis.command_processor import deserialize_command
-from copis.globals import ActionType, ComStatus, WorkType # , Point5
-from copis.helpers import print_debug_msg, print_error_msg # , print_info_msg, dd_to_rad,
-    # rad_to_dd, sanitize_number)
+from copis.globals import ActionType, ComStatus, WorkType
+from copis.helpers import get_timestamp, print_debug_msg, print_error_msg
 
 
 
@@ -253,8 +253,11 @@ class MachineMembersMixin:
         )
         self._working_thread.start()
 
-    def play_poses(self, poses: List[Pose]):
+    def play_poses(self, poses: List[Pose], save_path: str=None, keep_last_path: bool=True):
         """Play the given pose set."""
+        process_poses = lambda: [[val for val in tup if val is not None] for tup in
+            zip_longest(*[p.get_seq_actions() for p in poses])]
+
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before stepping can start.')
@@ -269,15 +272,39 @@ class MachineMembersMixin:
                 'The machine needs to be homed before stepping can start.')
             return
 
-        packet = [a for p in poses for a in p.get_actions()]
+        if keep_last_path:
+            self._save_imaging_session = False
+        else:
+            self._imaging_session_path = save_path
+            self._save_imaging_session = bool(self._imaging_session_path)
+
+        if self._save_imaging_session:
+            self._imaging_session_queue = []
+            self._imaging_session_manifest = {}
+
+            pairs = [('imaging_start_time', get_timestamp(True)),
+                ('imaging_end_time', None)]
+            pairs.append(self._get_image_counts(poses))
+            pairs.append(('images', []))
+
+            self._imaging_manifest_file_name = self._get_file_name(
+                'copis_image_series_manifest{}.json')
+            self._update_imaging_manifest(pairs)
+
+            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+
+        # packet = [a for p in poses for a in p.get_actions()]
         self._mainqueue = []
-        self._mainqueue.append(packet)
+        self._mainqueue.extend(process_poses())
         self._work_type = WorkType.STEPPING
 
         self._keep_working = True
         self._clear_to_send = True
         self._working_thread = threading.Thread(
             target=self._worker,
-            name='working thread'
+            name='working thread',
+            kwargs={
+                "extra_callback": self._imaging_callback
+            }
         )
         self._working_thread.start()

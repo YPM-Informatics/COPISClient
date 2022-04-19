@@ -99,10 +99,31 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_snap_edsdk_picture(self, _) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            self._parent.core.snap_edsdk_picture()
+            proceed, path, keep_last = prompt_for_imaging_session_path(
+                self._parent.core.imaging_session_path)
+
+            if not proceed:
+                return
+
+            self._parent.core.snap_edsdk_picture(path, keep_last)
         else:
             show_msg_dialog('Please connect the camera to take a picture via EDSDK.',
                 'Take a Picture - EDSDK')
+
+    def _on_snap_serial_picture(self, _) -> None:
+        can_snap = self._parent.core.is_serial_port_connected
+
+        if can_snap:
+            proceed, path, keep_last = prompt_for_imaging_session_path(
+                self._parent.core.imaging_session_path)
+
+            if not proceed:
+                return
+
+            self._parent.core.snap_serial_picture(self._device.device_id, path, keep_last)
+        else:
+            show_msg_dialog('Please connect the machine to take a picture via serial.',
+                'Take a Picture - Serial')
 
     def _on_transfer_edsdk_pictures(self, _) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
@@ -125,15 +146,6 @@ class DeviceActionsPanel(wx.Panel):
         else:
             show_msg_dialog('Please connect the camera to transfer pictures via EDSDK.',
                 'Transfer Pictures - EDSDK')
-
-    def _on_snap_serial_picture(self, _) -> None:
-        can_snap = self._parent.core.is_serial_port_connected
-
-        if can_snap:
-            self._parent.core.snap_serial_picture(self._device.device_id)
-        else:
-            show_msg_dialog('Please connect the machine to take a picture via serial.',
-                'Take a Picture - Serial')
 
     def _on_device_homed(self):
         self._serial_take_pic_btn.Enable()
