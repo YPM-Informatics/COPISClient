@@ -31,6 +31,7 @@ from .panels.console import ConsolePanel
 from .panels.evf import EvfPanel
 from .panels.machine_toolbar import MachineToolbar
 from .panels.pathgen_toolbar import PathgenToolbar
+from .panels.imaging_toolbar import ImagingToolbar
 from .panels.properties import PropertiesPanel
 from .panels.timeline import TimelinePanel
 from .panels.viewport import ViewportPanel
@@ -145,6 +146,11 @@ class MainWindow(wx.Frame):
     def pathgen_toolbar(self) -> PathgenToolbar:
         """Returns the path generation toolbar."""
         return self.panels['pathgen_toolbar']
+
+    @property
+    def imaging_toolbar(self) -> ImagingToolbar:
+        """Returns the imaging toolbar."""
+        return self.panels['imaging_toolbar']
 
     def _get_default_dir(self):
         return self.core.config.application_settings.last_output_path
@@ -357,14 +363,18 @@ class MainWindow(wx.Frame):
             'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
+        self.menuitems['imaging_toolbar'] = window_menu.Append(wx.ID_ANY, 'Imaging Toolbar',
+            'Show/hide imaging toolbar', wx.ITEM_CHECK)
+        self.menuitems['imaging_toolbar'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_imaging_toolbar, self.menuitems['imaging_toolbar'])
         self.menuitems['machine_toolbar'] = window_menu.Append(wx.ID_ANY, 'Machine Toolbar',
             'Show/hide machine toolbar', wx.ITEM_CHECK)
         self.menuitems['machine_toolbar'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_machine_toolbar_panel, self.menuitems['machine_toolbar'])
+        self.Bind(wx.EVT_MENU, self.update_machine_toolbar, self.menuitems['machine_toolbar'])
         self.menuitems['pathgen_toolbar'] = window_menu.Append(wx.ID_ANY, 'Path Generator Toolbar',
             'Show/hide path generator toolbar', wx.ITEM_CHECK)
         self.menuitems['pathgen_toolbar'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_pathgen_toolbar_panel,
+        self.Bind(wx.EVT_MENU, self.update_pathgen_toolbar,
             self.menuitems['pathgen_toolbar'])
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties',
             'Show/hide properties window', wx.ITEM_CHECK)
@@ -659,6 +669,7 @@ class MainWindow(wx.Frame):
         self.panels['stats'] = StatsPanel(self)
         self.panels['machine_toolbar'] = MachineToolbar(self)
         self.panels['pathgen_toolbar'] = PathgenToolbar(self)
+        self.panels['imaging_toolbar'] = ImagingToolbar(self)
 
         # Add viewport panel.
         self._mgr.AddPane(
@@ -703,6 +714,12 @@ class MainWindow(wx.Frame):
             self.panels['pathgen_toolbar'],
             aui.AuiPaneInfo().Name('pathgen_toolbar').Caption('Pathgen Toolbar').
             ToolbarPane().BottomDockable(False).Top().Layer(10))
+        self.panels['imaging_toolbar'].Realize()
+        self._mgr.AddPane(
+            self.panels['imaging_toolbar'],
+            aui.AuiPaneInfo().Name('imaging_toolbar').Caption('Imaging Toolbar').
+            Float().ToolbarPane().BottomDockable(False).Top().Layer(10))
+
 
         self._mgr.Update()
         self.update_right_dock()
@@ -764,13 +781,17 @@ class MainWindow(wx.Frame):
             self.panels.pop('evf')
             self.menuitems['evf'].Enable(False)
 
-    def update_pathgen_toolbar_panel(self, event: wx.CommandEvent) -> None:
+    def update_pathgen_toolbar(self, event: wx.CommandEvent) -> None:
         """Show or hide path generator toolbar."""
         self._mgr.ShowPane(self.pathgen_toolbar, event.IsChecked())
 
-    def update_machine_toolbar_panel(self, event: wx.CommandEvent) -> None:
+    def update_machine_toolbar(self, event: wx.CommandEvent) -> None:
         """Show or hide machine toolbar."""
         self._mgr.ShowPane(self.machine_toolbar, event.IsChecked())
+
+    def update_imaging_toolbar(self, event: wx.CommandEvent) -> None:
+        """Show or hide imaging toolbar."""
+        self._mgr.ShowPane(self.imaging_toolbar, event.IsChecked())
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""

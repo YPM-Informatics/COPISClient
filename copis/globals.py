@@ -47,11 +47,12 @@ class Size(NamedTuple):
 
 class ToolIds(Enum):
     """Toolbar item IDs."""
-    PLAY = 1
-    PAUSE = 2
-    STOP = 3
-    SETTINGS = 4
-    EXPORT = 5
+    PLAY_ALL = 1
+    PLAY = 2
+    PAUSE = 3
+    STOP = 4
+    SETTINGS = 5
+    EXPORT = 6
 
 
 class PathIds(Enum):
