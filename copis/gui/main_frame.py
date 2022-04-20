@@ -349,18 +349,31 @@ class MainWindow(wx.Frame):
 
         # Window menu.
         window_menu = wx.Menu()
-        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera EVF',
-            'Show/hide camera EVF window', wx.ITEM_CHECK)
+        self.menuitems['evf'] = window_menu.Append(wx.ID_ANY, 'Camera Live View',
+            'Show/hide camera live view window', wx.ITEM_CHECK)
         self.menuitems['evf'].Enable(False)
         self.Bind(wx.EVT_MENU, self.update_evf_panel, self.menuitems['evf'])
         self.menuitems['console'] = window_menu.Append(wx.ID_ANY, 'Console',
             'Show/hide console window', wx.ITEM_CHECK)
         self.menuitems['console'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
+        self.menuitems['machine_toolbar'] = window_menu.Append(wx.ID_ANY, 'Machine Toolbar',
+            'Show/hide machine toolbar', wx.ITEM_CHECK)
+        self.menuitems['machine_toolbar'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_machine_toolbar_panel, self.menuitems['machine_toolbar'])
+        self.menuitems['pathgen_toolbar'] = window_menu.Append(wx.ID_ANY, 'Path Generator Toolbar',
+            'Show/hide path generator toolbar', wx.ITEM_CHECK)
+        self.menuitems['pathgen_toolbar'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_pathgen_toolbar_panel,
+            self.menuitems['pathgen_toolbar'])
         self.menuitems['properties'] = window_menu.Append(wx.ID_ANY, 'Properties',
-            'Show/hide camera properties window', wx.ITEM_CHECK)
+            'Show/hide properties window', wx.ITEM_CHECK)
         self.menuitems['properties'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_properties_panel, self.menuitems['properties'])
+        self.menuitems['stats'] = window_menu.Append(wx.ID_ANY, 'Statistics',
+            'Show/hide statistics window', wx.ITEM_CHECK)
+        self.menuitems['stats'].Check(True)
+        self.Bind(wx.EVT_MENU, self.update_stats_panel, self.menuitems['stats'])
         self.menuitems['timeline'] = window_menu.Append(wx.ID_ANY, 'Timeline',
             'Show/hide timeline window', wx.ITEM_CHECK)
         self.menuitems['timeline'].Check(True)
@@ -369,10 +382,6 @@ class MainWindow(wx.Frame):
             'Show/hide viewport window', wx.ITEM_CHECK)
         self.menuitems['viewport'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_viewport_panel, self.menuitems['viewport'])
-        self.menuitems['stats'] = window_menu.Append(wx.ID_ANY, 'Statistics',
-            'Show/hide statistics window', wx.ITEM_CHECK)
-        self.menuitems['stats'].Check(True)
-        self.Bind(wx.EVT_MENU, self.update_stats_panel, self.menuitems['stats'])
         window_menu.AppendSeparator()
 
         _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
@@ -754,6 +763,14 @@ class MainWindow(wx.Frame):
             evf_pane.window.Destroy()
             self.panels.pop('evf')
             self.menuitems['evf'].Enable(False)
+
+    def update_pathgen_toolbar_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide path generator toolbar."""
+        self._mgr.ShowPane(self.pathgen_toolbar, event.IsChecked())
+
+    def update_machine_toolbar_panel(self, event: wx.CommandEvent) -> None:
+        """Show or hide machine toolbar."""
+        self._mgr.ShowPane(self.machine_toolbar, event.IsChecked())
 
     def update_console_panel(self, event: wx.CommandEvent) -> None:
         """Show or hide console panel."""
