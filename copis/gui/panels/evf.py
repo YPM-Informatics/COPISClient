@@ -19,10 +19,6 @@ import io
 import wx
 from PIL import Image
 
-from copis.helpers import create_action_args
-from copis.classes import Action, Pose
-from copis.globals import ActionType
-
 
 class EvfPanel(wx.Panel):
     """Electronic viewfinder panel. Shows live feed of connected device.

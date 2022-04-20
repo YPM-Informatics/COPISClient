@@ -34,12 +34,13 @@ from copis.pathutils import (build_pose_sets, create_circle, create_helix, creat
 
 
 class PathgenToolbar(aui.AuiToolBar):
-    """Manage pathgen toolbar panel. Spawns a bunch of dialogs."""
+    """Manage pathgen toolbar. Spawns a bunch of dialogs."""
 
-    def __init__(self, parent, *args, **kwargs) -> None:
-        """Initializes ToolbarPanel with constructors."""
+    def __init__(self, parent) -> None:
+        """Initializes PathgenToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
+
         self.parent = parent
         self.core = self.parent.core
 

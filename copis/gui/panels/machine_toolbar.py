@@ -27,14 +27,14 @@ from copis.helpers import print_debug_msg, print_info_msg
 
 
 class MachineToolbar(aui.AuiToolBar):
-    """Manage AUI toolbar panel."""
+    """Manage machine toolbar."""
 
     def __init__(self, parent) -> None:
         """Initialize MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
-        self._parent = parent
 
+        self._parent = parent
         self._core = self._parent.core
 
         self.port_cb = None
