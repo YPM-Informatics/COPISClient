@@ -60,30 +60,34 @@ class MachineToolbar(aui.AuiToolBar):
             size=(-1, -1))
         self.Bind(wx.EVT_BUTTON, self.on_refresh_ports,
             self.AddControl(self.refresh_btn, label='Refresh ports'))
-        self.AddSpacer(8)
+        self.AddSpacer(5)
         self.AddControl(wx.StaticText(self, label='Baud', style=wx.ALIGN_LEFT))
         self.baud_cb = wx.ComboBox(
             self, choices=[], style=wx.CB_READONLY, size=(75, -1))
         self.AddControl(self.baud_cb, label='Baud combobox')
-        self.AddSpacer(8)
+        self.AddSpacer(5)
         self.connect_serial_btn = wx.Button(self, wx.ID_ANY, label='Connect', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_connect_serial, self.AddControl(self.connect_serial_btn))
-        self.AddSpacer(8)
+        self.AddSpacer(5)
         self.home_btn = wx.Button(self, wx.ID_ANY, label='Home', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_home, self.AddControl(self.home_btn))
-        self.AddSpacer(8)
+        self.AddSpacer(5)
         self.ready_btn = wx.Button(self, wx.ID_ANY, label='Ready', size=(75, -1))
         self.Bind(wx.EVT_BUTTON, self.on_ready, self.AddControl(self.ready_btn))
-        self.AddSpacer(8)
+        self.AddSpacer(5)
 
         self.home_btn.Enable(self._can_home())
 
         self.AddSeparator()
+        self.AddSpacer(5)
+
+        self.start_imaging_btn = wx.Button(self, wx.ID_ANY, label='Start Imaging', size=(95, -1))
+        self.Bind(wx.EVT_BUTTON, self.on_start_imaging, self.AddControl(self.start_imaging_btn))
 
         # Add play, pause, stop tools.
-        _bmp = create_scaled_bitmap('play_arrow', 24)
-        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
-            short_help_string='Start imaging')
+        # _bmp = create_scaled_bitmap('play_arrow', 24)
+        # self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
+        #     short_help_string='Start imaging')
 
         # TODO: implement pause and stop, uncomment below
         # _bmp = create_scaled_bitmap('pause', 24)
@@ -168,37 +172,12 @@ class MachineToolbar(aui.AuiToolBar):
         TODO: Link with copiscore when implemented.
         """
         if event.Id == ToolIds.PLAY.value:
-            # if self.core.paused:
-            #     self.core.resume_work()
-            # else:
-            #     self.core.start_imaging()
-
-            is_connected = self._core.is_serial_port_connected
-            has_path = len(self._core.project.pose_sets)
-            is_homed = self._core.is_machine_homed
-            can_image = is_connected and has_path and is_homed
-
-            if not can_image:
-                msg = 'The machine needs to be homed before imaging.'
-                if not is_connected:
-                    msg = 'The machine needs to be connected for imaging.'
-                elif not has_path:
-                    msg = 'The machine needs a path for imaging.'
-
-                show_msg_dialog(msg, 'Imaging')
-                return
-
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._core.imaging_session_path)
-
-            if not proceed:
-                return
-
-            self._core.start_imaging(path, keep_last)
-
+            if self.core.paused:
+                self.core.resume_work()
+            else:
+                self.core.start_imaging()
         elif event.Id == ToolIds.PAUSE.value:
             self._core.pause_work()
-
         elif event.Id == ToolIds.STOP.value:
             self._core.stop_work()
 
@@ -209,6 +188,31 @@ class MachineToolbar(aui.AuiToolBar):
 
         elif event.Id == ToolIds.EXPORT.value:
             self._core.export_poses('actions.txt')
+
+    def on_start_imaging(self, _) -> None:
+        """On start imaging button pressed, initiate imaging workflow."""
+        is_connected = self._core.is_serial_port_connected
+        has_path = len(self._core.project.pose_sets)
+        is_homed = self._core.is_machine_homed
+        can_image = is_connected and has_path and is_homed
+
+        if not can_image:
+            msg = 'The machine needs to be homed before imaging.'
+            if not is_connected:
+                msg = 'The machine needs to be connected for imaging.'
+            elif not has_path:
+                msg = 'The machine needs a path for imaging.'
+
+            show_msg_dialog(msg, 'Imaging')
+            return
+
+        proceed, path, keep_last = prompt_for_imaging_session_path(
+            self._core.imaging_session_path)
+
+        if not proceed:
+            return
+
+        self._core.start_imaging(path, keep_last)
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""
