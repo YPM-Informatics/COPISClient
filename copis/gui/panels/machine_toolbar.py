@@ -32,7 +32,7 @@ class MachineToolbar(aui.AuiToolBar):
     def __init__(self, parent) -> None:
         """Initialize MachineToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
-            aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
+            aui.AUI_TB_PLAIN_BACKGROUND)
 
         self._parent = parent
         self._core = self._parent.core
@@ -42,6 +42,13 @@ class MachineToolbar(aui.AuiToolBar):
 
         self.init_toolbar()
         self.update_ports()
+
+        # Using the aui.AUI_TB_OVERFLOW style flag means that the overflow button always shows
+        # when the toolbar is floating, even if all the items fit.
+        # This allows the overflow button to be visible only when they don't;
+        # no matter if the toolbar is floating or docked.
+        self.Bind(wx.EVT_MOTION,
+            lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
         self.Bind(wx.EVT_TOOL, self.on_tool_selected)
 
@@ -189,7 +196,7 @@ class MachineToolbar(aui.AuiToolBar):
         elif event.Id == ToolIds.EXPORT.value:
             self._core.export_poses('actions.txt')
 
-    def on_start_imaging(self, _) -> None:
+    def on_start_imaging(self, event: wx.CommandEvent) -> None:
         """On start imaging button pressed, initiate imaging workflow."""
         is_connected = self._core.is_serial_port_connected
         has_path = len(self._core.project.pose_sets)
@@ -212,7 +219,10 @@ class MachineToolbar(aui.AuiToolBar):
         if not proceed:
             return
 
-        self._core.start_imaging(path, keep_last)
+        pos = event.GetEventObject().GetPosition()
+        callback = lambda: self._core.start_imaging(path, keep_last)
+
+        self._parent.show_imaging_toolbar(pos, ToolIds.PLAY_ALL, callback)
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""

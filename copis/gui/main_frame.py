@@ -365,7 +365,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.update_console_panel, self.menuitems['console'])
         self.menuitems['imaging_toolbar'] = window_menu.Append(wx.ID_ANY, 'Imaging Toolbar',
             'Show/hide imaging toolbar', wx.ITEM_CHECK)
-        self.menuitems['imaging_toolbar'].Check(True)
+        self.menuitems['imaging_toolbar'].Enable(False)
         self.Bind(wx.EVT_MENU, self.update_imaging_toolbar, self.menuitems['imaging_toolbar'])
         self.menuitems['machine_toolbar'] = window_menu.Append(wx.ID_ANY, 'Machine Toolbar',
             'Show/hide machine toolbar', wx.ITEM_CHECK)
@@ -557,6 +557,20 @@ class MainWindow(wx.Frame):
         self.core.project.poses.clear(False)
         self.core.project.poses.extend(poses)
 
+    def show_imaging_toolbar(self, position, tool_id, callback=None):
+        """Shows the imaging toolbar at the given position and executes the given callback
+            for the given tool."""
+        pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)
+        pane.FloatingPosition(position)
+        pane.Show(True)
+
+        self.menuitems['imaging_toolbar'].Enable(True)
+        self.menuitems['imaging_toolbar'].Check(True)
+        self._mgr.Update()
+
+        if callback:
+            callback()
+
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Updates status bar visibility based on menu item."""
         self.StatusBar.Show(event.IsChecked())
@@ -718,7 +732,7 @@ class MainWindow(wx.Frame):
         self._mgr.AddPane(
             self.panels['imaging_toolbar'],
             aui.AuiPaneInfo().Name('imaging_toolbar').Caption('Imaging Toolbar').
-            Float().ToolbarPane().BottomDockable(False).Top().Layer(10))
+            Float().ToolbarPane().BottomDockable(False).Top().Layer(10).Hide())
 
 
         self._mgr.Update()

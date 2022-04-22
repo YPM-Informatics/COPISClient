@@ -21,7 +21,6 @@ import wx.lib.agw.aui as aui
 
 from copis.globals import ToolIds
 from copis.gui.wxutils import create_scaled_bitmap
-from copis.helpers import print_info_msg
 
 
 class ImagingToolbar(aui.AuiToolBar):
@@ -36,7 +35,12 @@ class ImagingToolbar(aui.AuiToolBar):
 
         self._init_toolbar()
 
-        self.Bind(wx.EVT_TOOL, self._on_tool_selected)
+        # Using the aui.AUI_TB_OVERFLOW style flag means that the overflow button always shows
+        # when the toolbar is floating, even if all the items fit.
+        # This allows the overflow button to be visible only when they don't;
+        # no matter if the toolbar is floating or docked.
+        self.Bind(wx.EVT_MOTION,
+            lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
     def _init_toolbar(self):
         """Initialize and populate toolbar.
@@ -60,4 +64,14 @@ class ImagingToolbar(aui.AuiToolBar):
             short_help_string='Abort imaging')
 
     def _on_tool_selected(self, event: wx.CommandEvent):
-        print_info_msg(self._core.console, f'selected tool is: {ToolIds(event.Id)}')
+        tool_id = ToolIds(event.Id)
+        if tool_id == ToolIds.PLAY_ALL:
+            pass
+        elif tool_id == ToolIds.PLAY:
+            pass
+        elif tool_id == ToolIds.PAUSE:
+            pass
+        elif tool_id == ToolIds.STOP:
+            pass
+        else:
+            raise NotImplementedError(f'Tool {ToolIds(event.Id)} not implemented.')

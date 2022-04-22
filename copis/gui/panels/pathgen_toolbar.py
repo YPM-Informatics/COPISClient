@@ -39,13 +39,20 @@ class PathgenToolbar(aui.AuiToolBar):
     def __init__(self, parent) -> None:
         """Initializes PathgenToolbar with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
-            aui.AUI_TB_PLAIN_BACKGROUND|aui.AUI_TB_OVERFLOW)
+            aui.AUI_TB_PLAIN_BACKGROUND)
 
         self.parent = parent
         self.core = self.parent.core
 
         self._path_dialogs = {}
         self.init_toolbar()
+
+        # Using the aui.AUI_TB_OVERFLOW style flag means that the overflow button always shows
+        # when the toolbar is floating, even if all the items fit.
+        # This allows the overflow button to be visible only when they don't;
+        # no matter if the toolbar is floating or docked.
+        self.Bind(wx.EVT_MOTION,
+            lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
         self.Bind(wx.EVT_TOOL, self.on_tool_selected)
 
