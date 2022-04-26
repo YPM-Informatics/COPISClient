@@ -21,6 +21,7 @@ import wx.lib.agw.aui as aui
 
 from copis.globals import ToolIds
 from copis.gui.wxutils import create_scaled_bitmap
+from copis.helpers import print_info_msg
 
 
 class ImagingToolbar(aui.AuiToolBar):
@@ -32,6 +33,7 @@ class ImagingToolbar(aui.AuiToolBar):
 
         self._parent = parent
         self._core = self._parent.core
+        self._actions = {}
 
         self._init_toolbar()
 
@@ -41,6 +43,8 @@ class ImagingToolbar(aui.AuiToolBar):
         # no matter if the toolbar is floating or docked.
         self.Bind(wx.EVT_MOTION,
             lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
+
+        self.Bind(wx.EVT_TOOL, self._on_tool_selected)
 
     def _init_toolbar(self):
         """Initialize and populate toolbar.
@@ -66,12 +70,22 @@ class ImagingToolbar(aui.AuiToolBar):
     def _on_tool_selected(self, event: wx.CommandEvent):
         tool_id = ToolIds(event.Id)
         if tool_id == ToolIds.PLAY_ALL:
-            pass
+            if tool_id in self._actions:
+                self._actions[tool_id]()
         elif tool_id == ToolIds.PLAY:
-            pass
+            print_info_msg(self._core.console, 'tool selected is PLAY')
         elif tool_id == ToolIds.PAUSE:
-            pass
+            print_info_msg(self._core.console, 'tool selected is PAUSE')
         elif tool_id == ToolIds.STOP:
-            pass
+            print_info_msg(self._core.console, 'tool selected is STOP')
         else:
             raise NotImplementedError(f'Tool {ToolIds(event.Id)} not implemented.')
+
+    def set_actions(self, tools_actions):
+        """Sets handlers and initial states for the gives tools."""
+        if tools_actions:
+            for action in tools_actions:
+                tool_id, is_enabled, handler = action
+                self.ToggleTool(tool_id, is_enabled)
+                if handler:
+                    self._actions[tool_id] = handler

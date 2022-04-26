@@ -558,7 +558,7 @@ class MainWindow(wx.Frame):
         self.core.project.poses.clear(False)
         self.core.project.poses.extend(poses)
 
-    def show_imaging_toolbar(self, position, tool_id, callback=None):
+    def show_imaging_toolbar(self, position, actions):
         """Shows the imaging toolbar at the given position and executes the given callback
             for the given tool."""
         pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)
@@ -569,8 +569,7 @@ class MainWindow(wx.Frame):
         self.menuitems['imaging_toolbar'].Check(True)
         self._mgr.Update()
 
-        if callback:
-            callback()
+        pane.window.set_actions(actions)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Updates status bar visibility based on menu item."""

@@ -50,7 +50,7 @@ class MachineToolbar(aui.AuiToolBar):
         self.Bind(wx.EVT_MOTION,
             lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
-        self.Bind(wx.EVT_TOOL, self.on_tool_selected)
+        # self.Bind(wx.EVT_TOOL, self.on_tool_selected)
 
     def init_toolbar(self) -> None:
         """Initialize and populate toolbar.
@@ -222,7 +222,12 @@ class MachineToolbar(aui.AuiToolBar):
         pos = event.GetEventObject().GetPosition()
         callback = lambda: self._core.start_imaging(path, keep_last)
 
-        self._parent.show_imaging_toolbar(pos, ToolIds.PLAY_ALL, callback)
+        actions = [(ToolIds.PLAY_ALL, True, callback),
+            (ToolIds.PLAY, False, None),
+            (ToolIds.PAUSE, False, None),
+            (ToolIds.STOP, False, None)]
+
+        self._parent.show_imaging_toolbar(pos, actions)
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""
