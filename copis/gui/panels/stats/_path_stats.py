@@ -118,10 +118,11 @@ class PathStats(wx.Panel):
             self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
 
             for key, group in groups:
-                poses = list(group)
-                pose_count = len(poses)
-                img_count = count_imgs(poses)
-                self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
+                if key in [d.device_id for d in self._core.project.devices]:
+                    poses = list(group)
+                    pose_count = len(poses)
+                    img_count = count_imgs(poses)
+                    self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
 
     def _estimate_execution_time(self):
         # TODO
