@@ -15,6 +15,7 @@
 
 """MainWindow class."""
 
+from email import message
 import wx
 import wx.lib.agw.aui as aui
 
@@ -467,9 +468,9 @@ class MainWindow(wx.Frame):
         if not self._prompt_saving(caption, event):
             return
 
-        did_open, msg = self.core.open_project(path)
+        msg = self.core.open_project(path)
 
-        if not did_open:
+        if msg:
             show_msg_dialog(f'{msg}.', caption)
 
     def on_open_project(self, _) -> None:
@@ -486,12 +487,12 @@ class MainWindow(wx.Frame):
             if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
-            did_open, msg = self.core.open_project(file_dialog.Path)
+            msg = self.core.open_project(file_dialog.Path)
 
-            if not did_open:
+            if msg:
                 show_msg_dialog(f'{msg}.', 'Open Project')
-            else:
-                self._populate_recent_projects()
+
+            self._populate_recent_projects()
 
     def on_save(self, _) -> None:
         """Opens 'save' dialog."""

@@ -362,12 +362,10 @@ class COPISCore(
             for d in self.project.devices]
 
         resp = self.project.open(path)
-        did_open, _ = resp
 
-        if did_open:
-            self._update_recent_projects(path)
-
+        self._update_recent_projects(path)
         self._reconcile_machine(last_dvc_statuses)
+
         return resp
 
     def save_project(self, path) -> None:

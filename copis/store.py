@@ -29,6 +29,7 @@ class Store():
 
     _PROJECT_FOLDER = 'copis'
     _CONFIG_FILE = 'COPIS.ini'
+    _PROXY_FOLDER = 'proxies'
 
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
@@ -87,9 +88,13 @@ class Store():
         return None
 
     def find_path(self, filename: str='') -> str:
-        """Finds the given file names full path relative to the COPIS root folder."""
+        """Finds the given file name's full path relative to the COPIS root folder."""
         paths = list(Path(self._root_dir).rglob(filename))
         return str(paths[0]) if len(paths) > 0 else ''
+
+    def find_proxy(self, file_name: str='') -> str:
+        """Finds the given proxy file name's full path relative to the COPIS root folder."""
+        return self.find_path(os.path.join(Store._PROXY_FOLDER, file_name))
 
 
 class _RemoduleUnpickler(pickle.Unpickler):

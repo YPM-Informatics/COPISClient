@@ -26,7 +26,8 @@ from copis.classes import (
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces
-from .store import Store, get_file_base_name_no_ext, load_json, path_exists, save_json
+from .store import (Store, get_file_base_name, get_file_base_name_no_ext, load_json, path_exists,
+    save_json)
 
 
 class Project:
@@ -161,12 +162,12 @@ class Project:
     def _ensure_defaults(self):
         self._default_profile_path = self._store.ensure_default_profile(
             self._DEFAULT_PROFILE['name'],
-            self._DEFAULT_PROFILE['data'],
+            self._DEFAULT_PROFILE['data']
         )
 
         self._default_proxy_path = self._store.ensure_default_proxy(
             self._DEFAULT_PROXY['name'],
-            self._DEFAULT_PROXY['data'],
+            self._DEFAULT_PROXY['data']
         )
 
     def _init(self):
@@ -264,16 +265,34 @@ class Project:
 
         p_sets = list(map(_pose_from_json_map, proj_data['imaging_path']))
         proxies = []
+        resp = None
+        is_dirty = False
 
         for proxy in proj_data['proxies']:
             if proxy['is_path']:
                 proxy_path = proxy['data']
 
-                if path_exists(proxy_path):
+                if not path_exists(proxy_path):
+                    proxy_file_name = get_file_base_name(proxy_path)
+                    def_proxy_file_name = get_file_base_name(self._default_proxy_path)
+
+                    if proxy_file_name.lower() == def_proxy_file_name.lower():
+                        if not path_exists(self._default_proxy_path):
+                            self._default_proxy_path = self._store.ensure_default_proxy(
+                                self._DEFAULT_PROXY['name'],
+                                self._DEFAULT_PROXY['data']
+                            )
+                        proxy_path = self._default_proxy_path
+                    else:
+                        proxy_path = self._store.find_proxy(proxy_file_name)
+
+                    is_dirty = True
+
+                if proxy_path:
                     proxies.append(OBJObject3D(
                         proxy_path, scale=vec3(20, 20, 20)))
                 else:
-                    return (False, f'Proxy path "{proxy_path}" does not exist')
+                    resp = f'Proxy path "{proxy_path or proxy["data"]}" does not exist'
             else:
                 glob_key = proxy['data']['cls']
                 if glob_key not in globals().keys():
@@ -290,9 +309,13 @@ class Project:
 
 
         self._path = path
-        self._unset_dirty_flag()
 
-        return (True, '')
+        if is_dirty:
+            self._set_is_dirty()
+        else:
+            self._unset_dirty_flag()
+
+        return resp
 
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
