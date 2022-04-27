@@ -18,6 +18,9 @@
 import copy
 import wx
 import wx.lib.scrolledpanel as scrolled
+import wx.lib.agw.aui as aui
+
+from pydispatch import dispatcher
 
 from pydispatch import dispatcher
 from glm import vec3
@@ -25,7 +28,7 @@ from copis.classes.action import Action
 from copis.classes.pose import Pose
 
 from copis.command_processor import serialize_command
-from copis.globals import ActionType
+from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
 from copis.helpers import (create_action_args, get_heading, is_number, print_debug_msg,
@@ -514,7 +517,7 @@ class TimelinePanel(wx.Panel):
             set_index = self.core.project.add_pose_set()
             self.core.select_pose_set(set_index)
 
-    def on_play_command(self, _):
+    def on_play_command(self, event: wx.CommandEvent):
         """Plays the selected pose or pose set."""
         can_image = self._assert_can_image()
 
@@ -535,9 +538,17 @@ class TimelinePanel(wx.Panel):
                 if not proceed:
                     return
 
-                self.core.play_poses(poses, path, keep_last)
+                pos = event.GetEventObject().GetScreenPosition()
 
-    def on_image_command(self, _):
+                def play_handler():
+                    self.core.play_poses(poses, path, keep_last)
+
+                actions = [(ToolIds.PLAY, True, play_handler)]
+
+                self._parent.show_imaging_toolbar(pos, actions)
+                dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
+
+    def on_image_command(self, event: wx.CommandEvent):
         """Start the imaging run (plays all poses)."""
         can_image = self._assert_can_image()
 
@@ -548,7 +559,27 @@ class TimelinePanel(wx.Panel):
             if not proceed:
                 return
 
+        pos = event.GetEventObject().GetScreenPosition()
+        pane: aui.AuiPaneInfo = self._parent.imaging_toolbar.GetAuiManager().GetPane(
+            self._parent.imaging_toolbar)
+
+        def play_all_handler():
             self.core.start_imaging(path, keep_last)
+            pane.window.enable_tool(ToolIds.PAUSE)
+            pane.window.enable_tool(ToolIds.STOP)
+
+        def pause_handler():
+            self.core.pause_work()
+
+        def stop_handler():
+            self.core.stop_work()
+
+        actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
+            (ToolIds.PAUSE, False, pause_handler),
+            (ToolIds.STOP, False, stop_handler)]
+
+        self._parent.show_imaging_toolbar(pos, actions)
+        dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
     def on_copy_command(self, _):
         """Copies the selected pose."""
