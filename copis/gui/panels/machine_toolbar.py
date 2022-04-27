@@ -230,10 +230,10 @@ class MachineToolbar(aui.AuiToolBar):
             pane.window.enable_tool(ToolIds.STOP)
 
         def pause_handler():
-            print_info_msg(self._core.console, 'tool selected is PAUSE')
+            self._core.pause_work()
 
         def stop_handler():
-            print_info_msg(self._core.console, 'tool selected is STOP')
+            self._core.stop_work()
 
         actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
             (ToolIds.PAUSE, False, pause_handler),

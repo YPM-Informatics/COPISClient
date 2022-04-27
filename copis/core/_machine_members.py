@@ -71,12 +71,16 @@ class MachineMembersMixin:
     def machine_status(self):
         """Returns the machine's status."""
         status = 'unknown'
-        statuses = list(set(dvc.serial_status for dvc in self.project.devices))
 
-        if len(statuses) == 1 and statuses[0]:
-            status = statuses[0].name.lower()
-        elif len(statuses) > 1:
-            status = 'mixed'
+        if self._is_machine_paused:
+            status = 'paused'
+        else:
+            statuses = list(set(dvc.serial_status for dvc in self.project.devices))
+
+            if len(statuses) == 1 and statuses[0]:
+                status = statuses[0].name.lower()
+            elif len(statuses) > 1:
+                status = 'mixed'
 
         return status
 

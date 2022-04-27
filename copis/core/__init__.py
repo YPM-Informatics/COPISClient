@@ -386,6 +386,9 @@ class COPISCore(
 
             return packets
 
+        if self._is_machine_paused:
+            return self.resume_work()
+
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before imaging can start.')
@@ -500,7 +503,9 @@ class COPISCore(
     def stop_work(self) -> None:
         """Stops work in progress."""
 
-        if self.pause_work():
+        paused = self._is_machine_paused
+
+        if paused or self.pause_work():
             self._mainqueue = []
             self._is_machine_paused = False
             self._clear_to_send = True
@@ -509,9 +514,14 @@ class COPISCore(
             self._current_mainqueue_item = -1
             self.select_pose_set(-1)
             self._imaged_pose_sets.clear()
+
+            work_type_name = self.work_type_name
             self._work_type = None
 
-            print_info_msg(self.console, f'{self.work_type_name} stopped')
+            if paused:
+                self._query_machine()
+
+            print_info_msg(self.console, f'{work_type_name} stopped')
 
     def pause_work(self) -> bool:
         """Pause work in progress, saving the current position."""
@@ -528,7 +538,7 @@ class COPISCore(
         try:
             self._working_thread.join()
             self._working_thread = None
-            print_info_msg(self.console, f'{self.work_type_name} paused.')
+            print_info_msg(self.console, f'{self.work_type_name} paused')
             return True
         except RuntimeError as err:
             print_error_msg(self.console, f'Cannot join working thread: {err.args[0]}')
@@ -548,7 +558,7 @@ class COPISCore(
             target=self._worker,
             name='working thread',
             kwargs={
-                "resume": True
+                "resuming": True
             }
         )
         self._working_thread.start()
