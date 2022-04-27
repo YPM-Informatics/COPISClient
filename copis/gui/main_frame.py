@@ -15,7 +15,6 @@
 
 """MainWindow class."""
 
-from email import message
 import wx
 import wx.lib.agw.aui as aui
 
