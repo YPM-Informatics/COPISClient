@@ -570,6 +570,15 @@ class MainWindow(wx.Frame):
 
         pane.window.set_actions(actions)
 
+    def hide_imaging_toolbar(self):
+        """Hides the imaging toolbar."""
+        pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)
+        pane.Show(False)
+
+        self.menuitems['imaging_toolbar'].Enable(False)
+        self.menuitems['imaging_toolbar'].Check(False)
+        self._mgr.Update()
+
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Updates status bar visibility based on menu item."""
         self.StatusBar.Show(event.IsChecked())

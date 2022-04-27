@@ -19,6 +19,8 @@
 import wx
 import wx.lib.agw.aui as aui
 
+from pydispatch import dispatcher
+
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
 from copis.gui.wxutils import (create_scaled_bitmap, prompt_for_imaging_session_path,
@@ -219,15 +221,26 @@ class MachineToolbar(aui.AuiToolBar):
         if not proceed:
             return
 
-        pos = event.GetEventObject().GetPosition()
-        callback = lambda: self._core.start_imaging(path, keep_last)
+        pos = event.GetEventObject().GetScreenPosition()
+        pane: aui.AuiPaneInfo = self.GetAuiManager().GetPane(self._parent.imaging_toolbar)
 
-        actions = [(ToolIds.PLAY_ALL, True, callback),
-            (ToolIds.PLAY, False, None),
-            (ToolIds.PAUSE, False, None),
-            (ToolIds.STOP, False, None)]
+        def play_all_handler():
+            self._core.start_imaging(path, keep_last)
+            pane.window.enable_tool(ToolIds.PAUSE)
+            pane.window.enable_tool(ToolIds.STOP)
+
+        def pause_handler():
+            print_info_msg(self._core.console, 'tool selected is PAUSE')
+
+        def stop_handler():
+            print_info_msg(self._core.console, 'tool selected is STOP')
+
+        actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
+            (ToolIds.PAUSE, False, pause_handler),
+            (ToolIds.STOP, False, stop_handler)]
 
         self._parent.show_imaging_toolbar(pos, actions)
+        dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
     def on_home(self, event: wx.CommandEvent) -> None:
         """On home button pressed, issue homing commands to machine."""

@@ -19,6 +19,8 @@
 import wx
 import wx.lib.agw.aui as aui
 
+from typing import List
+
 from copis.globals import ToolIds
 from copis.gui.wxutils import create_scaled_bitmap
 from copis.helpers import print_info_msg
@@ -33,6 +35,7 @@ class ImagingToolbar(aui.AuiToolBar):
 
         self._parent = parent
         self._core = self._parent.core
+        self._tools = []
         self._actions = {}
 
         self._init_toolbar()
@@ -52,40 +55,50 @@ class ImagingToolbar(aui.AuiToolBar):
         Icons taken from https://material.io/resources/icons/?style=baseline.
         """
         _bmp = create_scaled_bitmap('playlist_play', 24)
-        self.AddTool(ToolIds.PLAY_ALL.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
+        _bmp_d = create_scaled_bitmap('playlist_play_disabled', 24)
+        self.AddTool(ToolIds.PLAY_ALL.value, 'Play', _bmp, _bmp_d, aui.ITEM_NORMAL,
             short_help_string='Play all/resume imaging')
 
         _bmp = create_scaled_bitmap('play_arrow', 24)
-        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
-                     short_help_string='Play pose/pose set')
+        _bmp_d = create_scaled_bitmap('play_arrow_disabled', 24)
+        self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp_d, aui.ITEM_NORMAL,
+            short_help_string='Play pose/pose set')
 
         _bmp = create_scaled_bitmap('pause', 24)
-        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL,
+        _bmp_d = create_scaled_bitmap('pause_disabled', 24)
+        self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp_d, aui.ITEM_NORMAL,
             short_help_string='Pause imaging')
 
         _bmp = create_scaled_bitmap('stop', 24)
-        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL,
+        _bmp_d = create_scaled_bitmap('stop_disabled', 24)
+        self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp_d, aui.ITEM_NORMAL,
             short_help_string='Abort imaging')
+
+        self._tools.extend([ToolIds.PLAY_ALL, ToolIds.PLAY, ToolIds.PAUSE, ToolIds.STOP])
 
     def _on_tool_selected(self, event: wx.CommandEvent):
         tool_id = ToolIds(event.Id)
-        if tool_id == ToolIds.PLAY_ALL:
+
+        if tool_id in self._tools:
             if tool_id in self._actions:
                 self._actions[tool_id]()
-        elif tool_id == ToolIds.PLAY:
-            print_info_msg(self._core.console, 'tool selected is PLAY')
-        elif tool_id == ToolIds.PAUSE:
-            print_info_msg(self._core.console, 'tool selected is PAUSE')
-        elif tool_id == ToolIds.STOP:
-            print_info_msg(self._core.console, 'tool selected is STOP')
         else:
             raise NotImplementedError(f'Tool {ToolIds(event.Id)} not implemented.')
 
-    def set_actions(self, tools_actions):
+    def set_actions(self, tools_actions: List[tuple]) -> None:
         """Sets handlers and initial states for the gives tools."""
+        for tool in self._tools:
+            self.EnableTool(tool.value, False)
+
+        self._actions.clear()
+
         if tools_actions:
             for action in tools_actions:
                 tool_id, is_enabled, handler = action
-                self.ToggleTool(tool_id, is_enabled)
+                self.EnableTool(tool_id.value, is_enabled)
                 if handler:
                     self._actions[tool_id] = handler
+
+    def enable_tool(self, tool_id: ToolIds, is_enabled: bool=True) -> None:
+        """Enables or disables the tool."""
+        self.EnableTool(tool_id.value, is_enabled)
