@@ -238,7 +238,6 @@ class MachineToolbar(aui.AuiToolBar):
         actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
             (ToolIds.PAUSE, False, pause_handler),
             (ToolIds.STOP, False, stop_handler)]
-
         self._parent.show_imaging_toolbar(pos, actions)
         dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
@@ -252,7 +251,7 @@ class MachineToolbar(aui.AuiToolBar):
         self._core.start_homing()
         home_btn.Enable(self._can_home())
 
-    def on_ready(self, event: wx.CommandEvent) -> None:
+    def on_ready(self, _) -> None:
         """On ready button pressed, issue commands to initializes
         the gantries to their current positions."""
 

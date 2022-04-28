@@ -20,6 +20,7 @@ import wx
 from pydispatch import dispatcher
 
 from copis.classes import Device
+from copis.globals import ToolIds
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
 
 
@@ -61,10 +62,10 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_transfer_pics_btn = wx.Button(
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Transfer Pictures')
         self._edsdk_take_pic_btn = wx.Button(
-            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Take a Picture')
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
 
         self._serial_take_pic_btn = wx.Button(
-            self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Take a Picture')
+            self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
         self._serial_take_pic_btn.Disable()
 
         edsdk_grid.AddMany([
@@ -97,7 +98,7 @@ class DeviceActionsPanel(wx.Panel):
             show_msg_dialog('Please connect the camera to start live view.',
                 'Start Live View')
 
-    def _on_snap_edsdk_picture(self, _) -> None:
+    def _on_snap_edsdk_picture(self, event: wx.CommandEvent) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
             proceed, path, keep_last = prompt_for_imaging_session_path(
                 self._parent.core.imaging_session_path)
@@ -105,12 +106,19 @@ class DeviceActionsPanel(wx.Panel):
             if not proceed:
                 return
 
-            self._parent.core.snap_edsdk_picture(path, keep_last)
+            pos = event.GetEventObject().GetScreenPosition()
+
+            def snap_shot_handler():
+                self._parent.core.snap_edsdk_picture(path, keep_last)
+                self._parent.Parent.hide_imaging_toolbar()
+
+            actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
+            self._parent.Parent.show_imaging_toolbar(pos, actions)
         else:
             show_msg_dialog('Please connect the camera to take a picture via EDSDK.',
                 'Take a Picture - EDSDK')
 
-    def _on_snap_serial_picture(self, _) -> None:
+    def _on_snap_serial_picture(self, event: wx.CommandEvent) -> None:
         can_snap = self._parent.core.is_serial_port_connected
 
         if can_snap:
@@ -120,7 +128,14 @@ class DeviceActionsPanel(wx.Panel):
             if not proceed:
                 return
 
-            self._parent.core.snap_serial_picture(self._device.device_id, path, keep_last)
+            pos = event.GetEventObject().GetScreenPosition()
+
+            def snap_shot_handler():
+                self._parent.core.snap_serial_picture(self._device.device_id, path, keep_last)
+                self._parent.Parent.hide_imaging_toolbar()
+
+            actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
+            self._parent.Parent.show_imaging_toolbar(pos, actions)
         else:
             show_msg_dialog('Please connect the machine to take a picture via serial.',
                 'Take a Picture - Serial')

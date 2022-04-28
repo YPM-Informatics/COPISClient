@@ -23,7 +23,6 @@ from typing import List
 
 from copis.globals import ToolIds
 from copis.gui.wxutils import create_scaled_bitmap
-from copis.helpers import print_info_msg
 
 
 class ImagingToolbar(aui.AuiToolBar):
@@ -56,7 +55,7 @@ class ImagingToolbar(aui.AuiToolBar):
         """
         _bmp = create_scaled_bitmap('playlist_play', 24)
         _bmp_d = create_scaled_bitmap('playlist_play_disabled', 24)
-        self.AddTool(ToolIds.PLAY_ALL.value, 'Play', _bmp, _bmp_d, aui.ITEM_NORMAL,
+        self.AddTool(ToolIds.PLAY_ALL.value, 'Play All', _bmp, _bmp_d, aui.ITEM_NORMAL,
             short_help_string='Play all/resume imaging')
 
         _bmp = create_scaled_bitmap('play_arrow', 24)
@@ -74,7 +73,20 @@ class ImagingToolbar(aui.AuiToolBar):
         self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp_d, aui.ITEM_NORMAL,
             short_help_string='Abort imaging')
 
-        self._tools.extend([ToolIds.PLAY_ALL, ToolIds.PLAY, ToolIds.PAUSE, ToolIds.STOP])
+        self.AddSeparator()
+
+        _bmp = create_scaled_bitmap('photo', 24)
+        _bmp_d = create_scaled_bitmap('photo_disabled', 24)
+        self.AddTool(ToolIds.SNAP_SHOT.value, 'Snap a Shot', _bmp, _bmp_d, aui.ITEM_NORMAL,
+            short_help_string='Take a picture')
+
+        _bmp = create_scaled_bitmap('photos', 24)
+        _bmp_d = create_scaled_bitmap('photos_disabled', 24)
+        self.AddTool(ToolIds.SNAP_SHOTS.value, 'Stack Shots', _bmp, _bmp_d, aui.ITEM_NORMAL,
+            short_help_string='Take focus-stacked pictures')
+
+        self._tools.extend([ToolIds.PLAY_ALL, ToolIds.PLAY, ToolIds.PAUSE, ToolIds.STOP,
+            ToolIds.SNAP_SHOT, ToolIds.SNAP_SHOTS])
 
     def _on_tool_selected(self, event: wx.CommandEvent):
         tool_id = ToolIds(event.Id)

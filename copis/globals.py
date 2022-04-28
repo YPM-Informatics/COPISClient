@@ -51,8 +51,10 @@ class ToolIds(Enum):
     PLAY = 2
     PAUSE = 3
     STOP = 4
-    SETTINGS = 5
-    EXPORT = 6
+    SNAP_SHOT = 5
+    SNAP_SHOTS = 6
+    SETTINGS = 7
+    EXPORT = 8
 
 
 class PathIds(Enum):

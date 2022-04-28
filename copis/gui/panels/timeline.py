@@ -542,11 +542,10 @@ class TimelinePanel(wx.Panel):
 
                 def play_handler():
                     self.core.play_poses(poses, path, keep_last)
+                    self._parent.hide_imaging_toolbar()
 
                 actions = [(ToolIds.PLAY, True, play_handler)]
-
                 self._parent.show_imaging_toolbar(pos, actions)
-                dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
     def on_image_command(self, event: wx.CommandEvent):
         """Start the imaging run (plays all poses)."""
@@ -577,7 +576,6 @@ class TimelinePanel(wx.Panel):
         actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
             (ToolIds.PAUSE, False, pause_handler),
             (ToolIds.STOP, False, stop_handler)]
-
         self._parent.show_imaging_toolbar(pos, actions)
         dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
