@@ -85,7 +85,7 @@ class ViewportPanel(wx.Panel):
         navbar_right_sizer.AddMany([
             (grid_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5),
             (axes_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5),
-            (bbox_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 0),
+            (bbox_check, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 0)
         ])
 
         navbar.Bind(wx.EVT_CHECKBOX, self.on_checkbox)

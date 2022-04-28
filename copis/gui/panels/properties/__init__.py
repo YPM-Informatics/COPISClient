@@ -35,8 +35,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     _CONFIG = {
         'Default': ['default'],
-        'Pose': ['transform', 'payload'],
-        'Device': ['device_info', 'live_transform', 'device_actions']
+        'Pose': ['default', 'transform', 'payload'],
+        'Device': ['default', 'device_info', 'live_transform', 'device_actions']
         # 'Object': ['default']
     }
 
@@ -72,12 +72,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         # self._property_panels['transform'] = _PropTransform(self)
         # self._property_panels['device_config'] = _PropDeviceConfig(self)
         # self._property_panels['quick_actions'] = _PropQuickActions(self)
+        self._property_panels['default'] = DefaultPanel(self)
         self._property_panels['transform'] = TransformPanel(self)
         self._property_panels['device_info'] = DeviceInfoPanel(self)
         self._property_panels['live_transform'] = TransformPanel(self, True)
         self._property_panels['device_actions'] = DeviceActionsPanel(self)
         self._property_panels['payload'] = PayloadPanel(self)
-        self._property_panels['default'] = DefaultPanel(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 0)

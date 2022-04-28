@@ -493,10 +493,11 @@ class TransformPanel(wx.Panel):
             if self._is_live:
                 self._play_position(position, 'XYZPT')
             else:
+                # TODO: handled target all option
                 self.parent.core.update_selected_pose_position(position)
 
     def _on_target_button(self, event: wx.CommandEvent) -> None:
-        """On EVT_BUTTONs, target accordingly."""
+        """On EVT_BUTTON, target accordingly."""
         button = event.EventObject
         task = button.Name
 
@@ -549,6 +550,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._play_position(position, 'XYZPT')
         else:
+            # TODO: handled target all option
             self.parent.core.update_selected_pose_position(position)
 
     def _generate_commands(self, name, args = None):
