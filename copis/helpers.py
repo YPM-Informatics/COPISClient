@@ -29,6 +29,8 @@ from itertools import zip_longest
 import glm
 from glm import mat4, vec2, vec3, vec4
 
+from copis.globals import Point5
+
 
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
@@ -330,3 +332,23 @@ def get_hardware_id(port_name: str='') -> str:
         h_id = result.group().replace('#', '\\')
 
     return h_id
+
+def get_end_position(start: Point5, distance: float) -> vec3:
+    """Calculates and returns an endpoint, given a start and distance."""
+    d_places = 3
+    sin_p = round(sin(start.p), d_places)
+    cos_p = round(cos(start.p), d_places)
+    sin_t = round(sin(start.t), d_places)
+    cos_t = round(cos(start.t), d_places)
+
+    # The right formula for this is:
+    #   new_x = x + (dist * sin(pan) * cos(tilt))
+    #   new_y = y + (dist * sin(tilt))
+    #   new_z = z + (dist * cos(pan) * cos(tilt))
+    # But since our axis is rotated 90dd clockwise around the x axis so
+    # that z points up we have to adjust the formula accordingly.
+    end_x = sanitize_number(start.x + (distance * sin_p * cos_t))
+    end_y = sanitize_number(start.y + (distance * cos_p * cos_t))
+    end_z = sanitize_number(start.z - (distance * sin_t))
+
+    return vec3(end_x, end_y, end_z)

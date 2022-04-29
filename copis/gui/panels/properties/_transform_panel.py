@@ -15,7 +15,6 @@
 
 """COPIS transform properties panel."""
 
-from math import cos, sin
 from functools import partial
 from collections import namedtuple
 
@@ -27,8 +26,8 @@ from pydispatch import dispatcher
 from copis.globals import ActionType, Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
-from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_heading,
-    rad_to_dd, sanitize_number,
+from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
+    get_heading, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
 from copis.store import get_file_base_name_no_ext
 from copis.classes import Action, Device, Pose
@@ -487,19 +486,25 @@ class TransformPanel(wx.Panel):
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
 
-            position = [self.x, self.y, self.z,
-                sanitize_number(end_pan), sanitize_number(end_tilt)]
+            s_pan = sanitize_number(end_pan)
+            s_tilt = sanitize_number(end_tilt)
+
+            position = [self.x, self.y, self.z, s_pan, s_tilt]
 
             if self._is_live:
                 self._play_position(position, 'XYZPT')
             else:
-                # TODO: handled target all option
-                self.parent.core.update_selected_pose_position(position)
+                if self.parent.apply_target_to_all_poses:
+                    self.parent.core.re_target_all_poses()
+                else:
+                    self.parent.core.update_selected_pose_position(position)
 
     def _on_target_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTON, target accordingly."""
         button = event.EventObject
         task = button.Name
+        dist = self.xyz_step
+
 
         # Face the target, first and foremost.
         end_pan, end_tilt = get_heading(vec3(self.x, self.y, self.z),
@@ -509,31 +514,16 @@ class TransformPanel(wx.Panel):
         self.t = rad_to_dd(end_tilt)
 
         if task == 'target':
-            position = [self.x, self.y, self.z,
-                sanitize_number(end_pan), sanitize_number(end_tilt)]
+            s_pan = sanitize_number(end_pan)
+            s_tilt = sanitize_number(end_tilt)
+
+            position = [self.x, self.y, self.z, s_pan, s_tilt]
         else:
-            dist = self.xyz_step
             if task == 'closer':
                 dist = -1 * dist
 
-            pan = dd_to_rad(self.p)
-            tilt = dd_to_rad(self.t)
-
-            d_places = 3
-            sin_p = round(sin(pan), d_places)
-            cos_p = round(cos(pan), d_places)
-            sin_t = round(sin(tilt), d_places)
-            cos_t = round(cos(tilt), d_places)
-
-            # The right formula for this is:
-            #   new_x = x + (dist * sin(pan) * cos(tilt))
-            #   new_y = y + (dist * sin(tilt))
-            #   new_z = z + (dist * cos(pan) * cos(tilt))
-            # But since our axis is rotated 90dd clockwise around the x axis so
-            # that z points up we have to adjust the formula accordingly.
-            end_x = sanitize_number(self.x + (dist * sin_p * cos_t))
-            end_y = sanitize_number(self.y + (dist * cos_p * cos_t))
-            end_z = sanitize_number(self.z - (dist * sin_t))
+            end_x, end_y, end_z = get_end_position(
+                Point5(self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)), dist)
 
             end_pan, end_tilt = get_heading(vec3(end_x, end_y, end_z),
                 self.parent.core.imaging_target)
@@ -544,14 +534,21 @@ class TransformPanel(wx.Panel):
             self.p = rad_to_dd(end_pan)
             self.t = rad_to_dd(end_tilt)
 
-            position = [end_x, end_y, end_z,
-                sanitize_number(end_pan), sanitize_number(end_tilt)]
+            s_pan = sanitize_number(end_pan)
+            s_tilt = sanitize_number(end_tilt)
+
+            position = [end_x, end_y, end_z, s_pan, s_tilt]
 
         if self._is_live:
             self._play_position(position, 'XYZPT')
         else:
-            # TODO: handled target all option
-            self.parent.core.update_selected_pose_position(position)
+            if self.parent.apply_target_to_all_poses:
+                if task == 'target':
+                    self.parent.core.re_target_all_poses()
+                else:
+                    self.parent.core.target_vector_step_all_poses(dist)
+            else:
+                self.parent.core.update_selected_pose_position(position)
 
     def _generate_commands(self, name, args = None):
         if args == None:

@@ -20,7 +20,9 @@ from glm import vec3
 
 from copis.classes import Action
 from copis.command_processor import serialize_command
-from copis.helpers import create_action_args, print_error_msg
+from copis.globals import Point5
+from copis.helpers import (create_action_args, get_action_args_values, get_end_position,
+    get_heading, print_error_msg, sanitize_number)
 
 
 class ComponentMembersMixin:
@@ -153,6 +155,53 @@ class ComponentMembersMixin:
 
         pose_position.argc = argc
         pose_position.update()
+
+        dispatcher.send('ntf_a_list_changed')
+
+    def re_target_all_poses(self) -> None:
+        """Re-targets all the poses with the given heading."""
+        for pose in self.project.poses:
+            pose_position = pose.position
+            args = get_action_args_values(pose_position.args)
+            end_pan, end_tilt = get_heading(vec3(args[:3]), self.imaging_target)
+
+            args[3] = sanitize_number(end_pan)
+            args[4] = sanitize_number(end_tilt)
+            args = create_action_args(args)
+
+            argc = min(len(pose_position.args), len(args))
+
+            for i in range(argc):
+                pose_position.args[i] = args[i]
+
+            pose_position.argc = argc
+            pose_position.update()
+
+        dispatcher.send('ntf_a_list_changed')
+
+    def target_vector_step_all_poses(self, distance) -> None:
+        """Steps all poses towards/away from the target."""
+        for pose in self.project.poses:
+            pose_position = pose.position
+            args = get_action_args_values(pose_position.args)
+
+            end = get_end_position(Point5(*args[:5]), distance)
+            end_pan, end_tilt = get_heading(end, self.imaging_target)
+
+            args[0] = end.x
+            args[1] = end.y
+            args[2] = end.z
+            args[3] = sanitize_number(end_pan)
+            args[4] = sanitize_number(end_tilt)
+            args = create_action_args(args)
+
+            argc = min(len(pose_position.args), len(args))
+
+            for i in range(argc):
+                pose_position.args[i] = args[i]
+
+            pose_position.argc = argc
+            pose_position.update()
 
         dispatcher.send('ntf_a_list_changed')
 
