@@ -29,6 +29,12 @@ class ComponentMembersMixin:
     """Implement COPIS Core component (actions, points, devices, proxy objects)
         related class members using mixins."""
 
+
+    @property
+    def save_imaging_session(self) -> str:
+        """Returns a flag indicating whether to save the imaging session."""
+        return self._save_imaging_session
+
     @property
     def imaging_session_path(self) -> str:
         """Returns the user-defined imaging session folder location."""

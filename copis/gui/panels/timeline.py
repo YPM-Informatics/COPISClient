@@ -532,8 +532,13 @@ class TimelinePanel(wx.Panel):
                     pose_index = data['index']
                     poses = [self.core.project.pose_sets[set_index][pose_index]]
 
-                proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._parent.core.imaging_session_path)
+                if self._parent.properties_panel.use_last_save_session_choice:
+                    proceed = True
+                    path = self.core.imaging_session_path
+                    keep_last = not self.core.save_imaging_session
+                else:
+                    proceed, path, keep_last = prompt_for_imaging_session_path(
+                        self.core.imaging_session_path)
 
                 if not proceed:
                     return
@@ -552,8 +557,13 @@ class TimelinePanel(wx.Panel):
         can_image = self._assert_can_image()
 
         if can_image:
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self.core.imaging_session_path)
+            if self._parent.properties_panel.use_last_save_session_choice:
+                proceed = True
+                path = self.core.imaging_session_path
+                keep_last = not self.core.save_imaging_session
+            else:
+                proceed, path, keep_last = prompt_for_imaging_session_path(
+                    self.core.imaging_session_path)
 
             if not proceed:
                 return

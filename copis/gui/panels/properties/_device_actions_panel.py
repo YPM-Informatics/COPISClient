@@ -22,6 +22,7 @@ from pydispatch import dispatcher
 from copis.classes import Device
 from copis.globals import ToolIds
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
+from copis.store import path_exists
 
 
 class DeviceActionsPanel(wx.Panel):
@@ -100,8 +101,13 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_snap_edsdk_picture(self, event: wx.CommandEvent) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._parent.core.imaging_session_path)
+            if self._parent.use_last_save_session_choice:
+                proceed = True
+                path = self._parent.core.imaging_session_path
+                keep_last = not self._parent.core.save_imaging_session
+            else:
+                proceed, path, keep_last = prompt_for_imaging_session_path(
+                    self._parent.core.imaging_session_path)
 
             if not proceed:
                 return
@@ -122,8 +128,13 @@ class DeviceActionsPanel(wx.Panel):
         can_snap = self._parent.core.is_serial_port_connected
 
         if can_snap:
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._parent.core.imaging_session_path)
+            if self._parent.use_last_save_session_choice:
+                proceed = True
+                path = self._parent.core.imaging_session_path
+                keep_last = not self._parent.core.save_imaging_session
+            else:
+                proceed, path, keep_last = prompt_for_imaging_session_path(
+                    self._parent.core.imaging_session_path)
 
             if not proceed:
                 return
@@ -142,22 +153,34 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_transfer_edsdk_pictures(self, _) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._parent.core.imaging_session_path)
+            if self._parent.use_last_save_session_choice:
+                proceed = True
+                path = self._parent.core.imaging_session_path
+                keep_last = not self._parent.core.save_imaging_session
+            else:
+                proceed, path, keep_last = prompt_for_imaging_session_path(
+                    self._parent.core.imaging_session_path)
 
             if not proceed:
                 return
 
-            label = self._edsdk_transfer_pics_btn.Label
-            self._edsdk_transfer_pics_btn.Label = 'Transferring...'
-            self._edsdk_transfer_pics_btn.Disable()
+            if not path:
+                show_msg_dialog('Please provide a destination folder for the pictures.',
+                    'Transfer Pictures - EDSDK')
+            elif not path_exists(path):
+                show_msg_dialog(f'Destination folder {path} does not exist.',
+                    'Transfer Pictures - EDSDK')
+            else:
+                label = self._edsdk_transfer_pics_btn.Label
+                self._edsdk_transfer_pics_btn.Label = 'Transferring...'
+                self._edsdk_transfer_pics_btn.Disable()
 
-            try:
-                self._parent.core.transfer_edsdk_pictures(path, keep_last)
-            finally:
-                wx.GetApp().Yield()
-                self._edsdk_transfer_pics_btn.Enable()
-                self._edsdk_transfer_pics_btn.Label = label
+                try:
+                    self._parent.core.transfer_edsdk_pictures(path, keep_last)
+                finally:
+                    wx.GetApp().Yield()
+                    self._edsdk_transfer_pics_btn.Enable()
+                    self._edsdk_transfer_pics_btn.Label = label
         else:
             show_msg_dialog('Please connect the camera to transfer pictures via EDSDK.',
                 'Transfer Pictures - EDSDK')

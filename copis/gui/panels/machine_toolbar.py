@@ -215,8 +215,13 @@ class MachineToolbar(aui.AuiToolBar):
             show_msg_dialog(msg, 'Imaging')
             return
 
-        proceed, path, keep_last = prompt_for_imaging_session_path(
-            self._core.imaging_session_path)
+        if self._parent.properties_panel.use_last_save_session_choice:
+            proceed = True
+            path = self._core.imaging_session_path
+            keep_last = not self._core.save_imaging_session
+        else:
+            proceed, path, keep_last = prompt_for_imaging_session_path(
+                self._core.imaging_session_path)
 
         if not proceed:
             return
