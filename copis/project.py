@@ -361,7 +361,7 @@ class Project:
 
     def add_pose(self, set_index: int, pose: Pose) -> int:
         """Adds a pose to a pose set in the pose set list.
-            Returns the index of the added pose"""
+            Returns the index of the added pose."""
         if self.can_add_pose(set_index, pose.position.device):
             pose_set = self._pose_sets[set_index].copy()
             pose_set.append(pose)
@@ -373,12 +373,28 @@ class Project:
         else:
             return -1
 
-    def add_pose_set(self):
-        """Adds an empty pose set to the pose set list."""
+    def insert_pose(self, set_index: int, pose: Pose) -> int:
+        """Inserts a pose to a pose set in the pose set list;
+            even if a pose for the camera already exists in the set.
+            In which case poses are shifted down to the end of the list
+            or until a set without a pose for the camera is encountered.
+            Returns the index of the inserted pose."""
+        # TODO: insert
+        pass
+
+    def add_pose_set(self) -> int:
+        """Adds an empty pose set at the end of the pose set list.
+            Returns the index of the added pose set."""
         set_index = len(self._pose_sets)
         self._pose_sets.append([])
 
         return set_index
+
+    def insert_pose_set(self, index) -> int:
+        """Inserts an empty pose set at the give index.
+            Returns the index of the inserted pose set."""
+        # TODO: insert
+        pass
 
     def delete_pose(self, set_index: int, pose_index: int):
         """Removes a pose given pose set and pose indexes."""
