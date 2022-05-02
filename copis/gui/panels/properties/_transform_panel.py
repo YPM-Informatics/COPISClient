@@ -313,9 +313,15 @@ class TransformPanel(wx.Panel):
 
             (target_closer_btn, 0, wx.EXPAND, 0),
             (re_target_btn, 0, wx.EXPAND, 0),
-            (target_farther_btn, 0, wx.EXPAND, 0),
-            (0, 0),
+            (target_farther_btn, 0, wx.EXPAND, 0)
         ])
+
+        if not self._is_live:
+            self._target_all_poses_opt.Show()
+            xyzpt_grid.Add(self._target_all_poses_opt, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0)
+        else:
+            self._target_all_poses_opt.Hide()
+            xyzpt_grid.Add(0, 0)
 
         step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
@@ -342,9 +348,12 @@ class TransformPanel(wx.Panel):
             name='feed_rate')
         self._copy_pos_btn = wx.Button(self, label='Copy Position')
         self.Bind(wx.EVT_BUTTON, self._on_copy_position)
+        self._target_all_poses_opt = wx.CheckBox(self, label='&Apply target to all poses',
+            name='apply_target')
 
         self._feed_rate_ctrl.Hide()
         self._copy_pos_btn.Hide()
+        self._target_all_poses_opt.Hide()
 
         self._add_freestyle_transform_controls()
 
@@ -494,7 +503,7 @@ class TransformPanel(wx.Panel):
             if self._is_live:
                 self._play_position(position, 'XYZPT')
             else:
-                if self.parent.apply_target_to_all_poses:
+                if self._target_all_poses_opt.Value:
                     self.parent.core.re_target_all_poses()
                 else:
                     self.parent.core.update_selected_pose_position(position)
@@ -542,7 +551,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._play_position(position, 'XYZPT')
         else:
-            if self.parent.apply_target_to_all_poses:
+            if self._target_all_poses_opt.Value:
                 if task == 'target':
                     self.parent.core.re_target_all_poses()
                 else:

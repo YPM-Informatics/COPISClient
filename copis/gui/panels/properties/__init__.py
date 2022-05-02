@@ -72,11 +72,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """Returns a flag indicating whether to prompt about saving the imaging session."""
         return self._property_panels['default'].use_last_save_session_choice
 
-    @property
-    def apply_target_to_all_poses(self) -> bool:
-        """Returns a flag indication whether to apply targetting to all poses."""
-        return self._property_panels['default'].apply_target_to_all_poses
-
     def build_panels(self) -> None:
         """Initialize all property panels."""
         # self._property_panels['transform'] = _PropTransform(self)
