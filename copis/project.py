@@ -379,8 +379,31 @@ class Project:
             In which case poses are shifted down to the end of the list
             or until a set without a pose for the camera is encountered.
             Returns the index of the inserted pose."""
-        # TODO: insert
-        pass
+        if not self.can_add_pose(set_index, pose.position.device):
+            free_set_indices = [i for i, set_ in enumerate(self._pose_sets) if i > set_index \
+                and not any(p.position.device == pose.position.device  for p in set_)]
+
+            if free_set_indices:
+                free_set_index = free_set_indices[0]
+            else:
+                free_set_index = len(self._pose_sets)
+                self.add_pose_set()
+
+            for i in range(free_set_index - 1, set_index - 1, -1):
+                shifted = next(filter(lambda p: p.position.device == pose.position.device,
+                    self._pose_sets[i]))
+
+                self._pose_sets[i].remove(shifted)
+                self._pose_sets[i + 1].append(shifted)
+                self._pose_sets[i + 1].sort(key=lambda p: p.position.device)
+
+        pose_set = self._pose_sets[set_index].copy()
+        pose_set.append(pose)
+        pose_set.sort(key=lambda p: p.position.device)
+
+        self._pose_sets[set_index] = pose_set
+
+        return pose_set.index(pose)
 
     def add_pose_set(self) -> int:
         """Adds an empty pose set at the end of the pose set list.
@@ -393,8 +416,9 @@ class Project:
     def insert_pose_set(self, index) -> int:
         """Inserts an empty pose set at the give index.
             Returns the index of the inserted pose set."""
-        # TODO: insert
-        pass
+        self._pose_sets.insert(index, [])
+
+        return index
 
     def delete_pose(self, set_index: int, pose_index: int):
         """Removes a pose given pose set and pose indexes."""

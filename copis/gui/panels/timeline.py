@@ -387,12 +387,12 @@ class TimelinePanel(wx.Panel):
 
         insert_pose_btn = wx.Button(
             btn_panel, label='Insert Pose', size=btn_size)
-        insert_pose_btn.Bind(wx.EVT_BUTTON, self.on_insert_command)
+        insert_pose_btn.Bind(wx.EVT_BUTTON, self.on_insert_pose_command)
         self._buttons['insert_pose_btn'] = insert_pose_btn
 
         insert_pose_set_btn = wx.Button(
             btn_panel, label='Insert Pose Set', size=btn_size)
-        insert_pose_set_btn.Bind(wx.EVT_BUTTON, self.on_insert_command)
+        insert_pose_set_btn.Bind(wx.EVT_BUTTON, self.on_insert_pose_set_command)
         self._buttons['insert_pose_set_btn'] = insert_pose_set_btn
 
         add_btn = wx.Button(btn_panel, label='Add', size=btn_size)
@@ -640,7 +640,7 @@ class TimelinePanel(wx.Panel):
 
                 self.core.select_pose(idx_in_poses)
 
-    def on_insert_command(self, _):
+    def on_insert_pose_command(self, _):
         """Inserts the copied pose into the selected set. Shifts poses from the same
             camera down if necessary."""
         data = self.timeline.GetItemData(self.timeline.Selection)
@@ -648,17 +648,23 @@ class TimelinePanel(wx.Panel):
         if data and self._copied_pose:
             set_index = data['index'] if data['item'] == 'set' else data['set index']
 
-            if self.core.project.can_add_pose(set_index, self._copied_pose.position.device):
-                pose_index = self.core.project.add_pose(
-                    set_index, copy.deepcopy(self._copied_pose))
-            else:
-                pose_index = self.core.project.insert_pose(
-                    set_index, copy.deepcopy(self._copied_pose))
+            pose_index = self.core.project.insert_pose(
+                set_index, copy.deepcopy(self._copied_pose))
 
             idx_in_poses = self._get_index_poses(set_index, pose_index) \
                 if pose_index >= 0 else pose_index
 
             self.core.select_pose(idx_in_poses)
+
+    def on_insert_pose_set_command(self, _):
+        """Inserts a pose set at the given index."""
+        data = self.timeline.GetItemData(self.timeline.Selection)
+
+        if data and data['item'] == 'set':
+            set_index = data['index']
+            set_index = self.core.project.insert_pose_set(set_index)
+
+            self.core.select_pose_set(set_index)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """Moves a set up or down"""
