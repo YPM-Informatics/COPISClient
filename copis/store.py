@@ -21,7 +21,7 @@ import pickle
 import json
 from configparser import ConfigParser
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 
 class Store():
@@ -134,7 +134,7 @@ def save_json_2(file_dir: str, file_name: str, obj: dict) -> None:
     save_json(filename, obj)
 
 
-def load_json(filename: str) -> dict:
+def load_json(filename: str) -> Any:
     """Loads a JSON object from file."""
     with open(filename, 'r') as file:
         obj = json.load(file)
@@ -142,7 +142,7 @@ def load_json(filename: str) -> dict:
     return obj
 
 
-def load_json_2(file_dir: str, file_name: str) -> dict:
+def load_json_2(file_dir: str, file_name: str) -> Any:
     """Loads a JSON object from file; with a path join."""
     filename = os.path.join(file_dir, file_name)
 
@@ -182,7 +182,7 @@ def path_exists(filename: str) -> bool:
     return os.path.exists(filename)
 
 
-def path_exists_2(file_dir: str, file_name: str) -> dict:
+def path_exists_2(file_dir: str, file_name: str) -> bool:
     """Checks whether the given path exists; with a path join."""
     filename = os.path.join(file_dir, file_name)
 

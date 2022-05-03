@@ -41,7 +41,7 @@ from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
-from copis.store import path_exists_2, save_json_2
+from copis.store import load_json_2, path_exists_2, save_json_2
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -58,6 +58,7 @@ class COPISCore(
     """COPISCore. Connects and interacts with devices in system."""
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
+    _IMAGING_MANIFEST_FILE_NAME = 'copis_imaging_manifest.json'
 
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
@@ -108,8 +109,8 @@ class COPISCore(
         self._imaging_session_path = None
         self._imaging_session_queue = None
         self._imaging_session_manifest = None
+        self._initialized_manifests = []
         self._save_imaging_session = False
-        self._imaging_manifest_file_name = None
         self._image_counters = {}
 
     @property
@@ -156,12 +157,17 @@ class COPISCore(
         return ('expected_image_counts', counts)
 
     def _update_imaging_manifest(self, pairs):
+        if not path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+            manifest = self._imaging_session_manifest.pop(-1)
+            self._imaging_session_manifest.clear()
+            self._imaging_session_manifest.append(manifest)
+
         for key, value in pairs:
-            self._imaging_session_manifest[key] = value
+            self._imaging_session_manifest[-1][key] = value
 
         if pairs:
             save_json_2(self._imaging_session_path,
-                self._imaging_manifest_file_name,
+                self._IMAGING_MANIFEST_FILE_NAME,
                 self._imaging_session_manifest)
 
     def _check_configs(self) -> None:
@@ -266,7 +272,7 @@ class COPISCore(
                             data['stack_index'] = None
                             data['image_start_time'] = img_start_time
 
-                            session_images = self._imaging_session_manifest['images']
+                            session_images = self._imaging_session_manifest[-1]['images']
                             image_index = len(session_images)
 
                             session_images.append(data)
@@ -305,22 +311,32 @@ class COPISCore(
             device.device_id == self._imaging_session_queue[0][0]:
             _, image_index = self._imaging_session_queue.pop(0)
 
-            session_images = self._imaging_session_manifest['images']
+            session_images = self._imaging_session_manifest[-1]['images']
             session_images[image_index]['image_end_time'] = get_timestamp(True)
 
             self._update_imaging_manifest([('images', session_images)])
 
-    def _get_file_name(self, template: str):
-        f_name = template.format('')
-        count = 0
+    def _add_manifest_section(self):
+        def is_manifest_initialized(key):
+            return self._initialized_manifests and key in self._initialized_manifests
 
-        while path_exists_2(self._imaging_session_path, f_name):
-            count = count + 1
-            f_name = template.format(f'_{count}')
+        manifest_key = hash('|'.join(
+            [self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME]).lower())
 
-        return f_name
+        if not is_manifest_initialized(manifest_key):
+            self._imaging_session_manifest = []
+
+            if path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+                self._imaging_session_manifest.extend(
+                    load_json_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME))
+
+            self._initialized_manifests.append(manifest_key)
+
+        self._imaging_session_manifest.append({})
 
     def _imaging_callback(self):
+        print_info_msg(
+            self.console, f'From imaging callback. Save imaging session is: {self._save_imaging_session}')
         if self._save_imaging_session:
             self._update_imaging_manifest(
                 [('imaging_end_time', get_timestamp(True))])
@@ -410,15 +426,13 @@ class COPISCore(
 
         if self._save_imaging_session:
             self._imaging_session_queue = []
-            self._imaging_session_manifest = {}
+            self._add_manifest_section()
 
             pairs = [('imaging_start_time', get_timestamp(True)),
                 ('imaging_end_time', None)]
             pairs.append(self._get_image_counts())
             pairs.append(('images', []))
 
-            self._imaging_manifest_file_name = self._get_file_name(
-                'copis_imaging_manifest{}.json')
             self._update_imaging_manifest(pairs)
 
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')

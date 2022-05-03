@@ -284,15 +284,13 @@ class MachineMembersMixin:
 
         if self._save_imaging_session:
             self._imaging_session_queue = []
-            self._imaging_session_manifest = {}
+            self._add_manifest_section()
 
             pairs = [('imaging_start_time', get_timestamp(True)),
                 ('imaging_end_time', None)]
             pairs.append(self._get_image_counts(poses))
             pairs.append(('images', []))
 
-            self._imaging_manifest_file_name = self._get_file_name(
-                'copis_image_series_manifest{}.json')
             self._update_imaging_manifest(pairs)
 
             dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
