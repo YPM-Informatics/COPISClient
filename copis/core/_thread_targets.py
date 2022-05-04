@@ -124,7 +124,7 @@ class ThreadTargetsMixin:
 
         dispatcher.connect(callback, signal='ntf_machine_idle')
 
-        print_info_msg(self.console, f'{t_name} started')
+        print_info_msg(self.console, f'{t_name} {state}')
 
         had_error = False
         try:

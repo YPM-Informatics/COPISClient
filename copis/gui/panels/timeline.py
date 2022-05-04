@@ -550,10 +550,11 @@ class TimelinePanel(wx.Panel):
                 if self._parent.properties_panel.use_last_save_session_choice:
                     proceed = True
                     path = self.core.imaging_session_path
-                    keep_last = not self.core.save_imaging_session
+                    keep_last = self._parent._keep_last_session_imaging_path
                 else:
                     proceed, path, keep_last = prompt_for_imaging_session_path(
                         self.core.imaging_session_path)
+                    self._parent._keep_last_session_imaging_path = keep_last
 
                 if not proceed:
                     return
@@ -575,10 +576,11 @@ class TimelinePanel(wx.Panel):
             if self._parent.properties_panel.use_last_save_session_choice:
                 proceed = True
                 path = self.core.imaging_session_path
-                keep_last = not self.core.save_imaging_session
+                keep_last = self._parent._keep_last_session_imaging_path
             else:
                 proceed, path, keep_last = prompt_for_imaging_session_path(
                     self.core.imaging_session_path)
+                self._parent._keep_last_session_imaging_path = keep_last
 
             if not proceed:
                 return

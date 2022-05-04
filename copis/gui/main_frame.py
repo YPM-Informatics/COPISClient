@@ -77,9 +77,7 @@ class MainWindow(wx.Frame):
 
         self._default_title = self.Title
         self.chamber_dimensions = chamber_dimensions
-
-        # project saving
-        self.project_dirty = False
+        self._keep_last_session_imaging_path = False
 
         self._file_menu = None
         self._menubar = None
@@ -106,6 +104,15 @@ class MainWindow(wx.Frame):
     # --------------------------------------------------------------------------
     # Accessor methods
     # --------------------------------------------------------------------------
+
+    @property
+    def keep_last_session_imaging_path(self) -> bool:
+        """Returns a flag indicating whether to keep the last session imaging path."""
+        return self._keep_last_session_imaging_path
+
+    @keep_last_session_imaging_path.setter
+    def keep_last_session_imaging_path(self, value) -> None:
+        self._keep_last_session_imaging_path = value
 
     @property
     def console_panel(self) -> ConsolePanel:
@@ -577,7 +584,8 @@ class MainWindow(wx.Frame):
 
         self.menuitems['imaging_toolbar'].Enable(False)
         self.menuitems['imaging_toolbar'].Check(False)
-        self._mgr.Update()
+
+        wx.CallAfter(self._mgr.Update)
 
     def update_statusbar(self, event: wx.CommandEvent) -> None:
         """Updates status bar visibility based on menu item."""

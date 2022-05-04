@@ -335,8 +335,6 @@ class COPISCore(
         self._imaging_session_manifest.append({})
 
     def _imaging_callback(self):
-        print_info_msg(
-            self.console, f'From imaging callback. Save imaging session is: {self._save_imaging_session}')
         if self._save_imaging_session:
             self._update_imaging_manifest(
                 [('imaging_end_time', get_timestamp(True))])
@@ -565,16 +563,22 @@ class COPISCore(
             print_error_msg(self.console, 'Cannot resume; machine is not paused.')
             return False
 
+        kwargs = {
+            "resuming": True
+        }
+
+        if self._work_type == WorkType.IMAGING:
+            kwargs['extra_callback'] = self._imaging_callback
+
         self._is_machine_paused = False
         self._keep_working = True
         self._clear_to_send = True
         self._working_thread = threading.Thread(
             target=self._worker,
             name='working thread',
-            kwargs={
-                "resuming": True
-            }
+            kwargs=kwargs
         )
+
         self._working_thread.start()
         return True
 
