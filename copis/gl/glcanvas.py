@@ -141,7 +141,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = quat()
         self._rot_lock = Lock()
-        self._center = vec3(0.0, 0.0, (self._build_dimensions[5] - self._build_dimensions[2]) / 2.0)
+        self._center = vec3(0.0, 0.0, ((2.0 * self._build_dimensions[5]) - self._build_dimensions[2]) / 2.0)
         self._object_scale = 3.0
 
         # Bind listeners.
