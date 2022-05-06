@@ -49,9 +49,11 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_edsdk_picture)
         self._serial_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_serial_picture)
         self._edsdk_transfer_pics_btn.Bind(wx.EVT_BUTTON, self._on_transfer_edsdk_pictures)
+        self._edsdk_step_focus_near_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus_near)
+        self._edsdk_step_focus_far_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus_far)
 
     def _init_gui(self):
-        edsdk_grid = wx.FlexGridSizer(1, 3, 0, 0)
+        edsdk_grid = wx.FlexGridSizer(2, 3, 0, 0)
         self._serial_grid = wx.FlexGridSizer(1, 3, 0, 0)
         for i in range(3):
             edsdk_grid.AddGrowableCol(i, 0)
@@ -65,6 +67,14 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_take_pic_btn = wx.Button(
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
 
+        self._edsdk_step_focus_near_btn = wx.Button(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Focus Near')
+        self._edsdk_step_focus_far_btn = wx.Button(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Focus Far')
+        self._edsdk_focus_step_choice = wx.ListBox(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, choices=['1','2','3'],
+            name='Focus Step', size=(50, 23))
+
         self._serial_take_pic_btn = wx.Button(
             self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
         self._serial_take_pic_btn.Disable()
@@ -72,7 +82,11 @@ class DeviceActionsPanel(wx.Panel):
         edsdk_grid.AddMany([
             (self._start_live_view_btn, 0, wx.EXPAND, 0),
             (self._edsdk_take_pic_btn, 0, wx.EXPAND, 0),
-            (self._edsdk_transfer_pics_btn, 0, wx.EXPAND, 0)
+            (self._edsdk_transfer_pics_btn, 0, wx.EXPAND, 0),
+            (self._edsdk_step_focus_near_btn, 0, wx.EXPAND, 0),
+            (self._edsdk_focus_step_choice, 0,
+                wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self._edsdk_step_focus_far_btn, 0, wx.EXPAND, 0)
         ])
 
         self._serial_grid.AddMany([
@@ -89,6 +103,22 @@ class DeviceActionsPanel(wx.Panel):
         self.Sizer.Add(self._edsdk_box_sizer, 0, wx.ALL|wx.EXPAND, 5)
 
         self.Layout()
+
+    def _on_edsdk_focus_near(self, _) -> None:
+        selected_index = self._edsdk_focus_step_choice.Selection
+
+        if selected_index >= 0:
+            selected = self._edsdk_focus_step_choice.GetString(selected_index)
+            choice = -(int(selected))
+            self._parent.core.edsdk_step_focus(choice)
+
+    def _on_edsdk_focus_far(self, _) -> None:
+        selected_index = self._edsdk_focus_step_choice.Selection
+
+        if selected_index >= 0:
+            selected = self._edsdk_focus_step_choice.GetString(selected_index)
+            choice = int(selected)
+            self._parent.core.edsdk_step_focus(choice)
 
     def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()

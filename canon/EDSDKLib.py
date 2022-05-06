@@ -315,14 +315,6 @@ class EDSDK():
 
 		##################################################
 
-		## Drive Lens
-		self.EvfDriveLens_Near1		= 0x00000001
-		self.EvfDriveLens_Near2		= 0x00000002
-		self.EvfDriveLens_Near3		= 0x00000003
-		self.EvfDriveLens_Far1		= 0x00008001
-		self.EvfDriveLens_Far2		= 0x00008002
-		self.EvfDriveLens_Far3		= 0x00008003
-
 		## Depth of Field Preview
 		self.EvfDepthOfFieldPreview_OFF	= 0x00000000
 		self.EvfDepthOfFieldPreview_ON	= 0x00000001
@@ -1708,6 +1700,14 @@ class EvfDataSet(Structure):
 
 
 #################### Enum Classes ####################
+class EvfDriveLens(Enum):
+	Near1		= 0x00000001
+	Near2		= 0x00000002
+	Near3		= 0x00000003
+	Far1		= 0x00008001
+	Far2		= 0x00008002
+	Far3		= 0x00008003
+
 class EdsDataType(Enum):
 	Unknown     = 0    
 	Bool        = 1   

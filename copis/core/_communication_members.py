@@ -22,11 +22,13 @@ import time
 from datetime import datetime
 from typing import List
 
+from canon.EDSDKLib import EvfDriveLens
 from copis.classes import Action, Pose
 from copis.coms import serial_controller
 from copis.globals import ActionType
 from copis.helpers import create_action_args, locked, print_error_msg, print_info_msg
 from copis.classes import ReadThread
+
 
 class CommunicationMembersMixin:
     """Implement COPIS Core component communication (serial, edsdk)
@@ -139,6 +141,28 @@ class CommunicationMembersMixin:
                 self._imaging_session_path = destination
 
         self._edsdk.transfer_pictures(destination)
+
+    def edsdk_step_focus(self, step_info: int):
+        """Steps the camera's focus given step info."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            if step_info < 0:
+                if step_info == -1:
+                    step = EvfDriveLens.Near1
+                elif step_info == -2:
+                    step = EvfDriveLens.Near2
+                else:
+                    step = EvfDriveLens.Near3
+            else:
+                if step_info == 1:
+                    step = EvfDriveLens.Far1
+                elif step_info == 2:
+                    step = EvfDriveLens.Far2
+                else:
+                    step = EvfDriveLens.Far3
+
+        self._edsdk.step_focus(step)
 
     # --------------------------------------------------------------------------
     # Serial methods

@@ -25,8 +25,8 @@ from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsFileCreateDisposition, EdsSaveTo,
-    EdsShutterButton, EdsStorageType)
+    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsFileCreateDisposition,
+    EdsSaveTo, EdsShutterButton, EdsStorageType, EvfDriveLens)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
 
@@ -406,13 +406,34 @@ class EDSDKController():
                 'An exception occurred while terminating Canon API: '
                 f'{err.args[0]}')
 
-    # def step_focus(self) -> bool:
-    #     """TODO
+    def step_focus(self, step: EvfDriveLens) -> bool:
+        """Steps the camera's focus by the given value (direction and distance).
 
-    #     Returns:
-    #         True if successful, False otherwise.
-    #     """
-    #     return False
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+
+            return False
+
+        try:
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DriveLensEvf, step.value)
+            time.sleep(.5)
+
+            return True
+
+        except Exception as err:
+            msg = ' '.join(["An exception occurred while stepping the camera's focus",
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
+
+            return False
 
     def transfer_pictures(self, destination) -> None:
         """Transfers pictures off of the camera."""
@@ -589,6 +610,7 @@ end_live_view = _instance.end_live_view
 download_evf_data = _instance.download_evf_data
 focus = _instance.focus
 transfer_pictures = _instance.transfer_pictures
+step_focus = _instance.step_focus
 
 
 @mproperty
