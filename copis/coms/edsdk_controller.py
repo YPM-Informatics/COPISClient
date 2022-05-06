@@ -361,7 +361,7 @@ class EDSDKController():
         return not self._is_connected
 
     def take_picture(self) -> bool:
-        """Take picture on connected camera.
+        """Takes a picture on connected camera.
 
         Returns:
             True if successful, False otherwise.
@@ -395,8 +395,8 @@ class EDSDKController():
 
             return False
 
-    def terminate(self):
-        """Terminate EDSDK."""
+    def terminate(self) -> None:
+        """Terminates EDSDK."""
         try:
             self.disconnect()
             self._edsdk.EdsTerminateSDK()
@@ -451,15 +451,17 @@ class EDSDKController():
         else:
             self._print_info_msg(self._console, 'No pictures transferred')
 
-    def focus(self) -> None:
-        """Focuses the camera."""
+    def focus(self) -> bool:
+        """Focuses the camera.
+
+        Returns:
+            True if successful, False otherwise.
+        """
         if not self._is_connected:
             self._print_error_msg(self._console, 'No cameras currently connected.')
             return False
 
         try:
-            self._is_waiting_for_image = True
-
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
@@ -470,7 +472,7 @@ class EDSDKController():
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
-            return None
+            return True
 
         except Exception as err:
             msg = ' '.join(['An exception occurred while focusing with camera',
@@ -493,7 +495,7 @@ class EDSDKController():
         self._evf_stream = self._edsdk.EdsCreateMemoryStream(sizeof(c_void_p))
         self._evf_image_ref = self._edsdk.EdsCreateEvfImageRef(self._evf_stream)
 
-    def download_evf_data(self) -> None:
+    def download_evf_data(self) -> bytearray:
         """Downloads the live view stream."""
         err = EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY
 
@@ -527,7 +529,7 @@ class EDSDKController():
 
         return None
 
-    def end_live_view(self):
+    def end_live_view(self) -> None:
         """Ends the live view for the connected camera."""
         self._edsdk.EdsSetPropertyData(
             self._camera_settings.ref, self._edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), 0)

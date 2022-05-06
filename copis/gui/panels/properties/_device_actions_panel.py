@@ -104,11 +104,11 @@ class DeviceActionsPanel(wx.Panel):
             if self._parent.use_last_save_session_choice:
                 proceed = True
                 path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent._keep_last_session_imaging_path
+                keep_last = self._parent.Parent.keep_last_session_imaging_path
             else:
                 proceed, path, keep_last = prompt_for_imaging_session_path(
                     self._parent.core.imaging_session_path)
-                self._parent.Parent._keep_last_session_imaging_path = keep_last
+                self._parent.Parent.keep_last_session_imaging_path = keep_last
 
             if not proceed:
                 return
@@ -132,11 +132,11 @@ class DeviceActionsPanel(wx.Panel):
             if self._parent.use_last_save_session_choice:
                 proceed = True
                 path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent._keep_last_session_imaging_path
+                keep_last = self._parent.Parent.keep_last_session_imaging_path
             else:
                 proceed, path, keep_last = prompt_for_imaging_session_path(
                     self._parent.core.imaging_session_path)
-                self._parent.Parent._keep_last_session_imaging_path = keep_last
+                self._parent.Parent.keep_last_session_imaging_path = keep_last
 
             if not proceed:
                 return
@@ -158,11 +158,11 @@ class DeviceActionsPanel(wx.Panel):
             if self._parent.use_last_save_session_choice:
                 proceed = True
                 path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent._keep_last_session_imaging_path
+                keep_last = self._parent.Parent.keep_last_session_imaging_path
             else:
                 proceed, path, keep_last = prompt_for_imaging_session_path(
                     self._parent.core.imaging_session_path)
-                self._parent.Parent._keep_last_session_imaging_path = keep_last
+                self._parent.Parent.keep_last_session_imaging_path = keep_last
 
             if not proceed:
                 return
