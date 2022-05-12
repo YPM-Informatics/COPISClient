@@ -16,6 +16,7 @@
 """TimelinePanel class."""
 
 import copy
+from unicodedata import name
 import wx
 import wx.lib.scrolledpanel as scrolled
 import wx.lib.agw.aui as aui
@@ -248,8 +249,8 @@ class TimelinePanel(wx.Panel):
         return set_index, idx_in_set
 
     def _toggle_buttons(self, data=None):
-        for key in self._buttons:
-            self._buttons[key].Enable(False)
+        for _, button in self._buttons.items():
+            button.Enable(False)
 
         if self.timeline.GetCount() > 0:
             self._buttons['image_btn'].Enable(True)
@@ -447,7 +448,10 @@ class TimelinePanel(wx.Panel):
         def on_add_pose(event: wx.CommandEvent):
             event.EventObject.Parent.Close()
 
-            with PathgenPoint(self, devices) as dlg:
+            task = event.EventObject.Name
+            dvcs = self.core.project.devices if task == 'insert_pose' else devices
+
+            with PathgenPoint(self, dvcs) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
 
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
@@ -473,7 +477,10 @@ class TimelinePanel(wx.Panel):
 
                         pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
-                        pose_index = self.core.project.add_pose(set_index, pose)
+                        if task == 'insert_pose':
+                            pose_index = self.core.project.insert_pose(set_index, pose)
+                        else:
+                            pose_index = self.core.project.add_pose(set_index, pose)
 
                         idx_in_poses = self._get_index_poses(set_index, pose_index) \
                             if pose_index >= 0 else pose_index
@@ -505,21 +512,27 @@ class TimelinePanel(wx.Panel):
             dialog = wx.Dialog(self, wx.ID_ADD, 'Add path item', size=dialog_size)
             dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-            choice_grid = wx.GridSizer(2, (8, -1))
+            choice_grid = wx.GridSizer(3, (12, -1))
 
-            dialog.add_set_btn = wx.Button(dialog, label='Add pose set', size=btn_size)
+            dialog.add_set_btn = wx.Button(dialog, label='Add pose set', size=btn_size,
+                name='add_set')
             dialog.add_set_btn.Bind(wx.EVT_BUTTON, on_add_pose_set)
 
-            dialog.add_pose_btn = wx.Button(dialog, label='Add pose', size=btn_size)
+            dialog.add_pose_btn = wx.Button(dialog, label='Add pose', size=btn_size,
+                name='add_pose')
+            dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
+
+            dialog.insert_pose_btn = wx.Button(dialog, label='Insert pose', size=btn_size,
+                name='insert_pose')
+            dialog.insert_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
 
             if not devices:
-                dialog.add_pose_btn.Enable(False)
-
-            dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
+                dialog.add_pose_btn.Disable()
 
             choice_grid.AddMany([
                 (dialog.add_set_btn, 0, 0, 0),
-                (dialog.add_pose_btn, 0, 0, 0)
+                (dialog.add_pose_btn, 0, 0, 0),
+                (dialog.insert_pose_btn, 0, 0, 0)
             ])
 
             dialog.Sizer.Add(choice_grid, 1, wx.ALL, 4)
