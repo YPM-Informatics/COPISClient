@@ -16,14 +16,12 @@
 """TimelinePanel class."""
 
 import copy
-from unicodedata import name
 import wx
 import wx.lib.scrolledpanel as scrolled
 import wx.lib.agw.aui as aui
 
 from pydispatch import dispatcher
 
-from pydispatch import dispatcher
 from glm import vec3
 from copis.classes.action import Action
 from copis.classes.pose import Pose
