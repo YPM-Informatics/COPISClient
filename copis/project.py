@@ -18,6 +18,7 @@
 from importlib import import_module
 from typing import Any, Iterable, List, Tuple
 from pydispatch import dispatcher
+from itertools import groupby
 from glm import vec3
 
 from copis.classes import (
@@ -25,7 +26,8 @@ from copis.classes import (
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
-from copis.helpers import collapse_whitespaces
+from copis.helpers import collapse_whitespaces, interleave_lists
+from copis.pathutils import build_pose_sets
 from .store import (Store, get_file_base_name, get_file_base_name_no_ext, load_json, path_exists,
     save_json)
 
@@ -445,8 +447,35 @@ class Project:
             self._pose_sets.extend(sets)
 
             return new_index
-        else:
-            return index
+
+        return index
+
+    def reverse_pose_sets(self):
+        """Reverses the order of the pose sets."""
+        self._pose_sets.reverse()
+
+    def reverse_poses(self, device_ids: List=None):
+        """Reverses the order of the poses for the given devices.
+            Applies to all devices if none provided."""
+        get_device = lambda a: a.position.device
+
+        if self.poses and len(self.poses):
+            sorted_poses = sorted(self.poses, key=get_device)
+            grouped = groupby(sorted_poses, get_device)
+            groups = []
+            sets_changed = False
+
+            for key, group in grouped:
+                if not device_ids or key in device_ids:
+                    group.reverse()
+                    sets_changed = True
+
+                groups.append(list(group))
+
+            if sets_changed:
+                interleaved = interleave_lists(*groups)
+                self._pose_sets.clear(False)
+                self._pose_sets.extend(build_pose_sets(interleaved))
 
     def can_add_pose(self, set_index: int, device_id: int):
         """Returns a flag indicating where a pose with the specified device
