@@ -111,6 +111,9 @@ class DeviceActionsPanel(wx.Panel):
             selected = self._edsdk_focus_step_choice.GetString(selected_index)
             choice = -(int(selected))
             self._parent.core.edsdk_step_focus(choice)
+        else:
+            show_msg_dialog('Please select a focus increment.',
+                'Focus Near - EDSDK')
 
     def _on_edsdk_focus_far(self, _) -> None:
         selected_index = self._edsdk_focus_step_choice.Selection
@@ -119,6 +122,9 @@ class DeviceActionsPanel(wx.Panel):
             selected = self._edsdk_focus_step_choice.GetString(selected_index)
             choice = int(selected)
             self._parent.core.edsdk_step_focus(choice)
+        else:
+            show_msg_dialog('Please select a focus increment.',
+                'Focus Far - EDSDK')
 
     def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()
