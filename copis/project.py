@@ -466,11 +466,13 @@ class Project:
             sets_changed = False
 
             for key, group in grouped:
+                group = list(group)
+
                 if not device_ids or key in device_ids:
                     group.reverse()
                     sets_changed = True
 
-                groups.append(list(group))
+                groups.append(group)
 
             if sets_changed:
                 interleaved = interleave_lists(*groups)

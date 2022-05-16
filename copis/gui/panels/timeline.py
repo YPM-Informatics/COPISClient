@@ -15,10 +15,12 @@
 
 """TimelinePanel class."""
 
+from functools import partial
+
 import copy
 import wx
 import wx.lib.scrolledpanel as scrolled
-import wx.lib.agw.aui as aui
+import wx.lib.agw as aui
 
 from pydispatch import dispatcher
 
@@ -253,6 +255,7 @@ class TimelinePanel(wx.Panel):
         if self.timeline.GetCount() > 0:
             self._buttons['image_btn'].Enable(True)
             self._buttons['add_btn'].Enable(True)
+            self._buttons['reverse_btn'].Enable(True)
 
         if data:
             self._buttons['delete_btn'].Enable(True)
@@ -398,6 +401,10 @@ class TimelinePanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
         self._buttons['add_btn'] = add_btn
 
+        reverse_btn = wx.Button(btn_panel, label='Reverse', size=btn_size)
+        reverse_btn.Bind(wx.EVT_BUTTON, self.on_reverse_command)
+        self._buttons['reverse_btn'] = reverse_btn
+
         delete_btn = wx.Button(btn_panel, label='Delete', size=btn_size)
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
         self._buttons['delete_btn'] = delete_btn
@@ -423,6 +430,7 @@ class TimelinePanel(wx.Panel):
             (insert_pose_btn, 0, 0, 0),
             (insert_pose_set_btn, 0, 0, 0),
             (add_btn, 0, 0, 0),
+            (reverse_btn, 0, 0, 0),
             (delete_btn, 0, 0, 0),
             (play_btn, 0, 0, 0),
             (image_btn, 0, 0, 0)
@@ -507,20 +515,20 @@ class TimelinePanel(wx.Panel):
             dialog_size = (100, -1)
             btn_size = (85, -1)
 
-            dialog = wx.Dialog(self, wx.ID_ADD, 'Add path item', size=dialog_size)
+            dialog = wx.Dialog(self, wx.ID_ADD, 'Add Path Item', size=dialog_size)
             dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
 
             choice_grid = wx.GridSizer(3, (12, -1))
 
-            dialog.add_set_btn = wx.Button(dialog, label='Add pose set', size=btn_size,
+            dialog.add_set_btn = wx.Button(dialog, label='Add Pose Set', size=btn_size,
                 name='add_set')
             dialog.add_set_btn.Bind(wx.EVT_BUTTON, on_add_pose_set)
 
-            dialog.add_pose_btn = wx.Button(dialog, label='Add pose', size=btn_size,
+            dialog.add_pose_btn = wx.Button(dialog, label='Add Pose', size=btn_size,
                 name='add_pose')
             dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
 
-            dialog.insert_pose_btn = wx.Button(dialog, label='Insert pose', size=btn_size,
+            dialog.insert_pose_btn = wx.Button(dialog, label='Insert Pose', size=btn_size,
                 name='insert_pose')
             dialog.insert_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
 
@@ -542,6 +550,75 @@ class TimelinePanel(wx.Panel):
         else:
             set_index = self.core.project.add_pose_set()
             self.core.select_pose_set(set_index)
+
+    def on_reverse_command(self, event: wx.CommandEvent):
+        """"Reverses the play order of poses or pose sets."""
+        def on_reverse_pose_set(_):
+            event.EventObject.Parent.Close()
+
+            self.core.project.reverse_pose_sets()
+
+        def on_reverse_poses(dlg, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            cl_box: wx.CheckListBox = dlg.device_checklist
+            if 0 in cl_box.CheckedItems:
+                self.core.project.reverse_poses()
+            else:
+                selections = [int(s.split()[0]) for s in cl_box.GetCheckedStrings()]
+                self.core.project.reverse_poses(selections)
+
+        def on_device_chosen(event: wx.CommandEvent):
+            clicked_item = event.String
+            cl_box: wx.CheckListBox = event.EventObject
+
+            if clicked_item == cl_box.Items[0]:
+                for i in range(1, cl_box.Count):
+                    cl_box.Check(i, cl_box.IsChecked(0))
+            elif all(cl_box.IsChecked(i) for i in range(1, cl_box.Count)):
+                cl_box.Check(0, True)
+            else:
+                cl_box.Check(0, False)
+
+        device_ids = list(set(p.position.device for p in self.core.project.poses))
+        device_ids.sort()
+        devices = [self._get_device(did) for did in device_ids]
+        device_choices = list(map(lambda d: f'{d.device_id} ({d.name})', devices))
+        device_choices.insert(0, 'All')
+
+        dialog_size = (120, -1)
+        btn_size = (100, -1)
+
+        dialog = wx.Dialog(self, wx.ID_ADD, 'Reverse Items', size=dialog_size)
+        dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        choice_grid = wx.FlexGridSizer(2, 2, 6, 12)
+
+        dialog.reverse_sets_btn = wx.Button(dialog, label='Reverse Pose Sets', size=btn_size,
+            name='reverse_set')
+        dialog.reverse_sets_btn.Bind(wx.EVT_BUTTON, on_reverse_pose_set)
+
+        dialog.reverse_poses_btn = wx.Button(dialog, label='Reverse Poses', size=btn_size,
+            name='reverse_pose')
+        dialog.reverse_poses_btn.Bind(wx.EVT_BUTTON, partial(on_reverse_poses, dialog))
+
+        dialog.device_checklist = wx.CheckListBox(dialog, choices=device_choices,
+            size=btn_size)
+        dialog.device_checklist.Bind(wx.EVT_CHECKLISTBOX, on_device_chosen)
+
+        choice_grid.AddMany([
+            (0, 0),
+            (dialog.device_checklist, 0, 0, 0),
+            (dialog.reverse_sets_btn, 0, 0, 0),
+            (dialog.reverse_poses_btn, 0, 0, 0)
+        ])
+
+        dialog.Sizer.Add(choice_grid, 0, wx.ALL, 4)
+
+        dialog.Layout()
+        dialog.SetMinSize(dialog_size)
+        dialog.Fit()
+        dialog.ShowModal()
 
     def on_play_command(self, event: wx.CommandEvent):
         """Plays the selected pose or pose set."""
