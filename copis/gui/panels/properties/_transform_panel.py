@@ -257,22 +257,26 @@ class TransformPanel(wx.Panel):
             size=(24, 24), name='sw')
         arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 15),
             size=(24, 24), name='se')
-        target_closer_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('target_closer', 24),
-            size=btn_size, name='closer')
-        re_target_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('center_focus_strong', 24),
-            size=btn_size, name='target')
-        target_farther_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('target_farther', 24),
-            size=btn_size, name='farther')
+
+        target_closer_btn = wx.Button(self, label='Target Closer', size=(20, -1), name='closer')
+        re_target_btn = wx.Button(self, label='Re-target', size=(20, -1), name='target')
+        target_further_btn = wx.Button(self, label='Target Further', size=(20, -1), name='further')
+        # target_closer_btn = wx.BitmapButton(self,
+        #     bitmap=create_scaled_bitmap('target_closer', 24),
+        #     size=btn_size, name='closer')
+        # re_target_btn = wx.BitmapButton(self,
+        #     bitmap=create_scaled_bitmap('center_focus_strong', 24),
+        #     size=btn_size, name='target')
+        # target_further_btn = wx.BitmapButton(self,
+        #     bitmap=create_scaled_bitmap('target_further', 24),
+        #     size=btn_size, name='further')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
                     t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn,
                     arrow_ne_btn, arrow_nw_btn, arrow_se_btn, arrow_sw_btn):
             btn.Bind(wx.EVT_BUTTON, self._on_step_button)
 
-        for btn in (target_closer_btn, target_farther_btn, re_target_btn):
+        for btn in (target_closer_btn, target_further_btn, re_target_btn):
             btn.Bind(wx.EVT_BUTTON, self._on_target_button)
 
         re_target_btn.Bind(wx.EVT_CONTEXT_MENU, self._on_target_ctx_menu)
@@ -313,12 +317,13 @@ class TransformPanel(wx.Panel):
 
             (target_closer_btn, 0, wx.EXPAND, 0),
             (re_target_btn, 0, wx.EXPAND, 0),
-            (target_farther_btn, 0, wx.EXPAND, 0)
+            (target_further_btn, 0, wx.EXPAND, 0)
         ])
 
         if not self._is_live:
             self._target_all_poses_opt.Show()
-            xyzpt_grid.Add(self._target_all_poses_opt, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0)
+            xyzpt_grid.Add(self._target_all_poses_opt, 0,
+                wx.EXPAND|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
         else:
             self._target_all_poses_opt.Hide()
             xyzpt_grid.Add(0, 0)
@@ -348,8 +353,8 @@ class TransformPanel(wx.Panel):
             name='feed_rate')
         self._copy_pos_btn = wx.Button(self, label='Copy Position')
         self.Bind(wx.EVT_BUTTON, self._on_copy_position)
-        self._target_all_poses_opt = wx.CheckBox(self, label='&Apply target to all poses',
-            name='apply_target')
+        self._target_all_poses_opt = wx.CheckBox(self, label='&Apply to all',
+            name='apply_target', size=(20, -1))
 
         self._feed_rate_ctrl.Hide()
         self._copy_pos_btn.Hide()
@@ -503,7 +508,7 @@ class TransformPanel(wx.Panel):
             if self._is_live:
                 self._play_position(position, 'XYZPT')
             else:
-                if self._target_all_poses_opt.Value:
+                if self._target_all_poses_opt.IsChecked():
                     self.parent.core.re_target_all_poses()
                 else:
                     self.parent.core.update_selected_pose_position(position)
@@ -551,7 +556,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._play_position(position, 'XYZPT')
         else:
-            if self._target_all_poses_opt.Value:
+            if self._target_all_poses_opt.IsChecked():
                 if task == 'target':
                     self.parent.core.re_target_all_poses()
                 else:
