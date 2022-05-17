@@ -49,8 +49,8 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_edsdk_picture)
         self._serial_take_pic_btn.Bind(wx.EVT_BUTTON, self._on_snap_serial_picture)
         self._edsdk_transfer_pics_btn.Bind(wx.EVT_BUTTON, self._on_transfer_edsdk_pictures)
-        self._edsdk_step_focus_near_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus_near)
-        self._edsdk_step_focus_far_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus_far)
+        self._edsdk_step_focus_near_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus)
+        self._edsdk_step_focus_far_btn.Bind(wx.EVT_BUTTON, self._on_edsdk_focus)
 
     def _init_gui(self):
         edsdk_grid = wx.FlexGridSizer(2, 3, 0, 0)
@@ -67,13 +67,13 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_take_pic_btn = wx.Button(
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
 
-        self._edsdk_step_focus_near_btn = wx.Button(
-            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Focus Near')
-        self._edsdk_step_focus_far_btn = wx.Button(
-            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Focus Far')
-        self._edsdk_focus_step_choice = wx.ListBox(
-            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, choices=['1','2','3'],
-            name='Focus Step', size=(50, 23))
+        self._edsdk_step_focus_near_btn = wx.Button(self._edsdk_box_sizer.StaticBox,
+            wx.ID_ANY, label='Focus Near', name='near_focus')
+        self._edsdk_step_focus_far_btn = wx.Button(self._edsdk_box_sizer.StaticBox,
+            wx.ID_ANY, label='Focus Far', name='far_focus')
+        self._edsdk_focus_step_choice = wx.SpinCtrl(
+            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, min=1, max=3, initial=1,
+            name='focus_step')
 
         self._serial_take_pic_btn = wx.Button(
             self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
@@ -104,27 +104,14 @@ class DeviceActionsPanel(wx.Panel):
 
         self.Layout()
 
-    def _on_edsdk_focus_near(self, _) -> None:
-        selected_index = self._edsdk_focus_step_choice.Selection
+    def _on_edsdk_focus(self, event: wx.CommandEvent) -> None:
+        name = event.EventObject.Name
+        step = int(self._edsdk_focus_step_choice.Value)
 
-        if selected_index >= 0:
-            selected = self._edsdk_focus_step_choice.GetString(selected_index)
-            choice = -(int(selected))
-            self._parent.core.edsdk_step_focus(choice)
-        else:
-            show_msg_dialog('Please select a focus increment.',
-                'Focus Near - EDSDK')
+        if name == 'near_focus':
+            step = -(step)
 
-    def _on_edsdk_focus_far(self, _) -> None:
-        selected_index = self._edsdk_focus_step_choice.Selection
-
-        if selected_index >= 0:
-            selected = self._edsdk_focus_step_choice.GetString(selected_index)
-            choice = int(selected)
-            self._parent.core.edsdk_step_focus(choice)
-        else:
-            show_msg_dialog('Please select a focus increment.',
-                'Focus Far - EDSDK')
+        self._parent.core.edsdk_step_focus(step)
 
     def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()
