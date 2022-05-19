@@ -6,7 +6,7 @@ from datetime import datetime
 class EDSDK():
 	def __init__(self):
 		dll_path_format = os.path.dirname(__file__) + os.path.sep + '{}'
-		self.dll = CDLL(dll_path_format.format('EDSDK.dll')) 
+		self.dll = CDLL(dll_path_format.format('EDSDK.dll'))
 		self.errorFormat = "EDSDK Exception Occurred: {} {}"
 
 		################ Property Ids ################
@@ -1954,7 +1954,7 @@ class EdsErrorCodes(Enum):
 	EDS_CMP_ID_LLSDK_COMPONENTID =                        0x02000000
 	EDS_CMP_ID_HLSDK_COMPONENTID =                        0x03000000
 	
-	####################### ED-SDK Functin Success Code #######################
+	####################### ED-SDK Function Success Code #######################
 	EDS_ERR_OK =                                          0x00000000
 	
 	######################### ED-SDK Generic Error IDs ########################
