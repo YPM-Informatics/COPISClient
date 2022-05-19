@@ -17,16 +17,18 @@
 
 import os
 import datetime
+import time
 
 from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string_at, cast
 from dataclasses import dataclass
-import time
+
 from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsFileCreateDisposition,
-    EdsSaveTo, EdsShutterButton, EdsStorageType, EvfDriveLens)
+    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsEvfAf,
+    EdsFileCreateDisposition, EdsSaveTo, EdsShutterButton, EdsStorageType,
+    EvfDriveLens)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
 
@@ -91,6 +93,11 @@ class EDSDKController():
             devices.append((info, connected))
 
         return devices
+
+    def _get_prop_data(self, ref, prop_id, param, prop):
+        param_info = self._edsdk.EdsGetPropertySize(ref, prop_id, param)
+        self._edsdk.EdsGetPropertyData(ref, prop_id, param,
+            param_info['size'], prop)
 
     def _get_device_info_list(self):
         infos = []
@@ -377,6 +384,7 @@ class EDSDKController():
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Completely.value)
+                # try EdsShutterButton.CameraCommand_ShutterButton_Completely_NonAF for focus stacking.
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
@@ -420,7 +428,6 @@ class EDSDKController():
         try:
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_DriveLensEvf, step.value)
-            time.sleep(.5)
 
             return True
 
@@ -468,9 +475,41 @@ class EDSDKController():
             self._delete_pictures(pictures)
 
             self._print_info_msg(self._console,
-                f'{count or "No"} picture{"s" if count != 1 else ""} tranferred')
+                f'{count or "No"} picture{"s" if count != 1 else ""} transferred')
         else:
             self._print_info_msg(self._console, 'No pictures transferred')
+
+    def evf_focus(self) -> bool:
+        """Performs a live view specific auto-focus.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+            return False
+
+        try:
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DoEvfAf, EdsEvfAf.CameraCommand_EvfAf_ON.value)
+
+            time.sleep(1)
+
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DoEvfAf, EdsEvfAf.CameraCommand_EvfAf_OFF.value)
+
+            return True
+
+        except Exception as err:
+            msg = ' '.join(['An exception occurred while focusing with camera',
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
+
+            return False
 
     def focus(self) -> bool:
         """Focuses the camera.
@@ -487,7 +526,7 @@ class EDSDKController():
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
 
-            time.sleep(.5)
+            time.sleep(1)
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
@@ -611,6 +650,7 @@ download_evf_data = _instance.download_evf_data
 focus = _instance.focus
 transfer_pictures = _instance.transfer_pictures
 step_focus = _instance.step_focus
+evf_focus = _instance.evf_focus
 
 
 @mproperty

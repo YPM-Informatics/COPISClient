@@ -132,6 +132,13 @@ class CommunicationMembersMixin:
         else:
             self._edsdk.focus()
 
+    def do_evf_edsdk_focus(self):
+        """Performs Live view specific EDSDK focus."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.evf_focus()
+
     def transfer_edsdk_pictures(self, destination, keep_last):
         """"Transfers pictures off of the camera via EDSDK."""
         if not self._is_edsdk_enabled:
