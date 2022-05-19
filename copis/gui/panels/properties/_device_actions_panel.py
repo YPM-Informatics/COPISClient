@@ -64,8 +64,9 @@ class DeviceActionsPanel(wx.Panel):
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Start Live View')
         self._edsdk_transfer_pics_btn = wx.Button(
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Transfer Pictures')
-        self._edsdk_take_pic_btn = wx.Button(
-            self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
+
+        self._edsdk_take_pic_btn = wx.Button(self._edsdk_box_sizer.StaticBox, wx.ID_ANY,
+            label='Snap a Shot', size=(70, -1))
 
         self._edsdk_step_focus_near_btn = wx.Button(self._edsdk_box_sizer.StaticBox,
             wx.ID_ANY, label='Focus Near', name='near_focus')
@@ -75,9 +76,17 @@ class DeviceActionsPanel(wx.Panel):
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, min=1, max=3, initial=1,
             name='focus_step')
 
-        self._serial_take_pic_btn = wx.Button(
-            self._serial_box_sizer.StaticBox, wx.ID_ANY, label='Snap a Shot')
+        serial_shot_ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._serial_take_pic_btn = wx.Button(self._serial_box_sizer.StaticBox, wx.ID_ANY,
+            label='Snap a Shot', size=(70, -1))
+        self.shutter_release_times = wx.SpinCtrlDouble(self._serial_box_sizer.StaticBox,
+            wx.ID_ANY, min=0, max=5, initial=0, inc=.1, size=(45, -1))
+        serial_shot_ctrl_sizer.AddMany([
+            (self._serial_take_pic_btn, 0, wx.EXPAND, 0),
+            (self.shutter_release_times, 0, wx.EXPAND, 0),
+        ])
         self._serial_take_pic_btn.Disable()
+        self.shutter_release_times.Disable()
 
         edsdk_grid.AddMany([
             (self._start_live_view_btn, 0, wx.EXPAND, 0),
@@ -91,7 +100,7 @@ class DeviceActionsPanel(wx.Panel):
 
         self._serial_grid.AddMany([
             (0, 0),
-            (self._serial_take_pic_btn, 0, wx.EXPAND, 0),
+            (serial_shot_ctrl_sizer, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0),
             (0, 0)
         ])
 
@@ -165,9 +174,11 @@ class DeviceActionsPanel(wx.Panel):
                 return
 
             pos = event.GetEventObject().GetScreenPosition()
+            shutter_release_time = max(0, float(self.shutter_release_times.Value))
 
             def snap_shot_handler():
-                self._parent.core.snap_serial_picture(self._device.device_id, path, keep_last)
+                self._parent.core.snap_serial_picture(shutter_release_time,
+                    self._device.device_id, path, keep_last)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -213,6 +224,7 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_device_homed(self):
         self._serial_take_pic_btn.Enable()
+        self.shutter_release_times.Enable()
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""

@@ -243,12 +243,12 @@ class CommunicationMembersMixin:
         """Updates the serial ports list."""
         self._serial.update_port_list()
 
-    def snap_serial_picture(self, device_id, save_path, keep_last_path):
+    def snap_serial_picture(self, shutter_release_time, device_id, save_path, keep_last_path):
         """Takes a picture via serial."""
         if not self.is_serial_port_connected:
             print_error_msg(self.console, 'The machine is not connected.')
         else:
-            c_args = create_action_args([1.5], 'S')
+            c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
             self.play_poses([Pose(payload=payload)], save_path, keep_last_path)

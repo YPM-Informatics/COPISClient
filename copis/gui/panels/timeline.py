@@ -89,7 +89,7 @@ class TimelinePanel(wx.Panel):
             if action.atype in self._MOVE_COMMANDS:
                 caption = 'Move to position:'
             elif action.atype in self._SNAP_COMMANDS:
-                caption = 'Snap picture within:'
+                caption = 'Release shutter in:'
             else:
                 caption = serialize_command(action)
         else:
