@@ -367,7 +367,7 @@ class EDSDKController():
 
         return not self._is_connected
 
-    def take_picture(self) -> bool:
+    def take_picture(self, do_af: bool=True) -> bool:
         """Takes a picture on connected camera.
 
         Returns:
@@ -381,10 +381,13 @@ class EDSDKController():
         try:
             self._is_waiting_for_image = True
 
+            param = EdsShutterButton.CameraCommand_ShutterButton_Completely.value
+
+            if not do_af:
+                param = EdsShutterButton.CameraCommand_ShutterButton_Completely_NonAF.value
+
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
-                self._edsdk.CameraCommand_PressShutterButton,
-                EdsShutterButton.CameraCommand_ShutterButton_Completely.value)
-                # try EdsShutterButton.CameraCommand_ShutterButton_Completely_NonAF for focus stacking.
+                self._edsdk.CameraCommand_PressShutterButton, param)
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,

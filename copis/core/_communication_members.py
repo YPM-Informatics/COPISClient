@@ -117,13 +117,13 @@ class CommunicationMembersMixin:
 
         return data
 
-    def snap_edsdk_picture(self, save_path, keep_last_path):
+    def snap_edsdk_picture(self, do_af, save_path, keep_last_path):
         """Takes a picture via EDSDK."""
         # TODO: When we can process edsdk commands, add this to the session management pipeline.
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.take_picture()
+            self._edsdk.take_picture(do_af)
 
     def do_edsdk_focus(self):
         """Focuses the camera via EDSDK."""

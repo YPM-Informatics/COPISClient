@@ -122,7 +122,7 @@ class MainWindow(wx.Frame):
     @property
     def evf_panel(self) -> EvfPanel:
         """Returns the EVF panel."""
-        return self.panels['evf']
+        return self.panels['evf'] if 'evf' in self.panels else None
 
     @property
     def properties_panel(self) -> PropertiesPanel:

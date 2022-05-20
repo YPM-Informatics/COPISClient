@@ -1781,7 +1781,7 @@ class EdsImageSource(Enum):
 	RAWThumbnail = 3
 	RAWFullView = 4
 
-class EdsProgrssOption(Enum):
+class EdsProgressOption(Enum):
 	NoReport = 0
 
 class EdsFileAttribute(Enum):

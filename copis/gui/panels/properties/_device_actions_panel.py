@@ -65,8 +65,16 @@ class DeviceActionsPanel(wx.Panel):
         self._edsdk_transfer_pics_btn = wx.Button(
             self._edsdk_box_sizer.StaticBox, wx.ID_ANY, label='Transfer Pictures')
 
+        edsdk_shot_ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._edsdk_take_pic_btn = wx.Button(self._edsdk_box_sizer.StaticBox, wx.ID_ANY,
             label='Snap a Shot', size=(70, -1))
+        self._af_option = wx.CheckBox(self._edsdk_box_sizer.StaticBox, wx.ID_ANY,
+            label='AF')
+        self._af_option.Value = True
+        edsdk_shot_ctrl_sizer.AddMany([
+            (self._edsdk_take_pic_btn, 0, wx.EXPAND, 0),
+            (self._af_option, 0, wx.EXPAND, 0)
+        ])
 
         self._edsdk_step_focus_near_btn = wx.Button(self._edsdk_box_sizer.StaticBox,
             wx.ID_ANY, label='Focus Near', name='near_focus')
@@ -79,18 +87,18 @@ class DeviceActionsPanel(wx.Panel):
         serial_shot_ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._serial_take_pic_btn = wx.Button(self._serial_box_sizer.StaticBox, wx.ID_ANY,
             label='Snap a Shot', size=(70, -1))
-        self.shutter_release_times = wx.SpinCtrlDouble(self._serial_box_sizer.StaticBox,
+        self._shutter_release_times = wx.SpinCtrlDouble(self._serial_box_sizer.StaticBox,
             wx.ID_ANY, min=0, max=5, initial=0, inc=.1, size=(45, -1))
         serial_shot_ctrl_sizer.AddMany([
             (self._serial_take_pic_btn, 0, wx.EXPAND, 0),
-            (self.shutter_release_times, 0, wx.EXPAND, 0),
+            (self._shutter_release_times, 0, wx.EXPAND, 0)
         ])
         self._serial_take_pic_btn.Disable()
-        self.shutter_release_times.Disable()
+        self._shutter_release_times.Disable()
 
         edsdk_grid.AddMany([
             (self._start_live_view_btn, 0, wx.EXPAND, 0),
-            (self._edsdk_take_pic_btn, 0, wx.EXPAND, 0),
+            (edsdk_shot_ctrl_sizer, 0, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL, 0),
             (self._edsdk_transfer_pics_btn, 0, wx.EXPAND, 0),
             (self._edsdk_step_focus_near_btn, 0, wx.EXPAND, 0),
             (self._edsdk_focus_step_choice, 0,
@@ -114,13 +122,17 @@ class DeviceActionsPanel(wx.Panel):
         self.Layout()
 
     def _on_edsdk_focus(self, event: wx.CommandEvent) -> None:
-        name = event.EventObject.Name
-        step = int(self._edsdk_focus_step_choice.Value)
+        if self._parent.parent.evf_panel:
+            name = event.EventObject.Name
+            step = int(self._edsdk_focus_step_choice.Value)
 
-        if name == 'near_focus':
-            step = -(step)
+            if name == 'near_focus':
+                step = -(step)
 
-        self._parent.core.edsdk_step_focus(step)
+            self._parent.core.edsdk_step_focus(step)
+        else:
+            show_msg_dialog('Please start live view before stepping focus.',
+                'Step Focus')
 
     def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()
@@ -148,7 +160,7 @@ class DeviceActionsPanel(wx.Panel):
             pos = event.GetEventObject().GetScreenPosition()
 
             def snap_shot_handler():
-                self._parent.core.snap_edsdk_picture(path, keep_last)
+                self._parent.core.snap_edsdk_picture(self._af_option.Value, path, keep_last)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -174,7 +186,7 @@ class DeviceActionsPanel(wx.Panel):
                 return
 
             pos = event.GetEventObject().GetScreenPosition()
-            shutter_release_time = max(0, float(self.shutter_release_times.Value))
+            shutter_release_time = max(0, float(self._shutter_release_times.Value))
 
             def snap_shot_handler():
                 self._parent.core.snap_serial_picture(shutter_release_time,
@@ -224,7 +236,7 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_device_homed(self):
         self._serial_take_pic_btn.Enable()
-        self.shutter_release_times.Enable()
+        self._shutter_release_times.Enable()
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""
