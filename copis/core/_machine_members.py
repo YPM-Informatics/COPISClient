@@ -110,6 +110,7 @@ class MachineMembersMixin:
         return actions
 
     def _query_machine(self):
+        # TODO: use M120 gcode (only to main controller) for this; when it is available on all board versions.
         print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
         cmds = []
 

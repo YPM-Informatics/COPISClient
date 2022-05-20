@@ -27,8 +27,8 @@ from mprop import mproperty
 
 from canon.EDSDKLib import (
     EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsEvfAf,
-    EdsFileCreateDisposition, EdsSaveTo, EdsShutterButton, EdsStorageType,
-    EvfDriveLens)
+    EdsFileCreateDisposition, EdsFocusInfo, EdsRational, EdsSaveTo, EdsShutterButton,
+    EdsStorageType, EvfDriveLens)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
 
@@ -156,6 +156,16 @@ class EDSDKController():
             self._generate_file_name()
 
             img_ref = c_void_p(image)
+
+            focus_info = EdsFocusInfo()
+            self._get_prop_data(img_ref, self._edsdk.PropID_FocusInfo, 0, focus_info)
+            self._print_error_msg(self._console, f'number of focus points: {focus_info.pointNumber}')
+
+            # focal_len = EdsRational()
+            # self._get_prop_data(self._camera_settings.ref, self._edsdk.PropID_FocalLength, 0, focal_len)
+            # self._print_error_msg(self._console,
+            #     f'focal numerator: {focal_len.numerator}, denominator: {focal_len.denominator}, value: {focal_len.value}')
+
             dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
             stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename,
                 EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)

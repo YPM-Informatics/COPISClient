@@ -1698,6 +1698,16 @@ class EvfDataSet(Structure):
 		('imagePosition', EdsPoint),
 		('sizeJpgLarge', EdsSize)]
 
+class EdsRational(Structure):
+	_fields_ = [
+		('numerator', c_int),
+		('denominator', c_uint)
+	]
+
+	@property
+	def value(self):
+		return float(self.numerator / self.denominator)
+
 
 #################### Enum Classes ####################
 class EvfDriveLens(Enum):
