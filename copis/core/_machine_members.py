@@ -110,7 +110,6 @@ class MachineMembersMixin:
         return actions
 
     def _query_machine(self):
-        # TODO: use M120 gcode (only to main controller) for this; when it is available on all board versions.
         print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
         cmds = []
 
@@ -118,8 +117,7 @@ class MachineMembersMixin:
             print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
 
-        for dvc in self.project.devices:
-            cmds.append(Action(ActionType.G0, dvc.device_id))
+        cmds.append(Action(ActionType.M120, 0))
 
         if cmds:
             self._keep_working = True
