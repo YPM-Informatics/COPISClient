@@ -102,28 +102,33 @@ class ViewCubeSize(IntEnum):
 
 class ActionType(Enum):
     """Action types."""
-    NONE = auto()
-    G0 = auto()     # rapid positioning
-    G1 = auto()     # linear movement
-    G2 = auto()     # movement in an arc
+    C0 = auto()     # Press shutter.
+    C1 = auto()     # Press auto focus.
+
+    G0 = auto()     # Rapid positioning.
+    G1 = auto()     # Linear movement.
+    G2 = auto()     # Movement in an arc.
     G3 = auto()
-    G4 = auto()     # pause device
-    G17 = auto()    # XY plane
-    G18 = auto()    # ZX plane
-    G19 = auto()    # YZ plane
-    G28 = auto()    # homing
-    G90 = auto()    # absolute distance mode
-    G91 = auto()    # relative distance mode
-    G92 = auto()    # set axis position(s)
+    G4 = auto()     # Pause device.
+    G17 = auto()    # XY plane.
+    G18 = auto()    # ZX plane.
+    G19 = auto()    # YZ plane.
+    G28 = auto()    # Homing.
+    G90 = auto()    # Absolute distance mode.
+    G91 = auto()    # Relative distance mode.
+    G92 = auto()    # Set axis position(s).
 
-    C0 = auto()     # press shutter
-    C1 = auto()     # press auto focus
+    M0 = auto()     # Pause processing.
+    M17 = auto()    # Enable all motors.
+    M18 = auto()    # Disable all motors.
+    M24 = auto()    # Resume processing.
+    M120 = auto()   # Scan for connected cards - Only applicable on main controller.
+    M360 = auto()   # Toggle multi-turn
+    M511 = auto()   # Toggle device locked.
+    M998 = auto()   # Reboot - V## Parameter is optional. Any value greater than 0 allows
+                    # any prior buffered action to finish execution before reboot.
 
-    M0 = auto()     # pause processing
-    M24 = auto()    # resume processing
-    M17 = auto()    # enable all motors
-    M18 = auto()    # disable all motors
-    M511 = auto()   # toggle device locked
+    NONE = auto()
 
 
 @unique
