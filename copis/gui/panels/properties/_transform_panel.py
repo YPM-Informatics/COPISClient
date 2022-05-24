@@ -258,18 +258,9 @@ class TransformPanel(wx.Panel):
         arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 15),
             size=(24, 24), name='se')
 
-        target_closer_btn = wx.Button(self, label='Target Closer', size=(20, -1), name='closer')
+        target_closer_btn = wx.Button(self, label='Toward Target', size=(20, -1), name='closer')
         re_target_btn = wx.Button(self, label='Re-target', size=(20, -1), name='target')
-        target_further_btn = wx.Button(self, label='Target Further', size=(20, -1), name='further')
-        # target_closer_btn = wx.BitmapButton(self,
-        #     bitmap=create_scaled_bitmap('target_closer', 24),
-        #     size=btn_size, name='closer')
-        # re_target_btn = wx.BitmapButton(self,
-        #     bitmap=create_scaled_bitmap('center_focus_strong', 24),
-        #     size=btn_size, name='target')
-        # target_further_btn = wx.BitmapButton(self,
-        #     bitmap=create_scaled_bitmap('target_further', 24),
-        #     size=btn_size, name='further')
+        target_further_btn = wx.Button(self, label='From Target', size=(20, -1), name='further')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
                     t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn,
