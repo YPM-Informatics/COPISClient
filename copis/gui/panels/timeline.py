@@ -87,9 +87,9 @@ class TimelinePanel(wx.Panel):
     def _get_action_caption(self, action):
         if action:
             if action.atype in self._MOVE_COMMANDS:
-                caption = 'Move to position:'
+                caption = 'Move to position'
             elif action.atype in self._SNAP_COMMANDS:
-                caption = 'Release shutter in:'
+                caption = f'{"Snap" if action.atype == ActionType.C0 else "Focus"} - release shutter in'
             else:
                 caption = serialize_command(action)
         else:
