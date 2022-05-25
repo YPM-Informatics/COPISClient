@@ -128,6 +128,9 @@ class ActionType(Enum):
     M998 = auto()   # Reboot - V## Parameter is optional. Any value greater than 0 allows
                     # any prior buffered action to finish execution before reboot.
 
+    EDS_SNAP = auto() # EDSDK - press shutter.
+    EDS_FOCUS = auto() # EDSDK - press auto focus.
+
     NONE = auto()
 
 
