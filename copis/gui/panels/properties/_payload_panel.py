@@ -17,11 +17,12 @@
 
 import wx
 
-from copis.classes import Action, Pose
+from functools import partial
 
+from copis.classes import Action, Pose
 from copis.globals import ActionType
 from copis.gui.wxutils import simple_statictext
-from copis.helpers import create_action_args, print_info_msg
+from copis.helpers import create_action_args, print_error_msg, print_info_msg
 
 
 class PayloadPanel(wx.Panel):
@@ -39,6 +40,7 @@ class PayloadPanel(wx.Panel):
         self._add_btn = None
         self._toggles = None
         self._payload_dlg = None
+        self._payload_dlg_item_count = 0
 
     def _init_layout(self):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
@@ -61,14 +63,27 @@ class PayloadPanel(wx.Panel):
         self.Layout()
 
     def _build_serial_shot_ctrl(self):
+        def on_add(spin_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            shutter_release_time = max(0, float(spin_ctrl.Value))
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload_item = Action(ActionType.C0, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
         ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=0, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.5, inc=.1, size=(45, -1))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
@@ -84,14 +99,27 @@ class PayloadPanel(wx.Panel):
         return sizer
 
     def _build_serial_focus_ctrl(self):
+        def on_add(spin_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            shutter_release_time = max(0, float(spin_ctrl.Value))
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload_item = Action(ActionType.C1, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
         ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=0, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.0, inc=.1, size=(45, -1))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
@@ -101,6 +129,21 @@ class PayloadPanel(wx.Panel):
 
         sizer.AddMany([
             (ctrl_sizer, 0, wx.ALIGN_CENTER, 0),
+            (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
+        ])
+
+        return sizer
+
+    def _build_serial_stack_ctrl(self):
+        sizer = wx.FlexGridSizer(2, 1, 0, 0)
+        sizer.AddGrowableCol(0, 0)
+
+        add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
+            label='Add')
+
+        sizer.AddMany([
+            (simple_statictext(self._payload_dlg, 'Build serial focus stack UI.', -1),
+                0, wx.ALIGN_CENTER, 0),
             (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
         ])
 
@@ -128,7 +171,7 @@ class PayloadPanel(wx.Panel):
         ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=0, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.0, inc=.1, size=(45, -1))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
 
@@ -140,6 +183,21 @@ class PayloadPanel(wx.Panel):
 
         sizer.AddMany([
             (ctrl_sizer, 0, wx.ALIGN_CENTER, 0),
+            (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
+        ])
+
+        return sizer
+
+    def _build_edsdk_stack_ctrl(self):
+        sizer = wx.FlexGridSizer(2, 1, 0, 0)
+        sizer.AddGrowableCol(0, 0)
+
+        add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
+            label='Add')
+
+        sizer.AddMany([
+            (simple_statictext(self._payload_dlg, 'Build EDSDK focus stack UI.', -1),
+                0, wx.ALIGN_CENTER, 0),
             (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
         ])
 
@@ -162,17 +220,17 @@ class PayloadPanel(wx.Panel):
         ])
 
         add_edsdk_shot_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Shot', name='add_shot_edsdk')
+            label='Add Shot', name='edsdk_shot')
         add_edsdk_focus_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus', name='add_focus_edsdk')
+            label='Add Focus', name='edsdk_focus')
         add_edsdk_stack_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus-Stacked Shots', name='add_stack_edsdk')
+            label='Add Focus-Stacked Shots', name='edsdk_stack')
         add_serial_shot_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Shot', name='add_shot_serial')
+            label='Add Shot', name='serial_shot')
         add_serial_focus_btn= wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus', name='add_focus_serial')
+            label='Add Focus', name='serial_focus')
         add_serial_stack_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus-Stacked Shots', name='add_stack_serial')
+            label='Add Focus-Stacked Shots', name='serial_stack')
 
         self._toggles = [add_edsdk_shot_btn, add_edsdk_focus_btn, add_edsdk_stack_btn,
             add_serial_shot_btn, add_serial_focus_btn, add_serial_stack_btn]
@@ -192,31 +250,52 @@ class PayloadPanel(wx.Panel):
             (add_edsdk_stack_btn, 0, wx.EXPAND, 0)
         ])
 
-        self._payload_dlg.Sizer.AddMany([
-            (header_sizer, 0, wx.ALL|wx.EXPAND, 5),
-            (self._build_serial_shot_ctrl(), 0, wx.ALL|wx.EXPAND, 5),
-            (self._build_edsdk_focus_ctrl(), 0, wx.ALL|wx.EXPAND, 5),
-            (self._build_edsdk_shot_ctrl(), 0, wx.ALL|wx.EXPAND, 5),
-            (self._build_edsdk_focus_ctrl(), 0, wx.ALL|wx.EXPAND, 5)
-        ])
+        self._payload_dlg.Sizer.Add(header_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        self._payload_dlg_item_count = len(self._payload_dlg.Children)
         self._payload_dlg.Layout()
         self._payload_dlg.SetMinSize(dlg_size)
         self._payload_dlg.Fit()
-
         self._payload_dlg.ShowModal()
-        # c_args = create_action_args([1.5], 'S')
-        # payload_item = Action(ActionType.C0, self._pose.position.device,
-        #     len(c_args), c_args)
-
-        # if self._core.add_to_selected_pose_payload(payload_item):
-        #     pose = self._core.project.poses[self._core.selected_pose]
-        #     self.set_pose(pose)
 
     def _on_toggled(self, event: wx.CommandEvent):
         toggled = event.EventObject
+
         for toggle in self._toggles:
             if toggle.Name != toggled.Name:
                 toggle.SetValue(False)
+
+        builder = None
+
+        if toggled.Name == 'serial_shot':
+            builder = self._build_serial_shot_ctrl
+        elif toggled.Name == 'serial_focus':
+            builder = self._build_serial_focus_ctrl
+        elif toggled.Name == 'serial_stack':
+            builder = self._build_serial_stack_ctrl
+        elif toggled.Name == 'edsdk_shot':
+            builder = self._build_edsdk_shot_ctrl
+        elif toggled.Name == 'edsdk_focus':
+            builder = self._build_edsdk_focus_ctrl
+        elif toggled.Name == 'edsdk_stack':
+            builder = self._build_edsdk_stack_ctrl
+        else:
+            print_error_msg(self._core.console, f"Toggle '{toggled.Name}' not yet implemented.")
+
+        if builder:
+            if self._payload_dlg.Sizer.ItemCount > 1:
+                self._payload_dlg.Sizer.Remove(1)
+
+                while len(self._payload_dlg.Children) > self._payload_dlg_item_count:
+                    child = self._payload_dlg.GetChildren()[self._payload_dlg_item_count]
+                    self._payload_dlg.RemoveChild(child)
+                    child.Destroy()
+
+            toggled_ui = builder()
+            self._payload_dlg.Sizer.Add(toggled_ui, 0, wx.ALL|wx.EXPAND, 5)
+
+            self._payload_dlg.Sizer.RepositionChildren(self._payload_dlg.Sizer.MinSize)
+            self._payload_dlg.SetMinSize(self._payload_dlg.Sizer.MinSize)
+            self._payload_dlg.Fit()
 
     def _on_delete_payload_item(self, event: wx.CommandEvent):
         payload_index = event.EventObject.payload_index
@@ -284,8 +363,8 @@ def _get_payload_item_caption(action):
 
     caption = '<not implemented>'
 
-    if action.atype == ActionType.C0:
-        caption = 'Release shutter in'
+    if action.atype in [ActionType.C0, ActionType.C1]:
+        caption = f'{"Snap" if action.atype == ActionType.C0 else "Focus"} - release shutter in'
         key, value = action.args[0]
 
         if key in time_args:
