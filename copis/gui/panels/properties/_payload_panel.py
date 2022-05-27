@@ -150,6 +150,18 @@ class PayloadPanel(wx.Panel):
         return sizer
 
     def _build_edsdk_shot_ctrl(self):
+        def on_add(cb_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            do_auto_focus = 1 if cb_ctrl.Value else 0
+            c_args = create_action_args([do_auto_focus], 'V')
+            payload_item = Action(ActionType.EDS_SNAP, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 0, 0)
         sizer.AddGrowableCol(0, 0)
 
@@ -157,6 +169,7 @@ class PayloadPanel(wx.Panel):
             label='Do auto focus')
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, af_option))
 
         sizer.AddMany([
             (af_option, 0, wx.ALIGN_CENTER, 0),
@@ -166,6 +179,18 @@ class PayloadPanel(wx.Panel):
         return sizer
 
     def _build_edsdk_focus_ctrl(self):
+        def on_add(spin_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            shutter_release_time = max(0, float(spin_ctrl.Value))
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload_item = Action(ActionType.EDS_FOCUS, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
         ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -174,6 +199,7 @@ class PayloadPanel(wx.Panel):
             min=0, max=5, initial=1.0, inc=.1, size=(45, -1))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
@@ -356,20 +382,29 @@ class PayloadPanel(wx.Panel):
 
 def _get_payload_item_caption(action):
     time_args = {
-        'P': 'millisecond',
-        'S': 'second',
-        'X': 'second'
+        'P': 'ms',
+        'S': 's',
+        'X': 's'
     }
 
     caption = '<not implemented>'
 
-    if action.atype in [ActionType.C0, ActionType.C1]:
-        caption = f'{"Snap" if action.atype == ActionType.C0 else "Focus"} - release shutter in'
+    if action.atype in [ActionType.C0, ActionType.C1,
+        ActionType.EDS_FOCUS]:
+        com_mode = 'EDS' if action.atype.name.startswith('EDS_') else 'SER'
+        caption = f'{"snap" if action.atype == ActionType.C0 else "focus"} - release shutter in'
+        caption = f'{com_mode} {caption}'
         key, value = action.args[0]
 
         if key in time_args:
-            caption = f'{caption} {value} {time_args[key]}{"s" if value != 1 else ""}'
+            caption = f'{caption} {value}{time_args[key]}'
         else:
             caption = f'{caption} {value} <invalid time unit>'
+
+    elif action.atype == ActionType.EDS_SNAP:
+        caption = 'EDS snap'
+        _, value = action.args[0]
+        if float(value):
+            caption = f'{caption} - with autofocus'
 
     return caption
