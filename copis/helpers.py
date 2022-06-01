@@ -29,7 +29,7 @@ from itertools import zip_longest
 import glm
 from glm import mat4, vec2, vec3, vec4
 
-from copis.globals import Point5
+from copis.globals import ActionType, Point5
 
 
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
@@ -41,6 +41,7 @@ _WHITESPACE_PATTERN = re.compile(r'\s+')
 _OPEN_PAREN_SPACE_PATTERN = re.compile(r'\(\s+')
 _CLOSE_PAREN_SPACE_PATTERN = re.compile(r'\s+\)')
 _HARDWARE_ID_PATTERN = re.compile(r'(?<=\?\\)(.*)(?=#)')
+_EDS_KIND_PATTERN = re.compile(r'^(?:>\d+)*EDS_')
 
 
 def timing(f: Callable) -> Callable:
@@ -352,3 +353,15 @@ def get_end_position(start: Point5, distance: float) -> vec3:
     end_z = sanitize_number(start.z - (distance * sin_t))
 
     return vec3(end_x, end_y, end_z)
+
+def get_atype_kind(atype):
+    """Returns the action type kind."""
+    if isinstance(atype, ActionType):
+        name = atype.name
+    else:
+        name = atype
+
+    if _EDS_KIND_PATTERN.match(name.upper()):
+        return 'EDS'
+
+    return 'SER'

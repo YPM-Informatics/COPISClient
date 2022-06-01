@@ -318,7 +318,7 @@ class GLActionVis:
 
                     self._items['line'][action.device].append(data)
                     self._items['point'][action.device].append(data + (False,))
-                elif action.atype in (ActionType.C0, ActionType.C1):
+                elif action.atype in self.core.LENS_COMMANDS:
                     if action.device not in self._items['line'].keys():
                         continue
 

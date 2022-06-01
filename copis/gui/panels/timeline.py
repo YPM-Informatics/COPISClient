@@ -32,8 +32,8 @@ from copis.command_processor import serialize_command
 from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
-from copis.helpers import (create_action_args, get_heading, is_number, print_debug_msg,
-    rad_to_dd, sanitize_number, sanitize_point)
+from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
+    print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
 
 
 class TimelinePanel(wx.Panel):
@@ -43,9 +43,6 @@ class TimelinePanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    _MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
-    _LENS_COMMANDS = [ActionType.C0, ActionType.C1,
-        ActionType.EDS_SNAP, ActionType.EDS_FOCUS]
 
     def __init__(self, parent) -> None:
         """Initializes TimelinePanel with constructors."""
@@ -87,19 +84,17 @@ class TimelinePanel(wx.Panel):
 
     def _get_action_caption(self, action):
         if action:
-            if action.atype in self._MOVE_COMMANDS:
+            if action.atype in self.core.MOVE_COMMANDS:
                 caption = 'Move to position'
-            elif action.atype in self._LENS_COMMANDS:
-                com_mode = 'EDS' if action.atype.name.startswith('EDS_') else 'SER'
-
+            elif action.atype in self.core.LENS_COMMANDS:
+                com_mode = get_atype_kind(action.atype)
                 arg = ' - release shutter in'
 
                 if action.atype == ActionType.EDS_SNAP:
                     arg = ' - do autofocus'
 
-                snaps = [ActionType.C0, ActionType.EDS_SNAP]
                 caption = \
-                    f'{"snap" if action.atype in snaps else "focus"}{arg}'
+                    f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "focus"}{arg}'
                 caption = f'{com_mode} {caption}'
             else:
                 caption = serialize_command(action)
@@ -121,13 +116,13 @@ class TimelinePanel(wx.Panel):
         if is_number(value):
             value = float(value)
 
-        if key in time_args and action_type in self._LENS_COMMANDS:
+        if key in time_args and action_type in self.core.LENS_COMMANDS:
             caption = f'{value} {time_args[key]}{"s" if value != 1 else ""}'
         elif action_type != ActionType.EDS_SNAP:
             dd_keys = ["P", "T"]
             value = rad_to_dd(value) if key in dd_keys else value
             units = 'dd' if key in dd_keys else 'mm'
-            caption = f'{key}: {value} {units}'
+            caption = f'{key}: {value}{units}'
         else:
             caption = 'yes' if float(value) else 'no'
 

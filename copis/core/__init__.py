@@ -35,8 +35,8 @@ from glm import vec2, vec3
 from pydispatch import dispatcher
 
 from copis.command_processor import serialize_command
-from copis.helpers import (point5_to_dict, get_timestamp, print_error_msg, print_debug_msg,
-    print_info_msg)
+from copis.helpers import (get_atype_kind, point5_to_dict, get_timestamp, print_error_msg,
+    print_debug_msg, print_info_msg)
 from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
@@ -66,8 +66,6 @@ class COPISCore(
 
         self.project = Project()
         self.project.start()
-
-        self._evf_thread = None
 
         self.console = ConsoleOutput(parent)
 
@@ -227,6 +225,7 @@ class COPISCore(
 
         dvcs = []
         cmds = []
+        chunks = []
         current_pose_set = -1
         img_start_time = get_timestamp(True)
 
@@ -239,9 +238,20 @@ class COPISCore(
             if not any(d.device_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
 
-            cmds.append(serialize_command(command))
+            if chunks and \
+                any(get_atype_kind(c) != get_atype_kind(command.atype) for c in chunks):
+                cmds.append(chunks)
+                chunks = []
+                chunks.append(serialize_command(command))
+            else:
+                chunks.append(serialize_command(command))
 
-        cmd_lines = '\r'.join(cmds)
+            # cmds.append(serialize_command(command))
+
+        if chunks:
+            cmds.append(chunks)
+
+        cmd_lines = '\r'.join(['\r'.join(c) for c in cmds])
 
         if self._serial.is_port_open:
             if cmd_lines:

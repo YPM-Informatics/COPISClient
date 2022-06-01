@@ -22,7 +22,7 @@ from functools import partial
 from copis.classes import Action, Pose
 from copis.globals import ActionType
 from copis.gui.wxutils import simple_statictext
-from copis.helpers import create_action_args, print_error_msg, print_info_msg
+from copis.helpers import create_action_args, get_atype_kind, print_error_msg, print_info_msg
 
 
 class PayloadPanel(wx.Panel):
@@ -167,6 +167,7 @@ class PayloadPanel(wx.Panel):
 
         af_option = wx.CheckBox(self._payload_dlg, wx.ID_ANY,
             label='Do auto focus')
+        af_option.SetValue(True)
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, af_option))
@@ -335,6 +336,33 @@ class PayloadPanel(wx.Panel):
 
         print_info_msg(self._core.console, f'edit payload item @ index: {payload_index}')
 
+    def _get_payload_item_caption(self, action):
+        time_args = {
+            'P': 'ms',
+            'S': 's',
+            'X': 's'
+        }
+
+        caption = '<not implemented>'
+
+        if action.atype in self._core.LENS_COMMANDS:
+            key, value = action.args[0]
+            com_mode = get_atype_kind(action.atype)
+            arg = ' - release shutter in'
+
+            if action.atype == ActionType.EDS_SNAP:
+                arg = ' - with autofocus' if float(value) else ''
+
+            caption = f'{"snap" if action.atype in self._core.SNAP_COMMANDS else "focus"}'
+            caption = f'{com_mode} {caption}{arg}'
+
+            if key in time_args:
+                caption = f'{caption} {value}{time_args[key]}'
+            elif action.atype != ActionType.EDS_SNAP:
+                caption = f'{caption} {value} <invalid time unit>'
+
+        return caption
+
     def set_pose(self, pose: Pose):
         """Parses the selected pose into the panel."""
         self._pose = pose
@@ -354,7 +382,7 @@ class PayloadPanel(wx.Panel):
             edit_btn.payload_index = i
             edit_btn.Bind(wx.EVT_BUTTON, self._on_edit_payload_item)
 
-            caption = _get_payload_item_caption(action)
+            caption = self._get_payload_item_caption(action)
 
             crud_sizer = wx.BoxSizer(wx.HORIZONTAL)
             crud_sizer.AddMany([
@@ -378,33 +406,3 @@ class PayloadPanel(wx.Panel):
 
         self.Sizer.RepositionChildren(self.Sizer.MinSize)
         self._parent.SetVirtualSize(self._parent.Sizer.MinSize)
-
-
-def _get_payload_item_caption(action):
-    time_args = {
-        'P': 'ms',
-        'S': 's',
-        'X': 's'
-    }
-
-    caption = '<not implemented>'
-
-    if action.atype in [ActionType.C0, ActionType.C1,
-        ActionType.EDS_FOCUS]:
-        com_mode = 'EDS' if action.atype.name.startswith('EDS_') else 'SER'
-        caption = f'{"snap" if action.atype == ActionType.C0 else "focus"} - release shutter in'
-        caption = f'{com_mode} {caption}'
-        key, value = action.args[0]
-
-        if key in time_args:
-            caption = f'{caption} {value}{time_args[key]}'
-        else:
-            caption = f'{caption} {value} <invalid time unit>'
-
-    elif action.atype == ActionType.EDS_SNAP:
-        caption = 'EDS snap'
-        _, value = action.args[0]
-        if float(value):
-            caption = f'{caption} - with autofocus'
-
-    return caption
