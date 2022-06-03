@@ -383,7 +383,7 @@ class Project:
             Returns the index of the inserted pose."""
         if not self.can_add_pose(set_index, pose.position.device):
             free_set_indices = [i for i, set_ in enumerate(self._pose_sets) if i > set_index \
-                and not any(p.position.device == pose.position.device  for p in set_)]
+                and not any(p.position.device == pose.position.device for p in set_)]
 
             if free_set_indices:
                 free_set_index = free_set_indices[0]

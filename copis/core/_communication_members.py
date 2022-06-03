@@ -127,6 +127,7 @@ class CommunicationMembersMixin:
 
     def do_edsdk_focus(self):
         """Focuses the camera via EDSDK."""
+        # TODO: When we can process edsdk commands, add this to the session management pipeline.
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:

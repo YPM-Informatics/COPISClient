@@ -309,7 +309,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _update_devices(self) -> None:
         """When the device list has changed, update actionvis and _num_devices.
 
-        Handles ntf_d_list_changed signal.
+        Handles ntf_d_list_changed and ntf_device_updated signals.
         """
         self._num_devices = len(self.core.project.devices)
         wx.CallAfter(self._actionvis.update_devices)

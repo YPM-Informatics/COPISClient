@@ -515,7 +515,7 @@ class EDSDKController():
 
             return False
 
-    def focus(self) -> bool:
+    def focus(self, shutter_timeout: float=0) -> bool:
         """Focuses the camera.
 
         Returns:
@@ -530,7 +530,8 @@ class EDSDKController():
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
 
-            time.sleep(1)
+            if shutter_timeout > 0:
+                time.sleep(shutter_timeout)
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,

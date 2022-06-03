@@ -147,7 +147,7 @@ class COPISCore(
 
         for key, group in groups:
             pics = [a for p in list(group) for a in p.get_actions()
-                if a.atype == ActionType.C0]
+                if a.atype in self.SNAP_COMMANDS]
             device = self._get_device(key)
             device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
             counts[device_key] = len(pics)
@@ -189,6 +189,34 @@ class COPISCore(
             else:
                 raise warning
 
+    def _process_host_commands(self, commands):
+        for cmd in commands:
+            dvc = self._get_device(cmd.device)
+
+            while dvc.serial_status != ComStatus.IDLE:
+                time.sleep(self._YIELD_TIMEOUT)
+
+            key, value = cmd.args[0]
+            atype_kind = get_atype_kind(cmd.atype)
+
+            if atype_kind == 'EDS':
+                if self.connect_edsdk(dvc.device_id):
+                    if cmd.atype == ActionType.EDS_SNAP:
+                        do_af = bool(value) if key == 'V' else False
+                        self._edsdk.take_picture(do_af)
+                    elif cmd.atype == ActionType.EDS_FOCUS:
+                        shutter_release_time = float(value) if key == 'S' else 0
+                        self._edsdk.focus(shutter_release_time)
+                    else:
+                        print_error_msg(self.console,
+                            f"Host command '{cmd.atype.name}' not yet handled.")
+                else:
+                    print_error_msg(self.console,
+                        f'Unable to connect to camera {dvc.device_id}.')
+            else:
+                print_error_msg(self.console,
+                    f"Action type king '{atype_kind}' not yet handled.")
+
     def _send_next(self):
         if not self.is_serial_port_connected:
             return
@@ -220,13 +248,6 @@ class COPISCore(
     def _send(self, *commands):
         """Send command to machine."""
 
-        if not self.is_serial_port_connected:
-            return
-
-        dvcs = []
-        cmds = []
-        chunks = []
-        current_pose_set = -1
         img_start_time = get_timestamp(True)
 
         if isinstance(commands, tuple) and \
@@ -234,79 +255,120 @@ class COPISCore(
             current_pose_set = commands[0]
             commands = commands[1]
 
+        is_serial_needed = any(get_atype_kind(c.atype) == 'SER' for c in commands)
+        is_serial_checked = not is_serial_needed or self.is_serial_port_connected
+
+        is_edsdk_needed = any(get_atype_kind(c.atype) == 'EDS' for c in commands)
+        is_edsdk_checked = not is_edsdk_needed or self._is_edsdk_enabled
+
+        are_requirements_met = is_serial_checked and is_edsdk_checked
+
+        if not are_requirements_met:
+            return
+
+        dvcs = []
+        cmds = []
+        chunks = []
+        current_pose_set = -1
+
         for command in commands:
             if not any(d.device_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
 
             if chunks and \
-                any(get_atype_kind(c) != get_atype_kind(command.atype) for c in chunks):
+                any(get_atype_kind(c.atype) != get_atype_kind(command.atype) for c in chunks):
                 cmds.append(chunks)
                 chunks = []
-                chunks.append(serialize_command(command))
+                chunks.append(command)
             else:
-                chunks.append(serialize_command(command))
-
-            # cmds.append(serialize_command(command))
+                chunks.append(command)
 
         if chunks:
             cmds.append(chunks)
 
-        cmd_lines = '\r'.join(['\r'.join(c) for c in cmds])
+        cmd_lines = '\r'.join([serialize_command(i) for c in cmds for i in c])
 
-        if self._serial.is_port_open:
-            if cmd_lines:
-                print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
-                        .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                    f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
+        if cmd_lines:
+            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
+                    .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
+                f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
-                for dvc in dvcs:
-                    dvc.set_is_writing()
+            for dvc in dvcs:
+                dvc.set_is_writing()
 
-                if self._save_imaging_session:
-                    for command in commands:
-                        if command.atype == ActionType.C0:
-                            device = self._get_device(command.device)
-                            rank = self._get_next_img_rank(command.device)
-                            file_name = \
-                                f'cam_{command.device}_img_{rank}.json'
+            if self._save_imaging_session:
+                for command in commands:
+                    if command.atype in self.SNAP_COMMANDS:
+                        device = self._get_device(command.device)
+                        rank = self._get_next_img_rank(command.device)
+                        method = \
+                            'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
+                        file_name = \
+                            f'cam_{command.device}_img_{rank}.json'
 
-                            data = {}
-                            data['file_name'] = file_name
-                            data['device_type'] = device.type
-                            data['device_name'] = device.name
-                            data['device_id'] = device.device_id
-                            data['imaging_method'] = 'remote shutter'
-                            data['position'] = point5_to_dict(
-                                device.position) if device.is_homed else None
-                            data['stack_id'] = None
-                            data['stack_index'] = None
-                            data['image_start_time'] = img_start_time
+                        data = {}
+                        data['file_name'] = file_name
+                        data['device_type'] = device.type
+                        data['device_name'] = device.name
+                        data['device_id'] = device.device_id
+                        data['imaging_method'] = method
+                        data['position'] = point5_to_dict(
+                            device.position) if device.is_homed else None
+                        data['stack_id'] = None
+                        data['stack_index'] = None
+                        data['image_start_time'] = img_start_time
 
-                            session_images = self._imaging_session_manifest[-1]['images']
-                            image_index = len(session_images)
+                        session_images = self._imaging_session_manifest[-1]['images']
+                        image_index = len(session_images)
 
-                            session_images.append(data)
-                            self._update_imaging_manifest([('images', session_images)])
-                            self._imaging_session_queue.append((command.device, image_index))
+                        session_images.append(data)
+                        self._update_imaging_manifest([('images', session_images)])
+                        self._imaging_session_queue.append((command.device, image_index))
 
+            if not is_edsdk_needed:
                 self._serial.write(cmd_lines)
+            else:
+                serial_cmds = []
+                host_cmds = []
+                check_chunk_kind = \
+                    lambda items, kind: all(get_atype_kind(i.atype) == kind for i in items)
 
-            if self._work_type == WorkType.IMAGING:
-                if self._pose_set_offset_start <= self._current_mainqueue_item and \
-                    self._current_mainqueue_item <= self._pose_set_offset_end:
-                    previous_pose_set = current_pose_set - 1
+                while cmds:
+                    chunk = cmds.pop(0)
+                    if chunk:
+                        if check_chunk_kind(chunk, 'SER'):
+                            if host_cmds:
+                                self._process_host_commands(host_cmds)
+                                host_cmds = []
+                            serial_cmds.extend([serialize_command(c) for c in chunk])
+                        elif check_chunk_kind(chunk, 'EDS'):
+                            if serial_cmds:
+                                self._serial.write('\r'.join(serial_cmds))
+                                serial_cmds = []
 
-                    if previous_pose_set > -1:
-                        self._imaged_pose_sets.append(previous_pose_set)
+                            host_cmds.extend(chunk)
 
-                    self.select_pose_set(current_pose_set)
-                else:
-                    if self._current_mainqueue_item == self._pose_set_offset_end + 1:
-                        self._imaged_pose_sets.append(current_pose_set)
+                if serial_cmds:
+                    self._serial.write('\r'.join(serial_cmds))
+                if host_cmds:
+                    self._process_host_commands(host_cmds)
 
-                    self.select_pose_set(-1)
+        if self._work_type == WorkType.IMAGING:
+            if self._pose_set_offset_start <= self._current_mainqueue_item and \
+                self._current_mainqueue_item <= self._pose_set_offset_end:
+                previous_pose_set = current_pose_set - 1
 
-                self._current_mainqueue_item = self._current_mainqueue_item + 1
+                if previous_pose_set > -1:
+                    self._imaged_pose_sets.append(previous_pose_set)
+
+                self.select_pose_set(current_pose_set)
+            else:
+                if self._current_mainqueue_item == self._pose_set_offset_end + 1:
+                    self._imaged_pose_sets.append(current_pose_set)
+
+                self.select_pose_set(-1)
+
+            self._current_mainqueue_item = self._current_mainqueue_item + 1
 
     def _update_recent_projects(self, path) -> None:
         recent_projects = list(map(str.lower,
