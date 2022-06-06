@@ -293,9 +293,6 @@ class COPISCore(
                     .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
                 f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
-            for dvc in dvcs:
-                dvc.set_is_writing()
-
             if self._save_imaging_session:
                 for command in commands:
                     if command.atype in self.SNAP_COMMANDS:
@@ -326,6 +323,9 @@ class COPISCore(
                         self._imaging_session_queue.append((command.device, image_index))
 
             if not is_edsdk_needed:
+                for dvc in dvcs:
+                    dvc.set_is_writing()
+
                 self._serial.write(cmd_lines)
             else:
                 serial_cmds = []
@@ -340,16 +340,22 @@ class COPISCore(
                             if host_cmds:
                                 self._process_host_commands(host_cmds)
                                 host_cmds = []
-                            serial_cmds.extend([serialize_command(c) for c in chunk])
+                            serial_cmds.extend(chunk)
                         elif check_chunk_kind(chunk, 'EDS'):
                             if serial_cmds:
-                                self._serial.write('\r'.join(serial_cmds))
+                                for dvc in dvcs:
+                                    if dvc.device_id in [c.device for c in serial_cmds]:
+                                        dvc.set_is_writing()
+
+                                self._serial.write(
+                                    '\r'.join([serialize_command(c) for c in serial_cmds]))
                                 serial_cmds = []
 
                             host_cmds.extend(chunk)
 
                 if serial_cmds:
-                    self._serial.write('\r'.join(serial_cmds))
+                    self._serial.write(
+                        '\r'.join([serialize_command(c) for c in serial_cmds]))
                 if host_cmds:
                     self._process_host_commands(host_cmds)
 
