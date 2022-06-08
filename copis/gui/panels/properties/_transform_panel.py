@@ -71,7 +71,7 @@ class TransformPanel(wx.Panel):
 
         # Bind listeners
         if self._is_live:
-            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+            dispatcher.connect(self._on_device_updated, signal='ntf_device_ser_updated')
 
         # Bind events.
         for ctrl in (self._x_ctrl, self._y_ctrl, self._z_ctrl, self._p_ctrl, self._t_ctrl,

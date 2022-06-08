@@ -75,7 +75,7 @@ class MachineMembersMixin:
         if self._is_machine_paused:
             status = 'paused'
         else:
-            statuses = list(set(dvc.serial_status for dvc in self.project.devices))
+            statuses = list(set(dvc.status for dvc in self.project.devices))
 
             if len(statuses) == 1 and statuses[0]:
                 status = statuses[0].name.lower()
@@ -87,7 +87,7 @@ class MachineMembersMixin:
     @property
     def is_machine_idle(self):
         """Returns a value indicating whether the machine is idle."""
-        return all(dvc.serial_status == ComStatus.IDLE for dvc in self.project.devices)
+        return all(dvc.status == ComStatus.IDLE for dvc in self.project.devices)
 
     @property
     def is_machine_homed(self):
@@ -292,9 +292,9 @@ class MachineMembersMixin:
 
             self._update_imaging_manifest(pairs)
 
-            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+            dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
+            dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
-        # packet = [a for p in poses for a in p.get_actions()]
         self._mainqueue = []
         self._mainqueue.extend(process_poses())
         self._work_type = WorkType.STEPPING

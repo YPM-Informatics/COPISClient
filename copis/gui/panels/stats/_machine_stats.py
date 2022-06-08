@@ -47,7 +47,8 @@ class MachineStats(wx.Panel):
         self._polling_thread.start()
 
         # Bind listeners.
-        dispatcher.connect(self.on_device_updated, signal='ntf_device_updated')
+        dispatcher.connect(self.on_device_updated, signal='ntf_device_ser_updated')
+        dispatcher.connect(self.on_device_updated, signal='ntf_device_eds_updated')
         dispatcher.connect(self.on_machine_idle, signal='ntf_machine_idle')
         dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
 
@@ -160,7 +161,7 @@ class MachineStats(wx.Panel):
 
         name = f'{device.name} {device.type} ({device.device_id})'
         name = name.title()
-        status = device.serial_status.name.lower()
+        status = device.status.name.lower()
 
         if device.serial_response:
             x, y, z, p, t = [format_num(c) for c in device.serial_response.position]

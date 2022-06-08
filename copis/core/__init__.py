@@ -193,7 +193,7 @@ class COPISCore(
         for cmd in commands:
             dvc = self._get_device(cmd.device)
 
-            while dvc.serial_status != ComStatus.IDLE:
+            while dvc.status != ComStatus.IDLE:
                 time.sleep(self._YIELD_TIMEOUT)
 
             key, value = cmd.args[0]
@@ -201,6 +201,8 @@ class COPISCore(
 
             if atype_kind == 'EDS':
                 if self.connect_edsdk(dvc.device_id):
+                    dvc.is_writing_eds = True
+
                     if cmd.atype == ActionType.EDS_SNAP:
                         do_af = bool(value) if key == 'V' else False
                         self._edsdk.take_picture(do_af)
@@ -210,6 +212,8 @@ class COPISCore(
                     else:
                         print_error_msg(self.console,
                             f"Host command '{cmd.atype.name}' not yet handled.")
+
+                    dvc.is_writing_eds = False
                 else:
                     print_error_msg(self.console,
                         f'Unable to connect to camera {dvc.device_id}.')
@@ -249,6 +253,7 @@ class COPISCore(
         """Send command to machine."""
 
         img_start_time = get_timestamp(True)
+        current_pose_set = -1
 
         if isinstance(commands, tuple) and \
             list(map(type, commands)) == [int, list]:
@@ -269,7 +274,6 @@ class COPISCore(
         dvcs = []
         cmds = []
         chunks = []
-        current_pose_set = -1
 
         for command in commands:
             if not any(d.device_id == command.device for d in dvcs):
@@ -320,11 +324,11 @@ class COPISCore(
 
                         session_images.append(data)
                         self._update_imaging_manifest([('images', session_images)])
-                        self._imaging_session_queue.append((command.device, image_index))
+                        self._imaging_session_queue.append((command.device, method, image_index))
 
             if not is_edsdk_needed:
                 for dvc in dvcs:
-                    dvc.set_is_writing()
+                    dvc.set_is_writing_ser()
 
                 self._serial.write(cmd_lines)
             else:
@@ -345,7 +349,7 @@ class COPISCore(
                             if serial_cmds:
                                 for dvc in dvcs:
                                     if dvc.device_id in [c.device for c in serial_cmds]:
-                                        dvc.set_is_writing()
+                                        dvc.set_is_writing_ser()
 
                                 self._serial.write(
                                     '\r'.join([serialize_command(c) for c in serial_cmds]))
@@ -383,16 +387,53 @@ class COPISCore(
         if path.lower() not in recent_projects:
             self.config.update_recent_projects(path)
 
-    def _on_device_updated(self, device):
-        if len(self._imaging_session_queue) and not device.is_writing and \
-            device.serial_status == ComStatus.IDLE and \
-            device.device_id == self._imaging_session_queue[0][0]:
-            _, image_index = self._imaging_session_queue.pop(0)
+    def _on_device_ser_updated(self, device):
+        if device.serial_status == ComStatus.IDLE and len(self._imaging_session_queue):
+            dvc_id, img_method, img_index = [None] * 3
+            for i, data in enumerate(self._imaging_session_queue):
+                if data[0] == device.device_id:
+                    dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
+                    break
 
-            session_images = self._imaging_session_manifest[-1]['images']
-            session_images[image_index]['image_end_time'] = get_timestamp(True)
+            if dvc_id is not None:
+                if img_method == 'remote shutter':
+                    session_images = self._imaging_session_manifest[-1]['images']
+                    session_images[img_index]['image_end_time'] = get_timestamp(True)
 
-            self._update_imaging_manifest([('images', session_images)])
+                    self._update_imaging_manifest([('images', session_images)])
+                elif img_method == 'EDSDK':
+                    # This should never be reached lest we have a bug.
+                    print_error_msg(self.console,
+                        f'Expected remote shutter imaging method for device {device.device_id} ' +
+                        f'but found {img_method} instead.')
+            else:
+                # This should never be reached lest we have a bug.
+                print_error_msg(self.console,
+                    f'Could not find update data for camera {device.device_id}.')
+
+    def _on_device_eds_updated(self, device):
+        if not device.is_writing_eds and len(self._imaging_session_queue):
+            dvc_id, img_method, img_index = [None] * 3
+            for i, data in enumerate(self._imaging_session_queue):
+                if data[0] == device.device_id:
+                    dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
+                    break
+
+            if dvc_id is not None:
+                if img_method == 'EDSDK':
+                    session_images = self._imaging_session_manifest[-1]['images']
+                    session_images[img_index]['image_end_time'] = get_timestamp(True)
+
+                    self._update_imaging_manifest([('images', session_images)])
+                elif img_method == 'remote shutter':
+                    # This should never be reached lest we have a bug.
+                    print_error_msg(self.console,
+                        f'Expected EDSDK imaging method for device {device.device_id} ' +
+                        f'but found {img_method} instead.')
+            else:
+                # This should never be reached lest we have a bug.
+                print_error_msg(self.console,
+                    f'Could not find update data for camera {device.device_id}.')
 
     def _add_manifest_section(self):
         def is_manifest_initialized(key):
@@ -418,7 +459,9 @@ class COPISCore(
                 [('imaging_end_time', get_timestamp(True))])
 
             dispatcher.disconnect(
-                self._on_device_updated, signal='ntf_device_updated')
+                self._on_device_ser_updated, signal='ntf_device_ser_updated')
+            dispatcher.disconnect(
+                self._on_device_eds_updated, signal='ntf_device_eds_updated')
             self._save_imaging_session = False
 
     def start_new_project(self) -> None:
@@ -511,7 +554,8 @@ class COPISCore(
 
             self._update_imaging_manifest(pairs)
 
-            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+            dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
+            dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = process_pose_sets()
