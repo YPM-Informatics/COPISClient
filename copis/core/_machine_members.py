@@ -24,7 +24,7 @@ from itertools import zip_longest
 from copis.classes import Action, Pose
 from copis.command_processor import deserialize_command
 from copis.globals import ActionType, ComStatus, WorkType
-from copis.helpers import get_timestamp, print_debug_msg, print_error_msg
+from copis.helpers import get_atype_kind, get_timestamp, print_debug_msg, print_error_msg
 
 
 
@@ -261,19 +261,31 @@ class MachineMembersMixin:
         process_poses = lambda: [[val for val in tup if val is not None] for tup in
             zip_longest(*[p.get_seq_actions() for p in poses])]
 
-        if not self.is_serial_port_connected:
-            print_error_msg(self.console,
-                'The machine needs to be connected before stepping can start.')
-            return
+        processed_poses = process_poses()
+        commands = []
+        commands.extend([c for p in processed_poses for c in p])
+        is_serial_needed = any(get_atype_kind(p.atype) == 'SER' for p in commands)
+        is_edsdk_needed = any(get_atype_kind(p.atype) == 'EDS' for p in commands)
 
-        if self._is_machine_busy:
-            print_error_msg(self.console, 'Cannot step. The machine is busy.')
-            return
+        if is_serial_needed:
+            if not self.is_serial_port_connected:
+                print_error_msg(self.console,
+                    'The machine needs to be connected before stepping can start.')
+                return
 
-        if not self.is_machine_idle:
-            print_error_msg(self.console,
-                'The machine needs to be homed before stepping can start.')
-            return
+            if self._is_machine_busy:
+                print_error_msg(self.console, 'Cannot step. The machine is busy.')
+                return
+
+            if not self.is_machine_idle:
+                print_error_msg(self.console,
+                    'The machine needs to be homed before stepping can start.')
+                return
+
+        if is_edsdk_needed:
+            if not self._is_edsdk_enabled:
+                print_error_msg(self.console, 'EDSDK is not enabled.')
+                return
 
         if keep_last_path:
             self._save_imaging_session = False
@@ -296,7 +308,7 @@ class MachineMembersMixin:
             dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
         self._mainqueue = []
-        self._mainqueue.extend(process_poses())
+        self._mainqueue.extend(processed_poses)
         self._work_type = WorkType.STEPPING
 
         self._keep_working = True

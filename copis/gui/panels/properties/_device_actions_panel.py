@@ -160,7 +160,8 @@ class DeviceActionsPanel(wx.Panel):
             pos = event.GetEventObject().GetScreenPosition()
 
             def snap_shot_handler():
-                self._parent.core.snap_edsdk_picture(self._af_option.Value, path, keep_last)
+                self._parent.core.snap_edsdk_picture(self._af_option.Value,
+                    self._device.device_id, path, keep_last)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]

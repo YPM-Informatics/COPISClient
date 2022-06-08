@@ -128,7 +128,8 @@ class ThreadTargetsMixin:
 
         had_error = False
         try:
-            while self._keep_working and self.is_serial_port_connected:
+            while self._keep_working and \
+                (self.is_serial_port_connected or self._is_edsdk_enabled):
                 self._send_next()
 
         except AttributeError as err:

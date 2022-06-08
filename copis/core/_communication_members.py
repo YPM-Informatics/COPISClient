@@ -117,21 +117,25 @@ class CommunicationMembersMixin:
 
         return data
 
-    def snap_edsdk_picture(self, do_af, save_path, keep_last_path):
+    def snap_edsdk_picture(self, do_af, device_id, save_path, keep_last_path):
         """Takes a picture via EDSDK."""
-        # TODO: When we can process edsdk commands, add this to the session management pipeline.
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.take_picture(do_af)
+            c_args = create_action_args([1 if do_af else 0], 'V')
+            payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
 
-    def do_edsdk_focus(self):
+            self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
+
+    def do_edsdk_focus(self, shutter_release_time, device_id):
         """Focuses the camera via EDSDK."""
-        # TODO: When we can process edsdk commands, add this to the session management pipeline.
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.focus()
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload = [Action(ActionType.EDS_FOCUS, device_id, len(c_args), c_args)]
+
+            self.play_poses([Pose(payload=payload)])
 
     def do_evf_edsdk_focus(self):
         """Performs Live view specific EDSDK focus."""

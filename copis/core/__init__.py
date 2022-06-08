@@ -193,10 +193,11 @@ class COPISCore(
         for cmd in commands:
             dvc = self._get_device(cmd.device)
 
-            while dvc.status != ComStatus.IDLE:
+            while dvc.status not in [ComStatus.IDLE, ComStatus.UNKNOWN]:
                 time.sleep(self._YIELD_TIMEOUT)
 
             key, value = cmd.args[0]
+            value = float(value)
             atype_kind = get_atype_kind(cmd.atype)
 
             if atype_kind == 'EDS':
@@ -207,7 +208,7 @@ class COPISCore(
                         do_af = bool(value) if key == 'V' else False
                         self._edsdk.take_picture(do_af)
                     elif cmd.atype == ActionType.EDS_FOCUS:
-                        shutter_release_time = float(value) if key == 'S' else 0
+                        shutter_release_time = value if key == 'S' else 0
                         self._edsdk.focus(shutter_release_time)
                     else:
                         print_error_msg(self.console,
@@ -222,7 +223,7 @@ class COPISCore(
                     f"Action type king '{atype_kind}' not yet handled.")
 
     def _send_next(self):
-        if not self.is_serial_port_connected:
+        if not (self.is_serial_port_connected or self._is_edsdk_enabled):
             return
 
         # Wait until we get the ok from listener.
