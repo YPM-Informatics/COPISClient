@@ -27,7 +27,7 @@ from copis.globals import ActionType, Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
-    get_heading, rad_to_dd, sanitize_number,
+    get_heading, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
 from copis.store import get_file_base_name_no_ext
 from copis.classes import Action, Device, Pose
@@ -40,6 +40,7 @@ class TransformPanel(wx.Panel):
 
     _XYZ_UNIT = 'mm'
     _PT_UNIT = 'dd'
+    _DEFAULT_FEED_RATE = 2500
 
     _TARGET_CTX_CHOICES = target_ctx_choices(
         'Bounding Box Center',
@@ -323,6 +324,14 @@ class TransformPanel(wx.Panel):
 
         self._box_sizer.Add(step_sizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
 
+    def _get_feed_rate_value(self):
+        feed_rate_val = self._feed_rate_ctrl.Value
+        if is_number(feed_rate_val):
+            return float(feed_rate_val)
+
+        self._feed_rate_ctrl.Value = str(self._DEFAULT_FEED_RATE)
+        return self._DEFAULT_FEED_RATE
+
     def _init_gui(self) -> None:
         """Initialize gui elements."""
         self._x_ctrl = FancyTextCtrl(
@@ -340,8 +349,8 @@ class TransformPanel(wx.Panel):
             name='xyz_step', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
         self._pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.pt_step,
             name='pt_step', default_unit=self._PT_UNIT, unit_conversions=pt_units)
-        self._feed_rate_ctrl = wx.TextCtrl(self, value="2500", size=(80, -1),
-            name='feed_rate')
+        self._feed_rate_ctrl = wx.TextCtrl(self, value=str(self._DEFAULT_FEED_RATE),
+            size=(80, -1), name='feed_rate')
         self._copy_pos_btn = wx.Button(self, label='Copy Position')
         self.Bind(wx.EVT_BUTTON, self._on_copy_position)
         self._target_all_poses_opt = wx.CheckBox(self, label='&Apply to all',
@@ -581,7 +590,7 @@ class TransformPanel(wx.Panel):
         cmd_tokens = []
         xyz_step = 0
         pt_step = 0
-        feed_rate = float(self._feed_rate_ctrl.Value)
+        feed_rate = self._get_feed_rate_value()
         pos_names = ''
         pos_values = []
 
@@ -656,7 +665,7 @@ class TransformPanel(wx.Panel):
 
                 if keys != 'Z':
                     keys = keys + 'F'
-                    values.append(float(self._feed_rate_ctrl.Value))
+                    values.append(self._get_feed_rate_value())
 
                 self._play_position(values, keys)
             else:
