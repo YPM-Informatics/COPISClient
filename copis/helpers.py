@@ -125,7 +125,7 @@ def dd_to_rad(value: float) -> float:
 
 
 def is_number(value: str) -> bool:
-    """Checks to see if a string is a number (signed int of float).
+    """Checks to see if a string is a number (signed int or float).
     Because apparently that's a foreign concept to python -_-"""
     matched = _NUMBER_PATTERN.match(value) is not None
     return len(value) > 0 and matched
