@@ -15,6 +15,7 @@
 
 """COPIS pose payload properties panel."""
 
+from secrets import choice
 import wx
 
 from functools import partial
@@ -218,13 +219,31 @@ class PayloadPanel(wx.Panel):
     def _build_edsdk_stack_ctrl(self):
         sizer = wx.FlexGridSizer(2, 1, 0, 0)
         sizer.AddGrowableCol(0, 0)
+        ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        cell_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        focus_dir = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Direction',
+            choices=['Near', 'Far'], style=wx.RA_VERTICAL)
+        focus_step = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Increment',
+            choices=['Small', 'Medium', 'Large'], style=wx.RA_VERTICAL)
+        num_shots = wx.TextCtrl(self._payload_dlg, wx.ID_ANY, size=(40, -1))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
 
+        cell_sizer.AddMany([
+            (simple_statictext(self._payload_dlg, 'Shot count: ', -1),
+                0, wx.EXPAND, 0),
+            (num_shots, 0, 0, 0)
+        ])
+
+        ctrl_sizer.AddMany([
+            (focus_dir, 0, wx.EXPAND, 0),
+            (focus_step, 0, wx.EXPAND|wx.LEFT|wx.RIGHT, 5),
+            (cell_sizer, 0, wx.EXPAND, 0)
+        ])
+
         sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Build EDSDK focus stack UI.', -1),
-                0, wx.ALIGN_CENTER, 0),
+            (ctrl_sizer, 0, wx.ALIGN_CENTER, 0),
             (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
         ])
 
