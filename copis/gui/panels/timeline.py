@@ -88,13 +88,16 @@ class TimelinePanel(wx.Panel):
                 caption = 'Move to position'
             elif action.atype in self.core.LENS_COMMANDS:
                 com_mode = get_atype_kind(action.atype)
+                if com_mode == 'SER':
+                    com_mode = 'REM'
+
                 arg = ' - release shutter in'
 
                 if action.atype == ActionType.EDS_SNAP:
-                    arg = ' - do autofocus'
+                    arg = ' - with autofocus'
 
                 caption = \
-                    f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "focus"}{arg}'
+                    f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "autofocus"}{arg}'
                 caption = f'{com_mode} {caption}'
             else:
                 caption = serialize_command(action)

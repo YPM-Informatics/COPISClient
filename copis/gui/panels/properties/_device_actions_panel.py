@@ -35,7 +35,7 @@ class DeviceActionsPanel(wx.Panel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self._serial_box_sizer = wx.StaticBoxSizer(
-            wx.StaticBox(self, label='Serial Actions'), wx.VERTICAL)
+            wx.StaticBox(self, label='Remote Shutter Actions'), wx.VERTICAL)
         self._edsdk_box_sizer = wx.StaticBoxSizer(
             wx.StaticBox(self, label='EDSDK Actions'), wx.VERTICAL)
 
