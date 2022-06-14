@@ -254,78 +254,61 @@ class PayloadPanel(wx.Panel):
         pos = self.GetScreenPosition()
         self._payload_dlg = wx.Dialog(self, wx.ID_ANY, 'Add Payload Item', size=dlg_size, pos=pos)
         self._payload_dlg.Sizer = wx.BoxSizer(wx.VERTICAL)
-        header_sizer = wx.FlexGridSizer(1, 2, 0, 5)
-        serial_sizer = wx.StaticBoxSizer(wx.StaticBox(self._payload_dlg,
-            label='Serial'), wx.VERTICAL)
-        edsdk_sizer = wx.StaticBoxSizer(wx.StaticBox(self._payload_dlg,
-            label='EDSDK'), wx.VERTICAL)
+        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        pi_protocol = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Protocol',
+            choices=['Remote Shutter', 'EDSDK'], style=wx.RA_VERTICAL)
+        pi_protocol.Bind(wx.EVT_RADIOBOX, self._on_toggled)
+
+        pi_action = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Action',
+            choices=['Snap', 'Autofocus', 'Focus Stack'], style=wx.RA_VERTICAL)
+        pi_action.Bind(wx.EVT_RADIOBOX, self._on_toggled)
+
+        self._toggles = [pi_protocol, pi_action]
 
         header_sizer.AddMany([
-            (serial_sizer, 0, wx.EXPAND, 0),
-            (edsdk_sizer, 0, wx.EXPAND, 0)
+            (pi_protocol, 0, wx.EXPAND, 0),
+            (pi_action, 0, wx.EXPAND|wx.LEFT, 5)
         ])
 
-        add_edsdk_shot_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Shot', name='edsdk_shot')
-        add_edsdk_focus_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus', name='edsdk_focus')
-        add_edsdk_stack_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus-Stacked Shots', name='edsdk_stack')
-        add_serial_shot_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Shot', name='serial_shot')
-        add_serial_focus_btn= wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus', name='serial_focus')
-        add_serial_stack_btn = wx.ToggleButton(self._payload_dlg, wx.ID_ANY,
-            label='Add Focus-Stacked Shots', name='serial_stack')
-
-        self._toggles = [add_edsdk_shot_btn, add_edsdk_focus_btn, add_edsdk_stack_btn,
-            add_serial_shot_btn, add_serial_focus_btn, add_serial_stack_btn]
-
-        for toggle in self._toggles:
-            toggle.Bind(wx.EVT_TOGGLEBUTTON, self._on_toggled)
-
-        serial_sizer.AddMany([
-            (add_serial_shot_btn, 0, wx.EXPAND, 0),
-            (add_serial_focus_btn, 0, wx.EXPAND, 0),
-            (add_serial_stack_btn, 0, wx.EXPAND, 0)
-        ])
-
-        edsdk_sizer.AddMany([
-            (add_edsdk_shot_btn, 0, wx.EXPAND, 0),
-            (add_edsdk_focus_btn, 0, wx.EXPAND, 0),
-            (add_edsdk_stack_btn, 0, wx.EXPAND, 0)
-        ])
-
-        self._payload_dlg.Sizer.Add(header_sizer, 0, wx.ALL|wx.EXPAND, 5)
+        self._payload_dlg.Sizer.Add(header_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5)
         self._payload_dlg_item_count = len(self._payload_dlg.Children)
+
+        toggled_ui = self._build_serial_shot_ctrl()
+        self._payload_dlg.Sizer.Add(toggled_ui, 0, wx.ALL|wx.EXPAND, 5)
+
         self._payload_dlg.Layout()
         self._payload_dlg.SetMinSize(dlg_size)
         self._payload_dlg.Fit()
         self._payload_dlg.ShowModal()
 
-    def _on_toggled(self, event: wx.CommandEvent):
-        toggled = event.EventObject
-
+    def _on_toggled(self, _):
         for toggle in self._toggles:
-            if toggle.Name != toggled.Name:
-                toggle.SetValue(False)
+            label = toggle.GetLabelText().lower()
+            selection = toggle.Selection
+
+            if label == 'protocol':
+                protocol = toggle.GetString(selection).lower()
+            else:
+                action = toggle.GetString(selection).lower()
 
         builder = None
 
-        if toggled.Name == 'serial_shot':
+        if protocol == 'remote shutter' and action == 'snap':
             builder = self._build_serial_shot_ctrl
-        elif toggled.Name == 'serial_focus':
+        elif protocol == 'remote shutter' and action == 'autofocus':
             builder = self._build_serial_focus_ctrl
-        elif toggled.Name == 'serial_stack':
+        elif protocol == 'remote shutter' and action == 'focus stack':
             builder = self._build_serial_stack_ctrl
-        elif toggled.Name == 'edsdk_shot':
+        elif protocol == 'edsdk' and action == 'snap':
             builder = self._build_edsdk_shot_ctrl
-        elif toggled.Name == 'edsdk_focus':
+        elif protocol == 'edsdk' and action == 'autofocus':
             builder = self._build_edsdk_focus_ctrl
-        elif toggled.Name == 'edsdk_stack':
+        elif protocol == 'edsdk' and action == 'focus stack':
             builder = self._build_edsdk_stack_ctrl
         else:
-            print_error_msg(self._core.console, f"Toggle '{toggled.Name}' not yet implemented.")
+            print_error_msg(self._core.console,
+                f"Toggle '{protocol} {action}' not yet implemented.")
 
         if builder:
             if self._payload_dlg.Sizer.ItemCount > 1:
@@ -366,13 +349,17 @@ class PayloadPanel(wx.Panel):
 
         if action.atype in self._core.LENS_COMMANDS:
             key, value = action.args[0]
+
             com_mode = get_atype_kind(action.atype)
+            if com_mode == 'SER':
+                com_mode = 'REM'
+
             arg = ' - release shutter in'
 
             if action.atype == ActionType.EDS_SNAP:
                 arg = ' - with autofocus' if float(value) else ''
 
-            caption = f'{"snap" if action.atype in self._core.SNAP_COMMANDS else "focus"}'
+            caption = f'{"snap" if action.atype in self._core.SNAP_COMMANDS else "autofocus"}'
             caption = f'{com_mode} {caption}{arg}'
 
             if key in time_args:
