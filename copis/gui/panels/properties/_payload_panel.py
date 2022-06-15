@@ -15,21 +15,23 @@
 
 """COPIS pose payload properties panel."""
 
-from secrets import choice
-import wx
-
 from functools import partial
+
+import wx
 
 from copis.classes import Action, Pose
 from copis.globals import ActionType
 from copis.gui.wxutils import simple_statictext
-from copis.helpers import create_action_args, get_atype_kind, print_error_msg, print_info_msg
+from copis.helpers import (
+    create_action_args, get_atype_kind, is_number,
+print_error_msg, print_info_msg)
 
 
 class PayloadPanel(wx.Panel):
     """Show pose payload properties panel."""
 
-    _BTN_SIZE = (45, -1)
+    _CTRL_SIZE = (45, -1)
+    _DEFAULT_SNAP_COUNT = 5
 
     def __init__(self, parent) -> None:
         super().__init__(parent, style=wx.BORDER_NONE)
@@ -43,6 +45,19 @@ class PayloadPanel(wx.Panel):
         self._payload_dlg = None
         self._payload_dlg_item_count = 0
 
+    def _get_snap_count_value(self, snap_count_ctrl):
+        snap_count_val = snap_count_ctrl.Value
+        if is_number(snap_count_val):
+            value = float(snap_count_val)
+            if value < 0:
+                value = abs(value)
+                snap_count_ctrl.Value = str(value)
+
+            return value
+
+        snap_count_ctrl.Value = str(self._DEFAULT_SNAP_COUNT)
+        return self._DEFAULT_SNAP_COUNT
+
     def _init_layout(self):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Payload'), wx.VERTICAL)
@@ -50,7 +65,7 @@ class PayloadPanel(wx.Panel):
         grid = wx.FlexGridSizer(1, 2, 0, 0)
         grid.AddGrowableCol(0)
 
-        self._add_btn = wx.Button(self, label='Add', size=self._BTN_SIZE, name='add')
+        self._add_btn = wx.Button(self, label='Add', size=self._CTRL_SIZE, name='add')
         self._add_btn.Bind(wx.EVT_BUTTON, self._on_add_payload)
 
         grid.AddMany([
@@ -78,17 +93,17 @@ class PayloadPanel(wx.Panel):
 
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
-        ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ctrl_sizer = wx.FlexGridSizer(1, 2, 0, 0)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=1.5, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.5, inc=.1, size=self._CTRL_SIZE)
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
-                0, wx.EXPAND, 0),
+                0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
 
@@ -114,17 +129,17 @@ class PayloadPanel(wx.Panel):
 
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
-        ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ctrl_sizer = wx.FlexGridSizer(1, 2, 0, 0)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=1.0, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.0, inc=.1, size=self._CTRL_SIZE)
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
-                0, wx.EXPAND, 0),
+                0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
 
@@ -136,15 +151,64 @@ class PayloadPanel(wx.Panel):
         return sizer
 
     def _build_serial_stack_ctrl(self):
+        def on_add(directions_ctrl, steps_ctrl, count_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            dir_sel = directions_ctrl.Selection
+            dir_text = directions_ctrl.GetString(dir_sel).lower()
+            direction = -1 if dir_text == 'near' else 1
+
+            step = direction * max(0, float(steps_ctrl.Value))
+            snap_count = self._get_snap_count_value(count_ctrl)
+            c_args = create_action_args([step, snap_count], 'VP')
+            payload_item = Action(ActionType.HST_F_STACK, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 0, 0)
         sizer.AddGrowableCol(0, 0)
+        ctrl_sizer = wx.FlexGridSizer(1, 2, 0, 0)
+        cell_sizer = wx.FlexGridSizer(1, 2, 0, 0)
+        cell_sizer_1 = wx.BoxSizer(wx.HORIZONTAL)
+        col_sizer = wx.BoxSizer(wx.VERTICAL)
 
+        focus_dir = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Direction',
+            choices=['Near', 'Far'], style=wx.RA_VERTICAL)
+        focus_step = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
+            min=0.1, max=5, initial=1.0, inc=.1, size=self._CTRL_SIZE)
+        num_shots = wx.TextCtrl(self._payload_dlg, wx.ID_ANY, size=self._CTRL_SIZE,
+            value=str(self._DEFAULT_SNAP_COUNT))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, focus_dir, focus_step, num_shots))
+
+        cell_sizer.AddMany([
+            (simple_statictext(self._payload_dlg, 'Increment: ', -1),
+                0, wx.ALIGN_CENTER_VERTICAL, 0),
+            (focus_step, 0, 0, 0)
+        ])
+
+        cell_sizer_1.AddMany([
+            (simple_statictext(self._payload_dlg, 'Snap count: ', -1),
+                0, wx.ALIGN_CENTER_VERTICAL, 0),
+            (num_shots, 0, 0, 0)
+        ])
+
+        col_sizer.AddMany([
+            (cell_sizer, 0, wx.ALIGN_RIGHT|wx.BOTTOM, 5),
+            (cell_sizer_1, 0, wx.ALIGN_RIGHT, 0)
+        ])
+
+        ctrl_sizer.AddMany([
+            (focus_dir, 0, wx.EXPAND, 0),
+            (col_sizer, 0, wx.EXPAND|wx.LEFT, 5)
+        ])
 
         sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Build serial focus stack UI.', -1),
-                0, wx.ALIGN_CENTER, 0),
+            (ctrl_sizer, 0, wx.ALIGN_CENTER, 0),
             (add_btn, 0, wx.ALIGN_RIGHT|wx.EXPAND, 0)
         ])
 
@@ -167,7 +231,7 @@ class PayloadPanel(wx.Panel):
         sizer.AddGrowableCol(0, 0)
 
         af_option = wx.CheckBox(self._payload_dlg, wx.ID_ANY,
-            label='Do auto focus')
+            label='With autofocus')
         af_option.SetValue(True)
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
@@ -195,17 +259,17 @@ class PayloadPanel(wx.Panel):
 
         sizer = wx.FlexGridSizer(2, 1, 2, 0)
         sizer.AddGrowableCol(0, 0)
-        ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        ctrl_sizer = wx.FlexGridSizer(1, 2, 0, 0)
 
         shutter_release_times = wx.SpinCtrlDouble(self._payload_dlg, wx.ID_ANY,
-            min=0, max=5, initial=1.0, inc=.1, size=(45, -1))
+            min=0, max=5, initial=1.0, inc=.1, size=self._CTRL_SIZE)
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
             (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
-                0, wx.EXPAND, 0),
+                0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
 
@@ -217,22 +281,51 @@ class PayloadPanel(wx.Panel):
         return sizer
 
     def _build_edsdk_stack_ctrl(self):
+        def on_add(directions_ctrl, steps_ctrl, count_ctrl, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            dir_sel = directions_ctrl.Selection
+            dir_text = directions_ctrl.GetString(dir_sel).lower()
+            direction = -1 if dir_text == 'near' else 1
+
+            step_sel = steps_ctrl.Selection
+            step_text = steps_ctrl.GetString(step_sel).lower()
+
+            if step_text == 'small':
+                step = 1
+            elif step_text == 'medium':
+                step = 2
+            else:
+                step = 3
+
+            step = direction * step
+            snap_count = self._get_snap_count_value(count_ctrl)
+            c_args = create_action_args([step, snap_count], 'VP')
+            payload_item = Action(ActionType.EDS_F_STACK, self._pose.position.device,
+                len(c_args), c_args)
+
+            if self._core.add_to_selected_pose_payload(payload_item):
+                pose = self._core.project.poses[self._core.selected_pose]
+                self.set_pose(pose)
+
         sizer = wx.FlexGridSizer(2, 1, 0, 0)
         sizer.AddGrowableCol(0, 0)
         ctrl_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cell_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        cell_sizer = wx.FlexGridSizer(1, 2, 0, 0)
 
         focus_dir = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Direction',
             choices=['Near', 'Far'], style=wx.RA_VERTICAL)
         focus_step = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Increment',
             choices=['Small', 'Medium', 'Large'], style=wx.RA_VERTICAL)
-        num_shots = wx.TextCtrl(self._payload_dlg, wx.ID_ANY, size=(40, -1))
+        num_shots = wx.TextCtrl(self._payload_dlg, wx.ID_ANY, size=(40, -1),
+            value=str(self._DEFAULT_SNAP_COUNT))
         add_btn = wx.Button(self._payload_dlg, wx.ID_ANY,
             label='Add')
+        add_btn.Bind(wx.EVT_BUTTON, partial(on_add, focus_dir, focus_step, num_shots))
 
         cell_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Shot count: ', -1),
-                0, wx.EXPAND, 0),
+            (simple_statictext(self._payload_dlg, 'Snap count: ', -1),
+                0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (num_shots, 0, 0, 0)
         ])
 
@@ -380,11 +473,11 @@ class PayloadPanel(wx.Panel):
         grid.AddGrowableCol(0, 0)
 
         for i, action in enumerate(pose.payload):
-            delete_btn = wx.Button(self, label='Delete', size=self._BTN_SIZE, name='delete')
+            delete_btn = wx.Button(self, label='Delete', size=self._CTRL_SIZE, name='delete')
             delete_btn.payload_index = i
             delete_btn.Bind(wx.EVT_BUTTON, self._on_delete_payload_item)
 
-            edit_btn = wx.Button(self, label='Edit', size=self._BTN_SIZE, name='edit')
+            edit_btn = wx.Button(self, label='Edit', size=self._CTRL_SIZE, name='edit')
             edit_btn.payload_index = i
             edit_btn.Bind(wx.EVT_BUTTON, self._on_edit_payload_item)
 

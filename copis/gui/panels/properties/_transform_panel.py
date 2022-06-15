@@ -327,7 +327,12 @@ class TransformPanel(wx.Panel):
     def _get_feed_rate_value(self):
         feed_rate_val = self._feed_rate_ctrl.Value
         if is_number(feed_rate_val):
-            return float(feed_rate_val)
+            value = float(feed_rate_val)
+            if value < 0:
+                value = abs(value)
+                self._feed_rate_ctrl.Value = str(value)
+
+            return value
 
         self._feed_rate_ctrl.Value = str(self._DEFAULT_FEED_RATE)
         return self._DEFAULT_FEED_RATE

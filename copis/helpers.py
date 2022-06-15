@@ -42,6 +42,7 @@ _OPEN_PAREN_SPACE_PATTERN = re.compile(r'\(\s+')
 _CLOSE_PAREN_SPACE_PATTERN = re.compile(r'\s+\)')
 _HARDWARE_ID_PATTERN = re.compile(r'(?<=\?\\)(.*)(?=#)')
 _EDS_KIND_PATTERN = re.compile(r'^(?:>\d+)*EDS_')
+_HST_KIND_PATTERN = re.compile(r'^(?:>\d+)*HST_')
 
 
 def timing(f: Callable) -> Callable:
@@ -363,5 +364,7 @@ def get_atype_kind(atype):
 
     if _EDS_KIND_PATTERN.match(name.upper()):
         return 'EDS'
+    elif _HST_KIND_PATTERN.match(name.upper()):
+        return 'HST'
 
     return 'SER'
