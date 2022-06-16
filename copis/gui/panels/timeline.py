@@ -84,13 +84,14 @@ class TimelinePanel(wx.Panel):
 
     def _get_action_caption(self, action):
         if action:
+            com_mode = get_atype_kind(action.atype)
+
+            if com_mode in ('SER', 'HST'):
+                com_mode = 'REM'
+
             if action.atype in self.core.MOVE_COMMANDS:
                 caption = 'Move to position'
             elif action.atype in self.core.LENS_COMMANDS:
-                com_mode = get_atype_kind(action.atype)
-                if com_mode == 'SER':
-                    com_mode = 'REM'
-
                 arg = ' - release shutter in'
 
                 if action.atype == ActionType.EDS_SNAP:
@@ -99,6 +100,8 @@ class TimelinePanel(wx.Panel):
                 caption = \
                     f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "autofocus"}{arg}'
                 caption = f'{com_mode} {caption}'
+            elif action.atype in self.core.F_STACK_COMMANDS:
+                caption = f'{com_mode} snap focus stack'
             else:
                 caption = serialize_command(action)
         else:
@@ -121,6 +124,24 @@ class TimelinePanel(wx.Panel):
 
         if key in time_args and action_type in self.core.LENS_COMMANDS:
             caption = f'{value} {time_args[key]}{"s" if value != 1 else ""}'
+        elif action_type in self.core.F_STACK_COMMANDS:
+            if key == 'P':
+                caption = f'count: {int(value)}'
+            if key == 'V':
+                direction = 'near' if value < 0 else 'far'
+                value = abs(value)
+                increment = f'{value}mm'
+
+                if get_atype_kind(action_type) == 'EDS':
+                    if value == 1:
+                        increment = 'small'
+                    elif value == 2:
+                        increment = 'medium'
+                    else:
+                        increment = 'large'
+
+                caption = f'info: {direction} focus, {increment} step'
+
         elif action_type != ActionType.EDS_SNAP:
             dd_keys = ["P", "T"]
             value = rad_to_dd(value) if key in dd_keys else value

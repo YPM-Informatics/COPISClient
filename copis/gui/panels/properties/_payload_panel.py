@@ -186,7 +186,7 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, focus_dir, focus_step, num_shots))
 
         cell_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Increment: ', -1),
+            (simple_statictext(self._payload_dlg, 'Increment (mm): ', -1),
                 0, wx.ALIGN_CENTER_VERTICAL, 0),
             (focus_step, 0, 0, 0)
         ])
@@ -439,14 +439,13 @@ class PayloadPanel(wx.Panel):
         }
 
         caption = '<not implemented>'
+        com_mode = get_atype_kind(action.atype)
+
+        if com_mode in ('SER', 'HST'):
+            com_mode = 'REM'
 
         if action.atype in self._core.LENS_COMMANDS:
             key, value = action.args[0]
-
-            com_mode = get_atype_kind(action.atype)
-            if com_mode == 'SER':
-                com_mode = 'REM'
-
             arg = ' - release shutter in'
 
             if action.atype == ActionType.EDS_SNAP:
@@ -459,6 +458,27 @@ class PayloadPanel(wx.Panel):
                 caption = f'{caption} {value}{time_args[key]}'
             elif action.atype != ActionType.EDS_SNAP:
                 caption = f'{caption} {value} <invalid time unit>'
+
+        elif action.atype in self._core.F_STACK_COMMANDS:
+            def get_arg_value(arg_col, arg_key):
+                arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), None)
+                return float(arg[1])
+
+            step = get_arg_value(action.args, 'V')
+            count = int(get_arg_value(action.args, 'P'))
+            direction = 'near' if step < 0 else 'far'
+            step = abs(step)
+            increment = f'{step}mm'
+
+            if get_atype_kind(action.atype) == 'EDS':
+                if step == 1:
+                    increment = 'small'
+                elif step == 2:
+                    increment = 'medium'
+                else:
+                    increment = 'large'
+            caption = ' '.join([f'{com_mode} stack - {count} shot{"s" if count != 1 else ""},',
+                f'{direction} focus, {increment} step'])
 
         return caption
 

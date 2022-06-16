@@ -364,7 +364,8 @@ def get_atype_kind(atype):
 
     if _EDS_KIND_PATTERN.match(name.upper()):
         return 'EDS'
-    elif _HST_KIND_PATTERN.match(name.upper()):
+
+    if _HST_KIND_PATTERN.match(name.upper()):
         return 'HST'
 
     return 'SER'

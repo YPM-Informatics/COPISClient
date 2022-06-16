@@ -31,6 +31,7 @@ class ComponentMembersMixin:
 
 
     MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
+    F_STACK_COMMANDS = [ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
     SNAP_COMMANDS = [ActionType.C0, ActionType.EDS_SNAP]
     FOCUS_COMMANDS = [ActionType.C1, ActionType.EDS_FOCUS]
     LENS_COMMANDS = SNAP_COMMANDS + FOCUS_COMMANDS
