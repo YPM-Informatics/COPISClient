@@ -54,7 +54,7 @@ class ThreadTargetsMixin:
                 if self._keep_working and self._is_machine_locked:
 
                     print_debug_msg(self.console,
-                        '**** Machine error-locked. stoping imaging!! ****', self._is_dev_env)
+                        '**** Machine error-locked. stopping imaging!! ****', self._is_dev_env)
 
                     self.stop_work()
                 else:
