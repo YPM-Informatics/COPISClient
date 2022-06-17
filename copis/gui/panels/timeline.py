@@ -101,7 +101,7 @@ class TimelinePanel(wx.Panel):
                     f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "autofocus"}{arg}'
                 caption = f'{com_mode} {caption}'
             elif action.atype in self.core.F_STACK_COMMANDS:
-                caption = f'{com_mode} snap focus stack'
+                caption = f'{com_mode} stack'
             else:
                 caption = serialize_command(action)
         else:
