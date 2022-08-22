@@ -48,10 +48,10 @@ class Config():
         'Machine': {
             'size_x': '800',
             'size_y': '900',
-            'size_z': '350',
+            'size_z': '700',
             'origin_x': '400',
             'origin_y': '450',
-            'origin_z': '0'
+            'origin_z': '350'
         }
     }
 

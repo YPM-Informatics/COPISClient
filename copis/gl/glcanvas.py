@@ -136,7 +136,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._objectvis = GLObjectVis(self)
 
         # other values
-        self._zoom = 1.0
+        self._zoom = 1.1
         self._hover_id = -1
         self._inside = False
         self._rot_quat = quat()
