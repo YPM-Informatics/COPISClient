@@ -350,11 +350,13 @@ class PayloadPanel(wx.Panel):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         pi_protocol = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Protocol',
-            choices=['Remote Shutter', 'EDSDK'], style=wx.RA_VERTICAL)
+            # choices=['Remote Shutter', 'EDSDK'], style=wx.RA_VERTICAL)
+            choices=['Remote Shutter'], style=wx.RA_VERTICAL)
         pi_protocol.Bind(wx.EVT_RADIOBOX, self._on_toggled)
 
         pi_action = wx.RadioBox(self._payload_dlg, wx.ID_ANY, 'Action',
-            choices=['Snap', 'Autofocus', 'Focus Stack'], style=wx.RA_VERTICAL)
+            # choices=['Snap', 'Autofocus', 'Focus Stack'], style=wx.RA_VERTICAL)
+            choices=['Snap', 'Autofocus'], style=wx.RA_VERTICAL)
         pi_action.Bind(wx.EVT_RADIOBOX, self._on_toggled)
 
         self._toggles = [pi_protocol, pi_action]
