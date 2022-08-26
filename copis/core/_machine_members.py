@@ -162,19 +162,16 @@ class MachineMembersMixin:
 
         for dvc in self.project.devices:
             device_id = dvc.device_id
+            cmd_id = ''
             cmd_str_1 = ''
             cmd_str_2 = ''
             x, y, z, p, t = self._get_device(device_id).home_position
 
-            if device_id == 0:
-                cmd_str_1 = f'{g_code}Z{z}'
-                cmd_str_2 = f'{g_code}X{x}Y{y}P{p}T{t}'
-            elif device_id == 1:
-                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
-                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
-            elif device_id == 2:
-                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
-                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
+            if device_id > 0:
+                cmd_id = f'>{device_id}'
+
+            cmd_str_1 = f'{cmd_id}{g_code}Z{z}'
+            cmd_str_2 = f'{cmd_id}{g_code}X{x}Y{y}P{p}T{t}'
 
             step_1.append(deserialize_command(cmd_str_1))
             step_2.append(deserialize_command(cmd_str_2))
