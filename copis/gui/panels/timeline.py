@@ -15,14 +15,15 @@
 
 """TimelinePanel class."""
 
+from functools import partial
+
 import copy
 import wx
 import wx.lib.scrolledpanel as scrolled
-import wx.lib.agw.aui as aui
+import wx.lib.agw as aui
 
 from pydispatch import dispatcher
 
-from pydispatch import dispatcher
 from glm import vec3
 from copis.classes.action import Action
 from copis.classes.pose import Pose
@@ -31,8 +32,8 @@ from copis.command_processor import serialize_command
 from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
-from copis.helpers import (create_action_args, get_heading, is_number, print_debug_msg,
-    rad_to_dd, sanitize_number, sanitize_point)
+from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
+    print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
 
 
 class TimelinePanel(wx.Panel):
@@ -42,8 +43,6 @@ class TimelinePanel(wx.Panel):
         parent: Pointer to a parent wx.Frame.
     """
 
-    _MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
-    _SNAP_COMMANDS = [ActionType.C0, ActionType.C1]
 
     def __init__(self, parent) -> None:
         """Initializes TimelinePanel with constructors."""
@@ -85,10 +84,24 @@ class TimelinePanel(wx.Panel):
 
     def _get_action_caption(self, action):
         if action:
-            if action.atype in self._MOVE_COMMANDS:
-                caption = 'Move to position:'
-            elif action.atype in self._SNAP_COMMANDS:
-                caption = 'Snap picture within:'
+            com_mode = get_atype_kind(action.atype)
+
+            if com_mode in ('SER', 'HST'):
+                com_mode = 'REM'
+
+            if action.atype in self.core.MOVE_COMMANDS:
+                caption = 'Move to position'
+            elif action.atype in self.core.LENS_COMMANDS:
+                arg = ' - release shutter in'
+
+                if action.atype == ActionType.EDS_SNAP:
+                    arg = ' - with autofocus'
+
+                caption = \
+                    f'{"snap" if action.atype in self.core.SNAP_COMMANDS else "autofocus"}{arg}'
+                caption = f'{com_mode} {caption}'
+            elif action.atype in self.core.F_STACK_COMMANDS:
+                caption = f'{com_mode} stack'
             else:
                 caption = serialize_command(action)
         else:
@@ -109,16 +122,35 @@ class TimelinePanel(wx.Panel):
         if is_number(value):
             value = float(value)
 
-        if key in time_args and action_type in self._SNAP_COMMANDS:
+        if key in time_args and action_type in self.core.LENS_COMMANDS:
             caption = f'{value} {time_args[key]}{"s" if value != 1 else ""}'
-        else:
+        elif action_type in self.core.F_STACK_COMMANDS:
+            if key == 'P':
+                caption = f'count: {int(value)}'
+            if key == 'V':
+                direction = 'near' if value < 0 else 'far'
+                value = abs(value)
+                increment = f'{value}mm'
+
+                if get_atype_kind(action_type) == 'EDS':
+                    if value == 1:
+                        increment = 'small'
+                    elif value == 2:
+                        increment = 'medium'
+                    else:
+                        increment = 'large'
+
+                caption = f'info: {direction} focus, {increment} step'
+
+        elif action_type != ActionType.EDS_SNAP:
             dd_keys = ["P", "T"]
             value = rad_to_dd(value) if key in dd_keys else value
             units = 'dd' if key in dd_keys else 'mm'
-            caption = f'{key}: {value} {units}'
+            caption = f'{key}: {value}{units}'
+        else:
+            caption = 'yes' if float(value) else 'no'
 
         return caption
-
 
     def _on_device_position_copied(self, data):
         device_id, x, y, z, p, t = data
@@ -248,12 +280,13 @@ class TimelinePanel(wx.Panel):
         return set_index, idx_in_set
 
     def _toggle_buttons(self, data=None):
-        for key in self._buttons:
-            self._buttons[key].Enable(False)
+        for _, button in self._buttons.items():
+            button.Enable(False)
 
         if self.timeline.GetCount() > 0:
             self._buttons['image_btn'].Enable(True)
             self._buttons['add_btn'].Enable(True)
+            self._buttons['reverse_btn'].Enable(True)
 
         if data:
             self._buttons['delete_btn'].Enable(True)
@@ -399,6 +432,10 @@ class TimelinePanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, self.on_add_command)
         self._buttons['add_btn'] = add_btn
 
+        reverse_btn = wx.Button(btn_panel, label='Reverse', size=btn_size)
+        reverse_btn.Bind(wx.EVT_BUTTON, self.on_reverse_command)
+        self._buttons['reverse_btn'] = reverse_btn
+
         delete_btn = wx.Button(btn_panel, label='Delete', size=btn_size)
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
         self._buttons['delete_btn'] = delete_btn
@@ -424,6 +461,7 @@ class TimelinePanel(wx.Panel):
             (insert_pose_btn, 0, 0, 0),
             (insert_pose_set_btn, 0, 0, 0),
             (add_btn, 0, 0, 0),
+            (reverse_btn, 0, 0, 0),
             (delete_btn, 0, 0, 0),
             (play_btn, 0, 0, 0),
             (image_btn, 0, 0, 0)
@@ -447,7 +485,10 @@ class TimelinePanel(wx.Panel):
         def on_add_pose(event: wx.CommandEvent):
             event.EventObject.Parent.Close()
 
-            with PathgenPoint(self, devices) as dlg:
+            task = event.EventObject.Name
+            dvcs = self.core.project.devices if task == 'insert_pose' else devices
+
+            with PathgenPoint(self, dvcs) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
 
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
@@ -473,7 +514,10 @@ class TimelinePanel(wx.Panel):
 
                         pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
-                        pose_index = self.core.project.add_pose(set_index, pose)
+                        if task == 'insert_pose':
+                            pose_index = self.core.project.insert_pose(set_index, pose)
+                        else:
+                            pose_index = self.core.project.add_pose(set_index, pose)
 
                         idx_in_poses = self._get_index_poses(set_index, pose_index) \
                             if pose_index >= 0 else pose_index
@@ -502,24 +546,30 @@ class TimelinePanel(wx.Panel):
             dialog_size = (100, -1)
             btn_size = (85, -1)
 
-            dialog = wx.Dialog(self, wx.ID_ADD, 'Add path item', size=dialog_size)
+            dialog = wx.Dialog(self, wx.ID_ADD, 'Add Path Item', size=dialog_size)
             dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-            choice_grid = wx.GridSizer(2, (8, -1))
+            choice_grid = wx.GridSizer(3, (12, -1))
 
-            dialog.add_set_btn = wx.Button(dialog, label='Add pose set', size=btn_size)
+            dialog.add_set_btn = wx.Button(dialog, label='Add Pose Set', size=btn_size,
+                name='add_set')
             dialog.add_set_btn.Bind(wx.EVT_BUTTON, on_add_pose_set)
 
-            dialog.add_pose_btn = wx.Button(dialog, label='Add pose', size=btn_size)
+            dialog.add_pose_btn = wx.Button(dialog, label='Add Pose', size=btn_size,
+                name='add_pose')
+            dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
+
+            dialog.insert_pose_btn = wx.Button(dialog, label='Insert Pose', size=btn_size,
+                name='insert_pose')
+            dialog.insert_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
 
             if not devices:
-                dialog.add_pose_btn.Enable(False)
-
-            dialog.add_pose_btn.Bind(wx.EVT_BUTTON, on_add_pose)
+                dialog.add_pose_btn.Disable()
 
             choice_grid.AddMany([
                 (dialog.add_set_btn, 0, 0, 0),
-                (dialog.add_pose_btn, 0, 0, 0)
+                (dialog.add_pose_btn, 0, 0, 0),
+                (dialog.insert_pose_btn, 0, 0, 0)
             ])
 
             dialog.Sizer.Add(choice_grid, 1, wx.ALL, 4)
@@ -531,6 +581,75 @@ class TimelinePanel(wx.Panel):
         else:
             set_index = self.core.project.add_pose_set()
             self.core.select_pose_set(set_index)
+
+    def on_reverse_command(self, event: wx.CommandEvent):
+        """"Reverses the play order of poses or pose sets."""
+        def on_reverse_pose_set(_):
+            event.EventObject.Parent.Close()
+
+            self.core.project.reverse_pose_sets()
+
+        def on_reverse_poses(dlg, event: wx.CommandEvent):
+            event.EventObject.Parent.Close()
+
+            cl_box: wx.CheckListBox = dlg.device_checklist
+            if 0 in cl_box.CheckedItems:
+                self.core.project.reverse_poses()
+            else:
+                selections = [int(s.split()[0]) for s in cl_box.GetCheckedStrings()]
+                self.core.project.reverse_poses(selections)
+
+        def on_device_chosen(event: wx.CommandEvent):
+            clicked_item = event.String
+            cl_box: wx.CheckListBox = event.EventObject
+
+            if clicked_item == cl_box.Items[0]:
+                for i in range(1, cl_box.Count):
+                    cl_box.Check(i, cl_box.IsChecked(0))
+            elif all(cl_box.IsChecked(i) for i in range(1, cl_box.Count)):
+                cl_box.Check(0, True)
+            else:
+                cl_box.Check(0, False)
+
+        device_ids = list(set(p.position.device for p in self.core.project.poses))
+        device_ids.sort()
+        devices = [self._get_device(did) for did in device_ids]
+        device_choices = list(map(lambda d: f'{d.device_id} ({d.name})', devices))
+        device_choices.insert(0, 'All')
+
+        dialog_size = (120, -1)
+        btn_size = (100, -1)
+
+        dialog = wx.Dialog(self, wx.ID_ADD, 'Reverse Items', size=dialog_size)
+        dialog.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        choice_grid = wx.FlexGridSizer(2, 2, 6, 12)
+
+        dialog.reverse_sets_btn = wx.Button(dialog, label='Reverse Pose Sets', size=btn_size,
+            name='reverse_set')
+        dialog.reverse_sets_btn.Bind(wx.EVT_BUTTON, on_reverse_pose_set)
+
+        dialog.reverse_poses_btn = wx.Button(dialog, label='Reverse Poses', size=btn_size,
+            name='reverse_pose')
+        dialog.reverse_poses_btn.Bind(wx.EVT_BUTTON, partial(on_reverse_poses, dialog))
+
+        dialog.device_checklist = wx.CheckListBox(dialog, choices=device_choices,
+            size=btn_size)
+        dialog.device_checklist.Bind(wx.EVT_CHECKLISTBOX, on_device_chosen)
+
+        choice_grid.AddMany([
+            (0, 0),
+            (dialog.device_checklist, 0, 0, 0),
+            (dialog.reverse_sets_btn, 0, 0, 0),
+            (dialog.reverse_poses_btn, 0, 0, 0)
+        ])
+
+        dialog.Sizer.Add(choice_grid, 0, wx.ALL, 4)
+
+        dialog.Layout()
+        dialog.SetMinSize(dialog_size)
+        dialog.Fit()
+        dialog.ShowModal()
 
     def on_play_command(self, event: wx.CommandEvent):
         """Plays the selected pose or pose set."""

@@ -69,7 +69,7 @@ class EvfPanel(wx.Panel):
             dc.DrawBitmap(bitmap, 0, 0)
 
     def _on_left_dclick(self, _):
-        self._parent.core.do_edsdk_focus()
+        self._parent.core.do_evf_edsdk_focus()
 
     def on_close(self):
         """Handles EVF panel close event."""

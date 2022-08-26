@@ -93,19 +93,6 @@ class MachineToolbar(aui.AuiToolBar):
         self.start_imaging_btn = wx.Button(self, wx.ID_ANY, label='Start Imaging', size=(95, -1))
         self.Bind(wx.EVT_BUTTON, self.on_start_imaging, self.AddControl(self.start_imaging_btn))
 
-        # Add play, pause, stop tools.
-        # _bmp = create_scaled_bitmap('play_arrow', 24)
-        # self.AddTool(ToolIds.PLAY.value, 'Play', _bmp, _bmp, aui.ITEM_NORMAL,
-        #     short_help_string='Start imaging')
-
-        # TODO: implement pause and stop, uncomment below
-        # _bmp = create_scaled_bitmap('pause', 24)
-        # self.AddTool(ToolIds.PAUSE.value, 'Pause', _bmp, _bmp, aui.ITEM_NORMAL,
-        #     short_help_string=f'Pause {self._core.work_type_name}')
-        # _bmp = create_scaled_bitmap('stop', 24)
-        # self.AddTool(ToolIds.STOP.value, 'Stop', _bmp, _bmp, aui.ITEM_NORMAL,
-        #     short_help_string=f'Abort {self._core.work_type_name}')
-
         _bmp = create_scaled_bitmap('export', 24)
         self.AddTool(ToolIds.EXPORT.value, 'Export actions', _bmp, _bmp, aui.ITEM_NORMAL,
             short_help_string='Export actions')

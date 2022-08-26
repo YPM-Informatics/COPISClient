@@ -37,9 +37,9 @@ class COPISApp(wx.App):
 
         displays = (wx.Display(i) for i in range(wx.Display.GetCount()))
         main_d = next(filter(lambda d: d.IsPrimary, displays))
-        display_size = main_d.GetGeometry().GetSize()
+        display_rect = main_d.GetGeometry()
 
-        self.config = Config(display_size)
+        self.config = Config(display_rect)
         self.core = COPISCore(self)
 
         # pylint: disable=invalid-name

@@ -20,7 +20,7 @@ from glm import vec3
 
 from copis.classes import Action
 from copis.command_processor import serialize_command
-from copis.globals import Point5
+from copis.globals import ActionType, Point5
 from copis.helpers import (create_action_args, get_action_args_values, get_end_position,
     get_heading, print_error_msg, sanitize_number)
 
@@ -29,6 +29,12 @@ class ComponentMembersMixin:
     """Implement COPIS Core component (actions, points, devices, proxy objects)
         related class members using mixins."""
 
+
+    MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
+    F_STACK_COMMANDS = [ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
+    SNAP_COMMANDS = [ActionType.C0, ActionType.EDS_SNAP]
+    FOCUS_COMMANDS = [ActionType.C1, ActionType.EDS_FOCUS]
+    LENS_COMMANDS = SNAP_COMMANDS + FOCUS_COMMANDS
 
     @property
     def save_imaging_session(self) -> str:

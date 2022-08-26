@@ -24,7 +24,7 @@ from itertools import zip_longest
 from copis.classes import Action, Pose
 from copis.command_processor import deserialize_command
 from copis.globals import ActionType, ComStatus, WorkType
-from copis.helpers import get_timestamp, print_debug_msg, print_error_msg
+from copis.helpers import get_atype_kind, get_timestamp, print_debug_msg, print_error_msg
 
 
 
@@ -75,7 +75,7 @@ class MachineMembersMixin:
         if self._is_machine_paused:
             status = 'paused'
         else:
-            statuses = list(set(dvc.serial_status for dvc in self.project.devices))
+            statuses = list(set(dvc.status for dvc in self.project.devices))
 
             if len(statuses) == 1 and statuses[0]:
                 status = statuses[0].name.lower()
@@ -87,7 +87,7 @@ class MachineMembersMixin:
     @property
     def is_machine_idle(self):
         """Returns a value indicating whether the machine is idle."""
-        return all(dvc.serial_status == ComStatus.IDLE for dvc in self.project.devices)
+        return all(dvc.status == ComStatus.IDLE for dvc in self.project.devices)
 
     @property
     def is_machine_homed(self):
@@ -117,8 +117,7 @@ class MachineMembersMixin:
             print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
 
-        for dvc in self.project.devices:
-            cmds.append(Action(ActionType.G0, dvc.device_id))
+        cmds.append(Action(ActionType.M120, 0))
 
         if cmds:
             self._keep_working = True
@@ -163,19 +162,16 @@ class MachineMembersMixin:
 
         for dvc in self.project.devices:
             device_id = dvc.device_id
+            cmd_id = ''
             cmd_str_1 = ''
             cmd_str_2 = ''
             x, y, z, p, t = self._get_device(device_id).home_position
 
-            if device_id == 0:
-                cmd_str_1 = f'{g_code}Z{z}'
-                cmd_str_2 = f'{g_code}X{x}Y{y}P{p}T{t}'
-            elif device_id == 1:
-                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
-                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
-            elif device_id == 2:
-                cmd_str_1 = f'>{device_id}{g_code}Z{z}'
-                cmd_str_2 = f'>{device_id}{g_code}X{x}Y{y}P{p}T{t}'
+            if device_id > 0:
+                cmd_id = f'>{device_id}'
+
+            cmd_str_1 = f'{cmd_id}{g_code}Z{z}'
+            cmd_str_2 = f'{cmd_id}{g_code}X{x}Y{y}P{p}T{t}'
 
             step_1.append(deserialize_command(cmd_str_1))
             step_2.append(deserialize_command(cmd_str_2))
@@ -262,19 +258,31 @@ class MachineMembersMixin:
         process_poses = lambda: [[val for val in tup if val is not None] for tup in
             zip_longest(*[p.get_seq_actions() for p in poses])]
 
-        if not self.is_serial_port_connected:
-            print_error_msg(self.console,
-                'The machine needs to be connected before stepping can start.')
-            return
+        processed_poses = process_poses()
+        commands = []
+        commands.extend([c for p in processed_poses for c in p])
+        is_serial_needed = any(get_atype_kind(p.atype) == 'SER' for p in commands)
+        is_edsdk_needed = any(get_atype_kind(p.atype) == 'EDS' for p in commands)
 
-        if self._is_machine_busy:
-            print_error_msg(self.console, 'Cannot step. The machine is busy.')
-            return
+        if is_serial_needed:
+            if not self.is_serial_port_connected:
+                print_error_msg(self.console,
+                    'The machine needs to be connected before stepping can start.')
+                return
 
-        if not self.is_machine_idle:
-            print_error_msg(self.console,
-                'The machine needs to be homed before stepping can start.')
-            return
+            if self._is_machine_busy:
+                print_error_msg(self.console, 'Cannot step. The machine is busy.')
+                return
+
+            if not self.is_machine_idle:
+                print_error_msg(self.console,
+                    'The machine needs to be homed before stepping can start.')
+                return
+
+        if is_edsdk_needed:
+            if not self._is_edsdk_enabled:
+                print_error_msg(self.console, 'EDSDK is not enabled.')
+                return
 
         if keep_last_path:
             self._save_imaging_session = False
@@ -293,11 +301,11 @@ class MachineMembersMixin:
 
             self._update_imaging_manifest(pairs)
 
-            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+            dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
+            dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
-        # packet = [a for p in poses for a in p.get_actions()]
         self._mainqueue = []
-        self._mainqueue.extend(process_poses())
+        self._mainqueue.extend(processed_poses)
         self._work_type = WorkType.STEPPING
 
         self._keep_working = True

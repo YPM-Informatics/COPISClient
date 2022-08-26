@@ -18,6 +18,7 @@
 from importlib import import_module
 from typing import Any, Iterable, List, Tuple
 from pydispatch import dispatcher
+from itertools import groupby
 from glm import vec3
 
 from copis.classes import (
@@ -25,7 +26,8 @@ from copis.classes import (
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
-from copis.helpers import collapse_whitespaces
+from copis.helpers import collapse_whitespaces, interleave_lists
+from copis.pathutils import build_pose_sets
 from .store import (Store, get_file_base_name, get_file_base_name_no_ext, load_json, path_exists,
     save_json)
 
@@ -43,7 +45,7 @@ class Project:
         'name': 'default_profile.json',
         'data':
             #region default profile string
-            '{"devices":[{"id":0,"name":"Front","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[-344,-400,300,0,0],"range_x":[-344,344],"range_y":[-392,-192],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":1,"name":"Middle","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[0,0,300,0,0],"range_x":[-344,344],"range_y":[-217,217],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":2,"name":"Back","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[344,400,300,0,0],"range_x":[-344,344],"range_y":[192,392],"range_z":[0,300],"size":[350,250,200],"port":"COM3"}],"homing_sequence":"G28Z\\n>1G28Z\\n>2G28Z\\n// batch 1\\nG1Z300\\n>1G1Z300\\n>2G1Z300\\n// batch 2\\nG28YF2000\\nG92Y-400\\nG28XF2000\\n// batch 3\\nG1X-5\\nG92X344\\nG1X-344\\n// batch 4\\n>1G28XF2000\\n>1G1X-12\\n>1G92X344\\n// batch 5\\n>1G28YF2000\\n>1G92Y-260\\n>1G1X0\\n// batch 6\\n>2G28XF2000\\n>2G1X-5\\n>2G92X344\\n// batch 7\\n>2G28YF2000\\n>2G92Y-131\\n// gantry 2 is already here. Using this so we can group PT homing together.\\n>2G1X344\\n// batch 8\\n>2G28PTF1500\\n>1G28PTF1500\\nG28PTF1500\\n// batch 9"}'
+            '{"devices":[{"id":0,"name":"Top front","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[-344,-400,300,0,0],"range_x":[-344,344],"range_y":[-392,-192],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":1,"name":"Top middle","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[0,0,300,0,0],"range_x":[-344,344],"range_y":[-217,217],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":2,"name":"Top back","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[344,400,300,0,0],"range_x":[-344,344],"range_y":[192,392],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":3,"name":"Bottom front","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[-344,-400,-300,0,0],"range_x":[-344,344],"range_y":[-392,-192],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"},{"id":4,"name":"Bottom middle","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[0,0,-300,0,0],"range_x":[-344,344],"range_y":[-217,217],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"},{"id":5,"name":"Bottom back","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[344,400,-300,0,0],"range_x":[-344,344],"range_y":[192,392],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"}],"homing_sequence":">5G28ZF700\\n>4G28ZF700\\n>3G28ZF700\\n>2G28ZF700\\n>1G28ZF700\\nG28ZF700\\n>5G1Z-300F700\\n>4G1Z-300F700\\n>3G1Z-300F700\\n>2G1Z300F700\\n>1G1Z300F700\\nG1Z300F700\\n>3G28YF2000\\n>3G92Y-400\\n>3G28XF2000\\nG28YF2000\\nG92Y-400\\nG28XF2000\\n>3G92X344\\n>3G1X-344F2000\\nG92X344\\nG1X-344F2000\\n>1G28XF2000\\n>4G28XF2000\\n>1G92X344\\n>4G92X344\\n>2G28XF2000\\n>5G28XF2000\\n>2G92X344\\n>5G92X344\\n>1G28YF2000\\n>1G92Y-227\\n>1G1X0F2000\\n>4G28YF2000\\n>4G92Y-227\\n>4G1X0F2000\\n>2G28YF2000\\n>2G92Y-90\\n>2G1Y-90F2000\\n>5G28YF2000\\n>5G92Y-90\\n>5G1Y-90F2000\\n>5G28PTF800\\n>4G28PTF800\\n>3G28PTF800\\n>2G28PTF800\\n>1G28PTF800\\nG28PTF800\\n"}'
             #endregion
     }
 
@@ -381,7 +383,7 @@ class Project:
             Returns the index of the inserted pose."""
         if not self.can_add_pose(set_index, pose.position.device):
             free_set_indices = [i for i, set_ in enumerate(self._pose_sets) if i > set_index \
-                and not any(p.position.device == pose.position.device  for p in set_)]
+                and not any(p.position.device == pose.position.device for p in set_)]
 
             if free_set_indices:
                 free_set_index = free_set_indices[0]
@@ -445,8 +447,37 @@ class Project:
             self._pose_sets.extend(sets)
 
             return new_index
-        else:
-            return index
+
+        return index
+
+    def reverse_pose_sets(self):
+        """Reverses the order of the pose sets."""
+        self._pose_sets.reverse()
+
+    def reverse_poses(self, device_ids: List=None):
+        """Reverses the order of the poses for the given devices.
+            Applies to all devices if none provided."""
+        get_device = lambda a: a.position.device
+
+        if self.poses and len(self.poses):
+            sorted_poses = sorted(self.poses, key=get_device)
+            grouped = groupby(sorted_poses, get_device)
+            groups = []
+            sets_changed = False
+
+            for key, group in grouped:
+                group = list(group)
+
+                if not device_ids or key in device_ids:
+                    group.reverse()
+                    sets_changed = True
+
+                groups.append(group)
+
+            if sets_changed:
+                interleaved = interleave_lists(*groups)
+                self._pose_sets.clear(False)
+                self._pose_sets.extend(build_pose_sets(interleaved))
 
     def can_add_pose(self, set_index: int, device_id: int):
         """Returns a flag indicating where a pose with the specified device

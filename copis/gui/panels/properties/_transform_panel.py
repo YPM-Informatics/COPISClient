@@ -27,7 +27,7 @@ from copis.globals import ActionType, Point5
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
-    get_heading, rad_to_dd, sanitize_number,
+    get_heading, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
 from copis.store import get_file_base_name_no_ext
 from copis.classes import Action, Device, Pose
@@ -40,6 +40,7 @@ class TransformPanel(wx.Panel):
 
     _XYZ_UNIT = 'mm'
     _PT_UNIT = 'dd'
+    _DEFAULT_FEED_RATE = 2500
 
     _TARGET_CTX_CHOICES = target_ctx_choices(
         'Bounding Box Center',
@@ -71,7 +72,7 @@ class TransformPanel(wx.Panel):
 
         # Bind listeners
         if self._is_live:
-            dispatcher.connect(self._on_device_updated, signal='ntf_device_updated')
+            dispatcher.connect(self._on_device_updated, signal='ntf_device_ser_updated')
 
         # Bind events.
         for ctrl in (self._x_ctrl, self._y_ctrl, self._z_ctrl, self._p_ctrl, self._t_ctrl,
@@ -257,22 +258,17 @@ class TransformPanel(wx.Panel):
             size=(24, 24), name='sw')
         arrow_se_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('arrow_se', 15),
             size=(24, 24), name='se')
-        target_closer_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('target_closer', 24),
-            size=btn_size, name='closer')
-        re_target_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('center_focus_strong', 24),
-            size=btn_size, name='target')
-        target_farther_btn = wx.BitmapButton(self,
-            bitmap=create_scaled_bitmap('target_farther', 24),
-            size=btn_size, name='farther')
+
+        target_closer_btn = wx.Button(self, label='Toward Target', size=(20, -1), name='closer')
+        re_target_btn = wx.Button(self, label='Re-target', size=(20, -1), name='target')
+        target_further_btn = wx.Button(self, label='From Target', size=(20, -1), name='further')
 
         for btn in (x_pos_btn, x_neg_btn, y_pos_btn, y_neg_btn, z_pos_btn, z_neg_btn,
                     t_pos_btn, t_neg_btn, p_pos_btn, p_neg_btn,
                     arrow_ne_btn, arrow_nw_btn, arrow_se_btn, arrow_sw_btn):
             btn.Bind(wx.EVT_BUTTON, self._on_step_button)
 
-        for btn in (target_closer_btn, target_farther_btn, re_target_btn):
+        for btn in (target_closer_btn, target_further_btn, re_target_btn):
             btn.Bind(wx.EVT_BUTTON, self._on_target_button)
 
         re_target_btn.Bind(wx.EVT_CONTEXT_MENU, self._on_target_ctx_menu)
@@ -313,12 +309,13 @@ class TransformPanel(wx.Panel):
 
             (target_closer_btn, 0, wx.EXPAND, 0),
             (re_target_btn, 0, wx.EXPAND, 0),
-            (target_farther_btn, 0, wx.EXPAND, 0)
+            (target_further_btn, 0, wx.EXPAND, 0)
         ])
 
         if not self._is_live:
             self._target_all_poses_opt.Show()
-            xyzpt_grid.Add(self._target_all_poses_opt, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0)
+            xyzpt_grid.Add(self._target_all_poses_opt, 0,
+                wx.EXPAND|wx.LEFT|wx.ALIGN_CENTER_VERTICAL, 5)
         else:
             self._target_all_poses_opt.Hide()
             xyzpt_grid.Add(0, 0)
@@ -326,6 +323,19 @@ class TransformPanel(wx.Panel):
         step_sizer.Add(xyzpt_grid, 0, wx.EXPAND, 0)
 
         self._box_sizer.Add(step_sizer, 0, wx.EXPAND|wx.RIGHT|wx.LEFT, 5)
+
+    def _get_feed_rate_value(self):
+        feed_rate_val = self._feed_rate_ctrl.Value
+        if is_number(feed_rate_val):
+            value = float(feed_rate_val)
+            if value < 0:
+                value = abs(value)
+                self._feed_rate_ctrl.Value = str(value)
+
+            return value
+
+        self._feed_rate_ctrl.Value = str(self._DEFAULT_FEED_RATE)
+        return self._DEFAULT_FEED_RATE
 
     def _init_gui(self) -> None:
         """Initialize gui elements."""
@@ -344,12 +354,12 @@ class TransformPanel(wx.Panel):
             name='xyz_step', default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
         self._pt_step_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=self.pt_step,
             name='pt_step', default_unit=self._PT_UNIT, unit_conversions=pt_units)
-        self._feed_rate_ctrl = wx.TextCtrl(self, value="2500", size=(80, -1),
-            name='feed_rate')
+        self._feed_rate_ctrl = wx.TextCtrl(self, value=str(self._DEFAULT_FEED_RATE),
+            size=(80, -1), name='feed_rate')
         self._copy_pos_btn = wx.Button(self, label='Copy Position')
         self.Bind(wx.EVT_BUTTON, self._on_copy_position)
-        self._target_all_poses_opt = wx.CheckBox(self, label='&Apply target to all poses',
-            name='apply_target')
+        self._target_all_poses_opt = wx.CheckBox(self, label='&Apply to all',
+            name='apply_target', size=(20, -1))
 
         self._feed_rate_ctrl.Hide()
         self._copy_pos_btn.Hide()
@@ -503,7 +513,7 @@ class TransformPanel(wx.Panel):
             if self._is_live:
                 self._play_position(position, 'XYZPT')
             else:
-                if self._target_all_poses_opt.Value:
+                if self._target_all_poses_opt.IsChecked():
                     self.parent.core.re_target_all_poses()
                 else:
                     self.parent.core.update_selected_pose_position(position)
@@ -551,7 +561,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._play_position(position, 'XYZPT')
         else:
-            if self._target_all_poses_opt.Value:
+            if self._target_all_poses_opt.IsChecked():
                 if task == 'target':
                     self.parent.core.re_target_all_poses()
                 else:
@@ -585,7 +595,7 @@ class TransformPanel(wx.Panel):
         cmd_tokens = []
         xyz_step = 0
         pt_step = 0
-        feed_rate = float(self._feed_rate_ctrl.Value)
+        feed_rate = self._get_feed_rate_value()
         pos_names = ''
         pos_values = []
 
@@ -660,7 +670,7 @@ class TransformPanel(wx.Panel):
 
                 if keys != 'Z':
                     keys = keys + 'F'
-                    values.append(float(self._feed_rate_ctrl.Value))
+                    values.append(self._get_feed_rate_value())
 
                 self._play_position(values, keys)
             else:

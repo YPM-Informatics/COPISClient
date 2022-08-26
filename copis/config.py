@@ -48,10 +48,10 @@ class Config():
         'Machine': {
             'size_x': '800',
             'size_y': '900',
-            'size_z': '500',
+            'size_z': '700',
             'origin_x': '400',
             'origin_y': '450',
-            'origin_z': '0'
+            'origin_z': '350'
         }
     }
 
@@ -89,7 +89,7 @@ class Config():
 
         return parser
 
-    def _ensure_window_state_exists(self, display_size, parser):
+    def _ensure_window_state_exists(self, display_rect, parser):
         get_sixty_pct = lambda val: int(val * 60 / 100)
 
         app = parser['App']
@@ -98,12 +98,10 @@ class Config():
         x, y, width, height, is_maximized = None, None, int(min_width), int(min_height), False
 
         if 'window_state' in app:
-            x, y, width, height, is_maximized = _get_state_parts(app['window_state'])
+            state_parts = _get_state_parts(app['window_state'])
+            x, y, width, height, is_maximized = state_parts
         else:
-            width, height = [get_sixty_pct(d) for d in display_size]
-
-        width = min(width, display_size.x)
-        height = min(height, display_size.y)
+            width, height = [get_sixty_pct(d) for d in display_rect[2:4]]
 
         if not is_maximized:
             if x is not None and y is not None:
@@ -113,23 +111,23 @@ class Config():
                 if y < 0:
                     height = max(min_height, height + y)
                     y = 0
-                if x > display_size.x:
-                    offset = x - display_size.x
+                if x > display_rect.X + display_rect.Width:
+                    offset = x - display_rect.X
                     width = max(min_width, width - offset)
-                    x = offset
-                if y  > display_size.y:
-                    offset = y - display_size.y
+                    x = x - offset
+                if y  > display_rect.Y + display_rect.Height:
+                    offset = y - display_rect.Y
                     height = max(min_height, height - offset)
-                    y = offset
-                if x + width > display_size.x:
-                    offset = x + width - display_size.x
+                    y = y - offset
+                if x + width > display_rect.X + display_rect.Width:
+                    offset = x + width - display_rect.X - display_rect.Width
                     width = max(min_width, width - offset)
-                if y + height > display_size.y:
-                    offset = y + height - display_size.y
+                if y + height > display_rect.Y+ display_rect.Height:
+                    offset = y + height - display_rect.Y - display_rect.Height
                     height = max(min_height, height - offset)
             else:
-                x = int((display_size.x - width) / 2)
-                y = int((display_size.y - height) / 2)
+                x = int((display_rect.X - width) / 2)
+                y = int((display_rect.Y - height) / 2)
 
             app['window_state'] = f'{x},{y},{width},{height},{is_maximized}'
             self._store.save_config_parser(parser)

@@ -136,12 +136,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._objectvis = GLObjectVis(self)
 
         # other values
-        self._zoom = 1.0
+        self._zoom = 1.1
         self._hover_id = -1
         self._inside = False
         self._rot_quat = quat()
         self._rot_lock = Lock()
-        self._center = vec3(0.0, 0.0, ((2.0 * self._build_dimensions[5]) - self._build_dimensions[2]) / 2.0)
+        self._center = vec3(0.0, 0.0, ((2.0 * self._build_dimensions[5]) -
+            self._build_dimensions[2]) / 2.0)
         self._object_scale = 3.0
 
         # Bind listeners.
@@ -152,7 +153,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_colors, signal='ntf_s_selected')
         dispatcher.connect(self._update_colors, signal='ntf_s_deselected')
         dispatcher.connect(self._update_devices, signal='ntf_d_list_changed')
-        dispatcher.connect(self._update_devices, signal='ntf_device_updated')
+        dispatcher.connect(self._update_devices, signal='ntf_device_ser_updated')
         dispatcher.connect(self._update_objects, signal='ntf_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='ntf_o_deselected')
 
@@ -309,7 +310,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def _update_devices(self) -> None:
         """When the device list has changed, update actionvis and _num_devices.
 
-        Handles ntf_d_list_changed signal.
+        Handles ntf_d_list_changed and ntf_device_ser_updated signals.
         """
         self._num_devices = len(self.core.project.devices)
         wx.CallAfter(self._actionvis.update_devices)

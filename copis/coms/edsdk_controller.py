@@ -17,16 +17,18 @@
 
 import os
 import datetime
+import time
 
 from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string_at, cast
 from dataclasses import dataclass
-import time
+
 from typing import ClassVar, List
 from mprop import mproperty
 
 from canon.EDSDKLib import (
-    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsFileCreateDisposition, EdsSaveTo,
-    EdsShutterButton, EdsStorageType)
+    EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsEvfAf,
+    EdsFileCreateDisposition, EdsSaveTo, EdsShutterButton,
+    EdsStorageType, EvfDriveLens)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
 
@@ -92,6 +94,11 @@ class EDSDKController():
 
         return devices
 
+    def _get_prop_data(self, ref, prop_id, param, prop):
+        param_info = self._edsdk.EdsGetPropertySize(ref, prop_id, param)
+        self._edsdk.EdsGetPropertyData(ref, prop_id, param,
+            param_info['size'], prop)
+
     def _get_device_info_list(self):
         infos = []
 
@@ -149,6 +156,7 @@ class EDSDKController():
             self._generate_file_name()
 
             img_ref = c_void_p(image)
+
             dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
             stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename,
                 EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
@@ -360,8 +368,8 @@ class EDSDKController():
 
         return not self._is_connected
 
-    def take_picture(self) -> bool:
-        """Take picture on connected camera.
+    def take_picture(self, do_af: bool=True) -> bool:
+        """Takes a picture on connected camera.
 
         Returns:
             True if successful, False otherwise.
@@ -374,9 +382,13 @@ class EDSDKController():
         try:
             self._is_waiting_for_image = True
 
+            param = EdsShutterButton.CameraCommand_ShutterButton_Completely.value
+
+            if not do_af:
+                param = EdsShutterButton.CameraCommand_ShutterButton_Completely_NonAF.value
+
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
-                self._edsdk.CameraCommand_PressShutterButton,
-                EdsShutterButton.CameraCommand_ShutterButton_Completely.value)
+                self._edsdk.CameraCommand_PressShutterButton, param)
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
@@ -395,8 +407,8 @@ class EDSDKController():
 
             return False
 
-    def terminate(self):
-        """Terminate EDSDK."""
+    def terminate(self) -> None:
+        """Terminates EDSDK."""
         try:
             self.disconnect()
             self._edsdk.EdsTerminateSDK()
@@ -406,13 +418,33 @@ class EDSDKController():
                 'An exception occurred while terminating Canon API: '
                 f'{err.args[0]}')
 
-    # def step_focus(self) -> bool:
-    #     """TODO
+    def step_focus(self, step: EvfDriveLens) -> bool:
+        """Steps the camera's focus by the given value (direction and distance).
 
-    #     Returns:
-    #         True if successful, False otherwise.
-    #     """
-    #     return False
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+
+            return False
+
+        try:
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DriveLensEvf, step.value)
+
+            return True
+
+        except Exception as err:
+            msg = ' '.join(["An exception occurred while stepping the camera's focus",
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
+
+            return False
 
     def transfer_pictures(self, destination) -> None:
         """Transfers pictures off of the camera."""
@@ -447,30 +479,65 @@ class EDSDKController():
             self._delete_pictures(pictures)
 
             self._print_info_msg(self._console,
-                f'{count or "No"} picture{"s" if count != 1 else ""} tranferred')
+                f'{count or "No"} picture{"s" if count != 1 else ""} transferred')
         else:
             self._print_info_msg(self._console, 'No pictures transferred')
 
-    def focus(self) -> None:
-        """Focuses the camera."""
+    def evf_focus(self) -> bool:
+        """Performs a live view specific auto-focus.
+
+        Returns:
+            True if successful, False otherwise.
+        """
         if not self._is_connected:
             self._print_error_msg(self._console, 'No cameras currently connected.')
             return False
 
         try:
-            self._is_waiting_for_image = True
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DoEvfAf, EdsEvfAf.CameraCommand_EvfAf_ON.value)
 
+            time.sleep(1)
+
+            self._edsdk.EdsSendCommand(self._camera_settings.ref,
+                self._edsdk.CameraCommand_DoEvfAf, EdsEvfAf.CameraCommand_EvfAf_OFF.value)
+
+            return True
+
+        except Exception as err:
+            msg = ' '.join(['An exception occurred while focusing with camera',
+                f'{self._camera_settings.software_id}: {err.args[0]}'])
+
+            if EdsErrorCodes.EDS_ERR_TAKE_PICTURE_AF_NG.name in err.args[0]:
+                msg = f'Camera {self._camera_settings.software_id} EDSDK focus failed.'
+
+            self._print_error_msg(self._console, msg)
+
+            return False
+
+    def focus(self, shutter_timeout: float=0) -> bool:
+        """Focuses the camera.
+
+        Returns:
+            True if successful, False otherwise.
+        """
+        if not self._is_connected:
+            self._print_error_msg(self._console, 'No cameras currently connected.')
+            return False
+
+        try:
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_Halfway.value)
 
-            time.sleep(.5)
+            if shutter_timeout > 0:
+                time.sleep(shutter_timeout)
 
             self._edsdk.EdsSendCommand(self._camera_settings.ref,
                 self._edsdk.CameraCommand_PressShutterButton,
                 EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
-            return None
+            return True
 
         except Exception as err:
             msg = ' '.join(['An exception occurred while focusing with camera',
@@ -493,7 +560,7 @@ class EDSDKController():
         self._evf_stream = self._edsdk.EdsCreateMemoryStream(sizeof(c_void_p))
         self._evf_image_ref = self._edsdk.EdsCreateEvfImageRef(self._evf_stream)
 
-    def download_evf_data(self) -> None:
+    def download_evf_data(self) -> bytearray:
         """Downloads the live view stream."""
         err = EdsErrorCodes.EDS_ERR_OBJECT_NOTREADY
 
@@ -527,7 +594,7 @@ class EDSDKController():
 
         return None
 
-    def end_live_view(self):
+    def end_live_view(self) -> None:
         """Ends the live view for the connected camera."""
         self._edsdk.EdsSetPropertyData(
             self._camera_settings.ref, self._edsdk.PropID_Evf_OutputDevice, 0, sizeof(c_uint), 0)
@@ -587,6 +654,8 @@ end_live_view = _instance.end_live_view
 download_evf_data = _instance.download_evf_data
 focus = _instance.focus
 transfer_pictures = _instance.transfer_pictures
+step_focus = _instance.step_focus
+evf_focus = _instance.evf_focus
 
 
 @mproperty

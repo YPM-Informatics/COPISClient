@@ -41,7 +41,8 @@ class Device:
 
     _serial_response: SerialResponse = None
     _is_homed: bool = False
-    _is_writing: bool = False
+    _is_writing_ser: bool = False
+    _is_writing_eds: bool = False
     _last_reported_on: datetime = None
 
     @property
@@ -51,8 +52,26 @@ class Device:
 
     @property
     def is_writing(self) -> bool:
-        """Returns the device's IsWriting flag."""
-        return self._is_writing
+        """Returns the device's unified IsWriting flag."""
+        return self._is_writing_ser or self._is_writing_eds
+
+    @property
+    def is_writing_ser(self) -> bool:
+        """Returns the device's IsWriting flag for serial com."""
+        return self._is_writing_ser
+
+    @property
+    def is_writing_eds(self) -> bool:
+        """Returns the device's IsWriting flag for EDSDK com."""
+        return self._is_writing_eds
+
+    @is_writing_eds.setter
+    def is_writing_eds(self, value: bool) -> None:
+        old_value = self._is_writing_eds
+        self._is_writing_eds = value
+
+        if self._is_writing_eds != old_value:
+            dispatcher.send('ntf_device_eds_updated', device=self)
 
     @property
     def is_homed(self) -> bool:
@@ -76,12 +95,12 @@ class Device:
             if self._is_homed:
                 return ComStatus.IDLE
 
-            return ComStatus.BUSY if self._is_writing else ComStatus.UNKNOWN
+            return ComStatus.BUSY if self._is_writing_ser else ComStatus.UNKNOWN
 
         if self.serial_response.error:
             return ComStatus.ERROR
 
-        if self._is_writing or not self.serial_response.is_idle:
+        if self._is_writing_ser or not self.serial_response.is_idle:
             return ComStatus.BUSY
 
         if self.serial_response.is_idle:
@@ -89,11 +108,19 @@ class Device:
 
         raise ValueError('Unsupported device serial status code path.')
 
-    def set_is_writing(self) -> None:
-        """Sets the device's IsWriting flag."""
-        self._is_writing = True
+    @property
+    def status(self) -> ComStatus:
+        """Returns the device's aggregate status."""
+        if self._is_writing_eds:
+            return ComStatus.BUSY
 
-        dispatcher.send('ntf_device_updated', device=self)
+        return self.serial_status
+
+    def set_is_writing_ser(self) -> None:
+        """Sets the device's IsWriting flag."""
+        self._is_writing_ser = True
+
+        dispatcher.send('ntf_device_ser_updated', device=self)
 
     def set_is_homed(self) -> None:
         """Sets the device's IsHomed flag and notifies."""
@@ -110,6 +137,6 @@ class Device:
         else:
             self._last_reported_on = None
 
-        self._is_writing = False
+        self._is_writing_ser = False
 
-        dispatcher.send('ntf_device_updated', device=self)
+        dispatcher.send('ntf_device_ser_updated', device=self)

@@ -100,7 +100,7 @@ class PathStats(wx.Panel):
 
         count_imgs = lambda p_list: len(
             [a for p in p_list for a in p.get_actions()
-                if a.atype == ActionType.C0])
+                if a.atype in self._core.SNAP_COMMANDS])
 
         def get_counts_lbl(p_count, i_count):
             return f'{p_count or "No"} ({i_count} image{"s" if i_count != 1 else ""})'

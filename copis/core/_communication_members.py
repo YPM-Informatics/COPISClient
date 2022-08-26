@@ -22,11 +22,13 @@ import time
 from datetime import datetime
 from typing import List
 
+from canon.EDSDKLib import EvfDriveLens
 from copis.classes import Action, Pose
 from copis.coms import serial_controller
 from copis.globals import ActionType
 from copis.helpers import create_action_args, locked, print_error_msg, print_info_msg
 from copis.classes import ReadThread
+
 
 class CommunicationMembersMixin:
     """Implement COPIS Core component communication (serial, edsdk)
@@ -115,20 +117,32 @@ class CommunicationMembersMixin:
 
         return data
 
-    def snap_edsdk_picture(self, save_path, keep_last_path):
+    def snap_edsdk_picture(self, do_af, device_id, save_path, keep_last_path):
         """Takes a picture via EDSDK."""
-        # TODO: When we can process edsdk commands, add this to the session management pipeline.
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.take_picture()
+            c_args = create_action_args([1 if do_af else 0], 'V')
+            payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
 
-    def do_edsdk_focus(self):
+            self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
+
+    def do_edsdk_focus(self, shutter_release_time, device_id):
         """Focuses the camera via EDSDK."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            self._edsdk.focus()
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload = [Action(ActionType.EDS_FOCUS, device_id, len(c_args), c_args)]
+
+            self.play_poses([Pose(payload=payload)])
+
+    def do_evf_edsdk_focus(self):
+        """Performs Live view specific EDSDK focus."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.evf_focus()
 
     def transfer_edsdk_pictures(self, destination, keep_last):
         """"Transfers pictures off of the camera via EDSDK."""
@@ -139,6 +153,28 @@ class CommunicationMembersMixin:
                 self._imaging_session_path = destination
 
         self._edsdk.transfer_pictures(destination)
+
+    def edsdk_step_focus(self, step_info: int):
+        """Steps the camera's focus given step info."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            if step_info < 0:
+                if step_info == -1:
+                    step = EvfDriveLens.Near1
+                elif step_info == -2:
+                    step = EvfDriveLens.Near2
+                else:
+                    step = EvfDriveLens.Near3
+            else:
+                if step_info == 1:
+                    step = EvfDriveLens.Far1
+                elif step_info == 2:
+                    step = EvfDriveLens.Far2
+                else:
+                    step = EvfDriveLens.Far3
+
+        self._edsdk.step_focus(step)
 
     # --------------------------------------------------------------------------
     # Serial methods
@@ -212,12 +248,12 @@ class CommunicationMembersMixin:
         """Updates the serial ports list."""
         self._serial.update_port_list()
 
-    def snap_serial_picture(self, device_id, save_path, keep_last_path):
+    def snap_serial_picture(self, shutter_release_time, device_id, save_path, keep_last_path):
         """Takes a picture via serial."""
         if not self.is_serial_port_connected:
             print_error_msg(self.console, 'The machine is not connected.')
         else:
-            c_args = create_action_args([1.5], 'S')
+            c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
             self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
