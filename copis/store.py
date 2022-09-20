@@ -69,7 +69,7 @@ class Store():
 
     def save_config_parser(self, parser: ConfigParser) -> None:
         """Saves a configuration object to file."""
-        with open(self._config_path, 'w') as file:
+        with open(self._config_path, 'w', encoding='utf-8') as file:
             parser.write(file)
 
     def save_config(self, config) -> None:
@@ -98,12 +98,15 @@ class Store():
         return self.find_path(os.path.join(Store._PROXY_FOLDER, file_name))
 
     def get_copis_version(self) -> str:
+        """Gets the current version of the COPIS app."""
         pkg_attrs  = {}
         version_path = self.find_path(Store._VERSION_FILE)
 
         if path_exists(version_path):
             # pylint: disable=exec-used
-            exec(open(version_path).read(), pkg_attrs)
+            with open(version_path, encoding='utf-8') as file:
+                exec(file.read(), pkg_attrs)
+
             return pkg_attrs['__version__']
 
         return ""
@@ -122,13 +125,13 @@ class _RemoduleUnpickler(pickle.Unpickler):
 
 def save_pickle(filename: str, obj: object) -> None:
     """Saves a pickled object to file."""
-    with open(filename, 'wb') as file:
+    with open(filename, 'wb', encoding='utf-8') as file:
         pickle.dump(obj, file)
 
 
 def load_pickle(filename: str, obj: object) -> object:
     """Loads a pickled object from file."""
-    with open(filename, 'rb') as file:
+    with open(filename, 'rb', encoding='utf-8') as file:
         obj = _pickle_remodule_load(file) # pickle.load(file)
 
     return obj
@@ -136,7 +139,7 @@ def load_pickle(filename: str, obj: object) -> object:
 
 def save_json(filename: str, obj: dict) -> None:
     """Saves a JSON object to file."""
-    with open(filename, 'w') as file:
+    with open(filename, 'w', encoding='utf-8') as file:
         json.dump(obj, file, indent='\t')
 
 
@@ -148,7 +151,7 @@ def save_json_2(file_dir: str, file_name: str, obj: dict) -> None:
 
 def load_json(filename: str) -> Any:
     """Loads a JSON object from file."""
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         obj = json.load(file)
 
     return obj
@@ -162,13 +165,13 @@ def load_json_2(file_dir: str, file_name: str) -> Any:
 
 def save_data(filename: str, data: str) -> None:
     """Saves some string data to file."""
-    with open(filename, 'w') as file:
+    with open(filename, 'w', encoding='utf-8') as file:
         file.write(data)
 
 
 def load_data(filename: str) -> str:
     """Loads some string data from file."""
-    with open(filename, 'r') as file:
+    with open(filename, 'r', encoding='utf-8') as file:
         data = file.read()
 
     return data
