@@ -43,7 +43,8 @@ class Config():
     _DEFAULT_CONFIG = {
         'App': {
             'window_min_size': '800,600',
-            'debug_env': 'prod'
+            'debug_env': 'prod',
+            'version': Store().get_copis_version()
         },
         'Machine': {
             'size_x': '800',
@@ -150,6 +151,12 @@ class Config():
             debug_env = self._DEFAULT_CONFIG[section]['debug_env']
 
         app_settings = ApplicationSettings(DebugEnv(debug_env), window_min_size, window_state)
+
+        key = 'version'
+        if key in app:
+            app_version = app[key]
+            if app_version:
+                app_settings.app_version = app_version
 
         key = 'last_output_path'
         if key in app:

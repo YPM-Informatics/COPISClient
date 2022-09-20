@@ -30,6 +30,7 @@ class ApplicationSettings:
     window_min_size: Size = Size(800, 600)
 
     window_state: WindowState = WindowState(0, 0, 800, 600, False)
+    app_version: str = ''
     last_output_path: str = ''
     recent_projects: List[str] = field(default_factory=lambda: [])
 
@@ -45,6 +46,9 @@ class ApplicationSettings:
                 'window_state': stringify(self.window_state)
             }
         }
+
+        if self.app_version:
+            settings_dict['App']['version'] = self.app_version
 
         if self.last_output_path:
             settings_dict['App']['last_output_path'] = self.last_output_path
