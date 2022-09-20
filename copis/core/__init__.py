@@ -15,8 +15,6 @@
 
 """COPIS Application Core functions."""
 
-__version__ = ""
-
 # pylint: disable=using-constant-test
 import sys
 from typing import List, Tuple
@@ -42,6 +40,7 @@ from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
 from copis.store import load_json_2, path_exists_2, save_json_2
+from .__version__ import __version__
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin

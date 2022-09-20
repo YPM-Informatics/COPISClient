@@ -30,6 +30,7 @@ class Store():
     _PROJECT_FOLDER = 'copis'
     _CONFIG_FILE = 'COPIS.ini'
     _PROXY_FOLDER = 'proxies'
+    _VERSION_FILE = '__version__.py'
 
     def __init__(self) -> None:
         current = os.path.dirname(__file__)
@@ -95,6 +96,17 @@ class Store():
     def find_proxy(self, file_name: str='') -> str:
         """Finds the given proxy file name's full path relative to the COPIS root folder."""
         return self.find_path(os.path.join(Store._PROXY_FOLDER, file_name))
+
+    def get_copis_version(self) -> str:
+        pkg_attrs  = {}
+        version_path = self.find_path(Store._VERSION_FILE)
+
+        if path_exists(version_path):
+            # pylint: disable=exec-used
+            exec(open(version_path).read(), pkg_attrs)
+            return pkg_attrs['__version__']
+
+        return ""
 
 
 class _RemoduleUnpickler(pickle.Unpickler):
