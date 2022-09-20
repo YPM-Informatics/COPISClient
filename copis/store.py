@@ -21,6 +21,7 @@ import pickle
 import json
 from configparser import ConfigParser
 from pathlib import Path
+from shutil import rmtree
 from typing import Any, Optional
 
 
@@ -47,6 +48,11 @@ class Store():
 
         if not os.path.exists(self._config_dir):
             os.makedirs(self._config_dir)
+
+    def clear_configs(self):
+        """Clears the configuration directory"""
+        rmtree(self._config_dir)
+        os.makedirs(self._config_dir)
 
     def ensure_default_profile(self, name: str, data: str):
         """Ensures the default profile file exists and returns it path."""

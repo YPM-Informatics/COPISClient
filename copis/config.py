@@ -77,8 +77,12 @@ class Config():
 
     def _ensure_config_exists(self, display_size) -> ConfigParser:
         parser = self._store.load_config()
+        key = 'version'
+        app_version = self._store.get_copis_version()
 
-        if parser is None:
+        if parser is None or key not in parser['App'] or parser['App']['version'] != app_version:
+            if parser:
+                self._store.clear_configs()
             parser = ConfigParser()
 
             parser['App'] = self._DEFAULT_CONFIG['App']
