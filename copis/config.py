@@ -111,18 +111,18 @@ class Config():
                 if y < 0:
                     height = max(min_height, height + y)
                     y = 0
-                if x > display_rect.X + display_rect.Width:
+                if x > .9 * (display_rect.X + display_rect.Width):
                     offset = x - display_rect.X
                     width = max(min_width, width - offset)
                     x = x - offset
-                if y  > display_rect.Y + display_rect.Height:
+                if y  > .9 * (display_rect.Y + display_rect.Height):
                     offset = y - display_rect.Y
                     height = max(min_height, height - offset)
                     y = y - offset
                 if x + width > display_rect.X + display_rect.Width:
                     offset = x + width - display_rect.X - display_rect.Width
                     width = max(min_width, width - offset)
-                if y + height > display_rect.Y+ display_rect.Height:
+                if y + height > display_rect.Y + display_rect.Height:
                     offset = y + height - display_rect.Y - display_rect.Height
                     height = max(min_height, height - offset)
             else:
