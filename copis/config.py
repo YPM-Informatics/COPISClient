@@ -120,7 +120,7 @@ class Config():
                     offset = x - display_rect.X
                     width = max(min_width, width - offset)
                     x = x - offset
-                if y  > .9 * (display_rect.Y + display_rect.Height):
+                if y > .9 * (display_rect.Y + display_rect.Height):
                     offset = y - display_rect.Y
                     height = max(min_height, height - offset)
                     y = y - offset
@@ -131,8 +131,8 @@ class Config():
                     offset = y + height - display_rect.Y - display_rect.Height
                     height = max(min_height, height - offset)
             else:
-                x = int((display_rect.X - width) / 2)
-                y = int((display_rect.Y - height) / 2)
+                x = abs(int((display_rect.X - width) / 2))
+                y = abs(int((display_rect.Y - height) / 2))
 
             app['window_state'] = f'{x},{y},{width},{height},{is_maximized}'
             self._store.save_config_parser(parser)
