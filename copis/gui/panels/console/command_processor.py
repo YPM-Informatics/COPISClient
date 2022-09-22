@@ -179,7 +179,7 @@ class _CommandProcessor:
                     self._print(f'{opts[0]} {"not " if port is None else ""}selected.')
 
         def optimize():
-            if (len(opts) < 0):
+            if (len(opts) < 1):
                 self._print('Optimization parameters required. See documentation')
                 return
             elif (opts[0].lower() == 'pan'):   
