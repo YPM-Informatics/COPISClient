@@ -23,7 +23,9 @@ from copis.command_processor import serialize_command
 from copis.globals import ActionType, Point5
 from copis.helpers import (create_action_args, get_action_args_values, get_end_position,
     get_heading, print_error_msg, sanitize_number)
+from copis.mathutils import optimize_rotation_move_to_angle
 
+import math
 
 class ComponentMembersMixin:
     """Implement COPIS Core component (actions, points, devices, proxy objects)
@@ -142,7 +144,6 @@ class ComponentMembersMixin:
             selected = self._selected_pose
             if self._selected_pose >= 0:
                 self._selected_pose = -1
-
                 dispatcher.send('ntf_a_deselected', pose_index=selected)
         elif index < len(self.project.poses):
             self.select_device(-1)
@@ -254,3 +255,35 @@ class ComponentMembersMixin:
 
         dispatcher.send('ntf_a_exported', filename=filename)
         return lines
+
+    def optimize_all_poses_pan_angles(self) -> None:
+        """Optimizes all the poses to minimize panning motion cost."""
+        last_position_by_id = {}
+        for pose in self.project.poses:
+            pose_position = pose.position
+            device_id = pose[0].device
+            args = get_action_args_values(pose_position.args)
+            pt = Point5(*args[:5])
+            if device_id not in last_position_by_id:
+                last_position_by_id[device_id] = pt
+            else:
+                optimized_pan_angle = optimize_rotation_move_to_angle(last_position_by_id[device_id].p, pt.p)
+                args[3] = sanitize_number(optimized_pan_angle)
+                args = create_action_args(args)
+                argc = min(len(pose_position.args), len(args))
+                for i in range(argc):
+                    pose_position.args[i] = args[i]
+                pose_position.argc = argc
+                pose_position.update()
+                args = get_action_args_values(pose_position.args)
+                pt = Point5(*args[:5])
+                last_position_by_id[device_id] =  pt
+        dispatcher.send('ntf_a_list_changed')
+        #self.select_pose(self.selected_pose) #reselect the current selected pose (if one was selected) to update variables in transorm panel
+    def optimize_all_poses_randomize(self) -> None:
+        """Optimizes all the poses to minimize panning motion cost."""
+        import random
+        random.shuffle(self.project.pose_sets)     
+        dispatcher.send('ntf_a_list_changed')
+
+

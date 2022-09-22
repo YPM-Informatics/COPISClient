@@ -178,12 +178,29 @@ class _CommandProcessor:
                     port = self._core.select_serial_port(opts[0])
                     self._print(f'{opts[0]} {"not " if port is None else ""}selected.')
 
+        def optimize():
+            if (len(opts) < 0):
+                self._print('Optimization parameters required. See documentation')
+                return
+            elif (opts[0].lower() == 'pan'):   
+                 #perform pan optimization
+                 self._core.optimize_all_poses_pan_angles()
+                 self._core.select_pose(self._core.selected_pose) #reselect the current selected pose (if one was selected) to update variables in transorm panel
+                 self._print('Pan optimization completed.')
+            elif (opts[0].lower() == 'random'):   
+                 self._core.optimize_all_poses_randomize() #poor preformance on large pose sets. Likely due to monitored list. Will have to look into it one day.
+                 self._core.select_pose(self._core.selected_pose) 
+                 self._print('Pose set randomization completed.')
+            else:
+               self._print('Invalid optimization parameters required. See documentation')
+
         def default():
             # self._print("Command not implemented.")
             if not self._core.is_serial_port_connected:
                 self._print('A serial port needs to be open in order to shoot.')
             else:
                 self._core._serial.write(cmd)
+         
 
         cmds = {
             'use': use,
@@ -193,7 +210,8 @@ class _CommandProcessor:
             'disconnect': disconnect,
             'shoot': shoot,
             'refresh': refresh,
-            'select': select
+            'select': select,
+            'optimize': optimize
         }
 
         cmds.get(cmd, default)()

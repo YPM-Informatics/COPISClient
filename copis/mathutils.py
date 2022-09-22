@@ -16,7 +16,7 @@
 """Helper math functions: arcball, project_to_sphere, and orthonormal_basis_of.
 """
 
-from math import asin, sqrt, copysign
+from math import asin, sqrt, copysign, pi, ceil, floor, fabs
 from typing import Tuple
 
 import glm
@@ -114,3 +114,37 @@ def orthonormal_basis_of(n: vec3) -> Tuple[vec3, vec3]:
 #         x = glm.dot(rot, x)
 #         z = glm.dot(rot, z)
 #     return x, v, z
+
+
+def optimize_rotation_move_to_angle(start_angle, end_angle, angular_unit='rad'):
+    """Takes a starting and an ending angle in radians and determines 
+        the corresponding end angle that would result in the shortest rotation between the two angles.
+        additional metrics are computed for future usage. replace math.pi with 180 to work in degrees
+
+    Args:
+        start_angle: the starting angle from which a rotation is inititated
+        end_angle: the angle we are trying to move to from the start angle
+    """
+    full_circ =  pi*2
+    half_circ =  pi
+    if angular_unit == 'dd':
+        full_circ = 360
+        half_circ = 180
+    delta = (end_angle - start_angle)
+    dir = 0
+    full_rotations = 0
+    partial_rotation = 0
+    optimized_rotation = 0
+    optimized_angle = end_angle
+    if delta >= 0:
+        dir = 1
+        full_rotations = floor(delta/full_circ)
+    else:
+        dir = -1
+        full_rotations = ceil(delta/full_circ)
+    partial_rotation = delta % (full_circ*dir)
+    optimized_rotation = partial_rotation
+    if (fabs(partial_rotation)>(half_circ)):
+        optimized_rotation =  partial_rotation -(full_circ*dir)
+    optimized_angle = start_angle + optimized_rotation
+    return optimized_angle
