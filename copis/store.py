@@ -19,107 +19,112 @@ import os
 import io
 import pickle
 import json
+import shutil
+import errno
+
 from configparser import ConfigParser
 from pathlib import Path
 from typing import Any, Optional
+from appdirs import user_data_dir
+
+#    """ COPIS File I/O & storage operations."""
+
+def get_root() ->str:
+     root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+     return root
+
+def get_ini_path() -> str:
+    root_dir = get_root()
+    p = os.path.join(root_dir, 'copis.ini')
+    if not os.path.exists(p):
+        p = os.path.join(resolve_data_dir(), 'copis.ini')
+        if not os.path.exists(p):
+            s = (os.path.join(get_root(),'ex','ex.ini'))
+            shutil.copyfile(s,p)
+    if not os.path.exists(p):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
+    return p
+
+def resolve_data_dir() ->str:
+    data_dir = user_data_dir('copis','copis')
+    legacy = os.path.split(user_data_dir('copis', roaming=True))[0]
+    legacy2 = os.path.split(user_data_dir('copis'))[0]
+    if os.path.exists(legacy) and not os.path.exists(data_dir):
+        return legacy
+    elif os.path.exists(legacy2) and not os.path.exists(data_dir):
+        return legacy2
+    else:
+        if not os.path.exists(data_dir):
+            os.makedirs(data_dir)
+        return data_dir
+
+    
+def get_profile_path() -> str:
+    parser = load_config()
+    if (parser.has_option('Project', 'profile_path')):
+        p = parser['Project']['profile_path']
+        if not os.path.exists(p): #likely referencing a relative path from a different working directory
+            p2 = os.path.join(get_root(), p)
+            if os.path.exists(p2):
+                p = p2
+    else:
+        p = os.path.join(resolve_data_dir(),'default_profile.json')
+        if not os.path.exists(p):
+            s = (os.path.join(get_root(),'profiles','default_profile.json'))
+            shutil.copyfile(s,p)  
+    if not os.path.exists(p): #likely referencing a relative path from a different working directory
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
+    return p
 
 
-class Store():
-    """Handle application-wide data storage operations."""
+def get_proxy_path() -> str:
+    parser = load_config()
+    if (parser.has_option('Project', 'default_proxy_path')):
+        p = parser['Project']['default_proxy_path']
+        if not os.path.exists(p): #likely referencing a relative path from a different working directory
+            p2 = os.path.join(get_root(), p)
+            if os.path.exists(p2):
+                p = p2
+    else:
+        p = os.path.join(resolve_data_dir(),'handsome_dan.obj')
+        if not os.path.exists(p):
+            s = (os.path.join(get_root(),'proxies','handsome_dan.obj'))
+            shutil.copyfile(s,p)
+    if not os.path.exists(p): #likely referencing a relative path from a different working directory
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
+    return p
 
-    _PROJECT_FOLDER = 'copis'
-    _CONFIG_FILE = 'COPIS.ini'
-    _PROXY_FOLDER = 'proxies'
+def save_config_parser(parser: ConfigParser) -> None:
+    """Saves a configuration object to file."""
+    with open(get_ini_path(), 'w') as file:
+        parser.write(file)
 
-    def __init__(self) -> None:
-        current = os.path.dirname(__file__)
-        segments = current.split(os.sep)
-        index = segments.index(Store._PROJECT_FOLDER)
-        root_segments = segments[1:index]
-
-        root = '\\' + os.path.join(*root_segments)
-        app_data = '\\' + os.path.join(*os.environ['APPDATA'].split(os.sep)[1:])
-
-        self._root_dir = root
-        self._config_dir = os.path.join(app_data, Store._PROJECT_FOLDER.upper())
-        self._config_path = os.path.join(self._config_dir, Store._CONFIG_FILE)
-
-        if not os.path.exists(self._config_dir):
-            os.makedirs(self._config_dir)
-
-    def ensure_default_profile(self, name: str, data: str):
-        """Ensures the default profile file exists and returns it path."""
-        filename = os.path.join(self._config_dir, name)
-
-        if not os.path.exists(filename):
-            obj = json.loads(data)
-            save_json(filename, obj)
-
-        return filename
-
-    def ensure_default_proxy(self, name: str, data: str):
-        """Ensures the default proxy file exists and returns it path."""
-        filename = os.path.join(self._config_dir, name)
-
-        if not os.path.exists(filename):
-            save_data(filename, data)
-
-        return filename
-
-    def save_config_parser(self, parser: ConfigParser) -> None:
-        """Saves a configuration object to file."""
-        with open(self._config_path, 'w') as file:
-            parser.write(file)
-
-    def save_config(self, config) -> None:
-        """Saves a configuration object to file, via its settings object."""
+def load_config() -> Optional[ConfigParser]:
+    """Loads a configuration object from file."""
+    if os.path.exists(get_ini_path()):
         parser = ConfigParser()
-        parser.read_dict(config.as_dict())
+        parser.read(get_ini_path())
+        return parser
+    return None
 
-        self.save_config_parser(parser)
+def save_config(config) -> None:
+    """Saves a configuration object to file, via its settings object."""
+    p = load_config()
+    parser = ConfigParser()
+    parser.read_dict(config.as_dict())
+    p.update(parser)
+    save_config_parser(p)
 
-    def load_config(self) -> Optional[ConfigParser]:
-        """Loads a configuration object from file."""
-        if os.path.exists(self._config_path):
-            parser = ConfigParser()
-            parser.read(self._config_path)
-            return parser
+def find_path( filename: str='') -> str:
+    """Finds the given file name's full path relative to the COPIS root folder."""
+    root_dir = get_root()
+    paths = list(Path(root_dir).rglob(filename))
+    return str(paths[0]) if len(paths) > 0 else ''
 
-        return None
-
-    def find_path(self, filename: str='') -> str:
-        """Finds the given file name's full path relative to the COPIS root folder."""
-        paths = list(Path(self._root_dir).rglob(filename))
-        return str(paths[0]) if len(paths) > 0 else ''
-
-    def find_proxy(self, file_name: str='') -> str:
-        """Finds the given proxy file name's full path relative to the COPIS root folder."""
-        return self.find_path(os.path.join(Store._PROXY_FOLDER, file_name))
-
-
-class _RemoduleUnpickler(pickle.Unpickler):
-    """Extends the pickle unpickler so that we can provided the correct module
-    when unpickling an object pickled with an outdated version of the module."""
-    def find_class(self, module, name):
-        renamed_module = module
-        if module == "copis.enums":
-            renamed_module = "copis.globals"
-
-        return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
-
-
-def save_pickle(filename: str, obj: object) -> None:
-    """Saves a pickled object to file."""
-    with open(filename, 'wb') as file:
-        pickle.dump(obj, file)
-
-
-def load_pickle(filename: str, obj: object) -> object:
-    """Loads a pickled object from file."""
-    with open(filename, 'rb') as file:
-        obj = _pickle_remodule_load(file) # pickle.load(file)
-
-    return obj
+def find_proxy(file_name: str='') -> str:
+    """Finds the given proxy file name's full path relative to the COPIS root folder."""
+    root_dir = get_root()
+    return self.find_path(os.path.join(root_dir, file_name))
 
 
 def save_json(filename: str, obj: dict) -> None:
@@ -188,16 +193,36 @@ def path_exists_2(file_dir: str, file_name: str) -> bool:
 
     return path_exists(filename)
 
-
 def delete_path(filename: str) -> None:
     """Deletes the given path."""
     if path_exists(filename):
         os.remove(filename)
 
+class _RemoduleUnpickler(pickle.Unpickler):
+    """Extends the pickle unpickler so that we can provided the correct module
+    when unpickling an object pickled with an outdated version of the module."""
+    def find_class(self, module, name):
+        renamed_module = module
+        if module == "copis.enums":
+            renamed_module = "copis.globals"
+
+        return super(_RemoduleUnpickler, self).find_class(renamed_module, name)
+
+
+def save_pickle(filename: str, obj: object) -> None:
+    """Saves a pickled object to file."""
+    with open(filename, 'wb') as file:
+        pickle.dump(obj, file)
+
+def load_pickle(filename: str, obj: object) -> object:
+    """Loads a pickled object from file."""
+    with open(filename, 'rb') as file:
+        obj = _pickle_remodule_load(file) # pickle.load(file)
+
+    return obj
 
 def _pickle_remodule_load(file_obj):
     return _RemoduleUnpickler(file_obj).load()
-
 
 def _pickle_remodule_loads(pickled_bytes):
     file_obj = io.BytesIO(pickled_bytes)

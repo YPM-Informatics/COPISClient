@@ -21,6 +21,7 @@ from copis.client import COPISApp
 
 
 if __name__ == '__main__':
+
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 

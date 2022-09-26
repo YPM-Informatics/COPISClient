@@ -17,6 +17,8 @@
 
 __version__ = ""
 
+
+
 # pylint: disable=using-constant-test
 import sys
 from typing import List, Tuple
@@ -41,7 +43,7 @@ from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
-from copis.store import load_json_2, path_exists_2, save_json_2
+import copis.store as store
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -63,12 +65,9 @@ class COPISCore(
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
         self.config = parent.config if parent else Config(vec2(800, 600))
-
-        self.project = Project()
+        self.project = Project()  
         self.project.start()
-
         self.console = ConsoleOutput(parent)
-
         self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -110,7 +109,7 @@ class COPISCore(
         self._initialized_manifests = []
         self._save_imaging_session = False
         self._image_counters = {}
-
+        
     @property
     def imaged_pose_sets(self):
         """Returns a list of pose set indexes that have been imaged
@@ -155,7 +154,7 @@ class COPISCore(
         return ('expected_image_counts', counts)
 
     def _update_imaging_manifest(self, pairs):
-        if not path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+        if not store.path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
             manifest = self._imaging_session_manifest.pop(-1)
             self._imaging_session_manifest.clear()
             self._imaging_session_manifest.append(manifest)
@@ -164,7 +163,7 @@ class COPISCore(
             self._imaging_session_manifest[-1][key] = value
 
         if pairs:
-            save_json_2(self._imaging_session_path,
+            store.save_json_2(self._imaging_session_path,
                 self._IMAGING_MANIFEST_FILE_NAME,
                 self._imaging_session_manifest)
 
@@ -446,9 +445,9 @@ class COPISCore(
         if not is_manifest_initialized(manifest_key):
             self._imaging_session_manifest = []
 
-            if path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+            if store.path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
                 self._imaging_session_manifest.extend(
-                    load_json_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME))
+                    save.load_json_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME))
 
             self._initialized_manifests.append(manifest_key)
 

@@ -15,7 +15,6 @@
 
 """Provide the COPIS Device Class."""
 
-
 from dataclasses import dataclass
 from datetime import datetime
 from math import inf
@@ -38,6 +37,10 @@ class Device:
     range_3d: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
     size: vec3 = vec3()
     port: str = ''
+    head_radius: float = 0
+    body_dims: vec3 = vec3()
+    gantry_dims: vec3 = vec3()
+    gantry_orientation: int  = 0
 
     _serial_response: SerialResponse = None
     _is_homed: bool = False
@@ -140,3 +143,6 @@ class Device:
         self._is_writing_ser = False
 
         dispatcher.send('ntf_device_ser_updated', device=self)
+    
+
+

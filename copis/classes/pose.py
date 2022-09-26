@@ -16,9 +16,10 @@
 """Provide the COPIS device Pose Class."""
 
 from typing import List, NamedTuple
-
 from copis.classes import Action
-
+from copis.helpers import get_action_args_values
+from copis.globals import Point5
+from glm import vec3
 
 class Pose(NamedTuple):
     """Device pose data structure."""
@@ -44,3 +45,13 @@ class Pose(NamedTuple):
             actions.extend(self.payload)
 
         return actions
+
+    @property
+    def position_as_point5(self) -> Point5:
+        args = get_action_args_values(self.position.args)
+        return(Point5(*args[:5]))
+    
+    @property
+    def position_as_vec3(self) -> vec3:
+        args = get_action_args_values(self.position.args)
+        return(vec3(*args[:3]))

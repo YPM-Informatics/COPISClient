@@ -40,6 +40,7 @@ class COPISApp(wx.App):
         display_rect = main_d.GetGeometry()
 
         self.config = Config(display_rect)
+
         self.core = COPISCore(self)
 
         # pylint: disable=invalid-name
