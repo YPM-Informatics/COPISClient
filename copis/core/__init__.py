@@ -17,9 +17,12 @@
 
 __version__ = ""
 
+
+
 # pylint: disable=using-constant-test
 import sys
 from typing import List, Tuple
+
 
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
@@ -41,7 +44,8 @@ from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
 from copis.classes import MonitoredList
-from copis.store import load_json_2, path_exists_2, save_json_2
+import copis.store as store
+from copis.classes.sys_db import SysDB
 
 from ._console_output import ConsoleOutput
 from ._thread_targets import ThreadTargetsMixin
@@ -63,12 +67,12 @@ class COPISCore(
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
         self.config = parent.config if parent else Config(vec2(800, 600))
-
-        self.project = Project()
+        print ("using config:", store.get_ini_path())
+        print ("using profile: ", store.get_profile_path())
+        self.sys_db = SysDB()
+        self.project = Project()  
         self.project.start()
-
         self.console = ConsoleOutput(parent)
-
         self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -79,7 +83,8 @@ class COPISCore(
 
         self.init_edsdk()
         self.init_serial()
-
+        self._serial._instance.attach_sys_db(self.sys_db)
+        #attach serial
         self._check_configs()
 
         # Clear to send, enabled after responses.
@@ -110,7 +115,7 @@ class COPISCore(
         self._initialized_manifests = []
         self._save_imaging_session = False
         self._image_counters = {}
-
+        
     @property
     def imaged_pose_sets(self):
         """Returns a list of pose set indexes that have been imaged
@@ -140,11 +145,9 @@ class COPISCore(
 
     def _get_image_counts(self, pose_list=None):
         c_key = lambda p: (p.position or p.payload[0]).device
-
         counts = {}
         poses = sorted(pose_list or self.project.poses, key=c_key)
         groups = groupby(poses, c_key)
-
         for key, group in groups:
             pics = [a for p in list(group) for a in p.get_actions()
                 if a.atype in self.SNAP_COMMANDS]
@@ -155,7 +158,7 @@ class COPISCore(
         return ('expected_image_counts', counts)
 
     def _update_imaging_manifest(self, pairs):
-        if not path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+        if not store.path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
             manifest = self._imaging_session_manifest.pop(-1)
             self._imaging_session_manifest.clear()
             self._imaging_session_manifest.append(manifest)
@@ -164,7 +167,7 @@ class COPISCore(
             self._imaging_session_manifest[-1][key] = value
 
         if pairs:
-            save_json_2(self._imaging_session_path,
+            store.save_json_2(self._imaging_session_path,
                 self._IMAGING_MANIFEST_FILE_NAME,
                 self._imaging_session_manifest)
 
@@ -298,24 +301,21 @@ class COPISCore(
                     .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
                 f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
-            if self._save_imaging_session:
-                for command in commands:
-                    if command.atype in self.SNAP_COMMANDS:
-                        device = self._get_device(command.device)
-                        rank = self._get_next_img_rank(command.device)
-                        method = \
-                            'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
-                        file_name = \
-                            f'cam_{command.device}_img_{rank}.json'
-
+            for command in commands:
+                if command.atype in self.SNAP_COMMANDS:
+                    device = self._get_device(command.device)
+                    rank = self._get_next_img_rank(command.device)
+                    method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
+                    self.sys_db.start_pose(device,method)
+                    if self._save_imaging_session:
+                        file_name = f'cam_{command.device}_img_{rank}.json'
                         data = {}
                         data['file_name'] = file_name
                         data['device_type'] = device.type
                         data['device_name'] = device.name
                         data['device_id'] = device.device_id
                         data['imaging_method'] = method
-                        data['position'] = point5_to_dict(
-                            device.position) if device.is_homed else None
+                        data['position'] = point5_to_dict(device.position) if device.is_homed else None
                         data['stack_id'] = None
                         data['stack_index'] = None
                         data['image_start_time'] = img_start_time
@@ -389,52 +389,54 @@ class COPISCore(
             self.config.update_recent_projects(path)
 
     def _on_device_ser_updated(self, device):
-        if device.serial_status == ComStatus.IDLE and len(self._imaging_session_queue):
-            dvc_id, img_method, img_index = [None] * 3
-            for i, data in enumerate(self._imaging_session_queue):
-                if data[0] == device.device_id:
-                    dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
-                    break
-
-            if dvc_id is not None:
-                if img_method == 'remote shutter':
-                    session_images = self._imaging_session_manifest[-1]['images']
-                    session_images[img_index]['image_end_time'] = get_timestamp(True)
-
-                    self._update_imaging_manifest([('images', session_images)])
-                elif img_method == 'EDSDK':
+        if device.serial_status == ComStatus.IDLE: 
+            self.sys_db.end_pose(device)
+            if self._save_imaging_session and len(self._imaging_session_queue):
+                dvc_id, img_method, img_index = [None] * 3
+                for i, data in enumerate(self._imaging_session_queue):
+                    if data[0] == device.device_id:
+                        dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
+                        break
+                if dvc_id is not None:
+                    if img_method == 'remote shutter':
+                        session_images = self._imaging_session_manifest[-1]['images']
+                        session_images[img_index]['image_end_time'] = get_timestamp(True)
+                        self._update_imaging_manifest([('images', session_images)])  #not sure why this is here. This gets called multiple times for each image. Recorded at least three calls
+                    elif img_method == 'EDSDK':
+                        # This should never be reached lest we have a bug.
+                        print_error_msg(self.console,
+                            f'Expected remote shutter imaging method for device {device.device_id} ' +
+                            f'but found {img_method} instead.')
+                else:
                     # This should never be reached lest we have a bug.
                     print_error_msg(self.console,
-                        f'Expected remote shutter imaging method for device {device.device_id} ' +
-                        f'but found {img_method} instead.')
-            else:
-                # This should never be reached lest we have a bug.
-                print_error_msg(self.console,
-                    f'Could not find update data for camera {device.device_id}.')
+                        f'Could not find update data for camera {device.device_id}.')
 
     def _on_device_eds_updated(self, device):
-        if not device.is_writing_eds and len(self._imaging_session_queue):
-            dvc_id, img_method, img_index = [None] * 3
-            for i, data in enumerate(self._imaging_session_queue):
-                if data[0] == device.device_id:
-                    dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
-                    break
+        if not device.is_writing_eds:
+            self.sys_db.end_pose(device.device_id)
+            if self._save_imaging_session and len(self._imaging_session_queue) :
+                dvc_id, img_method, img_index = [None] * 3
+                for i, data in enumerate(self._imaging_session_queue):
+                    if data[0] == device.device_id:
+                        dvc_id, img_method, img_index = self._imaging_session_queue.pop(i)
+                        break
 
-            if dvc_id is not None:
-                if img_method == 'EDSDK':
-                    session_images = self._imaging_session_manifest[-1]['images']
-                    session_images[img_index]['image_end_time'] = get_timestamp(True)
+                if dvc_id is not None:
+                    if img_method == 'EDSDK':
+                        session_images = self._imaging_session_manifest[-1]['images']
+                        session_images[img_index]['image_end_time'] = get_timestamp(True)
 
-                    self._update_imaging_manifest([('images', session_images)])
-                elif img_method == 'remote shutter':
+                        self._update_imaging_manifest([('images', session_images)])
+                    elif img_method == 'remote shutter':
+                        # This should never be reached lest we have a bug.
+                        print_error_msg(self.console,
+                            f'Expected EDSDK imaging method for device {device.device_id} ' +
+                            f'but found {img_method} instead.')
+                else:
                     # This should never be reached lest we have a bug.
                     print_error_msg(self.console,
-                        f'Expected EDSDK imaging method for device {device.device_id} ' +
-                        f'but found {img_method} instead.')
-            else:
-                # This should never be reached lest we have a bug.
-                print_error_msg(self.console,
-                    f'Could not find update data for camera {device.device_id}.')
+                        f'Could not find update data for camera {device.device_id}.')
 
     def _add_manifest_section(self):
         def is_manifest_initialized(key):
@@ -446,9 +448,9 @@ class COPISCore(
         if not is_manifest_initialized(manifest_key):
             self._imaging_session_manifest = []
 
-            if path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
+            if store.path_exists_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME):
                 self._imaging_session_manifest.extend(
-                    load_json_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME))
+                    save.load_json_2(self._imaging_session_path, self._IMAGING_MANIFEST_FILE_NAME))
 
             self._initialized_manifests.append(manifest_key)
 
@@ -458,12 +460,10 @@ class COPISCore(
         if self._save_imaging_session:
             self._update_imaging_manifest(
                 [('imaging_end_time', get_timestamp(True))])
-
-            dispatcher.disconnect(
-                self._on_device_ser_updated, signal='ntf_device_ser_updated')
-            dispatcher.disconnect(
-                self._on_device_eds_updated, signal='ntf_device_eds_updated')
             self._save_imaging_session = False
+        
+        dispatcher.disconnect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
+        dispatcher.disconnect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
     def start_new_project(self) -> None:
         """Starts a new project with defaults."""
@@ -555,13 +555,17 @@ class COPISCore(
 
             self._update_imaging_manifest(pairs)
 
-            dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
-            dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
+        dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
+        dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = process_pose_sets()
-        footer = self._get_initialization_commands(ActionType.G1)
-        footer.extend(self._disengage_motors_commands)
+
+        ###Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session
+        #oncomment next two lines and comment third to renable
+        #footer = self._get_initialization_commands(ActionType.G1)
+        #footer.extend(self._disengage_motors_commands)
+        footer = self._disengage_motors_commands
 
         self._mainqueue = []
         self._mainqueue.extend(header)

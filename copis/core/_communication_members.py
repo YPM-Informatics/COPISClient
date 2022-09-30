@@ -223,6 +223,7 @@ class CommunicationMembersMixin:
         self._serial = serial_controller
         self._serial.initialize(self.console, self._is_dev_env)
         self._is_serial_enabled = True
+        
 
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
@@ -255,7 +256,7 @@ class CommunicationMembersMixin:
         else:
             c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
-
+            
             self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
 
     @locked

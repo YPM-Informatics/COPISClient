@@ -17,8 +17,11 @@
 
 import shlex
 
-from copis.helpers import print_echo_msg
+from copis.helpers import print_echo_msg, get_action_args_values
+from copis.globals import ActionType, Point5
 
+from copis.collision_detection import collision_eval_cam2cam_start, collision_eval_cam2proxy_start, collision_eval_cam2proxy_path, collision_eval_cam2cam_path
+from glm import vec3
 # pylint: disable=protected-access
 class _CommandProcessor:
     """Handle console commands processing and execution.
@@ -194,14 +197,33 @@ class _CommandProcessor:
             else:
                self._print('Invalid optimization parameters required. See documentation')
 
+        def collision():
+            if (len(opts) < 1):
+                self._print('Additonal parameters required to engage feature.')
+                return
+            elif (opts[0].lower() == 'cams'):
+                r = collision_eval_cam2cam_path()
+                print (r)
+                return
+            elif (opts[0].lower() == 'proxy'):
+                r = collision_eval_cam2proxy_path()
+                print (r)
+                return
+            elif (opts[0].lower() == 'proxy_start'):
+                r = collision_eval_cam2proxy_start()
+                print (r)
+                return
+            elif (opts[0].lower() == 'cams_start'):
+                r = collision_eval_cam2cam_start()
+                print (r)
+                return
         def default():
             # self._print("Command not implemented.")
             if not self._core.is_serial_port_connected:
                 self._print('A serial port needs to be open in order to shoot.')
             else:
                 self._core._serial.write(cmd)
-         
-
+                   
         cmds = {
             'use': use,
             'release': release,
@@ -211,7 +233,8 @@ class _CommandProcessor:
             'shoot': shoot,
             'refresh': refresh,
             'select': select,
-            'optimize': optimize
+            'optimize': optimize,
+            'collision': collision
         }
 
         cmds.get(cmd, default)()
@@ -219,3 +242,5 @@ class _CommandProcessor:
     def _print(self, *msgs):
         msg = ''.join(msgs)
         print_echo_msg(self._core.console, msg)
+
+    

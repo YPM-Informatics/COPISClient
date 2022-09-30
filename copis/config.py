@@ -17,11 +17,8 @@
 
 from configparser import ConfigParser
 from glm import vec3
-
 import copis.store as store
-
 from .globals import DebugEnv, Size, WindowState
-from .store import Store
 from .classes import ApplicationSettings, MachineSettings
 
 
@@ -40,27 +37,11 @@ def _get_state_parts(state_str):
 class Config():
     """Handle application configuration."""
 
-    _DEFAULT_CONFIG = {
-        'App': {
-            'window_min_size': '800,600',
-            'debug_env': 'prod'
-        },
-        'Machine': {
-            'size_x': '800',
-            'size_y': '900',
-            'size_z': '700',
-            'origin_x': '400',
-            'origin_y': '450',
-            'origin_z': '350'
-        }
-    }
-
     _MAX_RECENT_PROJECTS_COUNT = 5
 
     def __init__(self, display_size) -> None:
-        self._store = Store()
-        self._config_parser = self._ensure_config_exists(display_size)
-
+        self._config_parser = store.load_config()
+        self._ensure_window_state_exists(display_size, self._config_parser) 
         self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
 
@@ -73,21 +54,6 @@ class Config():
     def machine_settings(self) -> MachineSettings:
         """Machine configuration settings getter."""
         return self._machine_settings
-
-    def _ensure_config_exists(self, display_size) -> ConfigParser:
-        parser = self._store.load_config()
-
-        if parser is None:
-            parser = ConfigParser()
-
-            parser['App'] = self._DEFAULT_CONFIG['App']
-            parser['Machine'] = self._DEFAULT_CONFIG['Machine']
-
-            self._store.save_config_parser(parser)
-
-        self._ensure_window_state_exists(display_size, parser)
-
-        return parser
 
     def _ensure_window_state_exists(self, display_rect, parser):
         get_sixty_pct = lambda val: int(val * 60 / 100)
@@ -130,7 +96,7 @@ class Config():
                 y = int((display_rect.Y - height) / 2)
 
             app['window_state'] = f'{x},{y},{width},{height},{is_maximized}'
-            self._store.save_config_parser(parser)
+            store.save_config_parser(parser)
 
     def _populate_application_settings(self) -> ApplicationSettings:
         get_size_parts = lambda val: list(int(i) for i in val.split(','))
@@ -186,7 +152,7 @@ class Config():
         """Updates the window geometry application setting."""
         self.application_settings.window_state = state
 
-        self._store.save_config(self)
+        store.save_config(self)
 
     def update_recent_projects(self, path: str) -> None:
         """Updates the recent projects and last output path application settings."""
@@ -197,7 +163,7 @@ class Config():
             self.application_settings.recent_projects = self.application_settings.recent_projects[
                 :self._MAX_RECENT_PROJECTS_COUNT]
 
-        self._store.save_config(self)
+        store.save_config(self)
 
     def remove_recent_project(self, path: str) -> None:
         """Removes a recent projects entry."""
@@ -206,7 +172,7 @@ class Config():
 
         if index >= 0:
             self.application_settings.recent_projects.pop(index)
-            self._store.save_config(self)
+            store.save_config(self)
 
     def as_dict(self):
         """"Return a dictionary representation of a Config instance."""

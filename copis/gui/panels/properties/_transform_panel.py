@@ -29,8 +29,8 @@ from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, crea
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
     get_heading, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
-from copis.store import get_file_base_name_no_ext
 from copis.classes import Action, Device, Pose
+import copis.store as store
 
 
 class TransformPanel(wx.Panel):
@@ -386,7 +386,7 @@ class TransformPanel(wx.Panel):
         proxy = proxies[idx]
 
         if hasattr(proxy, 'obj'):
-            name = get_file_base_name_no_ext(proxy.obj.file_name)
+            name = store.get_file_base_name_no_ext(proxy.obj.file_name)
             name = f'{name[0].upper()}{name[1:]}'
         else:
             names = [(i, type(p).__qualname__) for i, p in enumerate(proxies)

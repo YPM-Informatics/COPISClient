@@ -314,3 +314,4 @@ docs/_build/
 
 # PyBuilder
 target/
+/*.pylintrc

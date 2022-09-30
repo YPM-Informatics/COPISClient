@@ -300,9 +300,9 @@ class MachineMembersMixin:
             pairs.append(('images', []))
 
             self._update_imaging_manifest(pairs)
-
-            dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
-            dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
+        
+        dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated') 
+        dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
         self._mainqueue = []
         self._mainqueue.extend(processed_poses)

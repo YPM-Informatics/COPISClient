@@ -236,7 +236,6 @@ class ComponentMembersMixin:
 
         return True
 
-
     def export_poses(self, filename: str = None) -> list:
         """Serialize action list and write to file.
 
@@ -285,5 +284,9 @@ class ComponentMembersMixin:
         import random
         random.shuffle(self.project.pose_sets)     
         dispatcher.send('ntf_a_list_changed')
+
+    
+
+    
 
 

@@ -22,7 +22,8 @@ import wx
 import wx.lib.newevent
 import wx.svg as svg
 
-from copis.store import Store
+import copis.store as store
+
 
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
@@ -95,11 +96,9 @@ def create_scaled_bitmap(bmp_name: str,
         px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
     """
     filename = 'img/' + bmp_name + '.svg'
-    store = Store()
 
-    image = svg.SVGimage.CreateFromFile(
-        store.find_path(filename)
-    ).ConvertToScaledBitmap((px_cnt, px_cnt))
+
+    image = svg.SVGimage.CreateFromFile(store.find_path(filename)).ConvertToScaledBitmap((px_cnt, px_cnt))
 
     return image
 

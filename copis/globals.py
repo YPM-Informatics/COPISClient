@@ -157,3 +157,4 @@ class WorkType(Enum):
     JOGGING = 2
     SET_READY = 3
     STEPPING = 4
+

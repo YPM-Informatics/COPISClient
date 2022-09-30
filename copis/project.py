@@ -28,11 +28,11 @@ from copis.globals import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
-from .store import (Store, get_file_base_name, get_file_base_name_no_ext, load_json, path_exists,
-    save_json)
+import copis.store as store
 
 
-class Project:
+
+class Project():
     """A singleton that manages COPIS project operations."""
 
     # Note: This is the Borg design pattern which ensures that all
@@ -41,13 +41,6 @@ class Project:
     # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/66531
     __shared_state = None
 
-    _DEFAULT_PROFILE = {
-        'name': 'default_profile.json',
-        'data':
-            #region default profile string
-            '{"devices":[{"id":0,"name":"Top front","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[-344,-400,300,0,0],"range_x":[-344,344],"range_y":[-392,-192],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":1,"name":"Top middle","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[0,0,300,0,0],"range_x":[-344,344],"range_y":[-217,217],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":2,"name":"Top back","type":"Camera","description":"Canon EOS RP\\nLens: Canon macro RF 35mm","home_position":[344,400,300,0,0],"range_x":[-344,344],"range_y":[192,392],"range_z":[0,300],"size":[350,250,200],"port":"COM3"},{"id":3,"name":"Bottom front","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[-344,-400,-300,0,0],"range_x":[-344,344],"range_y":[-392,-192],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"},{"id":4,"name":"Bottom middle","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[0,0,-300,0,0],"range_x":[-344,344],"range_y":[-217,217],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"},{"id":5,"name":"Bottom back","type":"Camera","description":"Canon EOS 80D\\nLens: Canon macro EFS 35mm","home_position":[344,400,-300,0,0],"range_x":[-344,344],"range_y":[192,392],"range_z":[-300,0],"size":[350,250,200],"port":"COM3"}],"homing_sequence":">5G28ZF700\\n>4G28ZF700\\n>3G28ZF700\\n>2G28ZF700\\n>1G28ZF700\\nG28ZF700\\n>5G1Z-300F700\\n>4G1Z-300F700\\n>3G1Z-300F700\\n>2G1Z300F700\\n>1G1Z300F700\\nG1Z300F700\\n>3G28YF2000\\n>3G92Y-400\\n>3G28XF2000\\nG28YF2000\\nG92Y-400\\nG28XF2000\\n>3G92X344\\n>3G1X-344F2000\\nG92X344\\nG1X-344F2000\\n>1G28XF2000\\n>4G28XF2000\\n>1G92X344\\n>4G92X344\\n>2G28XF2000\\n>5G28XF2000\\n>2G92X344\\n>5G92X344\\n>1G28YF2000\\n>1G92Y-227\\n>1G1X0F2000\\n>4G28YF2000\\n>4G92Y-227\\n>4G1X0F2000\\n>2G28YF2000\\n>2G92Y-90\\n>2G1Y-90F2000\\n>5G28YF2000\\n>5G92Y-90\\n>5G1Y-90F2000\\n>5G28PTF800\\n>4G28PTF800\\n>3G28PTF800\\n>2G28PTF800\\n>1G28PTF800\\nG28PTF800\\n"}'
-            #endregion
-    }
 
     _DEFAULT_PROXY = {
         'name': 'handsome_dan.obj',
@@ -66,11 +59,8 @@ class Project:
         if not hasattr(self, '_is_initialized'):
             self._is_initialized = False
 
-        if not hasattr(self, '_store'):
-            self._store = None
-
-        if not hasattr(self, '_default_profile_path'):
-            self._default_profile_path = None
+        if not hasattr(self, '_profile_path'):
+            self._profile_path = None
 
         if not hasattr(self, '_default_proxy_path'):
             self._default_proxy_path = None
@@ -92,6 +82,9 @@ class Project:
 
         if not hasattr(self, '_pose_sets'):
             self._pose_sets = None
+        
+        if not hasattr(self, '_core'):
+            self._core = None
 
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
@@ -128,6 +121,40 @@ class Project:
 
         return[pose for p_set in p_sets for pose in p_set]
 
+    def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
+        """Returns a pose in a given pose set with device id.
+           if no pose is present for that device in the pose set, None is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for pose in self._pose_sets[pose_set_idx]:
+                if (device_id == pose.position.device):
+                    return pose
+        return None   
+
+    def last_pose_by_dev_id(self, pose_set_idx, device_id):
+        """Returns the last (highest index) pose and index accross all pose sets up to pose_set_idx for device id.
+           if no pose is present for that device up to the pose set idx, None is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for i in range(pose_set_idx,-1,-1):
+                for pose in self._pose_sets[i]:
+                    if (device_id == pose.position.device):
+                        return pose
+        return None
+
+    def first_pose_by_dev_id(self, pose_set_idx, device_id):
+        """Returns the first (lowest index) pose accross all pose sets up for device id, starting with pose_idx
+           if no pose is present for that device, none is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for i in range(pose_set_idx, len(self._pose_sets)):
+                for pose in self._pose_sets[i]:
+                    if (device_id == pose.position.device):
+                        return pose
+        return None
+
+   
+
     @property
     def is_dirty(self) -> bool:
         """Returns whether the project is dirty."""
@@ -161,20 +188,9 @@ class Project:
 
         return [deserialize_command(cmd) for cmd in self.homing_sequence]
 
-    def _ensure_defaults(self):
-        self._default_profile_path = self._store.ensure_default_profile(
-            self._DEFAULT_PROFILE['name'],
-            self._DEFAULT_PROFILE['data']
-        )
-
-        self._default_proxy_path = self._store.ensure_default_proxy(
-            self._DEFAULT_PROXY['name'],
-            self._DEFAULT_PROXY['data']
-        )
-
     def _init(self):
-        self._store = Store()
-        self._ensure_defaults()
+        self._profile_path = store.get_profile_path()
+        self._default_proxy_path = store.get_proxy_path()
 
         self._is_initialized = True
         self._is_dirty = False
@@ -191,20 +207,30 @@ class Project:
 
     def _init_devices(self):
         def parse_device(data):
-            home_position = Point5(*data['home_position'])
-            size = vec3(data['size'])
             lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
             upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
-
+             #if gantry style not present (as in older profiles files) we default to standard overhead gantry since all files before were overhead only
+            if 'head_radius' not in data: 
+                data['head_radius'] = 200
+            if 'body_dims' not in data: 
+                data['body_dims'] = [100, 40, 740]
+            if 'gantry_dims' not in data: 
+                data['gantry_dims'] = [ 1000, 125, 100 ]
+            if 'gantry_orientation' not in data: 
+                data['gantry_orientation'] = 1
             return Device(
                 data['id'],
                 data['name'],
                 data['type'],
                 data['description'],
-                home_position,
+                Point5(*data['home_position']),
                 BoundingBox(lower_corner, upper_corner),
-                size,
-                data['port']
+                vec3(data['size']),
+                data['port'],
+                data['head_radius'],
+                vec3(data['body_dims']),
+                vec3(data['gantry_dims']),
+                data['gantry_orientation']
             )
 
         key = 'devices'
@@ -249,12 +275,11 @@ class Project:
         if not self._is_initialized:
             self._init()
 
-        self._profile = load_json(self._default_profile_path)
-
+        self._profile = store.load_json(store.get_profile_path())
         self._init_devices()
         self._init_proxies()
         self._init_pose_sets()
-
+        
         self._path = None
         self._unset_dirty_flag()
 
@@ -263,7 +288,7 @@ class Project:
         if not self._is_initialized:
             self._init()
 
-        proj_data = load_json(path)
+        proj_data = store.load_json(path)
 
         p_sets = list(map(_pose_from_json_map, proj_data['imaging_path']))
         proxies = []
@@ -274,20 +299,13 @@ class Project:
             if proxy['is_path']:
                 proxy_path = proxy['data']
 
-                if not path_exists(proxy_path):
-                    proxy_file_name = get_file_base_name(proxy_path)
-                    def_proxy_file_name = get_file_base_name(self._default_proxy_path)
-
+                if not store.path_exists(proxy_path):
+                    proxy_file_name = store.get_file_base_name(proxy_path)
+                    def_proxy_file_name = store.get_file_base_name(self._default_proxy_path)
                     if proxy_file_name.lower() == def_proxy_file_name.lower():
-                        if not path_exists(self._default_proxy_path):
-                            self._default_proxy_path = self._store.ensure_default_proxy(
-                                self._DEFAULT_PROXY['name'],
-                                self._DEFAULT_PROXY['data']
-                            )
                         proxy_path = self._default_proxy_path
                     else:
-                        proxy_path = self._store.find_proxy(proxy_file_name)
-
+                        proxy_path = store.find_proxy(proxy_file_name)
                     is_dirty = True
 
                 if proxy_path:
@@ -308,7 +326,6 @@ class Project:
         self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
-
 
         self._path = path
 
@@ -332,7 +349,7 @@ class Project:
         for proxy in self._proxies:
             if hasattr(proxy, 'obj'):
                 proxy_data = proxy.obj.file_name
-                proxy_name = get_file_base_name_no_ext(proxy_data)
+                proxy_name = store.get_file_base_name_no_ext(proxy_data)
                 is_path = True
             else:
                 cls_name = type(proxy).__qualname__
@@ -357,7 +374,9 @@ class Project:
 
             proj_data['proxies'].append(p_data)
 
-        save_json(path, proj_data)
+        store.save_json(path, proj_data)
+
+
         self._path = path
         self._unset_dirty_flag()
 

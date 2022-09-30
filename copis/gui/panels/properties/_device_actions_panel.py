@@ -22,8 +22,7 @@ from pydispatch import dispatcher
 from copis.classes import Device
 from copis.globals import ToolIds
 from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
-from copis.store import path_exists
-
+import copis.store as store
 
 class DeviceActionsPanel(wx.Panel):
     """Show device actions properties panel."""
@@ -217,7 +216,7 @@ class DeviceActionsPanel(wx.Panel):
             if not path:
                 show_msg_dialog('Please provide a destination folder for the pictures.',
                     'Transfer Pictures - EDSDK')
-            elif not path_exists(path):
+            elif not store.path_exists(path):
                 show_msg_dialog(f'Destination folder {path} does not exist.',
                     'Transfer Pictures - EDSDK')
             else:
