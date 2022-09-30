@@ -30,7 +30,8 @@ from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
 import copis.store as store
 
-5
+
+
 class Project():
     """A singleton that manages COPIS project operations."""
 
@@ -278,7 +279,7 @@ class Project():
         self._init_devices()
         self._init_proxies()
         self._init_pose_sets()
-
+        
         self._path = None
         self._unset_dirty_flag()
 

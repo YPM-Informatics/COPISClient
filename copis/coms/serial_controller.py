@@ -30,7 +30,7 @@ from copis.globals import Point5
 from copis.helpers import print_error_msg, print_raw_msg
 from copis.classes import SerialResponse
 from copis.mocks.mock_serial import MockSerial
-
+from copis.classes.sys_db import SysDB
 
 def _filter_serials(ports):
     """Don't return bluetooth ports"""
@@ -73,7 +73,7 @@ class SerialController():
 
     BAUDS = [9600, 19200, 38400, 57600, 115200]
 
-    def __init__(self):
+    def __init__(self): 
         self._ports = []
         self._active_port = None
         self._console = None
@@ -81,6 +81,15 @@ class SerialController():
         self._filter_serials = _filter_serials
         self._print_error_msg = print_error_msg
         self._print_raw_msg = print_raw_msg
+        self._db_attached = False
+
+    def attach_sys_db(self, sys_db : SysDB) -> bool:
+        if sys_db.is_initialized:
+            self._sys_db = sys_db
+            self._db_attached = True
+        else:
+            self._db_attached = False
+        return self._db_attached
 
     def initialize(self, console = None, is_dev_env: bool = False) -> None:
         """Initializes the serial object."""
@@ -171,7 +180,9 @@ class SerialController():
                 and active_port.connection.is_open:
             data = data.rstrip("\r")
             data = f'{data}\r'.encode()
-
+            if self._db_attached:
+                self._sys_db.serial_tx(data)
+            
             active_port.connection.write(data)
 
     def terminate(self) -> None:
@@ -223,7 +234,8 @@ class SerialController():
         if port and self._is_port_open(port):
             p_bytes = port.connection.readline()
             resp = p_bytes.decode()
-
+            if self._db_attached:
+                self._sys_db.serial_rx(p_bytes)
             if resp:
                 self._print_raw_msg(self._console, resp)
 
@@ -296,3 +308,4 @@ def is_port_open(mod) -> bool:
 def port_list(mod) -> List[SerialPort]:
     """Returns a copy of the serial ports list, from the module."""
     return mod._instance.port_list
+

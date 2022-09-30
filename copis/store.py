@@ -28,7 +28,6 @@ from typing import Any, Optional
 from appdirs import user_data_dir
 
 #    """ COPIS File I/O & storage operations."""
-
 def get_root() ->str:
      root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
      return root
@@ -58,40 +57,41 @@ def resolve_data_dir() ->str:
             os.makedirs(data_dir)
         return data_dir
 
+def sys_db_exists() -> bool:
+    p = get_file_path('System', 'db')
+    if os.path.exists(p): 
+        return True
+    return False 
+
+def get_sys_db_path() -> str:
+    return get_file_path('System', 'db')
     
 def get_profile_path() -> str:
-    parser = load_config()
-    if (parser.has_option('Project', 'profile_path')):
-        p = parser['Project']['profile_path']
-        if not os.path.exists(p): #likely referencing a relative path from a different working directory
-            p2 = os.path.join(get_root(), p)
-            if os.path.exists(p2):
-                p = p2
-    else:
-        p = os.path.join(resolve_data_dir(),'default_profile.json')
-        if not os.path.exists(p):
-            s = (os.path.join(get_root(),'profiles','default_profile.json'))
-            shutil.copyfile(s,p)  
-    if not os.path.exists(p): #likely referencing a relative path from a different working directory
+    p = get_file_path('Project', 'profile_path','default_profile.json','profiles', True)
+    if not os.path.exists(p): 
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
     return p
 
-
 def get_proxy_path() -> str:
+    p = get_file_path('Project', 'default_proxy_path','handsome_dan.obj','proxies', True)
+    if not os.path.exists(p): 
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
+    return p
+
+def get_file_path(cfg_section :str, cfg_option :str, default_fname = None, src_copis_subfolder = '', allow_create_from_src=False) -> str:
     parser = load_config()
-    if (parser.has_option('Project', 'default_proxy_path')):
-        p = parser['Project']['default_proxy_path']
+    p = ""
+    if (parser.has_option(cfg_section, cfg_option)):
+        p = parser[cfg_section][cfg_option]
         if not os.path.exists(p): #likely referencing a relative path from a different working directory
             p2 = os.path.join(get_root(), p)
             if os.path.exists(p2):
                 p = p2
-    else:
-        p = os.path.join(resolve_data_dir(),'handsome_dan.obj')
-        if not os.path.exists(p):
-            s = (os.path.join(get_root(),'proxies','handsome_dan.obj'))
-            shutil.copyfile(s,p)
-    if not os.path.exists(p): #likely referencing a relative path from a different working directory
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), p)
+    elif default_fname is not None: #path is not referenced in config so we look for default file in data directory. If it doesn't exist we copy defaults from source directory  
+        p = os.path.join(resolve_data_dir(),default_fname)
+        if not os.path.exists(p) and allow_create_from_src:
+            s = (os.path.join(get_root(),src_copis_subfolder,default_fname))
+            shutil.copyfile(s,p)  
     return p
 
 def save_config_parser(parser: ConfigParser) -> None:
