@@ -12,6 +12,7 @@ class SysDB():
     def __init__(self):
         self._filename = store.get_sys_db_path()
         if self._filename == '':
+            self._is_initialized = False
             return
         if (not store.sys_db_exists()):
             self._create_db()
