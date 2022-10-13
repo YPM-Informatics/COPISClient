@@ -666,22 +666,10 @@ class TimelinePanel(wx.Panel):
                     pose_index = data['index']
                     poses = [self.core.project.pose_sets[set_index][pose_index]]
 
-                if self._parent.properties_panel.use_last_save_session_choice:
-                    proceed = True
-                    path = self.core.imaging_session_path
-                    keep_last = self._parent._keep_last_session_imaging_path
-                else:
-                    proceed, path, keep_last = prompt_for_imaging_session_path(
-                        self.core.imaging_session_path)
-                    self._parent._keep_last_session_imaging_path = keep_last
-
-                if not proceed:
-                    return
-
                 pos = event.GetEventObject().GetScreenPosition()
 
                 def play_handler():
-                    self.core.play_poses(poses, path, keep_last)
+                    self.core.play_poses(poses)
                     self._parent.hide_imaging_toolbar()
 
                 actions = [(ToolIds.PLAY, True, play_handler)]
@@ -691,25 +679,12 @@ class TimelinePanel(wx.Panel):
         """Start the imaging run (plays all poses)."""
         can_image = self._assert_can_image()
 
-        if can_image:
-            if self._parent.properties_panel.use_last_save_session_choice:
-                proceed = True
-                path = self.core.imaging_session_path
-                keep_last = self._parent._keep_last_session_imaging_path
-            else:
-                proceed, path, keep_last = prompt_for_imaging_session_path(
-                    self.core.imaging_session_path)
-                self._parent._keep_last_session_imaging_path = keep_last
-
-            if not proceed:
-                return
-
         pos = event.GetEventObject().GetScreenPosition()
         pane: aui.AuiPaneInfo = self._parent.imaging_toolbar.GetAuiManager().GetPane(
             self._parent.imaging_toolbar)
 
         def play_all_handler():
-            self.core.start_imaging(path, keep_last)
+            self.core.start_imaging()
             pane.window.enable_tool(ToolIds.PAUSE)
             pane.window.enable_tool(ToolIds.STOP)
 

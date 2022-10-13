@@ -16,7 +16,6 @@
 """COPIS device actions properties panel."""
 
 import wx
-
 from pydispatch import dispatcher
 
 from copis.classes import Device
@@ -144,23 +143,11 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_snap_edsdk_picture(self, event: wx.CommandEvent) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            if self._parent.use_last_save_session_choice:
-                proceed = True
-                path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent.keep_last_session_imaging_path
-            else:
-                proceed, path, keep_last = prompt_for_imaging_session_path(
-                    self._parent.core.imaging_session_path)
-                self._parent.Parent.keep_last_session_imaging_path = keep_last
-
-            if not proceed:
-                return
-
             pos = event.GetEventObject().GetScreenPosition()
 
             def snap_shot_handler():
                 self._parent.core.snap_edsdk_picture(self._af_option.Value,
-                    self._device.device_id, path, keep_last)
+                    self._device.device_id)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -170,27 +157,13 @@ class DeviceActionsPanel(wx.Panel):
                 'Take a Picture - EDSDK')
 
     def _on_snap_serial_picture(self, event: wx.CommandEvent) -> None:
-        can_snap = self._parent.core.is_serial_port_connected
-
-        if can_snap:
-            if self._parent.use_last_save_session_choice:
-                proceed = True
-                path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent.keep_last_session_imaging_path
-            else:
-                proceed, path, keep_last = prompt_for_imaging_session_path(
-                    self._parent.core.imaging_session_path)
-                self._parent.Parent.keep_last_session_imaging_path = keep_last
-
-            if not proceed:
-                return
-
+        if self._parent.core.is_serial_port_connected:
             pos = event.GetEventObject().GetScreenPosition()
             shutter_release_time = max(0, float(self._shutter_release_times.Value))
 
             def snap_shot_handler():
                 self._parent.core.snap_serial_picture(shutter_release_time,
-                    self._device.device_id, path, keep_last)
+                    self._device.device_id)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -201,23 +174,11 @@ class DeviceActionsPanel(wx.Panel):
 
     def _on_transfer_edsdk_pictures(self, _) -> None:
         if self._parent.core.connect_edsdk(self._device.device_id):
-            if self._parent.use_last_save_session_choice:
-                proceed = True
-                path = self._parent.core.imaging_session_path
-                keep_last = self._parent.Parent.keep_last_session_imaging_path
-            else:
-                proceed, path, keep_last = prompt_for_imaging_session_path(
-                    self._parent.core.imaging_session_path)
-                self._parent.Parent.keep_last_session_imaging_path = keep_last
-
-            if not proceed:
-                return
-
-            if not path:
-                show_msg_dialog('Please provide a destination folder for the pictures.',
+            if not self._device.edsdk_save_to_path:
+                show_msg_dialog('Provide edsdk_save_to_path in your camera profile.',
                     'Transfer Pictures - EDSDK')
-            elif not store.path_exists(path):
-                show_msg_dialog(f'Destination folder {path} does not exist.',
+            elif not store.path_exists(self._device.edsdk_save_to_path):
+                show_msg_dialog(f'Destination folder {self._device.edsdk_save_to_path} does not exist. Check edsdk_save_to_path in your camera profile',
                     'Transfer Pictures - EDSDK')
             else:
                 label = self._edsdk_transfer_pics_btn.Label
@@ -225,7 +186,7 @@ class DeviceActionsPanel(wx.Panel):
                 self._edsdk_transfer_pics_btn.Disable()
 
                 try:
-                    self._parent.core.transfer_edsdk_pictures(path, keep_last)
+                    self._parent.core.transfer_edsdk_pictures(self._device.edsdk_save_to_path)
                 finally:
                     wx.GetApp().Yield()
                     self._edsdk_transfer_pics_btn.Enable()

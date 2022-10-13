@@ -15,6 +15,7 @@
 
 """COPIS Application project manager."""
 
+import os
 from importlib import import_module
 from typing import Any, Iterable, List, Tuple
 from pydispatch import dispatcher
@@ -30,7 +31,8 @@ from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
 import copis.store as store
 
-
+import wx
+from copis.gui.wxutils import show_prompt_dialog
 
 class Project():
     """A singleton that manages COPIS project operations."""
@@ -218,8 +220,17 @@ class Project():
                 data['gantry_dims'] = [ 1000, 125, 100 ]
             if 'gantry_orientation' not in data: 
                 data['gantry_orientation'] = 1
+            if 'serial_no' not in data: 
+                data['serial_no'] = ''
+            if 'serial_no' not in data: 
+                data['serial_no'] = ''
+            if 'edsdk_save_to_path' not in data: #eventually add global default in ini for all cams
+                data['edsdk_save_to_path'] = os.path.join(store.get_root(), 'output') #for now default to program dir.
+            if not os.path.exists(data['edsdk_save_to_path']):
+                os.makedirs(data['edsdk_save_to_path'])
             return Device(
                 data['id'],
+                data['serial_no'],
                 data['name'],
                 data['type'],
                 data['description'],
@@ -230,7 +241,8 @@ class Project():
                 data['head_radius'],
                 vec3(data['body_dims']),
                 vec3(data['gantry_dims']),
-                data['gantry_orientation']
+                data['gantry_orientation'],
+                data['edsdk_save_to_path']
             )
 
         key = 'devices'
@@ -239,7 +251,7 @@ class Project():
         if key in self._profile and self._profile[key]:
             devices = [parse_device(d) for d in self._profile[key]]
 
-        if self._devices is not None:
+        if self._devices is not None:               
             self._devices.clear(False)
             self._devices.extend(devices)
         else:
@@ -322,8 +334,13 @@ class Project():
                 # pylint: disable=eval-used
                 proxies.append(eval(proxy['data']['repr']))
 
-        self._profile = proj_data['profile']
-        self._init_devices()
+        #eventually move the UI check elsewhere
+        #this is a critical check, otherwise it makes sharing paths among labs difficult.
+        if self._profile != proj_data['profile']:
+            choice = show_prompt_dialog('This project was made using a different machine profile, override existing?',"Profile Mismatch")
+            if choice == wx.ID_YES:
+                self._profile = proj_data['profile'] 
+                self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
 

@@ -77,7 +77,7 @@ class MainWindow(wx.Frame):
 
         self._default_title = self.Title
         self.chamber_dimensions = chamber_dimensions
-        self._keep_last_session_imaging_path = False
+        #self._keep_last_session_imaging_path = False
 
         self._file_menu = None
         self._menubar = None
@@ -105,14 +105,14 @@ class MainWindow(wx.Frame):
     # Accessor methods
     # --------------------------------------------------------------------------
 
-    @property
-    def keep_last_session_imaging_path(self) -> bool:
-        """Returns a flag indicating whether to keep the last session imaging path."""
-        return self._keep_last_session_imaging_path
+    #@property
+    #def keep_last_session_imaging_path(self) -> bool:
+    #    """Returns a flag indicating whether to keep the last session imaging path."""
+    #    return self._keep_last_session_imaging_path
 
-    @keep_last_session_imaging_path.setter
-    def keep_last_session_imaging_path(self, value) -> None:
-        self._keep_last_session_imaging_path = value
+    #@keep_last_session_imaging_path.setter
+    #def keep_last_session_imaging_path(self, value) -> None:
+    #    self._keep_last_session_imaging_path = value
 
     @property
     def console_panel(self) -> ConsolePanel:
@@ -203,9 +203,7 @@ class MainWindow(wx.Frame):
         proceed = True
 
         if self.core.project.is_dirty:
-            choice = show_prompt_dialog(
-                'The project was modified. Would you like to save it first?',
-                    caption, True)
+            choice = show_prompt_dialog('The project was modified. Would you like to save it first?',caption, True)
 
             if choice == wx.ID_YES:
                 self.on_save(event)

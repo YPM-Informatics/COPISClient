@@ -67,10 +67,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         # dispatcher.connect(self.on_object_selected, signal='ntf_o_selected')
         # dispatcher.connect(self.on_deselected, signal='ntf_o_deselected')
 
-    @property
-    def use_last_save_session_choice(self) -> bool:
-        """Returns a flag indicating whether to prompt about saving the imaging session."""
-        return self._property_panels['default'].use_last_save_session_choice
+    #@property
+    #def use_last_save_session_choice(self) -> bool:
+    #    """Returns a flag indicating whether to prompt about saving the imaging session."""
+       # return self._property_panels['default'].use_last_save_session_choice
 
     def build_panels(self) -> None:
         """Initialize all property panels."""

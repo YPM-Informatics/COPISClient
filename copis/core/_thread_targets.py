@@ -120,7 +120,7 @@ class ThreadTargetsMixin:
         def callback():
             if extra_callback:
                 extra_callback()
-            print_info_msg(self.console, f'{t_name} ended')
+            print_info_msg(self.console, f'{t_name} ended')  #where stepping started is being generated
 
         dispatcher.connect(callback, signal='ntf_machine_idle')
 

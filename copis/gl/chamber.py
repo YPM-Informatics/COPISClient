@@ -69,12 +69,13 @@ class _Axes():
         y = build_dimensions[1] - build_dimensions[4], build_dimensions[4]
         z = build_dimensions[2] - build_dimensions[5], build_dimensions[5]
         points = np.array([
-            x[0], 0.0, 0.0, 1.0, 0.0, 0.0,
-            -x[1], 0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, y[0], 0.0, 0.0, 1.0, 0.0,
-            0.0, -y[1], 0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, z[0], 0.0, 0.0, 1.0,
-            0.0, 0.0, -z[1], 0.0, 0.0, 1.0
+            #X     Y      Z      R    G    B
+            x[0],  0.0,   0.0,   1.0, 0.0, 0.0,
+            -x[1], 0.0,   0.0,   1.0, 0.0, 0.0,
+            0.0,   y[0],  0.0,   0.0, 1.0, 0.0,
+            0.0,   -y[1], 0.0,   0.0, 1.0, 0.0,
+            0.0,   0.0,   z[0],  0.0, 0.0, 1.0,
+            0.0,   0.0,   -z[1], 0.0, 0.0, 1.0
         ], dtype=np.float32)
         glBindVertexArray(self._vao_axes)
 

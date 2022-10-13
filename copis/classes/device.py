@@ -30,6 +30,7 @@ from . import BoundingBox
 class Device:
     """Data structure that implements a COPIS instrument imaging device."""
     device_id: int = 0
+    serial_no: str = ''
     name: str = ''
     type: str = ''
     description: str = ''
@@ -41,7 +42,7 @@ class Device:
     body_dims: vec3 = vec3()
     gantry_dims: vec3 = vec3()
     gantry_orientation: int  = 0
-
+    edsdk_save_to_path: str = ''
     _serial_response: SerialResponse = None
     _is_homed: bool = False
     _is_writing_ser: bool = False

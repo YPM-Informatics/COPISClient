@@ -16,7 +16,7 @@
 """COPIS Core machine related class members."""
 
 import threading
-
+import uuid
 from typing import List
 from pydispatch import dispatcher
 from itertools import zip_longest
@@ -253,8 +253,9 @@ class MachineMembersMixin:
         )
         self._working_thread.start()
 
-    def play_poses(self, poses: List[Pose], save_path: str=None, keep_last_path: bool=True):
+    def play_poses(self, poses: List[Pose]):
         """Play the given pose set."""
+        self._session_guid = str(uuid.uuid4())
         process_poses = lambda: [[val for val in tup if val is not None] for tup in
             zip_longest(*[p.get_seq_actions() for p in poses])]
 
@@ -284,22 +285,22 @@ class MachineMembersMixin:
                 print_error_msg(self.console, 'EDSDK is not enabled.')
                 return
 
-        if keep_last_path:
-            self._save_imaging_session = False
-        else:
-            self._imaging_session_path = save_path
-            self._save_imaging_session = bool(self._imaging_session_path)
+        #if keep_last_path:
+        #    self._save_imaging_session = False
+        #else:
+        #    self._imaging_session_path = save_path
+        #    self._save_imaging_session = bool(self._imaging_session_path)
 
-        if self._save_imaging_session:
-            self._imaging_session_queue = []
-            self._add_manifest_section()
+        #if self._save_imaging_session:
+        #    self._imaging_session_queue = []
+        #    self._add_manifest_section()
+        #
+        #    pairs = [('imaging_start_time', get_timestamp(True)),
+        #        ('imaging_end_time', None)]
+        #    pairs.append(self._get_image_counts(poses))
+        #    pairs.append(('images', []))
 
-            pairs = [('imaging_start_time', get_timestamp(True)),
-                ('imaging_end_time', None)]
-            pairs.append(self._get_image_counts(poses))
-            pairs.append(('images', []))
-
-            self._update_imaging_manifest(pairs)
+        #    self._update_imaging_manifest(pairs)
         
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated') 
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')

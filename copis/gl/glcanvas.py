@@ -201,7 +201,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         glEnable(GL_MULTISAMPLE)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        self.create_vaos()
+        self.create_vaos()  #why are we doing this? Is this a legacy call for testing opengl that was never removed?
 
         # compile shader programs
         self._shaders['default'] = shaderlib.compile_shader(*shaderlib.default)

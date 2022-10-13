@@ -18,6 +18,7 @@
 
 import wx
 import wx.lib.agw.aui as aui
+import uuid
 
 from pydispatch import dispatcher
 
@@ -187,6 +188,7 @@ class MachineToolbar(aui.AuiToolBar):
 
     def on_start_imaging(self, event: wx.CommandEvent) -> None:
         """On start imaging button pressed, initiate imaging workflow."""
+        self._core._session_guid = str(uuid.uuid4())
         is_connected = self._core.is_serial_port_connected
         has_path = len(self._core.project.pose_sets)
         is_homed = self._core.is_machine_homed
@@ -202,23 +204,11 @@ class MachineToolbar(aui.AuiToolBar):
             show_msg_dialog(msg, 'Imaging')
             return
 
-        if self._parent.properties_panel.use_last_save_session_choice:
-            proceed = True
-            path = self._core.imaging_session_path
-            keep_last = self._parent._keep_last_session_imaging_path
-        else:
-            proceed, path, keep_last = prompt_for_imaging_session_path(
-                self._core.imaging_session_path)
-            self._parent._keep_last_session_imaging_path = keep_last
-
-        if not proceed:
-            return
-
         pos = event.GetEventObject().GetScreenPosition()
         pane: aui.AuiPaneInfo = self.GetAuiManager().GetPane(self._parent.imaging_toolbar)
 
         def play_all_handler():
-            self._core.start_imaging(path, keep_last)
+            self._core.start_imaging()
             pane.window.enable_tool(ToolIds.PAUSE)
             pane.window.enable_tool(ToolIds.STOP)
 

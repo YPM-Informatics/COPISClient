@@ -94,6 +94,10 @@ def get_file_path(cfg_section :str, cfg_option :str, default_fname = None, src_c
             shutil.copyfile(s,p)  
     return p
 
+def if_not_exists_create(path:str):
+    if not os.path.exists(path):
+            os.makedirs(path)
+
 def save_config_parser(parser: ConfigParser) -> None:
     """Saves a configuration object to file."""
     with open(get_ini_path(), 'w') as file:

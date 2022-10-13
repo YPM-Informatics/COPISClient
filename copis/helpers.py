@@ -18,7 +18,7 @@
 import datetime
 import re
 import threading
-
+from hashlib import md5
 from collections import OrderedDict
 from functools import wraps
 from math import cos, sin, pi, atan2, sqrt
@@ -369,3 +369,12 @@ def get_atype_kind(atype):
         return 'HST'
 
     return 'SER'
+
+def hash_file_md5(filename):
+    h = md5()
+    with open(filename, "rb") as f:
+       chunk = 0
+       while chunk != b'':
+           chunk = f.read(2 ** 20)
+           h.update(chunk)
+    return h.hexdigest()

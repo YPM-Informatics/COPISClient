@@ -28,10 +28,11 @@ from mprop import mproperty
 from canon.EDSDKLib import (
     EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsEvfAf,
     EdsFileCreateDisposition, EdsSaveTo, EdsShutterButton,
-    EdsStorageType, EvfDriveLens)
+    EdsStorageType, EvfDriveLens, ImageQuality)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
-
+from copis.classes import Device as COPIS_Device
+from copis.classes.sys_db import SysDB
 
 class EDSDKController():
     """Implement EDSDK Functionalities."""
@@ -48,11 +49,14 @@ class EDSDKController():
         self._ctypes_cast = cast
         self._get_hardware_id = get_hardware_id
 
-        self._camera_settings = CameraSettings()
-        self._image_settings = ImageSettings()
+        self._camera_settings = CameraSettings()  #this should be replaced with device
+        self._image_settings = ImageSettings()    #this should be replaced with device
+        self._current_copis_device = None
         self._evf_image_ref = None
         self._evf_stream = None
-
+        self._db_attached = False
+        self._img_buffer_length = 1 #number of images that are expected to be buffered in camera when shutter is released via edsdk if saveto pc is enabled
+        self._img_buffer_counter = 0 #number of images that have been downloaded from the camera's buffer
         # Locally aliasing WINFUNCTYPE is required to avoid NameError cause
         # by the use of @mproperty.
         # See: https://github.com/josiahcarlson/mprop
@@ -82,22 +86,19 @@ class EDSDKController():
     def device_list(self) -> List[EdsDeviceInfo]:
         """Returns a list of descriptions of devices connected via edsdk."""
         self._update_camera_list()
-
         devices = []
         infos = self._get_device_info_list()
 
         for info in infos:
             h_id = self._get_hardware_id(info.szPortName.decode("utf-8"))
             connected = self._is_connected and h_id == self._camera_settings.hardware_id
-
             devices.append((info, connected))
 
         return devices
 
     def _get_prop_data(self, ref, prop_id, param, prop):
         param_info = self._edsdk.EdsGetPropertySize(ref, prop_id, param)
-        self._edsdk.EdsGetPropertyData(ref, prop_id, param,
-            param_info['size'], prop)
+        self._edsdk.EdsGetPropertyData(ref, prop_id, param, param_info['size'], prop)
 
     def _get_device_info_list(self):
         infos = []
@@ -108,9 +109,7 @@ class EDSDKController():
         for i in range(count):
             ref = self._edsdk.EdsGetChildAtIndex(items, i)
             info = self._edsdk.EdsGetDeviceInfo(ref)
-
             infos.append(info)
-
         return infos
 
     def _get_camera_info(self, hardware_id):
@@ -131,20 +130,24 @@ class EDSDKController():
                 cam_index = i
                 break
 
-        return self._edsdk.EdsGetChildAtIndex(self._camera_settings.items,
-            cam_index)
+        return self._edsdk.EdsGetChildAtIndex(self._camera_settings.items, cam_index)
 
     def _update_camera_list(self):
         """Update camera list and camera count."""
         self._camera_settings.items = self._edsdk.EdsGetCameraList()
-        self._camera_settings.count = self._edsdk.EdsGetChildCount(
-            self._camera_settings.items)
+        self._camera_settings.count = self._edsdk.EdsGetChildCount(self._camera_settings.items)
 
-    def _generate_file_name(self):
-        """Set the filename for an image."""
-        now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
-        self._image_settings.filename = os.path.abspath(
-            f'./{self._image_settings.PREFIX}_{now}.jpg')
+    def _generate_file_name(self, ext:str):
+        """Set the filename for an image.
+            TODO - need to finalize what format of file name should look like.
+            currently is adds a timestamp, 
+        """
+        if self._img_buffer_counter >= 1: #ensure consistent base name across multiple formats
+            self._image_settings.filename = f'{os.path.splitext(self._image_settings.filename)[0]}.{ext}'
+        else:
+            now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
+            self._image_settings.filename = (f'{self._image_settings.PREFIX}_{now}.{ext}')
+            self._image_settings.filename = os.path.join(self._current_copis_device.edsdk_save_to_path,self._image_settings.filename)
 
     def _download_image(self, image) -> None:
         """Download image from camera buffer to host computer.
@@ -152,27 +155,29 @@ class EDSDKController():
         Args:
             image: Pointer to the image.
         """
+        self._is_waiting_for_image = True
         try:
-            self._generate_file_name()
-
             img_ref = c_void_p(image)
-
             dir_info = self._edsdk.EdsGetDirectoryItemInfo(img_ref)
-            stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename,
-                EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
-
+            self._generate_file_name(os.path.splitext(dir_info.file_name)[1][1:])
+            stream = self._edsdk.EdsCreateFileStream(self._image_settings.filename, EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
             self._edsdk.EdsDownload(img_ref, dir_info.size, stream)
             self._edsdk.EdsDownloadComplete(img_ref)
             self._edsdk.EdsRelease(stream)
-
-            self._is_waiting_for_image = False
-
-            self._print_info_msg(
-                self._console, f'Image saved at {self._image_settings.filename}')
-
+            if self._db_attached:
+                self._sys_db.update_pose_output(self._current_copis_device,self._image_settings.filename)
+            self._img_buffer_counter +=1
+            self._print_info_msg(self._console, f'Image {self._img_buffer_counter} of {self._img_buffer_length} saved at {self._image_settings.filename}')
         except Exception as err:
-            self._print_error_msg(self._console,
-                f'An exception occurred while downloading an image: {err.args[0]}')
+            _img_buffer_counter = self._img_buffer_length
+            self._print_error_msg(self._console, f'An exception occurred while downloading an image: {err.args[0]}')
+        finally:
+            if (self._img_buffer_counter >= self._img_buffer_length):
+                self._is_waiting_for_image = False
+                self._current_copis_device.is_writing_eds =  False
+                self._img_buffer_counter =0 #reset counter
+                self.disconnect() #disconnect
+               
 
     def _handle_object(self, event, obj, _context):
         """Handle the group of events where request notifications are issued to
@@ -181,7 +186,6 @@ class EDSDKController():
         """
         if event == self._edsdk.ObjectEvent_DirItemRequestTransfer:
             self._download_image(obj)
-
         return 0
 
     def _handle_property(self, _event, _property, _parameter, _context):
@@ -202,8 +206,7 @@ class EDSDKController():
             elif event == self._edsdk.StateEvent_Shutdown:
                 self.disconnect(False)
         except Exception as err:
-            self._print_error_msg(self._console,
-                f'An exception occurred while handling the state change event: {err.args[0]}')
+            self._print_error_msg(self._console, f'An exception occurred while handling the state change event: {err.args[0]}')
 
         return 0
 
@@ -245,8 +248,7 @@ class EDSDKController():
     def _download_pictures(self, destination, pic_info_list):
         for info in pic_info_list:
             filename = os.path.abspath(os.path.join(destination, info.file_name))
-            stream = self._edsdk.EdsCreateFileStream(filename,
-                EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
+            stream = self._edsdk.EdsCreateFileStream(filename, EdsFileCreateDisposition.CreateAlways.value, EdsAccess.ReadWrite.value)
 
             self._edsdk.EdsDownload(info.ref, info.size, stream)
             self._edsdk.EdsDownloadComplete(info.ref)
@@ -256,6 +258,14 @@ class EDSDKController():
         for info in pic_info_list:
             self._edsdk.EdsDeleteDirectoryItem(info.ref)
 
+    def attach_sys_db(self, sys_db : SysDB) -> bool:
+        if sys_db.is_initialized:
+            self._sys_db = sys_db
+            self._db_attached = True
+        else:
+            self._db_attached = False
+        return self._db_attached
+            
     def initialize(self, console = None) -> None:
         """Initialize the EDSDK object."""
         if self._is_connected:
@@ -281,8 +291,9 @@ class EDSDKController():
         except Exception as err:
             msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
-
-    def connect(self, hard_id: str, soft_id: int) -> bool:
+    
+    #def connect(self, hard_id: str, soft_id: int) -> bool:
+    def connect(self, copis_device : COPIS_Device ) -> bool:
         """Connects to and initializes a camera at the specified IDs.
 
         Args:
@@ -294,9 +305,13 @@ class EDSDKController():
         Returns:
             True if successful, False otherwise.
         """
+        hard_id = copis_device.port 
+        soft_id = copis_device.device_id
+
         self._update_camera_list()
 
         cam_count, cam_hard_id, *_ = self._camera_settings
+
         hard_ids = [self._get_hardware_id(i.szPortName.decode("utf-8")).upper()
             for i in self._get_device_info_list()]
 
@@ -317,31 +332,40 @@ class EDSDKController():
             self._print_error_msg(self._console, f'Camera {soft_id} not found.')
             return False
 
+        self._current_copis_device = copis_device
         self._camera_settings.software_id = soft_id
         self._camera_settings.hardware_id = hard_id.upper()
-        self._camera_settings.ref = self._get_camera_ref(
-            self._camera_settings.hardware_id)
+        self._camera_settings.ref = self._get_camera_ref(self._camera_settings.hardware_id)
 
         self._edsdk.EdsOpenSession(self._camera_settings.ref)
-        self._edsdk.EdsSetPropertyData(self._camera_settings.ref,
-            self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-        self._edsdk.EdsSetCapacity(self._camera_settings.ref,
-            EdsCapacity(10000000, 512, 1))
+        self._edsdk.EdsSetPropertyData(self._camera_settings.ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
+        #self._edsdk.EdsSetPropertyData(self._camera_settings.ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Camera.value)
+        self._edsdk.EdsSetCapacity(self._camera_settings.ref, EdsCapacity(10000000, 512, 1))
 
-        self._edsdk.EdsSetObjectEventHandler(self._camera_settings.ref,
-            self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
+        self._edsdk.EdsSetObjectEventHandler(self._camera_settings.ref,self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
 
-        self._edsdk.EdsSetPropertyEventHandler(self._camera_settings.ref,
-            self._edsdk.PropertyEvent_All, EDSDKController._property_handler,
-            self._camera_settings.ref)
+        self._edsdk.EdsSetPropertyEventHandler(self._camera_settings.ref, self._edsdk.PropertyEvent_All, EDSDKController._property_handler,self._camera_settings.ref)
 
-        self._edsdk.EdsSetCameraStateEventHandler(self._camera_settings.ref,
-            self._edsdk.StateEvent_All, EDSDKController._state_handler,
-            self._camera_settings.ref)
+        self._edsdk.EdsSetCameraStateEventHandler(self._camera_settings.ref, self._edsdk.StateEvent_All, EDSDKController._state_handler, self._camera_settings.ref)
+
+        prop_out_int = c_uint(0)
+        prop_out_int = self._edsdk.EdsGetPropertyData(self._camera_settings.ref, self._edsdk.PropID_ImageQuality, 0,4, prop_out_int)
+        iq = ImageQuality(prop_out_int.value)
+        #RAW ONLY
+        #single output image qualities
+        soiq = 	(ImageQuality.EdsImageQuality_LR, ImageQuality.EdsImageQuality_MR, ImageQuality.EdsImageQuality_SR, ImageQuality.EdsImageQuality_CR,
+	             ImageQuality.EdsImageQuality_LJ, ImageQuality.EdsImageQuality_M1J, ImageQuality.EdsImageQuality_M2J, ImageQuality.EdsImageQuality_SJ, 
+	             ImageQuality.EdsImageQuality_LJF, ImageQuality.EdsImageQuality_LJN, ImageQuality.EdsImageQuality_MJF, ImageQuality.EdsImageQuality_MJN, ImageQuality.EdsImageQuality_SJF, ImageQuality.EdsImageQuality_SJN, ImageQuality.EdsImageQuality_S1JF, 
+	             ImageQuality.EdsImageQuality_S1JN, ImageQuality.EdsImageQuality_S2JF, ImageQuality.EdsImageQuality_S3JF) 
+        #should also add an overide to force a number from copis_device settings to always have a backup method in case this isn't reliable across newer cameras
+        if iq in (soiq):
+            self._img_buffer_length = 1
+        else:
+            self._img_buffer_length = 2
+        
 
         self._is_connected = True
-        self._print_info_msg(self._console,
-            f'Connected to camera {self._camera_settings.software_id}')
+        self._print_info_msg(self._console, f'Connected to camera {self._camera_settings.software_id}')
 
         return self._is_connected
 
@@ -357,13 +381,12 @@ class EDSDKController():
         if close_session:
             self._edsdk.EdsCloseSession(self._camera_settings.ref)
 
-        self._print_info_msg(self._console,
-            f'Disconnected from camera {self._camera_settings.software_id}')
+        self._print_info_msg(self._console, f'Disconnected from camera {self._camera_settings.software_id}')
 
         self._camera_settings.ref = None
         self._camera_settings.software_id = -1
         self._camera_settings.hardware_id = None
-
+        self._current_copis_device = None
         self._is_connected = False
 
         return not self._is_connected
@@ -387,12 +410,9 @@ class EDSDKController():
             if not do_af:
                 param = EdsShutterButton.CameraCommand_ShutterButton_Completely_NonAF.value
 
-            self._edsdk.EdsSendCommand(self._camera_settings.ref,
-                self._edsdk.CameraCommand_PressShutterButton, param)
+            self._edsdk.EdsSendCommand(self._camera_settings.ref, self._edsdk.CameraCommand_PressShutterButton, param)
 
-            self._edsdk.EdsSendCommand(self._camera_settings.ref,
-                self._edsdk.CameraCommand_PressShutterButton,
-                EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
+            self._edsdk.EdsSendCommand(self._camera_settings.ref, self._edsdk.CameraCommand_PressShutterButton, EdsShutterButton.CameraCommand_ShutterButton_OFF.value)
 
             return True
 
@@ -478,8 +498,7 @@ class EDSDKController():
             self._download_pictures(destination, pictures)
             self._delete_pictures(pictures)
 
-            self._print_info_msg(self._console,
-                f'{count or "No"} picture{"s" if count != 1 else ""} transferred')
+            self._print_info_msg(self._console,f'{count or "No"} picture{"s" if count != 1 else ""} transferred')
         else:
             self._print_info_msg(self._console, 'No pictures transferred')
 

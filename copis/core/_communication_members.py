@@ -79,7 +79,8 @@ class CommunicationMembersMixin:
             device = self._get_device(device_id)
 
             if device:
-                connected = self._edsdk.connect(device.port, device_id)
+                #connected = self._edsdk.connect(device.port, device_id)
+                connected = self._edsdk.connect(device)
             else:
                 print_error_msg(self.console, f'Camera {device_id} cannot be found.')
 
@@ -117,7 +118,7 @@ class CommunicationMembersMixin:
 
         return data
 
-    def snap_edsdk_picture(self, do_af, device_id, save_path, keep_last_path):
+    def snap_edsdk_picture(self, do_af, device_id):
         """Takes a picture via EDSDK."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
@@ -125,7 +126,7 @@ class CommunicationMembersMixin:
             c_args = create_action_args([1 if do_af else 0], 'V')
             payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
 
-            self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
+            self.play_poses([Pose(payload=payload)])
 
     def do_edsdk_focus(self, shutter_release_time, device_id):
         """Focuses the camera via EDSDK."""
@@ -144,15 +145,14 @@ class CommunicationMembersMixin:
         else:
             self._edsdk.evf_focus()
 
-    def transfer_edsdk_pictures(self, destination, keep_last):
+    def transfer_edsdk_pictures(self, destination):
         """"Transfers pictures off of the camera via EDSDK."""
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
-            if not keep_last:
-                self._imaging_session_path = destination
-
-        self._edsdk.transfer_pictures(destination)
+            #if not keep_last:
+            #    self._imaging_session_path = destination
+            self._edsdk.transfer_pictures(destination)
 
     def edsdk_step_focus(self, step_info: int):
         """Steps the camera's focus given step info."""
@@ -249,7 +249,7 @@ class CommunicationMembersMixin:
         """Updates the serial ports list."""
         self._serial.update_port_list()
 
-    def snap_serial_picture(self, shutter_release_time, device_id, save_path, keep_last_path):
+    def snap_serial_picture(self, shutter_release_time, device_id):
         """Takes a picture via serial."""
         if not self.is_serial_port_connected:
             print_error_msg(self.console, 'The machine is not connected.')
@@ -257,7 +257,7 @@ class CommunicationMembersMixin:
             c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
             
-            self.play_poses([Pose(payload=payload)], save_path, keep_last_path)
+            self.play_poses([Pose(payload=payload)])
 
     @locked
     def select_serial_port(self, name: str) -> bool:

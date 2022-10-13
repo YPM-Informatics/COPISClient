@@ -1,0 +1,221 @@
+{
+	"devices": [
+		{
+			"id": 0,
+			"serial_no": "422029003094",
+			"name": "Top front",
+			"type": "Camera",
+			"description": "Canon EOS RP\nLens: Canon macro RF 35mm",
+			"home_position": [
+				-344,
+				-400,
+				440.6,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				-392,
+				-192
+			],
+			"range_z": [
+				140.6,
+				440.6
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_32E2\\9&21A8DB1A&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		},
+		{
+			"id": 1,
+			"serial_no": "432029002009",
+			"name": "Top middle",
+			"type": "Camera",
+			"description": "Canon EOS RP\nLens: Canon macro RF 35mm",
+			"home_position": [
+				0,
+				0,
+				440.6,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				-217,
+				217
+			],
+			"range_z": [
+				140.6,
+				440.6
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_32E2\\9&34628BBF&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		},
+		{
+			"id": 2,
+			"serial_no": "422029003092",
+			"name": "Top back",
+			"type": "Camera",
+			"description": "Canon EOS RP\nLens: Canon macro RF 35mm",
+			"home_position": [
+				344,
+				400,
+				440.6,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				192,
+				392
+			],
+			"range_z": [
+				140.6,
+				440.6
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_32E2\\9&B81725D&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		},
+		{
+			"id": 3,
+			"serial_no": "392024004337",
+			"name": "Bottom front",
+			"type": "Camera",
+			"description": "Canon EOS 80D\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				-344,
+				-400,
+				-187,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				-392,
+				-192
+			],
+			"range_z": [
+				-187,
+				113
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_3294\\A&3AFAEB05&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		},
+		{
+			"id": 4,
+			"serial_no": "392024004335",
+			"name": "Bottom middle",
+			"type": "Camera",
+			"description": "Canon EOS 80D\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				0,
+				0,
+				-187,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				-217,
+				217
+			],
+			"range_z": [
+				-187,
+				113
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_3294\\A&3B15D048&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		},
+		{
+			"id": 5,
+			"serial_no": "232024008047",
+			"name": "Bottom back",
+			"type": "Camera",
+			"description": "Canon EOS 80D\nLens: Canon macro EFS 35mm",
+			"home_position": [
+				344,
+				400,
+				-187,
+				0,
+				0
+			],
+			"range_x": [
+				-344,
+				344
+			],
+			"range_y": [
+				192,
+				392
+			],
+			"range_z": [
+				-187,
+				113
+			],
+			"size": [
+				350,
+				250,
+				200
+			],
+			"port": "USB\\VID_04A9&PID_3294\\A&285C1FA3&0&4",
+			"head_radius": 160,
+			"body_dims": [ 100, 40, 740 ],
+			"gantry_dims": [ 1000, 125, 100 ],
+			"edsdk_save_to_path": ""
+		}
+	],
+	"homing_sequence": ">5G28ZF700\n>4G28ZF700\n>3G28ZF700\n>2G28ZF700\n>1G28ZF700\nG28ZF700\n>5G92Z113\n>4G92Z113\n>3G92Z113\n>2G92Z140.6\n>1G92Z140.6\nG92Z140.6\n>5G1Z-187F700\n>4G1Z-187F700\n>3G1Z-187F700\n>2G1Z440.6F700\n>1G1Z440.6F700\nG1Z440.6F700\n>3G28YF2000\n>3G92Y-400\n>3G28XF2000\nG28YF2000\nG92Y-400\nG28XF2000\n>3G92X344\n>3G1X-344F2000\nG92X344\nG1X-344F2000\n>1G28XF2000\n>4G28XF2000\n>1G92X344\n>4G92X344\n>2G28XF2000\n>5G28XF2000\n>2G92X344\n>5G92X344\n>1G28YF2000\n>1G92Y-227\n>1G1X0F2000\n>4G28YF2000\n>4G92Y-227\n>4G1X0F2000\n>2G28YF2000\n>2G92Y-90\n>2G1Y-90F2000\n>5G28YF2000\n>5G92Y-90\n>5G1Y-90F2000\n>5G28PTF800\n>4G28PTF800\n>3G28PTF800\n>2G28PTF800\n>1G28PTF800\nG28PTF800\n"
+}

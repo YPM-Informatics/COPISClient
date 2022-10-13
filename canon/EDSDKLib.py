@@ -6,6 +6,7 @@ from datetime import datetime
 class EDSDK():
 	def __init__(self):
 		dll_path_format = os.path.dirname(__file__) + os.path.sep + '{}'
+		a = dll_path_format.format('EDSDK.dll')
 		self.dll = CDLL(dll_path_format.format('EDSDK.dll'))
 		self.errorFormat = "EDSDK Exception Occurred: {} {}"
 

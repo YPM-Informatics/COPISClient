@@ -68,8 +68,7 @@ def show_msg_dialog(msg: str, caption=' ') -> None:
     dialog = wx.MessageDialog(None, msg, caption, wx.OK)
     dialog.ShowModal()
 
-def show_prompt_dialog(msg: str, caption:str=' ', show_cancel_btn:bool=False,
-    show_help_btn:bool=False, help_btn_label:str=None) -> Any:
+def show_prompt_dialog(msg: str, caption:str=' ', show_cancel_btn:bool=False, show_help_btn:bool=False, help_btn_label:str=None) -> Any:
     """Show a wx.MessageDialog confirmation prompt."""
     style = wx.YES_NO
 
