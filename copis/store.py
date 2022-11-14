@@ -64,8 +64,12 @@ def sys_db_exists() -> bool:
     return False 
 
 def get_sys_db_path() -> str:
-    return get_file_path('System', 'db')
-    
+    p = get_file_path('System', 'db')
+    d = os.path.dirname(p)
+    if d and not d.isspace() and not os.path.exists(d):
+        os.makedirs(d)
+    return p    
+
 def get_profile_path() -> str:
     p = get_file_path('Project', 'profile_path','default_profile.json','profiles', True)
     if not os.path.exists(p): 

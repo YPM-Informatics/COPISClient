@@ -226,7 +226,7 @@ class Project():
                 data['serial_no'] = ''
             if 'edsdk_save_to_path' not in data: #eventually add global default in ini for all cams
                 data['edsdk_save_to_path'] = os.path.join(store.get_root(), 'output') #for now default to program dir.
-            if not os.path.exists(data['edsdk_save_to_path']):
+            if data['edsdk_save_to_path'] and not (data['edsdk_save_to_path']).isspace() and not os.path.exists(data['edsdk_save_to_path']):
                 os.makedirs(data['edsdk_save_to_path'])
             return Device(
                 data['id'],
