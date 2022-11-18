@@ -14,10 +14,11 @@
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
 """Provide the COPIS SerialResponse Class."""
+from typing import List
 
 from dataclasses import dataclass
 
-from copis.globals import Point5
+from copis.globals import Point5, SysStatFlags
 
 
 @dataclass
@@ -38,3 +39,26 @@ class SerialResponse:
     def is_idle(self) -> bool:
         """Returns a flag indicating where the serial connection is idle."""
         return self.system_status_number == 0
+
+    def parse_sys_stat(self) -> List:
+        """Returns system status as a listing of active flags., Empty list is idle."""
+        r = []
+        if (self.system_status_number & (1<< SysStatFlags.STA_PROC_SERIAL)):
+            r.append(SysStatFlags.STA_PROC_SERIAL)
+        if (self.system_status_number & (1<< SysStatFlags.STA_PROC_TWI)):
+            r.append(SysStatFlags.STA_PROC_TWI)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_CMD_AVAIL)):
+            r.append(SysStatFlags.STA_CMD_AVAIL)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_GC_EXEC)):
+            r.append(SysStatFlags.STA_GC_EXEC)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_MOTION_QUEUED)):
+            r.append(SysStatFlags.STA_MOTION_QUEUED)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_MOTION_EXEC)):
+            r.append(SysStatFlags.STA_MOTION_EXEC)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_HOMING)):
+            r.append(SysStatFlags.STA_HOMING)   
+        if (self.system_status_number & (1<< SysStatFlags.STA_LOCK)):
+            r.append(SysStatFlags.STA_LOCK)   
+        return r
+
+    

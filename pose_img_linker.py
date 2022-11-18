@@ -1,4 +1,6 @@
+from importlib.resources import path
 import sys
+import shutil
 import getopt
 import datetime
 import time
@@ -54,10 +56,13 @@ class Pose_Img_Linker:
         self._db = None
         self._output_csv = None
         self._cam_sn_to_id = {}
+        self._bin_by_session = False
         self.max_buffer_secs = 5
         self.img_types = {1:'.jpg',2:None}
         self.exif_time_diffs = {}
         self.save_to_db = False
+        self.bin_by_session_output_folder = None
+
     def __enter__(self):
         return self
     def __exit__(self, exc_type, exc_value, traceback):
@@ -67,6 +72,7 @@ class Pose_Img_Linker:
     @property
     def input_folder(self):
         return self._input_folder
+
     @input_folder.setter
     def input_folder(self, x):
         if (not os.path.exists(x)):
@@ -148,6 +154,7 @@ class Pose_Img_Linker:
                 fname_param = f'img{n}_fname'
                 for f in lof:
                     img_filename = f
+                  
                     h = hash_file(img_filename)
                     #exif data has three option for date time:datetime,datetime_original,datetime_digitized
                     #we will default to using datetime_digitized
@@ -192,10 +199,28 @@ class Pose_Img_Linker:
                             #    imgs_linked+=1
                             else:
                                 imgs_linked+=1
+                                if self.bin_by_session_output_folder:
+                                    session_path = os.path.join(self.bin_by_session_output_folder,'session_' + str(row[0]))
+                                    session_csv = os.path.join(self.bin_by_session_output_folder,'session_' + str(row[0]) + '.csv')
+                                    is_new_csv = not os.path.exists(session_csv)
+                                    if not os.path.exists(session_path):
+                                        os.makedirs(session_path)
+                                    img_filename_relative_root =  img_filename.replace(self.input_folder,'',1).lstrip('\\')
+                                    dest = os.path.join(session_path, img_filename_relative_root)
+                                    if not os.path.exists(os.path.dirname(dest)):
+                                        os.makedirs(os.path.dirname(dest))
+                                    shutil.copy(img_filename, dest)
+                                    #img_filename = img_filename_relative_root
+                                    with open(session_csv, 'a+', encoding='utf-8', newline='\n') as session_csvfile:
+                                        session_csvwriter = csv.writer(session_csvfile)  
+                                        if is_new_csv:
+                                            session_csvwriter.writerow(['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff'])  
+                                        f2 = os.path.join('session_' + str(row[0]), img_filename_relative_root)
+                                        session_csvwriter.writerow(row[0:8] + (f2,h,str(image_t), str(buffer_sec)))
                                 if self.save_to_db:
                                     s = f'UPDATE image_metadata SET {md5_param} = ?, {fname_param} = ? where id = ?;'
                                     v = (h,img_filename,image_id)
-                                    cur.execute(s, v)    
+                                    cur.execute(s, v)
                             csvwriter.writerow(row[0:8] + (img_filename,h,str(image_t), str(buffer_sec)))
                 print(str(imgs_linked), ' ', str(ftype), '(s) linked')
             print('max time buffer: ', str(max_buf_used), ' seconds.')
@@ -210,6 +235,7 @@ def showHelp():
     print('-f <img file type 1> default: .jpg')
     print('-e <img file type 2> default: None')
     print('-s <update databse> default: False')
+    print('-c <folder name to copy images organized by session id> default: None')
     print('-t <comma delimited array of time diferential to apply to exif data> default: None')
     print('    format: camid:timediff_sec,camid2:timdiff_sec2...')
     print('    useful if a camera\'s time is set incorrectly.')
@@ -217,7 +243,7 @@ def showHelp():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:s')
+        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:c:s')
     except getopt.GetoptError as err:
         print(err)
         print('invalid args, for help: pose_img_linker.py -h')
@@ -226,11 +252,13 @@ if __name__ == "__main__":
     pil = Pose_Img_Linker()    
 
     #pil.profile =  'profiles\\ypm_three.json'
-    #pil.dbfile = 'C:\\Users\\nelson\\Desktop\\images_for_olivia_ren\\copis.db'
-    #pil.input_folder = 'C:\\Users\\nelson\\Desktop\\images_for_olivia_ren\\west_campus_dataset_2' 
-    #pil.output_csv = 'test2.csv'
+    #pil.dbfile = 'C:\\Users\\nelson\\Desktop\\olivia_multiple_labels_new\\copis.db'
+    #pil.input_folder = 'C:\\Users\\nelson\\Desktop\\olivia_multiple_labels_new' 
+    #pil.output_csv = 'C:\\Users\\nelson\\Desktop\\olivia_multiple_labels_new\\test2.csv'
+    #pil.bin_by_session_output_folder = 'C:\\Users\\nelson\\Desktop\\olivia_multiple_labels_new_binned'
     #pil.img_types[2] = '.cr2'
-    #pil.save_to_db = True
+    #pil.save_to_db = False
+
     if len(opts) == 0:
         showHelp()
         sys.exit()
@@ -261,6 +289,8 @@ if __name__ == "__main__":
                     pil.exif_time_diffs[int(kv[0])] = pil.exif_time_diffs[int(kv[0])] + int(kv[1])
                 else:
                     pil.exif_time_diffs[int(kv[0])] = int(kv[1])
+        elif opt == '-c':
+            pil.bin_by_session_output_folder = arg
         elif opt == '-h':
             showHelp()
             sys.exit()

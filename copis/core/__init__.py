@@ -21,6 +21,7 @@ __version__ = ""
 
 # pylint: disable=using-constant-test
 import sys
+import time
 from typing import List, Tuple
 
 
@@ -121,6 +122,8 @@ class COPISCore(
         self._initialized_manifests = []
         self._save_imaging_session = False
         self._image_counters = {}
+
+        self._ressetable_send_delay_ms = 0 #delay time in milliseconds before sending a serial command after recieiving idle/CTS 
         
     @property
     def imaged_pose_sets(self):
@@ -240,7 +243,6 @@ class COPISCore(
 
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
-
             packet_size = len(packet)
             if isinstance(packet, tuple) and list(map(type, packet)) == [int, list]:
                 packet_size = len(packet[1])
@@ -248,8 +250,19 @@ class COPISCore(
                 self._is_dev_env)
 
             if packet:
+                #temporary shoehorn of a postshutter delay. 
+                #We set a delay via _send_delay_ms when a shutter command is sent, 
+                #then reset it to zero after subsequent command is ready to send
+                if self._ressetable_send_delay_ms > 0:
+                    start_timestamp_ms = round(time.time() * 1000)
+                    print_debug_msg(self.console, 'begin post shutter delay', True)
+                    while round(time.time() * 1000) - start_timestamp_ms < self._ressetable_send_delay_ms:
+                        #could do something during delay
+                        pass
+                    self._ressetable_send_delay_ms = 0
+                    print_debug_msg(self.console, 'end post shutter delay', True)
                 self._send(*packet)
-                self._clear_to_send = False
+                self._clear_to_send = False #why is this set after the send and not before?
             else:
                 print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
 
@@ -305,17 +318,30 @@ class COPISCore(
                     .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
                 f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
+            
+            pre_shutter_delay_completed = False
             for command in commands:
                 if command.atype in self.SNAP_COMMANDS:
                     device = self._get_device(command.device)
                     rank = self._get_next_img_rank(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
+                    #shoe-horning a mechanism for adding a pause before and after taking pictures
+                    if not pre_shutter_delay_completed and 'pre_shutter_delay_ms' in self.project.options:
+                        print_debug_msg(self.console, 'begin pre shutter delay', True)
+                        time_delay_ms = self.project.options['pre_shutter_delay_ms']
+                        start_timestamp_ms = round(time.time() * 1000)
+                        while round(time.time() * 1000) - start_timestamp_ms < time_delay_ms:
+                            #could do something while delay is happening
+                            pass
+                        pre_shutter_delay_completed = True
+                        print_debug_msg(self.console, 'end pre shutter delay', True)
+                    if 'post_shutter_delay_ms' in self.project.options:
+                        self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
                     self.sys_db.start_pose(device, method, session_id = self._session_id)
-
+                    
             if not is_edsdk_needed:
                 for dvc in dvcs:
-                    dvc.set_is_writing_ser()
-
+                    dvc.set_is_writing_ser() #why do we wait this long to se the is writing flag? What is the flag and how is it used?
                 self._serial.write(cmd_lines)
             else:
                 serial_cmds = []
@@ -340,9 +366,7 @@ class COPISCore(
                                 self._serial.write(
                                     '\r'.join([serialize_command(c) for c in serial_cmds]))
                                 serial_cmds = []
-
                             host_cmds.extend(chunk)
-
                 if serial_cmds:
                     self._serial.write(
                         '\r'.join([serialize_command(c) for c in serial_cmds]))
@@ -432,6 +456,7 @@ class COPISCore(
         self._update_recent_projects(path)
 
     def start_imaging(self) -> bool:
+        #self._session_id +=1  #this need to be looked at. another incrment added here because in some cases the thread doesn't end properly. 
         """Starts the imaging sequence, following the defined action path."""
         def process_pose_sets():
             packets = []

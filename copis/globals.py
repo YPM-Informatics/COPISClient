@@ -129,6 +129,7 @@ class ActionType(Enum):
                     # any prior buffered action to finish execution before reboot.
 
     HST_F_STACK = auto() # Host (serial) - focus stack.
+    HST_PAUSE = auto()
 
     EDS_F_STACK = auto() # EDSDK - focus stack.
     EDS_SNAP = auto() # EDSDK - press shutter.
@@ -157,4 +158,15 @@ class WorkType(Enum):
     JOGGING = 2
     SET_READY = 3
     STEPPING = 4
+
+class SysStatFlags(Enum):
+    """bit positions for each status flag"""
+    STA_PROC_SERIAL = 0
+    STA_PROC_TWI = 1
+    STA_CMD_AVAIL = 2
+    STA_GC_EXEC = 3
+    STA_MOTION_QUEUED = 4
+    STA_MOTION_EXEC = 5
+    STA_HOMING = 6
+    STA_LOCK = 7
 

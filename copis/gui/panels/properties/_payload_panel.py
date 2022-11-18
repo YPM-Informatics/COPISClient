@@ -163,7 +163,7 @@ class PayloadPanel(wx.Panel):
             c_args = create_action_args([step, snap_count], 'VP')
             payload_item = Action(ActionType.HST_F_STACK, self._pose.position.device,
                 len(c_args), c_args)
-
+            
             if self._core.add_to_selected_pose_payload(payload_item):
                 pose = self._core.project.poses[self._core.selected_pose]
                 self.set_pose(pose)

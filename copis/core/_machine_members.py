@@ -44,7 +44,6 @@ class MachineMembersMixin:
         for dvc in self.project.devices:
             if dvc.serial_response:
                 flags = dvc.serial_response.system_status_flags
-
                 if flags and len(flags) == 8 and int(flags[0]):
                     return True
 

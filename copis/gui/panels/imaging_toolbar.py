@@ -16,6 +16,7 @@
 """ImagingToolbar class."""
 
 
+from logging.handlers import SYSLOG_UDP_PORT
 import wx
 import wx.lib.agw.aui as aui
 
@@ -31,7 +32,7 @@ class ImagingToolbar(aui.AuiToolBar):
     def __init__(self, parent):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
             aui.AUI_TB_PLAIN_BACKGROUND)
-
+        
         self._parent = parent
         self._core = self._parent.core
         self._tools = []
@@ -47,7 +48,7 @@ class ImagingToolbar(aui.AuiToolBar):
             lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
         self.Bind(wx.EVT_TOOL, self._on_tool_selected)
-
+        
     def _init_toolbar(self):
         """Initialize and populate toolbar.
 
@@ -87,6 +88,8 @@ class ImagingToolbar(aui.AuiToolBar):
 
         self._tools.extend([ToolIds.PLAY_ALL, ToolIds.PLAY, ToolIds.PAUSE, ToolIds.STOP,
             ToolIds.SNAP_SHOT, ToolIds.SNAP_SHOTS])
+        
+
 
     def _on_tool_selected(self, event: wx.CommandEvent):
         tool_id = ToolIds(event.Id)

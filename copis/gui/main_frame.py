@@ -565,18 +565,20 @@ class MainWindow(wx.Frame):
     def show_imaging_toolbar(self, position, actions):
         """Shows the imaging toolbar at the given position and executes the given callback
             for the given tool."""
-        pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)
+        self.SetStatusText('Active Session No.: ' + str(self.core._session_id))
+        pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)  
         pane.FloatingPosition(position)
         pane.Show(True)
 
         self.menuitems['imaging_toolbar'].Enable(True)
         self.menuitems['imaging_toolbar'].Check(True)
-        self._mgr.Update()
 
+        self._mgr.Update()
         pane.window.set_actions(actions)
 
     def hide_imaging_toolbar(self):
         """Hides the imaging toolbar."""
+        self.SetStatusText('Ready')
         pane: aui.AuiPaneInfo = self._mgr.GetPane(self.imaging_toolbar)
         pane.Show(False)
 
@@ -747,7 +749,6 @@ class MainWindow(wx.Frame):
             self.panels['imaging_toolbar'],
             aui.AuiPaneInfo().Name('imaging_toolbar').Caption('Imaging Toolbar').
             Float().ToolbarPane().BottomDockable(False).Top().Layer(10).Hide())
-
 
         self._mgr.Update()
         self.update_right_dock()

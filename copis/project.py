@@ -17,7 +17,7 @@
 
 import os
 from importlib import import_module
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 from pydispatch import dispatcher
 from itertools import groupby
 from glm import vec3
@@ -88,6 +88,9 @@ class Project():
         if not hasattr(self, '_core'):
             self._core = None
 
+        if not hasattr(self, '_options'):
+            self._options = None
+
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_d_list_changed')
@@ -122,6 +125,11 @@ class Project():
             return []
 
         return[pose for p_set in p_sets for pose in p_set]
+    
+    @property
+    def options(self) -> dict:
+        """Returns the project's save path."""
+        return self._options
 
     def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
         """Returns a pose in a given pose set with device id.
@@ -346,6 +354,9 @@ class Project():
 
         self._path = path
 
+        if 'imaging_options' in proj_data:
+            self._options = proj_data['imaging_options'] 
+
         if is_dirty:
             self._set_is_dirty()
         else:
@@ -359,6 +370,7 @@ class Project():
 
         proj_data = {
             'imaging_path': self._pose_sets,
+            'imaging_options': self._options,
             'profile': self._profile,
             'proxies': []
         }
