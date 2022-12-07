@@ -120,7 +120,7 @@ class ThreadTargetsMixin:
         def callback():
             if extra_callback:
                 extra_callback()
-            print_info_msg(self.console, f'{t_name} ended')  #where stepping started is being generated
+            print_info_msg(self.console, f'{t_name} ended')  #where stepping ended was being generated
 
         dispatcher.connect(callback, signal='ntf_machine_idle')
 
@@ -147,6 +147,8 @@ class ThreadTargetsMixin:
                     self._current_mainqueue_item = -1
                     self.select_pose_set(-1)
                     self._imaged_pose_sets.clear()
+                    self._session_id = self.sys_db.last_session_id() +1
+
 
                 self._work_type = None
 

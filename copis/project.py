@@ -89,7 +89,7 @@ class Project():
             self._core = None
 
         if not hasattr(self, '_options'):
-            self._options = None
+            self._options = {}
 
         # Bind listeners.
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')

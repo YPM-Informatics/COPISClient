@@ -406,7 +406,7 @@ class COPISCore(
             self.sys_db.end_pose(device)
 
     def _imaging_callback(self):
-        self._session_id +=1
+        #self._session_id +=1
         dispatcher.disconnect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.disconnect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
@@ -456,7 +456,6 @@ class COPISCore(
         self._update_recent_projects(path)
 
     def start_imaging(self) -> bool:
-        #self._session_id +=1  #this need to be looked at. another incrment added here because in some cases the thread doesn't end properly. 
         """Starts the imaging sequence, following the defined action path."""
         def process_pose_sets():
             packets = []
@@ -572,7 +571,7 @@ class COPISCore(
         """Stops work in progress."""
 
         paused = self._is_machine_paused
-        self._session_id += 1
+        self._session_id = self.sys_db.last_session_id() +1
         if paused or self.pause_work():
             self._mainqueue = []
             self._is_machine_paused = False

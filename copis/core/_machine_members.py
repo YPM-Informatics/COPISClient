@@ -306,7 +306,7 @@ class MachineMembersMixin:
 
         self._mainqueue = []
         self._mainqueue.extend(processed_poses)
-        self._work_type = WorkType.STEPPING
+        self._work_type = WorkType.IMAGING  
 
         self._keep_working = True
         self._clear_to_send = True
