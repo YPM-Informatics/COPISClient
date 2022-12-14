@@ -185,6 +185,8 @@ class MachineStats(wx.Panel):
 
     def on_device_updated(self, device):
         """Handles device updated event."""
+        # Call the specified function after the current and pending event handlers have been completed.
+        # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
         wx.CallAfter(self._update_device, device)
 
     def on_machine_idle(self):

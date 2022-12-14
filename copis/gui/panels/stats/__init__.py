@@ -72,4 +72,6 @@ class StatsPanel(scrolled.ScrolledPanel):
 
     def on_path_changed(self):
         """Handles path change event."""
+        # Call the specified function after the current and pending event handlers have been completed.
+        # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
         wx.CallAfter(self._sync_path_stats_panel)
