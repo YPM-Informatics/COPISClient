@@ -57,10 +57,10 @@ class TimelinePanel(wx.Panel):
         self._copied_pose = None
 
         self.init_gui()
-        self.update_timeline()
+        self._update_timeline()
 
         # Bind listeners.
-        dispatcher.connect(self.update_timeline, signal='ntf_a_list_changed')
+        dispatcher.connect(self._on_action_list_changed, signal='ntf_a_list_changed')
         dispatcher.connect(self._on_pose_selected, signal='ntf_a_selected')
         dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
         dispatcher.connect(self._on_pose_set_selected, signal='ntf_s_selected')
@@ -161,6 +161,9 @@ class TimelinePanel(wx.Panel):
         self._copied_pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
     def _on_pose_set_deselected(self, set_index):
+        wx.CallAfter(self._deselect_pose_set, set_index)
+
+    def _deselect_pose_set(self, set_index):
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
@@ -184,6 +187,9 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_set_selected(self, set_index):
+        wx.CallAfter(self._select_pose_set, set_index)
+
+    def _select_pose_set(self, set_index):
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
@@ -205,7 +211,9 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_deselected(self, pose_index):
+        wx.CallAfter(self._deselect_pose, pose_index)
 
+    def _deselect_pose(self, pose_index):
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
@@ -237,6 +245,9 @@ class TimelinePanel(wx.Panel):
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
     def _on_pose_selected(self, pose_index):
+        wx.CallAfter(self._select_pose, pose_index)
+
+    def _select_pose(self, pose_index):
         set_index, idx_in_set = self._place_pose_in_sets(pose_index)
 
         root = self.timeline.GetRootItem()
@@ -813,8 +824,10 @@ class TimelinePanel(wx.Panel):
                     idx_in_poses = self._get_index_poses(set_index, prev_pose_index)
                     self.core.select_pose(idx_in_poses)
 
+    def _on_action_list_changed(self):
+        wx.CallAfter(self._update_timeline)
 
-    def update_timeline(self) -> None:
+    def _update_timeline(self) -> None:
         """When points are modified, redisplay timeline commands.
 
         Handles ntf_a_list_changed signal sent by self.core.
