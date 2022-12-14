@@ -161,6 +161,8 @@ class TimelinePanel(wx.Panel):
         self._copied_pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
 
     def _on_pose_set_deselected(self, set_index):
+        # Call the specified function after the current and pending event handlers have been completed.
+        # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
         wx.CallAfter(self._deselect_pose_set, set_index)
 
     def _deselect_pose_set(self, set_index):
