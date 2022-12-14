@@ -223,7 +223,6 @@ class CommunicationMembersMixin:
         self._serial = serial_controller
         self._serial.initialize(self.console, self._is_dev_env)
         self._is_serial_enabled = True
-        
 
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
@@ -239,7 +238,8 @@ class CommunicationMembersMixin:
 
             if self._working_thread:
                 self._working_thread.join()
-                self._working_thread = None
+
+            self._working_thread = None
 
         if self._is_serial_enabled:
             self._serial.terminate()
@@ -302,6 +302,8 @@ class CommunicationMembersMixin:
         """disconnects from the active serial port."""
         self._keep_working = False
 
+        # self.is_serial_port_connected is a property and pylint can see that for some reason.
+        # pylint: disable=using-constant-test
         if self.is_serial_port_connected:
             port_name = self._get_active_serial_port_name()
             read_thread = next(filter(lambda t: t.port == port_name, self._read_threads))
@@ -315,7 +317,8 @@ class CommunicationMembersMixin:
 
             if self._working_thread:
                 self._working_thread.join()
-                self._working_thread = None
+
+            self._working_thread = None
 
         if self.is_serial_port_connected:
             self._serial.close_port()

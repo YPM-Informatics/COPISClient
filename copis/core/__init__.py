@@ -600,16 +600,13 @@ class COPISCore(
         self._is_machine_paused = True
         self._keep_working = False
 
-        # try joining the print thread: enclose it in try/except because we
-        # might be calling it from the thread itself
-        try:
+        # Join the working thread of finish work if we are it.
+        if threading.current_thread() != self._working_thread:
             self._working_thread.join()
-            self._working_thread = None
-            print_info_msg(self.console, f'{self.work_type_name} paused')
-            return True
-        except RuntimeError as err:
-            print_error_msg(self.console, f'Cannot join working thread: {err.args[0]}')
-            return False
+
+        self._working_thread = None
+        print_info_msg(self.console, f'{self.work_type_name} paused')
+        return True
 
     def resume_work(self) -> bool:
         """Resume the current run."""
