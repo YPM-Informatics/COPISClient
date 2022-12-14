@@ -3,6 +3,7 @@
 ################################################################################
 
 # User-specific files
+*.ini
 *.suo
 *.user
 *.userosscache
@@ -10,6 +11,7 @@
 .mypy_cache/
 .test
 .test/*
+db/
 
 # Canon edsdk files
 [Cc]anon/*.dll
