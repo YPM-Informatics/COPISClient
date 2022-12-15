@@ -157,8 +157,8 @@ def get_timestamp(add_date:bool=False) -> str:
 
     if add_date:
         return now.strftime('%m/%d/%Y, %H:%M:%S.%f')[:-3]
-    else:
-        return now.strftime('%H:%M:%S.%f')[:-3]
+
+    return now.strftime('%H:%M:%S.%f')[:-3]
 
 
 def get_timestamped(msg) -> str:
@@ -335,6 +335,7 @@ def get_hardware_id(port_name: str='') -> str:
 
     return h_id
 
+
 def get_end_position(start: Point5, distance: float) -> vec3:
     """Calculates and returns an endpoint, given a start and distance."""
     d_places = 3
@@ -355,7 +356,8 @@ def get_end_position(start: Point5, distance: float) -> vec3:
 
     return vec3(end_x, end_y, end_z)
 
-def get_atype_kind(atype):
+
+def get_atype_kind(atype) -> str:
     """Returns the action type kind."""
     if isinstance(atype, ActionType):
         name = atype.name
@@ -370,11 +372,13 @@ def get_atype_kind(atype):
 
     return 'SER'
 
-def hash_file_md5(filename):
-    h = md5()
+
+def hash_file_md5(filename) -> str:
+    """Returns an md5 has code."""
+    md5_hash = md5()
     with open(filename, "rb") as f:
-       chunk = 0
-       while chunk != b'':
-           chunk = f.read(2 ** 20)
-           h.update(chunk)
-    return h.hexdigest()
+        chunk = 0
+        while chunk != b'':
+            chunk = f.read(2 ** 20)
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
