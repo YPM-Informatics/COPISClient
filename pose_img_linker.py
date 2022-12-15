@@ -18,7 +18,6 @@
 import sys
 import shutil
 import getopt
-import datetime
 import time
 import sqlite3
 import os
@@ -35,11 +34,11 @@ from exif import Image
 def _hash_file(filename):
     hash_md5 = hashlib.md5()
 
-    with open(filename, "rb") as f:
+    with open(filename, "rb") as file:
         chunk = 0
 
         while chunk != b'':
-            chunk = f.read(2 ** 20)
+            chunk = file.read(2 ** 20)
             hash_md5.update(chunk)
 
     return hash_md5.hexdigest()
@@ -71,7 +70,8 @@ class PoseImgLinker:
     """Implements the ability to link pose images with their recorded metadata."""
     def __init__ (self):
         self._input_folder = None
-        self._json_profile = None # TODO: remove? Not used anywhere.
+        self._json_profile = None
+        self._profile = None
         self._dbfile = None
         self._db = None
         self._output_csv = None
@@ -104,14 +104,15 @@ class PoseImgLinker:
 
     @property
     def profile(self):
-        """Returns the profile."""
-        return self._profile # TODO: remove? Is this meant to be self._json_profile?
+        """Returns the profile path."""
+        return self._profile
 
     @profile.setter
     def profile(self, profile_path):
         if not os.path.exists(profile_path):
             raise FileNotFoundError("Profile not found")
 
+        self._profile = profile_path
         ext = os.path.splitext(profile_path)[1]
 
         if ext.lower() == '.ini':
@@ -126,9 +127,9 @@ class PoseImgLinker:
 
         if ext.lower() == '.json':
             with open(profile_path, 'r', encoding='utf-8') as file:
-                _json_profile = json.load(file) # TODO: ask Nelson. Is this meant to be self._json_profile?
+                self._json_profile = json.load(file)
 
-            for dvc in _json_profile['devices']:
+            for dvc in self._json_profile['devices']:
                 if 'id' in dvc and 'serial_no' in dvc:
                     self._cam_sn_to_id[dvc['serial_no']] = dvc['id']
         else:
@@ -198,7 +199,7 @@ class PoseImgLinker:
 
                     hash_code = _hash_file(img_filename)
                     # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
-                    # We will default to using datetime_digitized
+                    # We will default to using datetime_digitized.
                     with open(img_filename, 'rb') as image_file:
                         my_image = Image(image_file)
 
@@ -222,7 +223,7 @@ class PoseImgLinker:
                         count = len(rows)
 
                     # max_buf_used = max(max_buf_used,buffer_sec)
-                    if len(rows) <1:
+                    if len(rows) < 1:
                         csvwriter.writerow(['No timestamp match','','','','','','',img_filename,hash_code,str(image_t),str(buffer_sec)])
                     elif len(rows) > 1:
                         csvwriter.writerow(['>1 timestamp match','','','','','','',img_filename,hash_code,str(image_t),str(buffer_sec)])
@@ -233,7 +234,7 @@ class PoseImgLinker:
                             if image_t < t_end:
                                 buffer_sec = buffer_sec * -1
 
-                            if max(abs(max_buf_used),abs(buffer_sec)) >  abs(max_buf_used):
+                            if max(abs(max_buf_used),abs(buffer_sec)) > abs(max_buf_used):
                                 max_buf_used = buffer_sec
 
                             img_md5 = row[8]
