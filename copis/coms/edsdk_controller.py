@@ -39,6 +39,7 @@ class EDSDKController():
     _object_handler = _property_handler = _state_handler = object
 
     def __init__(self) -> None:
+        self._sys_db = None
         self._edsdk = None
         self._console = None
         self._is_connected = False
@@ -49,15 +50,16 @@ class EDSDKController():
         self._ctypes_cast = cast
         self._get_hardware_id = get_hardware_id
 
-        self._camera_settings = CameraSettings()  #this should be replaced with device
-        self._image_settings = ImageSettings()    #this should be replaced with device
+        self._camera_settings = CameraSettings()    # This should be replaced with device.
+        self._image_settings = ImageSettings()      # This should be replaced with device.
         self._current_copis_device = None
         self._evf_image_ref = None
         self._evf_stream = None
         self._db_attached = False
-        self._img_buffer_length = 1 #number of images that are expected to be buffered in camera when shutter is released via edsdk if saveto pc is enabled
-        self._img_buffer_counter = 0 #number of images that have been downloaded from the camera's buffer
-        # Locally aliasing WINFUNCTYPE is required to avoid NameError cause
+        self._img_buffer_length = 1 # Number of images that are expected to be buffered in camera when shutter is released via edsdk if save to pc is enabled.
+        self._img_buffer_counter = 0 # Number of images that have been downloaded from the camera's buffer.
+
+        # Locally aliasing WINFUNCTYPE is required to avoid NameError caused
         # by the use of @mproperty.
         # See: https://github.com/josiahcarlson/mprop
         self._win_func_type = WINFUNCTYPE
@@ -140,9 +142,9 @@ class EDSDKController():
     def _generate_file_name(self, ext:str):
         """Set the filename for an image.
             TODO - need to finalize what format of file name should look like.
-            currently is adds a timestamp, 
+            currently is adds a timestamp,
         """
-        if self._img_buffer_counter >= 1: #ensure consistent base name across multiple formats
+        if self._img_buffer_counter >= 1: # Ensure consistent base name across multiple formats.
             self._image_settings.filename = f'{os.path.splitext(self._image_settings.filename)[0]}.{ext}'
         else:
             now = datetime.datetime.now().isoformat()[:-7].replace(':', '-')
@@ -164,20 +166,20 @@ class EDSDKController():
             self._edsdk.EdsDownload(img_ref, dir_info.size, stream)
             self._edsdk.EdsDownloadComplete(img_ref)
             self._edsdk.EdsRelease(stream)
+
             if self._db_attached:
                 self._sys_db.update_pose_output(self._current_copis_device,self._image_settings.filename)
-            self._img_buffer_counter +=1
+
+            self._img_buffer_counter += 1
             self._print_info_msg(self._console, f'Image {self._img_buffer_counter} of {self._img_buffer_length} saved at {self._image_settings.filename}')
         except Exception as err:
-            _img_buffer_counter = self._img_buffer_length
             self._print_error_msg(self._console, f'An exception occurred while downloading an image: {err.args[0]}')
         finally:
-            if (self._img_buffer_counter >= self._img_buffer_length):
+            if self._img_buffer_counter >= self._img_buffer_length:
                 self._is_waiting_for_image = False
-                self._current_copis_device.is_writing_eds =  False
-                self._img_buffer_counter =0 #reset counter
-                self.disconnect() #disconnect
-               
+                self._current_copis_device.is_writing_eds = False
+                self._img_buffer_counter = 0 # Reset counter.
+                self.disconnect() # Disconnect.
 
     def _handle_object(self, event, obj, _context):
         """Handle the group of events where request notifications are issued to
@@ -192,7 +194,6 @@ class EDSDKController():
         """Handle the group of events where notifications are issued regarding
         changes in the properties of a camera.
         """
-
         return 0
 
     def _handle_state(self, event, _state, context):
@@ -258,14 +259,6 @@ class EDSDKController():
         for info in pic_info_list:
             self._edsdk.EdsDeleteDirectoryItem(info.ref)
 
-    def attach_sys_db(self, sys_db : SysDB) -> bool:
-        if sys_db.is_initialized:
-            self._sys_db = sys_db
-            self._db_attached = True
-        else:
-            self._db_attached = False
-        return self._db_attached
-            
     def initialize(self, console = None) -> None:
         """Initialize the EDSDK object."""
         if self._is_connected:
@@ -278,7 +271,7 @@ class EDSDKController():
             self._edsdk.EdsInitializeSDK()
             self._update_camera_list()
 
-            # set handlers
+            # Set handlers.
             object_prototype = self._win_func_type(c_int, c_int, c_void_p, c_void_p)
             EDSDKController._object_handler = object_prototype(self._handle_object)
 
@@ -291,9 +284,17 @@ class EDSDKController():
         except Exception as err:
             msg = f'An exception occurred while initializing Canon API: {err}'
             self._print_error_msg(self._console, msg)
-    
-    #def connect(self, hard_id: str, soft_id: int) -> bool:
-    def connect(self, copis_device : COPIS_Device ) -> bool:
+
+    def attach_sys_db(self, sys_db : SysDB) -> bool:
+        """Mounts the system database if it is provided."""
+        if sys_db.is_initialized:
+            self._sys_db = sys_db
+            self._db_attached = True
+        else:
+            self._db_attached = False
+        return self._db_attached
+
+    def connect(self, copis_device : COPIS_Device) -> bool:
         """Connects to and initializes a camera at the specified IDs.
 
         Args:
@@ -305,7 +306,7 @@ class EDSDKController():
         Returns:
             True if successful, False otherwise.
         """
-        hard_id = copis_device.port 
+        hard_id = copis_device.port
         soft_id = copis_device.device_id
 
         self._update_camera_list()
@@ -339,7 +340,7 @@ class EDSDKController():
 
         self._edsdk.EdsOpenSession(self._camera_settings.ref)
         self._edsdk.EdsSetPropertyData(self._camera_settings.ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Host.value)
-        #self._edsdk.EdsSetPropertyData(self._camera_settings.ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Camera.value)
+        # self._edsdk.EdsSetPropertyData(self._camera_settings.ref, self._edsdk.PropID_SaveTo, 0, 4, EdsSaveTo.Camera.value)
         self._edsdk.EdsSetCapacity(self._camera_settings.ref, EdsCapacity(10000000, 512, 1))
 
         self._edsdk.EdsSetObjectEventHandler(self._camera_settings.ref,self._edsdk.ObjectEvent_All, EDSDKController._object_handler, None)
@@ -350,19 +351,19 @@ class EDSDKController():
 
         prop_out_int = c_uint(0)
         prop_out_int = self._edsdk.EdsGetPropertyData(self._camera_settings.ref, self._edsdk.PropID_ImageQuality, 0,4, prop_out_int)
-        iq = ImageQuality(prop_out_int.value)
-        #RAW ONLY
-        #single output image qualities
-        soiq = 	(ImageQuality.EdsImageQuality_LR, ImageQuality.EdsImageQuality_MR, ImageQuality.EdsImageQuality_SR, ImageQuality.EdsImageQuality_CR,
-	             ImageQuality.EdsImageQuality_LJ, ImageQuality.EdsImageQuality_M1J, ImageQuality.EdsImageQuality_M2J, ImageQuality.EdsImageQuality_SJ, 
-	             ImageQuality.EdsImageQuality_LJF, ImageQuality.EdsImageQuality_LJN, ImageQuality.EdsImageQuality_MJF, ImageQuality.EdsImageQuality_MJN, ImageQuality.EdsImageQuality_SJF, ImageQuality.EdsImageQuality_SJN, ImageQuality.EdsImageQuality_S1JF, 
-	             ImageQuality.EdsImageQuality_S1JN, ImageQuality.EdsImageQuality_S2JF, ImageQuality.EdsImageQuality_S3JF) 
-        #should also add an overide to force a number from copis_device settings to always have a backup method in case this isn't reliable across newer cameras
-        if iq in (soiq):
+        img_qlty = ImageQuality(prop_out_int.value)
+        # RAW ONLY.
+        # Single output image qualities.
+        soiq = (ImageQuality.EdsImageQuality_LR, ImageQuality.EdsImageQuality_MR, ImageQuality.EdsImageQuality_SR, ImageQuality.EdsImageQuality_CR,
+            ImageQuality.EdsImageQuality_LJ, ImageQuality.EdsImageQuality_M1J, ImageQuality.EdsImageQuality_M2J, ImageQuality.EdsImageQuality_SJ,
+            ImageQuality.EdsImageQuality_LJF, ImageQuality.EdsImageQuality_LJN, ImageQuality.EdsImageQuality_MJF, ImageQuality.EdsImageQuality_MJN, ImageQuality.EdsImageQuality_SJF,
+            ImageQuality.EdsImageQuality_SJN, ImageQuality.EdsImageQuality_S1JF, ImageQuality.EdsImageQuality_S1JN, ImageQuality.EdsImageQuality_S2JF, ImageQuality.EdsImageQuality_S3JF)
+
+        # Should also add an override to force a number from copis_device settings to always have a backup method in case this isn't reliable across newer cameras.
+        if img_qlty in (soiq):
             self._img_buffer_length = 1
         else:
             self._img_buffer_length = 2
-        
 
         self._is_connected = True
         self._print_info_msg(self._console, f'Connected to camera {self._camera_settings.software_id}')
@@ -675,6 +676,7 @@ focus = _instance.focus
 transfer_pictures = _instance.transfer_pictures
 step_focus = _instance.step_focus
 evf_focus = _instance.evf_focus
+attach_sys_db = _instance.attach_sys_db
 
 
 @mproperty

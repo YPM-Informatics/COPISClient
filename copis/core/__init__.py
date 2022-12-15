@@ -87,8 +87,8 @@ class COPISCore:
 
         self.init_edsdk()
         self.init_serial()
-        self._serial._instance.attach_sys_db(self.sys_db)
-        self._edsdk._instance.attach_sys_db(self.sys_db)
+        self._serial.attach_sys_db(self.sys_db)
+        self._edsdk.attach_sys_db(self.sys_db)
         # Attach serial.
         self._check_configs()
 
