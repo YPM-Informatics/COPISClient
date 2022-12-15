@@ -29,6 +29,8 @@ import threading
 import warnings
 import uuid
 
+from collections import namedtuple
+from importlib import import_module
 from random import shuffle as rand_shuffle
 from typing import List, Tuple
 from datetime import datetime
@@ -36,24 +38,24 @@ from itertools import groupby, zip_longest
 from glm import vec2, vec3
 from pydispatch import dispatcher
 
+from canon.EDSDKLib import EvfDriveLens
+from copis.coms import serial_controller
 from copis.command_processor import serialize_command
-from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number
+from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
 from copis.globals import ActionType, ComStatus, DebugEnv, Point5, WorkType
 from copis.config import Config
 from copis.project import Project
-from copis.classes import Action, MonitoredList, SerialResponse
+from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
 from copis import store
 from copis.classes.sys_db import SysDB
 from copis.mathutils import optimize_rotation_move_to_angle
 
 from ._console_output import ConsoleOutput
 from ._machine_members import MachineMembersMixin
-from ._communication_members import CommunicationMembersMixin
 
 
 class COPISCore(
-    MachineMembersMixin,
-    CommunicationMembersMixin):
+    MachineMembersMixin):
     """COPISCore. Connects and interacts with devices in system."""
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
@@ -89,7 +91,7 @@ class COPISCore(
         self.init_serial()
         self._serial._instance.attach_sys_db(self.sys_db)
         self._edsdk._instance.attach_sys_db(self.sys_db)
-        #attach serial
+        # Attach serial.
         self._check_configs()
 
         # Clear to send, enabled after responses.
@@ -121,7 +123,53 @@ class COPISCore(
         self._save_imaging_session = False
         self._image_counters = {}
 
-        self._ressetable_send_delay_ms = 0 #delay time in milliseconds before sending a serial command after recieiving idle/CTS
+        self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
+
+    @property
+    def serial_bauds(self):
+        """Returns available serial com bauds."""
+        return self._serial.BAUDS
+
+    @property
+    def serial_port_list(self) -> List:
+        """Returns a safe (without the actual connections) representation
+        of the serial ports list."""
+        safe_list = []
+        device = namedtuple('SerialDevice', 'name is_connected is_active')
+
+        # pylint: disable=not-an-iterable
+        for port in self._serial.port_list:
+            safe_port = device(
+                name=port.name,
+                is_connected=port.connection is not None and port.connection.is_open,
+                is_active=port.is_active
+            )
+
+            safe_list.append(safe_port)
+
+        return safe_list
+
+    @property
+    def is_serial_port_connected(self):
+        """Returns a flag indicating whether the active serial port is connected."""
+        return self._serial.is_port_open
+
+    @property
+    def edsdk_device_list(self) -> List:
+        """Returns the list of detected EDSDK devices."""
+        device_list = []
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            device_list = self._edsdk.device_list
+
+        return device_list
+
+    @property
+    def is_edsdk_connected(self):
+        """Returns a flag indicating whether a device is connected via edsdk."""
+        return self._edsdk.is_connected
 
     @property
     def save_imaging_session(self) -> str:
@@ -168,6 +216,12 @@ class COPISCore(
     def is_dev_env(self):
         """Returns a flag indicating whether we are in a dev environment."""
         return self._is_dev_env
+
+    def _get_active_serial_port_name(self):
+        port = next(
+                filter(lambda p: p.is_active, self.serial_port_list), None
+            )
+        return port.name if port else None
 
     def _get_device(self, device_id):
         return next(filter(lambda d: d.device_id == device_id, self.project.devices), None)
@@ -552,9 +606,243 @@ class COPISCore(
             self.sys_db.end_pose(device)
 
     def _imaging_callback(self):
-        #self._session_id +=1
         dispatcher.disconnect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.disconnect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
+
+    def init_serial(self) -> None:
+        """Initializes the serial controller."""
+        if self._is_serial_enabled:
+            return
+
+        self._serial = serial_controller
+        self._serial.initialize(self.console, self._is_dev_env)
+        self._is_serial_enabled = True
+
+    def terminate_serial(self):
+        """Disconnects all serial connections; and terminates all serial threading activity."""
+        self._keep_working = False
+
+        if self._is_serial_enabled:
+            for read_thread in self._read_threads:
+                read_thread.stop = True
+                if threading.current_thread() != read_thread.thread:
+                    read_thread.thread.join()
+
+            self._read_threads.clear()
+
+            if self._working_thread:
+                self._working_thread.join()
+
+            self._working_thread = None
+
+        if self._is_serial_enabled:
+            self._serial.terminate()
+            time.sleep(self._YIELD_TIMEOUT * 5)
+
+    def update_serial_ports(self) -> None:
+        """Updates the serial ports list."""
+        self._serial.update_port_list()
+
+    def snap_serial_picture(self, shutter_release_time, device_id):
+        """Takes a picture via serial."""
+        if not self.is_serial_port_connected:
+            print_error_msg(self.console, 'The machine is not connected.')
+        else:
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+            
+            self.play_poses([Pose(payload=payload)])
+
+    @locked
+    def select_serial_port(self, name: str) -> bool:
+        """Sets the active serial port to the provided one."""
+        selected = self._serial.select_port(name)
+        if not selected:
+            print_error_msg(self.console, 'Unable to select serial port.')
+
+        return selected
+
+    @locked
+    def connect_serial(self, baud: int = serial_controller.BAUDS[-1]) -> bool:
+        """Connects to the active serial port."""
+        if not self._is_serial_enabled:
+            print_error_msg(self.console, 'Serial is not enabled.')
+        else:
+            connected = self._serial.open_port(baud)
+
+            if connected:
+                self._connected_on = datetime.now()
+
+                port_name = next(
+                        filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
+                    ).name
+
+                print_info_msg(self.console, f'Connected to device {port_name}')
+
+                read_thread = threading.Thread(
+                    target=self._listener,
+                    name=f'read thread {port_name}')
+
+                self._read_threads.append(ReadThread(thread=read_thread, port=port_name))
+                read_thread.start()
+            else:
+                print_error_msg(self.console, 'Unable to connect to device.')
+
+        self._is_new_connection = connected
+        return connected
+
+    @locked
+    def disconnect_serial(self):
+        """disconnects from the active serial port."""
+        self._keep_working = False
+
+        # self.is_serial_port_connected is a property and pylint can see that for some reason.
+        # pylint: disable=using-constant-test
+        if self.is_serial_port_connected:
+            port_name = self._get_active_serial_port_name()
+            read_thread = next(filter(lambda t: t.port == port_name, self._read_threads))
+
+            if read_thread:
+                read_thread.stop = True
+                if threading.current_thread() != read_thread.thread:
+                    read_thread.thread.join()
+
+                self._read_threads.remove(read_thread)
+
+            if self._working_thread:
+                self._working_thread.join()
+
+            self._working_thread = None
+
+        if self.is_serial_port_connected:
+            self._serial.close_port()
+            time.sleep(self._YIELD_TIMEOUT * 5)
+
+        self._is_new_connection = False
+        self._connected_on = None
+        print_info_msg(self.console, f'Disconnected from device {port_name}')
+
+    def init_edsdk(self) -> None:
+        """Initializes the Canon EDSDK controller."""
+        if self._is_edsdk_enabled:
+            return
+
+        self._edsdk = import_module('copis.coms.edsdk_controller')
+        self._edsdk.initialize(self.console)
+
+        self._is_edsdk_enabled = self._edsdk.is_enabled
+
+    def terminate_edsdk(self):
+        """Disconnects all EDSDK connections; and terminates the Canon EDSDK."""
+        if self._is_edsdk_enabled:
+            self._edsdk.terminate()
+
+    def connect_edsdk(self, device_id):
+        """Connects to the provided camera via EDSDK."""
+        connected = False
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            device = self._get_device(device_id)
+
+            if device:
+                #connected = self._edsdk.connect(device.port, device_id)
+                connected = self._edsdk.connect(device)
+            else:
+                print_error_msg(self.console, f'Camera {device_id} cannot be found.')
+
+        return connected
+
+    def disconnect_edsdk(self):
+        """Disconnects from the currently connect camera via EDSDK."""
+        if self._is_edsdk_enabled:
+            return self._edsdk.disconnect()
+
+        return True
+
+    def start_edsdk_live_view(self):
+        """Starts EDSDK Live View."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.start_live_view()
+
+    def end_edsdk_live_view(self):
+        """Stops EDSDK Live View."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.end_live_view()
+
+    def download_edsdk_evf_data(self):
+        """Downloads EDSDK Live View image frame data."""
+        data = None
+
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            data = self._edsdk.download_evf_data()
+
+        return data
+
+    def snap_edsdk_picture(self, do_af, device_id):
+        """Takes a picture via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            c_args = create_action_args([1 if do_af else 0], 'V')
+            payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
+
+            self.play_poses([Pose(payload=payload)])
+
+    def do_edsdk_focus(self, shutter_release_time, device_id):
+        """Focuses the camera via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            c_args = create_action_args([shutter_release_time], 'S')
+            payload = [Action(ActionType.EDS_FOCUS, device_id, len(c_args), c_args)]
+
+            self.play_poses([Pose(payload=payload)])
+
+    def do_evf_edsdk_focus(self):
+        """Performs Live view specific EDSDK focus."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            self._edsdk.evf_focus()
+
+    def transfer_edsdk_pictures(self, destination):
+        """"Transfers pictures off of the camera via EDSDK."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            #if not keep_last:
+            #    self._imaging_session_path = destination
+            self._edsdk.transfer_pictures(destination)
+
+    def edsdk_step_focus(self, step_info: int):
+        """Steps the camera's focus given step info."""
+        if not self._is_edsdk_enabled:
+            print_error_msg(self.console, 'EDSDK is not enabled.')
+        else:
+            if step_info < 0:
+                if step_info == -1:
+                    step = EvfDriveLens.Near1
+                elif step_info == -2:
+                    step = EvfDriveLens.Near2
+                else:
+                    step = EvfDriveLens.Near3
+            else:
+                if step_info == 1:
+                    step = EvfDriveLens.Far1
+                elif step_info == 2:
+                    step = EvfDriveLens.Far2
+                else:
+                    step = EvfDriveLens.Far3
+
+        self._edsdk.step_focus(step)
 
     def select_proxy(self, index) -> None:
         """Selects proxy given index in proxy list."""
