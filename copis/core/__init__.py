@@ -17,47 +17,40 @@
 
 __version__ = ""
 
-
-
-# pylint: disable=using-constant-test
 import sys
-import time
-from typing import List, Tuple
 
-
+# pylint: disable=wrong-import-position
 if sys.version_info.major < 3:
     print("You need to run this on Python 3")
     sys.exit(-1)
 
-# pylint: disable=wrong-import-position
-import threading
 import time
+import threading
 import warnings
 import uuid
 
+from typing import List, Tuple
+from datetime import datetime
 from itertools import groupby, zip_longest
 from glm import vec2, vec3
 from pydispatch import dispatcher
 
 from copis.command_processor import serialize_command
-from copis.helpers import (get_atype_kind, point5_to_dict, get_timestamp, print_error_msg,
-    print_debug_msg, print_info_msg)
+from copis.helpers import get_atype_kind, get_timestamp, print_error_msg, print_debug_msg, print_info_msg
 from copis.globals import ActionType, ComStatus, DebugEnv, WorkType
 from copis.config import Config
 from copis.project import Project
-from copis.classes import MonitoredList
-import copis.store as store
+from copis.classes import MonitoredList, SerialResponse
+from copis import store
 from copis.classes.sys_db import SysDB
 
 from ._console_output import ConsoleOutput
-from ._thread_targets import ThreadTargetsMixin
 from ._machine_members import MachineMembersMixin
 from ._component_members import ComponentMembersMixin
 from ._communication_members import CommunicationMembersMixin
 
 
 class COPISCore(
-    ThreadTargetsMixin,
     MachineMembersMixin,
     ComponentMembersMixin,
     CommunicationMembersMixin):
@@ -71,12 +64,12 @@ class COPISCore(
         self.config = parent.config if parent else Config(vec2(800, 600))
         print ("using config:", store.get_ini_path())
         print ("using profile: ", store.get_profile_path())
-                
+
         self.sys_db = SysDB()
         self._session_id = self.sys_db.last_session_id() +1
-        self._session_guid = str(uuid.uuid4()) #global session if, useful is merging db's  
+        self._session_guid = str(uuid.uuid4()) # Global session if, useful is merging dbs.
 
-        self.project = Project()  
+        self.project = Project()
         self.project.start()
         self.console = ConsoleOutput(parent)
         self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
@@ -123,8 +116,8 @@ class COPISCore(
         self._save_imaging_session = False
         self._image_counters = {}
 
-        self._ressetable_send_delay_ms = 0 #delay time in milliseconds before sending a serial command after recieiving idle/CTS 
-        
+        self._ressetable_send_delay_ms = 0 #delay time in milliseconds before sending a serial command after recieiving idle/CTS
+
     @property
     def imaged_pose_sets(self):
         """Returns a list of pose set indexes that have been imaged
@@ -141,6 +134,127 @@ class COPISCore(
     def is_dev_env(self):
         """Returns a flag indicating whether we are in a dev environment."""
         return self._is_dev_env
+
+    def _listener(self) -> None:
+        """Implements a listening thread."""
+        read_thread = next(filter(lambda t: t.thread == threading.current_thread(), self._read_threads))
+
+        continue_listening = lambda t = read_thread: not t.stop
+
+        machine_queried = False
+
+        print_debug_msg(self.console, f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
+
+        while continue_listening():
+            time.sleep(self._YIELD_TIMEOUT)
+            resp = self._serial.read(read_thread.port)
+            controllers_unlocked = False
+
+            if resp:
+                if isinstance(resp, SerialResponse):
+                    dvc = self._get_device(resp.device_id)
+
+                    if dvc:
+                        dvc.set_serial_response(resp)
+
+                if self._keep_working and self._is_machine_locked:
+
+                    print_debug_msg(self.console,
+                        '**** Machine error-locked. stopping imaging!! ****', self._is_dev_env)
+
+                    self.stop_work()
+                else:
+                    self._clear_to_send = controllers_unlocked or self.is_machine_idle
+
+                if self.is_machine_idle:
+                    print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
+
+                    if len(self._mainqueue) <= 0:
+                        print_debug_msg(self.console, '**** Machine is idle ****',
+                            self._is_dev_env)
+                        dispatcher.send('ntf_machine_idle')
+
+            if self._is_new_connection:
+                if self._has_machine_reported:
+                    if self._is_machine_locked and not controllers_unlocked:
+                        controllers_unlocked = self._unlock_machine()
+                        self._clear_to_send = controllers_unlocked or self.is_machine_idle
+
+                        if controllers_unlocked:
+                            self._connected_on = None
+                            self._is_new_connection = False
+                            machine_queried = False
+                    else:
+                        # if this connection happened after the devices last reported, query them.
+                        if not machine_queried and \
+                            self._connected_on >= self._machine_last_reported_on:
+                            print_debug_msg(self.console,
+                            f'Machine status stale (last: {self.machine_status}).',
+                            self._is_dev_env)
+
+                            self._query_machine()
+                            machine_queried = True
+                        elif self.is_machine_idle:
+                            self._connected_on = None
+                            self._is_new_connection = False
+                            machine_queried = False
+                else:
+                    no_report_span = (datetime.now() - self._connected_on).total_seconds()
+
+                    if not self._machine_last_reported_on or \
+                        self._connected_on >= self._machine_last_reported_on:
+                        print_debug_msg(self.console, f'Machine status stale (last: {self.machine_status}) for {round(no_report_span, 2)} seconds.',
+                            self._is_dev_env)
+
+                    # If no device has reported for 1 second since connecting, query the devices.
+                    if not machine_queried and no_report_span > 1:
+                        self._query_machine()
+                        machine_queried = True
+
+        print_debug_msg(self.console,
+            f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
+
+    def _worker(self, resuming=False, extra_callback=None) -> None:
+        """Implements a worker thread."""
+        t_name = self.work_type_name
+
+        state = "resumed" if resuming else "started"
+        print_debug_msg(self.console, f'{t_name} thread {state}', self._is_dev_env)
+
+        def callback():
+            if extra_callback:
+                extra_callback()
+            print_info_msg(self.console, f'{t_name} ended')  #where stepping ended was being generated
+
+        dispatcher.connect(callback, signal='ntf_machine_idle')
+
+        print_info_msg(self.console, f'{t_name} {state}')
+
+        had_error = False
+        try:
+            while self._keep_working and \
+                (self.is_serial_port_connected or self._is_edsdk_enabled):
+                self._send_next()
+
+        except AttributeError as err:
+            print_error_msg(self.console, f'{t_name} thread stopped unexpectedly: {err.args[0]}')
+            had_error = True
+
+        finally:
+            self._working_thread = None
+            self._keep_working = False
+
+            if not self._is_machine_paused:
+                if self._work_type == WorkType.IMAGING:
+                    self._current_mainqueue_item = -1
+                    self.select_pose_set(-1)
+                    self._imaged_pose_sets.clear()
+                    self._session_id = self.sys_db.last_session_id() +1
+
+                self._work_type = None
+
+            if not had_error:
+                print_debug_msg(self.console, f'{t_name} thread stopped', self._is_dev_env)
 
     def _get_next_img_rank(self, device_id):
         counter = 1
@@ -250,9 +364,9 @@ class COPISCore(
                 self._is_dev_env)
 
             if packet:
-                #temporary shoehorn of a postshutter delay. 
-                #We set a delay via _send_delay_ms when a shutter command is sent, 
-                #then reset it to zero after subsequent command is ready to send
+                # Temporary shoehorn of a post shutter delay.
+                # We set a delay via _send_delay_ms when a shutter command is sent,
+                # then reset it to zero after subsequent command is ready to send.
                 if self._ressetable_send_delay_ms > 0:
                     start_timestamp_ms = round(time.time() * 1000)
                     print_debug_msg(self.console, 'begin post shutter delay', True)
@@ -272,8 +386,6 @@ class COPISCore(
 
     def _send(self, *commands):
         """Send command to machine."""
-
-        img_start_time = get_timestamp(True)
         current_pose_set = -1
 
         if isinstance(commands, tuple) and \
@@ -314,16 +426,13 @@ class COPISCore(
         cmd_lines = '\r'.join([serialize_command(i) for c in cmds for i in c])
 
         if cmd_lines:
-            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '
-                    .format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
+            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '.format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
                 f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
 
-            
             pre_shutter_delay_completed = False
             for command in commands:
                 if command.atype in self.SNAP_COMMANDS:
                     device = self._get_device(command.device)
-                    rank = self._get_next_img_rank(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
                     #shoe-horning a mechanism for adding a pause before and after taking pictures
                     if not pre_shutter_delay_completed and 'pre_shutter_delay_ms' in self.project.options:
@@ -338,7 +447,7 @@ class COPISCore(
                     if 'post_shutter_delay_ms' in self.project.options:
                         self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
                     self.sys_db.start_pose(device, method, session_id = self._session_id)
-                    
+
             if not is_edsdk_needed:
                 for dvc in dvcs:
                     dvc.set_is_writing_ser() #why do we wait this long to se the is writing flag? What is the flag and how is it used?
@@ -398,7 +507,7 @@ class COPISCore(
             self.config.update_recent_projects(path)
 
     def _on_device_ser_updated(self, device):
-        if device.serial_status == ComStatus.IDLE: 
+        if device.serial_status == ComStatus.IDLE:
             self.sys_db.end_pose(device)
 
     def _on_device_eds_updated(self, device):
@@ -481,7 +590,7 @@ class COPISCore(
 
         if not self.is_machine_idle:
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
-            return False        
+            return False
 
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
@@ -489,10 +598,10 @@ class COPISCore(
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = process_pose_sets()
 
-        ###Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session
-        #oncomment next two lines and comment third to renable
-        #footer = self._get_initialization_commands(ActionType.G1)
-        #footer.extend(self._disengage_motors_commands)
+        ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
+        # Uncomment next two lines and comment third to reenable.
+        # footer = self._get_initialization_commands(ActionType.G1)
+        # footer.extend(self._disengage_motors_commands)
         footer = self._disengage_motors_commands
 
         self._mainqueue = []
