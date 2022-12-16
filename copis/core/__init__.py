@@ -134,13 +134,7 @@ class COPISCore:
 
     @property
     def _is_machine_locked(self):
-        for dvc in self.project.devices:
-            if dvc.serial_response:
-                flags = dvc.serial_response.system_status_flags
-                if flags and len(flags) == 8 and int(flags[0]):
-                    return True
-
-        return False
+        return any(d.serial_response and d.serial_response.is_locked for d in self.project.devices)
 
     @property
     def _has_machine_reported(self):
@@ -320,12 +314,9 @@ class COPISCore:
             return False
 
         for dvc in self.project.devices:
-            if dvc.serial_response:
-                flags = dvc.serial_response.system_status_flags
-
-                if flags and len(flags) == 8 and int(flags[0]):
-                    cmd = Action(ActionType.M511, dvc.device_id)
-                    cmds.append(cmd)
+            if dvc.serial_response and dvc.serial_response.is_locked:
+                cmd = Action(ActionType.M511, dvc.device_id)
+                cmds.append(cmd)
 
         if cmds:
             self._keep_working = True

@@ -29,36 +29,49 @@ class SerialResponse:
     position: Point5 = Point5()
     error: str = None
 
-    @property
-    def system_status_flags(self) -> str:
-        """Returns the system status flags, on per binary digit."""
-        return f'{self.system_status_number:08b}' \
-            if self.system_status_number >= 0 else None
+    # TODO: This might be obsolete. leaving it in for now to see if I end up using it.
+    # @property
+    # def system_status_flags(self) -> str:
+    #     """Returns the system status flags, on per binary digit."""
+    #     return f'{self.system_status_number:08b}' \
+    #         if self.system_status_number >= 0 else None
 
     @property
     def is_idle(self) -> bool:
         """Returns a flag indicating where the serial connection is idle."""
         return self.system_status_number == 0
 
-    def parse_sys_stat(self) -> List:
-        """Returns system status as a listing of active flags., Empty list is idle."""
-        r = []
-        if (self.system_status_number & (1<< SysStatFlags.STA_PROC_SERIAL)):
-            r.append(SysStatFlags.STA_PROC_SERIAL)
-        if (self.system_status_number & (1<< SysStatFlags.STA_PROC_TWI)):
-            r.append(SysStatFlags.STA_PROC_TWI)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_CMD_AVAIL)):
-            r.append(SysStatFlags.STA_CMD_AVAIL)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_GC_EXEC)):
-            r.append(SysStatFlags.STA_GC_EXEC)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_MOTION_QUEUED)):
-            r.append(SysStatFlags.STA_MOTION_QUEUED)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_MOTION_EXEC)):
-            r.append(SysStatFlags.STA_MOTION_EXEC)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_HOMING)):
-            r.append(SysStatFlags.STA_HOMING)   
-        if (self.system_status_number & (1<< SysStatFlags.STA_LOCK)):
-            r.append(SysStatFlags.STA_LOCK)   
-        return r
+    @property
+    def is_locked(self) -> bool:
+        """Returns a flag indicating where the serial connection is idle."""
+        return False if self.system_status_number < 0 else self.system_status_number & (1 << SysStatFlags.STA_LOCK.value) > 0
 
-    
+    def parse_sys_stat(self) -> List:
+        """Returns system status as a listing of active flags, Empty list is idle."""
+        ret = []
+
+        if self.system_status_number & (1 << SysStatFlags.STA_PROC_SERIAL.value):
+            ret.append(SysStatFlags.STA_PROC_SERIAL)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_PROC_TWI.value):
+            ret.append(SysStatFlags.STA_PROC_TWI)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_CMD_AVAIL.value):
+            ret.append(SysStatFlags.STA_CMD_AVAIL)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_GC_EXEC.value):
+            ret.append(SysStatFlags.STA_GC_EXEC)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_MOTION_QUEUED.value):
+            ret.append(SysStatFlags.STA_MOTION_QUEUED)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_MOTION_EXEC.value):
+            ret.append(SysStatFlags.STA_MOTION_EXEC)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_HOMING.value):
+            ret.append(SysStatFlags.STA_HOMING)
+
+        if self.system_status_number & (1 << SysStatFlags.STA_LOCK.value):
+            ret.append(SysStatFlags.STA_LOCK)
+
+        return ret
