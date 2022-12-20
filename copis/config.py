@@ -15,7 +15,6 @@
 
 """Provide the COPIS Configuration class"""
 
-from configparser import ConfigParser
 from glm import vec3
 import copis.store as store
 from .globals import DebugEnv, Size, WindowState
