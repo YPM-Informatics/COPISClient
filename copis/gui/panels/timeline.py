@@ -31,7 +31,7 @@ from copis.classes.pose import Pose
 from copis.command_processor import serialize_command
 from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
-from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
+from copis.gui.wxutils import show_msg_dialog
 from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
     print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
 
