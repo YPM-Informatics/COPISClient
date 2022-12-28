@@ -49,6 +49,9 @@ class DefaultPanel(wx.Panel):
         for ctrl in (self._pre_shutter_delay, self._post_shutter_delay):
             ctrl.Bind(EVT_FANCY_TEXT_UPDATED_EVENT, self._on_ctrl_text_updated)
 
+    def _on_optimize_pan_angles_btn_clicked(self, _):
+        self._core.optimize_all_poses_pan_angles()
+
     def _on_ctrl_text_updated(self, event: wx.Event):
         ctrl = event.GetEventObject()
         self._core.project.update_imaging_option(ctrl.Name, ctrl.num_value)
@@ -76,10 +79,15 @@ class DefaultPanel(wx.Panel):
         shutter_delay_options_grid = wx.FlexGridSizer(2, 2, 0, 0)
         shutter_delay_options_grid.AddGrowableCol(0)
 
+        pan_angles_options_grid = wx.FlexGridSizer(1, 1, 0, 0)
+        pan_angles_options_grid.AddGrowableCol(0)
+
         self._post_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0,
             name=self._POST_SHUTTER_DELAY_KEY, default_unit=self._TIME_UNIT, unit_conversions=time_units)
         self._pre_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0,
             name=self._PRE_SHUTTER_DELAY_KEY, default_unit=self._TIME_UNIT, unit_conversions=time_units)
+        self._optimize_pan_angles_btn = wx.Button(self, label='Optimize Pan Angles')
+        self.Bind(wx.EVT_BUTTON, self._on_optimize_pan_angles_btn_clicked)
 
         shutter_delay_options_grid.AddMany([
             (simple_statictext(self, f'Post Shutter Delay ({self._TIME_UNIT}):', 80), 0,
@@ -90,7 +98,10 @@ class DefaultPanel(wx.Panel):
             (self._pre_shutter_delay, 0, wx.EXPAND, 0)
         ])
 
+        pan_angles_options_grid.Add(self._optimize_pan_angles_btn, 0, wx.EXPAND|wx.ALIGN_RIGHT, 0)
 
         self._options_box_sizer.Add(shutter_delay_options_grid, 0, wx.ALL|wx.EXPAND, 5)
+        self._options_box_sizer.Add(wx.StaticLine(self, style=wx.LI_HORIZONTAL), 0, wx.EXPAND, 0)
+        self._options_box_sizer.Add(pan_angles_options_grid, 0, wx.TOP|wx.EXPAND, 3)
 
         self.Sizer.Add(self._options_box_sizer, 0, wx.ALL|wx.EXPAND, 5)

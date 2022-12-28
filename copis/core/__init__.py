@@ -1300,7 +1300,7 @@ class COPISCore:
                 args = get_action_args_values(pose_position.args)
                 pt = Point5(*args[:5])
                 last_position_by_id[device_id] = pt
-        dispatcher.send('ntf_a_list_changed')
+        dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True)
         #self.select_pose(self.selected_pose) # Reselect the current selected pose (if one was selected) to update variables in transform panel.
 
     def optimize_all_poses_randomize(self) -> None:
