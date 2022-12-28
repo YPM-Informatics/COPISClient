@@ -188,11 +188,11 @@ class _CommandProcessor:
             elif (opts[0].lower() == 'pan'):   
                  #perform pan optimization
                  self._core.optimize_all_poses_pan_angles()
-                 self._core.select_pose(self._core.selected_pose) #reselect the current selected pose (if one was selected) to update variables in transorm panel
+                 self._core.select_pose(self._core.selected_pose) #reselect the current selected pose (if one was selected) to update variables in transform panel
                  self._print('Pan optimization completed.')
             elif (opts[0].lower() == 'random'):   
-                 self._core.optimize_all_poses_randomize() #poor preformance on large pose sets. Likely due to monitored list. Will have to look into it one day.
-                 self._core.select_pose(self._core.selected_pose) 
+                 self._core.optimize_all_poses_randomize() #poor performance on large pose sets. Likely due to monitored list. Will have to look into it one day.
+                 self._core.select_pose(self._core.selected_pose)
                  self._print('Pose set randomization completed.')
             else:
                self._print('Invalid optimization parameters required. See documentation')

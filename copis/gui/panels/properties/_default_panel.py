@@ -35,19 +35,8 @@ class DefaultPanel(wx.Panel):
         options_grid = wx.FlexGridSizer(1, 3, 0, 0)
         options_grid.AddGrowableCol(1, 0)
 
-        #self._save_session_dlg_opt = wx.CheckBox(self, label='&Use last save session choice',
-        #    name='save_session_prompt')
 
-        #options_grid.AddMany([
-        #    (self._save_session_dlg_opt, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 0),
-        #    (0, 0),
-        #    (0, 0)
-        #])
 
         self._options_box_sizer.Add(options_grid, 0, wx.ALL|wx.EXPAND, 5)
         self.Sizer.Add(self._options_box_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-    @property
-    def use_last_save_session_choice(self) -> bool:
-        """Returns a flag indicating whether to prompt about saving the imaging session."""
-        return false #self._save_session_dlg_opt.Value
