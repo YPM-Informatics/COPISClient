@@ -24,8 +24,7 @@ from pydispatch import dispatcher
 
 from copis.globals import ToolIds
 from copis.gui.machine_settings_dialog import MachineSettingsDialog
-from copis.gui.wxutils import (create_scaled_bitmap, prompt_for_imaging_session_path,
-    show_msg_dialog)
+from copis.gui.wxutils import create_scaled_bitmap, show_msg_dialog
 from copis.helpers import print_debug_msg, print_info_msg
 
 

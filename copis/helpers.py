@@ -34,6 +34,7 @@ from copis.globals import ActionType, Point5
 
 xyz_units = OrderedDict([('mm', 1.0), ('cm', 10.0), ('in', 25.4)])
 pt_units = OrderedDict([('dd', 1.0), ('rad', 180.0/pi)])
+time_units = OrderedDict([('ms', 1.0), ('s', 1000)])
 
 _NUMBER_PATTERN = re.compile(r'^(-?\d*\.?\d+)$')
 _SCIENTIFIC_NOTATION_PATTERN = re.compile(r'[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')

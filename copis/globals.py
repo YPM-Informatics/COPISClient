@@ -169,4 +169,3 @@ class SysStatFlags(Enum):
     STA_MOTION_EXEC = 5
     STA_HOMING = 6
     STA_LOCK = 7
-

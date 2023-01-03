@@ -20,7 +20,7 @@ from pydispatch import dispatcher
 
 from copis.classes import Device
 from copis.globals import ToolIds
-from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
+from copis.gui.wxutils import show_msg_dialog
 import copis.store as store
 
 class DeviceActionsPanel(wx.Panel):

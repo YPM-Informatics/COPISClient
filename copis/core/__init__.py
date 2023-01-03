@@ -134,13 +134,7 @@ class COPISCore:
 
     @property
     def _is_machine_locked(self):
-        for dvc in self.project.devices:
-            if dvc.serial_response:
-                flags = dvc.serial_response.system_status_flags
-                if flags and len(flags) == 8 and int(flags[0]):
-                    return True
-
-        return False
+        return any(d.serial_response and d.serial_response.is_locked for d in self.project.devices)
 
     @property
     def _has_machine_reported(self):
@@ -320,12 +314,9 @@ class COPISCore:
             return False
 
         for dvc in self.project.devices:
-            if dvc.serial_response:
-                flags = dvc.serial_response.system_status_flags
-
-                if flags and len(flags) == 8 and int(flags[0]):
-                    cmd = Action(ActionType.M511, dvc.device_id)
-                    cmds.append(cmd)
+            if dvc.serial_response and dvc.serial_response.is_locked:
+                cmd = Action(ActionType.M511, dvc.device_id)
+                cmds.append(cmd)
 
         if cmds:
             self._keep_working = True
@@ -683,7 +674,7 @@ class COPISCore:
                     device = self._get_device(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
                     #shoe-horning a mechanism for adding a pause before and after taking pictures
-                    if not pre_shutter_delay_completed and 'pre_shutter_delay_ms' in self.project.options:
+                    if not pre_shutter_delay_completed and 'pre_shutter_delay_ms' in self.project.options and self.project.options['pre_shutter_delay_ms']:
                         print_debug_msg(self.console, 'begin pre shutter delay', True)
                         time_delay_ms = self.project.options['pre_shutter_delay_ms']
                         start_timestamp_ms = round(time.time() * 1000)
@@ -692,7 +683,7 @@ class COPISCore:
                             pass
                         pre_shutter_delay_completed = True
                         print_debug_msg(self.console, 'end pre shutter delay', True)
-                    if 'post_shutter_delay_ms' in self.project.options:
+                    if 'post_shutter_delay_ms' in self.project.options and self.project.options['post_shutter_delay_ms']:
                         self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
                     self.sys_db.start_pose(device, method, session_id = self._session_id)
 
@@ -1309,7 +1300,7 @@ class COPISCore:
                 args = get_action_args_values(pose_position.args)
                 pt = Point5(*args[:5])
                 last_position_by_id[device_id] = pt
-        dispatcher.send('ntf_a_list_changed')
+        dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True)
         #self.select_pose(self.selected_pose) # Reselect the current selected pose (if one was selected) to update variables in transform panel.
 
     def optimize_all_poses_randomize(self) -> None:

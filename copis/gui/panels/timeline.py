@@ -31,7 +31,7 @@ from copis.classes.pose import Pose
 from copis.command_processor import serialize_command
 from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
-from copis.gui.wxutils import prompt_for_imaging_session_path, show_msg_dialog
+from copis.gui.wxutils import show_msg_dialog
 from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
     print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
 
@@ -340,21 +340,29 @@ class TimelinePanel(wx.Panel):
         obj = event.EventObject
         item = event.GetItem()
         data = obj.GetItemData(item)
+        is_root_item_selected = False
 
-        if not data:
+        if data:
+            self._toggle_buttons(data)
+
+            if data['item'] == 'pose':
+                set_index = data['set index']
+                index = data['index']
+                idx_in_poses = self._get_index_poses(set_index, index)
+
+                self.core.select_pose(idx_in_poses)
+            elif data['item'] == 'set':
+                self.core.select_pose_set(data['index'])
+        else:
             self._toggle_buttons()
-            return
 
-        self._toggle_buttons(data)
+            if item == self.timeline.GetRootItem():
+                self.core.select_pose_set(-1)
+                self.core.select_pose(-1)
 
-        if data['item'] == 'pose':
-            set_index = data['set index']
-            index = data['index']
-            idx_in_poses = self._get_index_poses(set_index, index)
+                is_root_item_selected = True
 
-            self.core.select_pose(idx_in_poses)
-        elif data['item'] == 'set':
-            self.core.select_pose_set(data['index'])
+        dispatcher.send('ntf_imaging_path_selection_changed', is_selected=is_root_item_selected)
 
     def _on_key_up(self, event: wx.KeyEvent):
         keycode = event.KeyCode
@@ -826,15 +834,16 @@ class TimelinePanel(wx.Panel):
                     idx_in_poses = self._get_index_poses(set_index, prev_pose_index)
                     self.core.select_pose(idx_in_poses)
 
-    def _on_action_list_changed(self):
-        wx.CallAfter(self._update_timeline)
+    def _on_action_list_changed(self, keep_imaging_path_selected=False):
+        wx.CallAfter(self._update_timeline, keep_imaging_path_selected)
 
-    def _update_timeline(self) -> None:
+    def _update_timeline(self, keep_imaging_path_selected=False) -> None:
         """When points are modified, redisplay timeline commands.
 
         Handles ntf_a_list_changed signal sent by self.core.
         """
         sets = self.core.project.pose_sets
+        dispatcher.send('ntf_imaging_path_selection_changed', is_selected=False)
         self.timeline.DeleteAllItems()
 
         if sets:
@@ -866,5 +875,8 @@ class TimelinePanel(wx.Panel):
 
                 self.timeline.Expand(node)
             self.timeline.Expand(root)
+
+            if keep_imaging_path_selected:
+                self.timeline.SelectItem(root)
 
         self._toggle_buttons()

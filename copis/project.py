@@ -84,7 +84,7 @@ class Project():
 
         if not hasattr(self, '_pose_sets'):
             self._pose_sets = None
-        
+
         if not hasattr(self, '_core'):
             self._core = None
 
@@ -125,45 +125,11 @@ class Project():
             return []
 
         return[pose for p_set in p_sets for pose in p_set]
-    
+
     @property
     def options(self) -> dict:
         """Returns the project's save path."""
         return self._options
-
-    def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
-        """Returns a pose in a given pose set with device id.
-           if no pose is present for that device in the pose set, None is returned.
-        """
-        if pose_set_idx < len(self._pose_sets):
-            for pose in self._pose_sets[pose_set_idx]:
-                if (device_id == pose.position.device):
-                    return pose
-        return None   
-
-    def last_pose_by_dev_id(self, pose_set_idx, device_id):
-        """Returns the last (highest index) pose and index accross all pose sets up to pose_set_idx for device id.
-           if no pose is present for that device up to the pose set idx, None is returned.
-        """
-        if pose_set_idx < len(self._pose_sets):
-            for i in range(pose_set_idx,-1,-1):
-                for pose in self._pose_sets[i]:
-                    if (device_id == pose.position.device):
-                        return pose
-        return None
-
-    def first_pose_by_dev_id(self, pose_set_idx, device_id):
-        """Returns the first (lowest index) pose accross all pose sets up for device id, starting with pose_idx
-           if no pose is present for that device, none is returned.
-        """
-        if pose_set_idx < len(self._pose_sets):
-            for i in range(pose_set_idx, len(self._pose_sets)):
-                for pose in self._pose_sets[i]:
-                    if (device_id == pose.position.device):
-                        return pose
-        return None
-
-   
 
     @property
     def is_dirty(self) -> bool:
@@ -220,17 +186,17 @@ class Project():
             lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
             upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
              #if gantry style not present (as in older profiles files) we default to standard overhead gantry since all files before were overhead only
-            if 'head_radius' not in data: 
+            if 'head_radius' not in data:
                 data['head_radius'] = 200
-            if 'body_dims' not in data: 
+            if 'body_dims' not in data:
                 data['body_dims'] = [100, 40, 740]
-            if 'gantry_dims' not in data: 
+            if 'gantry_dims' not in data:
                 data['gantry_dims'] = [ 1000, 125, 100 ]
-            if 'gantry_orientation' not in data: 
+            if 'gantry_orientation' not in data:
                 data['gantry_orientation'] = 1
-            if 'serial_no' not in data: 
+            if 'serial_no' not in data:
                 data['serial_no'] = ''
-            if 'serial_no' not in data: 
+            if 'serial_no' not in data:
                 data['serial_no'] = ''
             if 'edsdk_save_to_path' not in data: #eventually add global default in ini for all cams
                 data['edsdk_save_to_path'] = os.path.join(store.get_root(), 'output') #for now default to program dir.
@@ -290,6 +256,44 @@ class Project():
             else:
                 self._pose_sets = MonitoredList('ntf_a_list_changed')
 
+    def update_imaging_option(self, name: str, value: float) -> None:
+        """Updates the value of the give option in the imaging options dictionary."""
+        if name not in self._options or self._options[name] != value:
+            self._options[name] = value
+            self._set_is_dirty()
+
+    def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
+        """Returns a pose in a given pose set with device id.
+           if no pose is present for that device in the pose set, None is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for pose in self._pose_sets[pose_set_idx]:
+                if device_id == pose.position.device:
+                    return pose
+        return None
+
+    def last_pose_by_dev_id(self, pose_set_idx, device_id):
+        """Returns the last (highest index) pose and index accross all pose sets up to pose_set_idx for device id.
+           if no pose is present for that device up to the pose set idx, None is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for i in range(pose_set_idx,-1,-1):
+                for pose in self._pose_sets[i]:
+                    if device_id == pose.position.device:
+                        return pose
+        return None
+
+    def first_pose_by_dev_id(self, pose_set_idx, device_id):
+        """Returns the first (lowest index) pose accross all pose sets up for device id, starting with pose_idx
+           if no pose is present for that device, none is returned.
+        """
+        if pose_set_idx < len(self._pose_sets):
+            for i in range(pose_set_idx, len(self._pose_sets)):
+                for pose in self._pose_sets[i]:
+                    if device_id == pose.position.device:
+                        return pose
+        return None
+
     def start(self) -> None:
         """Starts a new project."""
         if not self._is_initialized:
@@ -299,7 +303,7 @@ class Project():
         self._init_devices()
         self._init_proxies()
         self._init_pose_sets()
-        
+
         self._path = None
         self._unset_dirty_flag()
 
@@ -347,15 +351,15 @@ class Project():
         if self._profile != proj_data['profile']:
             choice = show_prompt_dialog('This project was made using a different machine profile, override existing?',"Profile Mismatch")
             if choice == wx.ID_YES:
-                self._profile = proj_data['profile'] 
+                self._profile = proj_data['profile']
                 self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
 
-        self._path = path
-
         if 'imaging_options' in proj_data:
-            self._options = proj_data['imaging_options'] 
+            self._options = proj_data['imaging_options']
+
+        self._path = path
 
         if is_dirty:
             self._set_is_dirty()

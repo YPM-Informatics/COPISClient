@@ -41,13 +41,13 @@ class Device:
     head_radius: float = 0
     body_dims: vec3 = vec3()
     gantry_dims: vec3 = vec3()
-    gantry_orientation: int  = 0
+    gantry_orientation: int = 0
     edsdk_save_to_path: str = ''
     _serial_response: SerialResponse = None
     _is_homed: bool = False
-    _is_writing_ser: bool = False  #how is this flag used?
-    _is_writing_eds: bool = False   #how is this flag used?
-    _last_reported_on: datetime = None  
+    _is_writing_ser: bool = False   # How is this flag used?
+    _is_writing_eds: bool = False   # How is this flag used?
+    _last_reported_on: datetime = None
 
     @property
     def position(self):
@@ -144,6 +144,3 @@ class Device:
         self._is_writing_ser = False
 
         dispatcher.send('ntf_device_ser_updated', device=self)
-    
-
-

@@ -27,35 +27,6 @@ import copis.store as store
 
 FancyTextUpdatedEvent, EVT_FANCY_TEXT_UPDATED_EVENT = wx.lib.newevent.NewEvent()
 
-def prompt_for_imaging_session_path(path: str=None) -> Tuple:
-    """Takes the user through the imaging saving path prompt tree.
-        Returns a tuple that says whether to proceed and, if so where to save."""
-    new_path = None
-    proceed = True
-    keep_last_path = False
-    caption = 'Save Images to Folder'
-    prompt = 'Would you like to save this imaging session?'
-
-    if path:
-        prompt = 'Would you like to save this imaging session to a new folder?\n' + \
-            f'Last folder is: {path}'
-        choice = show_prompt_dialog(prompt, caption, True, True, 'Save to Last Folder')
-    else:
-        choice = show_prompt_dialog(prompt, caption, True)
-
-    if choice == wx.ID_NO:
-        keep_last_path = True
-    if choice == wx.ID_YES:
-        new_path = show_folder_dialog('Save Images to Folder')
-        if not new_path:
-            proceed = False
-    elif choice == wx.ID_HELP:
-        new_path = path
-    elif choice == wx.ID_CANCEL:
-        proceed = False
-
-    return (proceed, new_path, keep_last_path)
-
 def show_folder_dialog(caption: str, path: str='') -> str:
     """Shows a wx.DirDialog to prompt for a folder."""
     dialog = wx.DirDialog(None, caption, path)
