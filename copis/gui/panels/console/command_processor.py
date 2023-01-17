@@ -220,7 +220,7 @@ class _CommandProcessor:
         def default():
             # self._print("Command not implemented.")
             if not self._core.is_serial_port_connected:
-                self._print('A serial port needs to be open in order to shoot.')
+                self._print('A serial port needs to be open in order to execute G code.')
             else:
                 self._core._serial.write(cmd)
                    
