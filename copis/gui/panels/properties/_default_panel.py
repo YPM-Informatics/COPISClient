@@ -82,9 +82,9 @@ class DefaultPanel(wx.Panel):
         pan_angles_options_grid = wx.FlexGridSizer(1, 1, 0, 0)
         pan_angles_options_grid.AddGrowableCol(0)
 
-        self._post_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0,
+        self._post_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0, max_precision=0,
             name=self._POST_SHUTTER_DELAY_KEY, default_unit=self._TIME_UNIT, unit_conversions=time_units)
-        self._pre_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0,
+        self._pre_shutter_delay = FancyTextCtrl(self, size=(80, -1), num_value=0, max_precision=0,
             name=self._PRE_SHUTTER_DELAY_KEY, default_unit=self._TIME_UNIT, unit_conversions=time_units)
         self._optimize_pan_angles_btn = wx.Button(self, label='Optimize Pan Angles')
         self.Bind(wx.EVT_BUTTON, self._on_optimize_pan_angles_btn_clicked)

@@ -197,6 +197,9 @@ class FancyTextCtrl(wx.TextCtrl):
 
     def _update_value(self) -> None:
         """Update control text."""
+        if self._max_precision <= 0:
+            self._num_value = int(self._num_value)
+
         self.Value = f'{self._num_value:.{self._max_precision}f}'
         self._text_dirty = False
 
