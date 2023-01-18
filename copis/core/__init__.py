@@ -1541,3 +1541,27 @@ def _chunk_actions(batch_size, actions):
         chunks.append(chunk)
 
     return chunks
+
+def _format_time_delta(delta):
+    str_delta = str(delta)
+    parts = [0]
+    units_map = {'d': 'day', 'h': 'hour', 'm': 'minute', 's': 'second', 'u': 'millisecond'}
+
+    if 'day' in str_delta:
+        parts = [int(str_delta.split()[0])]
+        str_delta = str_delta.split(', ')[1]
+
+    parts.extend([int(p1) for p in str_delta.split(':') for p1 in p.split('.')])
+
+    if len(parts) < len(units_map) and '.' not in str_delta:
+        parts.append(0)
+
+    parts[-1] = int(parts[-1] / 1000)
+
+    for (i, key) in enumerate(units_map):
+        if parts[i] > 1:
+            units_map[key] = f'{units_map[key]}s'
+
+    format_str = ', '.join([f'{z[0]} {{{z[1]}}}' for z in list(zip(parts, 'dhmsu')) if z[0] > 0])
+
+    return ' and'.join(format_str.format_map(units_map).rsplit(',', 1))
