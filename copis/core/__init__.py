@@ -124,7 +124,12 @@ class COPISCore:
         self._image_counters = {}
 
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
-        self._busy_bus_polling_threshold_ms = 0
+
+    @property
+    def _disable_idle_motors(self):
+        if 'disable_idle_motors' in self.project.options:
+            return self.project.options['disable_idle_motors']
+        return True
 
     @property
     def _is_machine_busy(self):
@@ -148,22 +153,17 @@ class COPISCore:
 
     @property
     def _disengage_motors_commands(self):
+        if not self._disable_idle_motors:
+            return []
+
         cmds = []
+        actions = []
+
         for dvc in self.project.devices:
             cmds.append(Action(ActionType.M18, dvc.device_id))
-
-        actions = []
         actions.append(cmds)
+
         return actions
-
-    @property
-    def busy_bus_polling_threshold_ms(self):
-        """Returns the busy bus polling interval in milliseconds."""
-        return self._busy_bus_polling_threshold_ms
-
-    @busy_bus_polling_threshold_ms.setter
-    def busy_bus_polling_threshold_ms(self, value: int) -> None:
-        self._busy_bus_polling_threshold_ms = value
 
     @property
     def machine_status(self):
@@ -461,9 +461,8 @@ class COPISCore:
                         self._query_machine()
                         machine_queried = True
 
-            busy_bus_polling_threshold = int(self._busy_bus_polling_threshold_ms / 1000)
-
-            if busy_bus_polling_threshold > 0 and self.is_machine_homed:
+            if self.is_machine_homed and 'busy_bus_polling_interval_ms' in self.project.options and self.project.options['busy_bus_polling_interval_ms'] > 0:
+                busy_bus_polling_threshold = int(self.project.options['busy_bus_polling_interval_ms'] / 1000)
                 busy_span = None
 
                 if self.machine_status not in ('mixed', 'busy'):

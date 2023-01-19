@@ -256,7 +256,7 @@ class Project():
             else:
                 self._pose_sets = MonitoredList('ntf_a_list_changed')
 
-    def update_imaging_option(self, name: str, value: float) -> None:
+    def update_imaging_option(self, name: str, value: Any) -> None:
         """Updates the value of the give option in the imaging options dictionary."""
         if name not in self._options or self._options[name] != value:
             self._options[name] = value
