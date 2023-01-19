@@ -128,7 +128,7 @@ class Project():
 
     @property
     def options(self) -> dict:
-        """Returns the project's save path."""
+        """Returns the project's imaging options."""
         return self._options
 
     @property

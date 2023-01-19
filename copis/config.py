@@ -40,7 +40,7 @@ class Config():
 
     def __init__(self, display_size) -> None:
         self._config_parser = store.load_config()
-        self._ensure_window_state_exists(display_size, self._config_parser) 
+        self._ensure_window_state_exists(display_size, self._config_parser)
         self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
 
