@@ -410,8 +410,7 @@ class COPISCore:
 
                 if self._keep_working and self._is_machine_locked:
 
-                    print_debug_msg(self.console,
-                        '**** Machine error-locked. stopping imaging!! ****', self._is_dev_env)
+                    print_info_msg(self.console, '**** Machine error-locked. stopping imaging!! ****')
 
                     self.stop_work()
                 else:
@@ -421,8 +420,7 @@ class COPISCore:
                     print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
 
                     if len(self._mainqueue) <= 0:
-                        print_debug_msg(self.console, '**** Machine is idle ****',
-                            self._is_dev_env)
+                        print_info_msg(self.console, '**** Machine is idle ****')
                         dispatcher.send('ntf_machine_idle')
 
             if self._is_new_connection:
