@@ -203,7 +203,7 @@ class MainWindow(wx.Frame):
         proceed = True
 
         if self.core.project.is_dirty:
-            choice = show_prompt_dialog('The project was modified. Would you like to save it first?',caption, True)
+            choice = show_prompt_dialog('The project was modified. Would you like to save it first?', caption, True)
 
             if choice == wx.ID_YES:
                 self.on_save(event)

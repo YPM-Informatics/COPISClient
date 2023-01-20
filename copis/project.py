@@ -128,7 +128,7 @@ class Project():
 
     @property
     def options(self) -> dict:
-        """Returns the project's save path."""
+        """Returns the project's imaging options."""
         return self._options
 
     @property
@@ -256,16 +256,21 @@ class Project():
             else:
                 self._pose_sets = MonitoredList('ntf_a_list_changed')
 
-    def update_imaging_option(self, name: str, value: float) -> None:
+    def update_imaging_option(self, name: str, value: Any) -> None:
         """Updates the value of the give option in the imaging options dictionary."""
         if name not in self._options or self._options[name] != value:
             self._options[name] = value
             self._set_is_dirty()
 
+    def set_default_imaging_option(self, name: str, value: Any) -> None:
+        """Sets the default value of the give option in the imaging options dictionary.
+           Behaves like update_imaging_option except that it does not set the project as dirty."""
+        if name not in self._options or self._options[name] != value:
+            self._options[name] = value
+
     def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
         """Returns a pose in a given pose set with device id.
-           if no pose is present for that device in the pose set, None is returned.
-        """
+           if no pose is present for that device in the pose set, None is returned."""
         if pose_set_idx < len(self._pose_sets):
             for pose in self._pose_sets[pose_set_idx]:
                 if device_id == pose.position.device:

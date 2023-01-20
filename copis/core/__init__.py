@@ -33,7 +33,7 @@ from collections import namedtuple
 from importlib import import_module
 from random import shuffle as rand_shuffle
 from typing import List, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import groupby, zip_longest
 from glm import vec2, vec3
 from pydispatch import dispatcher
@@ -57,6 +57,7 @@ class COPISCore:
     """COPISCore. Connects and interacts with devices in system."""
 
     _YIELD_TIMEOUT = .001 # 1 millisecond
+    _STALE_STATUS_THRESHOLD = 1
     _IMAGING_MANIFEST_FILE_NAME = 'copis_imaging_manifest.json'
     MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
     F_STACK_COMMANDS = [ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
@@ -99,6 +100,7 @@ class COPISCore:
         self._keep_working = False
         self._is_machine_paused = False
         self._work_type = None
+        self._machine_busy_since = None
 
         self._read_threads = []
         self._working_thread = None
@@ -124,6 +126,12 @@ class COPISCore:
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
 
     @property
+    def _disable_idle_motors(self):
+        if 'disable_idle_motors' in self.project.options:
+            return self.project.options['disable_idle_motors']
+        return True
+
+    @property
     def _is_machine_busy(self):
         return self._working_thread is not None or self._is_machine_paused
 
@@ -145,12 +153,16 @@ class COPISCore:
 
     @property
     def _disengage_motors_commands(self):
+        if not self._disable_idle_motors:
+            return []
+
         cmds = []
+        actions = []
+
         for dvc in self.project.devices:
             cmds.append(Action(ActionType.M18, dvc.device_id))
-
-        actions = []
         actions.append(cmds)
+
         return actions
 
     @property
@@ -288,7 +300,7 @@ class COPISCore:
         return actions
 
     def _query_machine(self):
-        print_debug_msg(self.console, '**** Querying machine ****', self._is_dev_env)
+        print_info_msg(self.console, '**** Querying machine ****')
         cmds = []
 
         if self._is_machine_busy:
@@ -306,7 +318,7 @@ class COPISCore:
             self._keep_working = False
 
     def _unlock_machine(self):
-        print_debug_msg(self.console, '**** Unlocking machine ****', self._is_dev_env)
+        print_info_msg(self.console, '**** Unlocking machine ****')
         cmds = []
 
         if self._is_machine_busy:
@@ -398,8 +410,7 @@ class COPISCore:
 
                 if self._keep_working and self._is_machine_locked:
 
-                    print_debug_msg(self.console,
-                        '**** Machine error-locked. stopping imaging!! ****', self._is_dev_env)
+                    print_info_msg(self.console, '**** Machine error-locked. stopping imaging!! ****')
 
                     self.stop_work()
                 else:
@@ -409,8 +420,7 @@ class COPISCore:
                     print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
 
                     if len(self._mainqueue) <= 0:
-                        print_debug_msg(self.console, '**** Machine is idle ****',
-                            self._is_dev_env)
+                        print_info_msg(self.console, '**** Machine is idle ****')
                         dispatcher.send('ntf_machine_idle')
 
             if self._is_new_connection:
@@ -424,7 +434,7 @@ class COPISCore:
                             self._is_new_connection = False
                             machine_queried = False
                     else:
-                        # if this connection happened after the devices last reported, query them.
+                        # If this connection happened after the devices last reported, query them.
                         if not machine_queried and \
                             self._connected_on >= self._machine_last_reported_on:
                             print_debug_msg(self.console,
@@ -438,17 +448,36 @@ class COPISCore:
                             self._is_new_connection = False
                             machine_queried = False
                 else:
-                    no_report_span = (datetime.now() - self._connected_on).total_seconds()
+                    no_report_span = datetime.now() - self._connected_on
 
                     if not self._machine_last_reported_on or \
                         self._connected_on >= self._machine_last_reported_on:
-                        print_debug_msg(self.console, f'Machine status stale (last: {self.machine_status}) for {round(no_report_span, 2)} seconds.',
+                        print_debug_msg(self.console, f'Machine status stale (last: {self.machine_status}) for {_format_time_delta(no_report_span)}.',
                             self._is_dev_env)
 
                     # If no device has reported for 1 second since connecting, query the devices.
-                    if not machine_queried and no_report_span > 1:
+                    if not machine_queried and no_report_span.total_seconds() > self._STALE_STATUS_THRESHOLD:
+                        print_info_msg(self.console, f'Stale status threshold of {_format_time_delta(timedelta(seconds=self._STALE_STATUS_THRESHOLD))} reached.')
                         self._query_machine()
                         machine_queried = True
+
+            if self.is_machine_homed and 'busy_bus_polling_interval_ms' in self.project.options and self.project.options['busy_bus_polling_interval_ms'] > 0:
+                busy_bus_polling_threshold = int(self.project.options['busy_bus_polling_interval_ms'] / 1000)
+                busy_span = None
+
+                if self.machine_status not in ('mixed', 'busy'):
+                    self._machine_busy_since = None
+
+                if self._machine_busy_since:
+                    busy_span = (datetime.now() - self._machine_busy_since)
+                    print_debug_msg(self.console, f'Machine has been busy for {_format_time_delta(busy_span)}.',
+                        self._is_dev_env)
+
+                if busy_span and busy_span.total_seconds() > busy_bus_polling_threshold:
+                    print_info_msg(self.console, f'Busy bus polling threshold of {_format_time_delta(timedelta(seconds=busy_bus_polling_threshold))} reached.')
+                    print_info_msg(self.console, '**** Thawing machine ****')
+                    self._serial.write(ActionType.M120.name)
+                    self._machine_busy_since = datetime.now()
 
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
@@ -689,6 +718,8 @@ class COPISCore:
 
             if not is_edsdk_needed:
                 for dvc in dvcs:
+                    if self._machine_busy_since is None:
+                        self._machine_busy_since = datetime.now()
                     dvc.set_is_writing_ser() #why do we wait this long to se the is writing flag? What is the flag and how is it used?
                 self._serial.write(cmd_lines)
             else:
@@ -857,7 +888,7 @@ class COPISCore:
 
         self._mainqueue = []
         self._mainqueue.extend(processed_poses)
-        self._work_type = WorkType.IMAGING  
+        self._work_type = WorkType.IMAGING
 
         self._keep_working = True
         self._clear_to_send = True
@@ -911,7 +942,7 @@ class COPISCore:
         else:
             c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
-            
+
             self.play_poses([Pose(payload=payload)])
 
     @locked
@@ -1541,3 +1572,27 @@ def _chunk_actions(batch_size, actions):
         chunks.append(chunk)
 
     return chunks
+
+def _format_time_delta(delta):
+    str_delta = str(delta)
+    parts = [0]
+    units_map = {'d': 'day', 'h': 'hour', 'm': 'minute', 's': 'second', 'u': 'millisecond'}
+
+    if 'day' in str_delta:
+        parts = [int(str_delta.split()[0])]
+        str_delta = str_delta.split(', ')[1]
+
+    parts.extend([int(p1) for p in str_delta.split(':') for p1 in p.split('.')])
+
+    if len(parts) < len(units_map) and '.' not in str_delta:
+        parts.append(0)
+
+    parts[-1] = int(parts[-1] / 1000)
+
+    for (i, key) in enumerate(units_map):
+        if parts[i] > 1:
+            units_map[key] = f'{units_map[key]}s'
+
+    format_str = ', '.join([f'{z[0]} {{{z[1]}}}' for z in list(zip(parts, 'dhmsu')) if z[0] > 0])
+
+    return ' and'.join(format_str.format_map(units_map).rsplit(',', 1))

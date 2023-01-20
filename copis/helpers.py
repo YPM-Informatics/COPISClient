@@ -157,9 +157,9 @@ def get_timestamp(add_date:bool=False) -> str:
     now = datetime.datetime.now()
 
     if add_date:
-        return now.strftime('%m/%d/%Y, %H:%M:%S.%f')[:-3]
+        return now.strftime('%m/%d/%Y, %H:%M:%S.%f')
 
-    return now.strftime('%H:%M:%S.%f')[:-3]
+    return now.strftime('%H:%M:%S.%f')
 
 
 def get_timestamped(msg) -> str:
