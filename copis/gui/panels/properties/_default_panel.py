@@ -19,7 +19,7 @@ import wx
 
 from pydispatch import dispatcher
 
-from copis.gui.wxutils import FancyTextCtrl, show_prompt_dialog, simple_statictext, EVT_FANCY_TEXT_UPDATED_EVENT
+from copis.gui.wxutils import FancyTextCtrl, simple_statictext, EVT_FANCY_TEXT_UPDATED_EVENT
 from copis.helpers import time_units
 
 
@@ -85,14 +85,7 @@ class DefaultPanel(wx.Panel):
             if self._DISABLE_IDLE_MOTORS_KEY in self._core.project.options:
                 disable_idle_motors = self._core.project.options[self._DISABLE_IDLE_MOTORS_KEY]
             else:
-                # If the key does not yet exist in the project file we need to add it, because the default value for this setting is true.
-                # This means that we have to let the user know and give them the option to save the project since this action did not
-                # happen as a result of the user's action.
-                self._core.project.update_imaging_option(self._DISABLE_IDLE_MOTORS_KEY, disable_idle_motors)
-                choice = show_prompt_dialog("The default value for the 'disable idle motors' option was added to your project.\nWould you like to save it?", 'Imaging Options Change')
-
-                if choice == wx.ID_YES:
-                    self._parent.Parent.on_save(None)
+                self._core.project.set_default_imaging_option(self._DISABLE_IDLE_MOTORS_KEY, disable_idle_motors)
 
             self._post_shutter_delay.num_value = post_shutter_delay
             self._pre_shutter_delay.num_value = pre_shutter_delay
