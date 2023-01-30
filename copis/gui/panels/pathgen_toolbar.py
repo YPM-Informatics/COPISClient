@@ -294,23 +294,23 @@ class _PathgenCylinder(wx.Dialog):
         indent = '    '
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
-        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
@@ -410,23 +410,23 @@ class _PathgenHelix(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
-        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
         self.rotation_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
@@ -526,16 +526,16 @@ class _PathgenSphere(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.center_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.center_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.center_y_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, max_precision=0,
+        self.center_y_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.center_z_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, max_precision=0,
+        self.center_z_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.distance_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=10, max_precision=0,
+        self.distance_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=10,
             default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
@@ -620,24 +620,24 @@ class _PathgenLine(wx.Dialog):
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
         self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.start_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.end_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
         self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            max_precision=0, default_unit=unit, unit_conversions=xyz_units)
+            default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -735,17 +735,17 @@ class PathgenPoint(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
-        self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
                 default_unit=unit, unit_conversions=xyz_units)
-        self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
                 default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
                 default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
                 default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
                 default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
