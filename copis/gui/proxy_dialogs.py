@@ -40,19 +40,19 @@ class ProxygenCylinder(wx.Dialog):
         options_grid = wx.FlexGridSizer(9, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.start_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.start_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.end_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.end_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit=unit, unit_conversions=xyz_units)
-        self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50,
             default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
@@ -119,17 +119,17 @@ class ProxygenAABB(wx.Dialog):
         options_grid = wx.FlexGridSizer(8, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
-        self.lower_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50, max_precision=0,
+        self.lower_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50,
             default_unit='mm', unit_conversions=xyz_units)
-        self.lower_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50, max_precision=0,
+        self.lower_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50,
             default_unit='mm', unit_conversions=xyz_units)
-        self.lower_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, max_precision=0,
+        self.lower_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
             default_unit='mm', unit_conversions=xyz_units)
-        self.upper_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+        self.upper_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50,
             default_unit='mm', unit_conversions=xyz_units)
-        self.upper_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50, max_precision=0,
+        self.upper_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50,
             default_unit='mm', unit_conversions=xyz_units)
-        self.upper_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, max_precision=0,
+        self.upper_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit='mm', unit_conversions=xyz_units)
 
         options_grid.AddMany([
