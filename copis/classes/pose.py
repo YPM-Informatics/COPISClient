@@ -49,9 +49,9 @@ class Pose(NamedTuple):
     @property
     def position_as_point5(self) -> Point5:
         args = get_action_args_values(self.position.args)
-        return(Point5(*args[:5]))
-    
+        return Point5(*args[:5])
+
     @property
     def position_as_vec3(self) -> vec3:
         args = get_action_args_values(self.position.args)
-        return(vec3(*args[:3]))
+        return vec3(*args[:3])

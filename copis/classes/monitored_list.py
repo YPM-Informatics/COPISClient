@@ -71,7 +71,7 @@ class MonitoredList(list):
 
     def _dispatch(self) -> None:
         """This is necessary because unpickling a 'List' subclass calls 'extend' to populate the
-        '__iterable' even before the object's instance attributes are set. This causes dispatching
+        '__iterable__' even before the object's instance attributes are set. This causes dispatching
         to fail while unpickling the object because 'signal' does not yet exist. But dispatching
         does not need to happen for an object being unpickled because it's just a monitored list
         being restored and not technically being actively changed. Besides, there is no need to

@@ -96,8 +96,8 @@ class aab(object):
 class cam_bounds:
     def __init__(self, device: Device, pos:vec3):
         head_radius = device.head_radius #200
-        body_width = device.body_dims.y #100
-        body_depth = device.body_dims.x #40
+        body_width = device.body_dims.x #100
+        body_depth = device.body_dims.y #40
         body_height= device.body_dims.z * device.gantry_orientation #740 * chamber_pos # starting point is center of head
         gantry_width = device.gantry_dims.x #1000
         gantry_depth = device.gantry_dims.y #125
