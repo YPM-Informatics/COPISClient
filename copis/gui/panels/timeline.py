@@ -870,8 +870,9 @@ class TimelinePanel(wx.Panel):
                             self._get_action_caption(action))
 
                         for arg in action.args:
-                            self.timeline.AppendItem(node_2,
-                                self._get_action_arg_caption(action.atype, arg))
+                            if action.atype != ActionType.C10:
+                                self.timeline.AppendItem(node_2,
+                                    self._get_action_arg_caption(action.atype, arg))
 
                 self.timeline.Expand(node)
             self.timeline.Expand(root)

@@ -104,6 +104,7 @@ class ActionType(Enum):
     """Action types."""
     C0 = auto()     # Press shutter.
     C1 = auto()     # Press auto focus.
+    C10 = auto()    # Remote shutter focus stack.
 
     G0 = auto()     # Rapid positioning.
     G1 = auto()     # Linear movement.
@@ -128,6 +129,8 @@ class ActionType(Enum):
     M998 = auto()   # Reboot - V## Parameter is optional. Any value greater than 0 allows
                     # any prior buffered action to finish execution before reboot.
 
+    # TODO: HST_F_STACK should be removed once C10 is fully baked in.
+    # HST_PAUSE should also probably be removed is pause implementation goes a different route.
     HST_F_STACK = auto() # Host (serial) - focus stack.
     HST_PAUSE = auto()
 
