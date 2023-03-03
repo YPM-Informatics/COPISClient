@@ -318,7 +318,8 @@ class GLActionVis:
 
                     self._items['line'][action.device].append(data)
                     self._items['point'][action.device].append(data + (False,))
-                elif action.atype in self.core.LENS_COMMANDS + [ActionType.C10]:
+                    # For now draw the same GUI lens for focus stacks as for snaps and focuses.
+                elif action.atype in self.core.LENS_COMMANDS + self.core.F_STACK_COMMANDS:
                     if action.device not in self._items['line'].keys():
                         continue
 
@@ -326,7 +327,7 @@ class GLActionVis:
                     data[2] = True
                     self._items['point'][action.device][-1] = tuple(data)
                 else:
-                    # TODO!
+                    # TODO: Draw a variation of the camera lens for focus stack and focus actions here.
                     pass
 
         for key, value in positions.items():

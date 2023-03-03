@@ -98,12 +98,16 @@ class PathStats(wx.Panel):
     def _update_path_stats(self):
         c_key = lambda p: p.position.device
 
-        count_imgs = lambda p_list: len(
-            [a for p in p_list for a in p.get_actions()
-                if a.atype in self._core.SNAP_COMMANDS + [ActionType.C10]])
+        def get_arg_value(arg_col, arg_key):
+            arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), 0)
+            return float(arg[1])
 
         def get_counts_lbl(p_count, i_count):
             return f'{p_count or "No"} ({i_count} image{"s" if i_count != 1 else ""})'
+
+        count_imgs = lambda p_list: len([a for p in p_list for a in p.get_actions() if a.atype in self._core.SNAP_COMMANDS])
+
+        count_stack_imgs = lambda p_list: sum([get_arg_value(a.args, 'V') for p in p_list for a in p.get_actions() if a.atype in self._core.F_STACK_COMMANDS])
 
         sets = self._core.project.pose_sets
 
@@ -112,7 +116,7 @@ class PathStats(wx.Panel):
             groups = groupby(poses, c_key)
 
             pose_count = len(poses)
-            img_count = count_imgs(poses)
+            img_count = count_imgs(poses) + count_stack_imgs(poses)
 
             self._set_count_caption.SetLabel(str(len(sets)))
             self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
@@ -121,7 +125,7 @@ class PathStats(wx.Panel):
                 if key in [d.device_id for d in self._core.project.devices]:
                     poses = list(group)
                     pose_count = len(poses)
-                    img_count = count_imgs(poses)
+                    img_count = count_imgs(poses) + count_stack_imgs(poses)
                     self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
 
     def _estimate_execution_time(self):

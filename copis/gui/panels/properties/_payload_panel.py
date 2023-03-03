@@ -163,7 +163,7 @@ class PayloadPanel(wx.Panel):
             c_args = create_action_args([step, snap_count], 'VP')
             payload_item = Action(ActionType.HST_F_STACK, self._pose.position.device,
                 len(c_args), c_args)
-            
+
             if self._core.add_to_selected_pose_payload(payload_item):
                 pose = self._core.project.poses[self._core.selected_pose]
                 self.set_pose(pose)
@@ -464,7 +464,7 @@ class PayloadPanel(wx.Panel):
         elif action.atype in self._core.F_STACK_COMMANDS:
             def get_arg_value(arg_col, arg_key):
                 arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), None)
-                return float(arg[1])
+                return float(arg[1]) if arg and arg[1] else arg
 
             step = get_arg_value(action.args, 'V')
             count = int(get_arg_value(action.args, 'P'))
@@ -479,8 +479,25 @@ class PayloadPanel(wx.Panel):
                     increment = 'medium'
                 else:
                     increment = 'large'
+
+            post_sd = get_arg_value(action.args, 'Y') or 0
+            pre_sd = get_arg_value(action.args, 'X') or 0
+            shutter_delays = f'shutter delays: [{pre_sd}, {post_sd}]ms' if pre_sd or post_sd else None
+            shutter_hold = get_arg_value(action.args, 'P')
+            return_to_start = any(arg[0] == 'T' for arg in action.args)
+            feed_rate = get_arg_value(action.args, 'F')
+
             caption = ' '.join([f'{com_mode} stack - {count} shot{"s" if count != 1 else ""},',
                 f'{direction} focus, {increment} step'])
+
+            if shutter_delays:
+                caption += f', {shutter_delays}'
+            if shutter_hold:
+                caption += f', shutter hold time: {shutter_hold}ms'
+            if feed_rate:
+                caption += f', feed rate: {feed_rate}mm_or_dd/min'
+            if return_to_start:
+                caption += ', return to start'
 
         return caption
 
@@ -503,7 +520,9 @@ class PayloadPanel(wx.Panel):
             edit_btn.payload_index = i
             edit_btn.Bind(wx.EVT_BUTTON, self._on_edit_payload_item)
 
-            caption = self._get_payload_item_caption(action)
+            caption_text = self._get_payload_item_caption(action)
+            caption = simple_statictext(self, caption_text, width=220, style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+            caption.SetToolTip(wx.ToolTip(caption_text))
 
             crud_sizer = wx.BoxSizer(wx.HORIZONTAL)
             crud_sizer.AddMany([
@@ -514,7 +533,7 @@ class PayloadPanel(wx.Panel):
             item_grid = wx.FlexGridSizer(1, 2, 0, 0)
             item_grid.AddGrowableCol(0, 0)
             item_grid.AddMany([
-                (simple_statictext(self, caption), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+                (caption, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
                 (crud_sizer, 0, wx.EXPAND, 0)
             ])
 

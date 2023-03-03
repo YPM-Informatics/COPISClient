@@ -125,9 +125,11 @@ class TimelinePanel(wx.Panel):
         if key in time_args and action_type in self.core.LENS_COMMANDS:
             caption = f'{value} {time_args[key]}{"s" if value != 1 else ""}'
         elif action_type in self.core.F_STACK_COMMANDS:
-            if key == 'P':
-                caption = f'count: {int(value)}'
-            if key == 'V':
+            if key == 'X':
+                caption = f'pre shutter delay: {value}ms'
+            if key == 'Y':
+                caption = f'post shutter delay: {value}ms'
+            if key == 'Z':
                 direction = 'near' if value < 0 else 'far'
                 value = abs(value)
                 increment = f'{value}mm'
@@ -140,10 +142,18 @@ class TimelinePanel(wx.Panel):
                     else:
                         increment = 'large'
 
-                caption = f'info: {direction} focus, {increment} step'
+                caption = f'step info - size: {increment}, direction: {direction}'
+            if key == 'P':
+                caption = f'shutter hold time: {value}ms'
+            if key == 'T':
+                caption = 'return to start when done'
+            if key == 'V':
+                caption = f'step count: {int(value)}'
+            if key == 'F':
+                caption = f'feed rate: {value}mm_or_dd/min'
 
         elif action_type != ActionType.EDS_SNAP:
-            dd_keys = ["P", "T"]
+            dd_keys = ['P', 'T']
             value = rad_to_dd(value) if key in dd_keys else value
             units = 'dd' if key in dd_keys else 'mm'
             caption = f'{key}: {value}{units}'
@@ -870,9 +880,8 @@ class TimelinePanel(wx.Panel):
                             self._get_action_caption(action))
 
                         for arg in action.args:
-                            if action.atype != ActionType.C10:
-                                self.timeline.AppendItem(node_2,
-                                    self._get_action_arg_caption(action.atype, arg))
+                            self.timeline.AppendItem(node_2,
+                                self._get_action_arg_caption(action.atype, arg))
 
                 self.timeline.Expand(node)
             self.timeline.Expand(root)

@@ -60,7 +60,7 @@ class COPISCore:
     _STALE_STATUS_THRESHOLD = 1
     _IMAGING_MANIFEST_FILE_NAME = 'copis_imaging_manifest.json'
     MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
-    F_STACK_COMMANDS = [ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
+    F_STACK_COMMANDS = [ActionType.C10, ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
     SNAP_COMMANDS = [ActionType.C0, ActionType.EDS_SNAP]
     FOCUS_COMMANDS = [ActionType.C1, ActionType.EDS_FOCUS]
     LENS_COMMANDS = SNAP_COMMANDS + FOCUS_COMMANDS
@@ -541,7 +541,7 @@ class COPISCore:
         groups = groupby(poses, c_key)
         for key, group in groups:
             pics = [a for p in list(group) for a in p.get_actions()
-                if a.atype in self.SNAP_COMMANDS + [ActionType.C10]]
+                if a.atype in self.SNAP_COMMANDS]
             device = self._get_device(key)
             device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
             counts[device_key] = len(pics)
@@ -699,7 +699,7 @@ class COPISCore:
 
             pre_shutter_delay_completed = False
             for command in commands:
-                if command.atype in self.SNAP_COMMANDS + [ActionType.C10]:
+                if command.atype in self.LENS_COMMANDS + self.F_STACK_COMMANDS:
                     device = self._get_device(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
                     #shoe-horning a mechanism for adding a pause before and after taking pictures
