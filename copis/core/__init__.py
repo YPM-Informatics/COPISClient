@@ -541,7 +541,7 @@ class COPISCore:
         groups = groupby(poses, c_key)
         for key, group in groups:
             pics = [a for p in list(group) for a in p.get_actions()
-                if a.atype in self.SNAP_COMMANDS]
+                if a.atype in self.SNAP_COMMANDS + [ActionType.C10]]
             device = self._get_device(key)
             device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
             counts[device_key] = len(pics)
@@ -699,7 +699,7 @@ class COPISCore:
 
             pre_shutter_delay_completed = False
             for command in commands:
-                if command.atype in self.SNAP_COMMANDS:
+                if command.atype in self.SNAP_COMMANDS + [ActionType.C10]:
                     device = self._get_device(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
                     #shoe-horning a mechanism for adding a pause before and after taking pictures
