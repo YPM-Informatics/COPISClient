@@ -160,7 +160,7 @@ class PayloadPanel(wx.Panel):
 
             step = direction * max(0, float(steps_ctrl.Value))
             snap_count = self._get_snap_count_value(count_ctrl)
-            c_args = create_action_args([step, snap_count], 'VP')
+            c_args = create_action_args([step, snap_count], 'ZV')
             payload_item = Action(ActionType.HST_F_STACK, self._pose.position.device,
                 len(c_args), c_args)
 
@@ -300,7 +300,7 @@ class PayloadPanel(wx.Panel):
 
             step = direction * step
             snap_count = self._get_snap_count_value(count_ctrl)
-            c_args = create_action_args([step, snap_count], 'VP')
+            c_args = create_action_args([step, snap_count], 'ZV')
             payload_item = Action(ActionType.EDS_F_STACK, self._pose.position.device,
                 len(c_args), c_args)
 
@@ -466,8 +466,8 @@ class PayloadPanel(wx.Panel):
                 arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), None)
                 return float(arg[1]) if arg and arg[1] else arg
 
-            step = get_arg_value(action.args, 'V')
-            count = int(get_arg_value(action.args, 'P'))
+            step = get_arg_value(action.args, 'Z')
+            count = int(get_arg_value(action.args, 'V'))
             direction = 'near' if step < 0 else 'far'
             step = abs(step)
             increment = f'{step}mm'
