@@ -207,7 +207,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._feed_rate_ctrl.Show()
             step_size_grid.AddMany([
-                (simple_statictext(self, 'Feed Rate (<unit>/m):', 80), 0,
+                (simple_statictext(self, 'Feed Rate (<unit>/min):', 80), 0,
                     wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
                 (self._feed_rate_ctrl, 0, wx.EXPAND, 0)
             ])
