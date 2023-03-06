@@ -26,17 +26,41 @@ class SysDB():
        Sys db can be used to sync images with positional information
     """
 
-    _schema = {'image_metadata': {'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-                                  'x': 'REAL', 'y': 'REAL', 'z': 'REAL', 'p': 'REAL', 't': 'REAL',
-                                  'src': 'TEXT', 'img1_md5': 'TEXT', 'img1_fname': 'TEXT', 'img2_md5': 'TEXT', 'img2_fname': 'TEXT', 'session_id': 'INTEGER',
-                                  'cam_id': 'INTEGER', 'cam_serial_no': 'TXT', 'cam_name': 'TEXT', 'cam_type': 'TEXT', 'cam_desc': 'TEXT',
-                                  'unix_time_start': 'REAL', 'unix_time_end': 'REAL',
-                                  },
-               'serial_tx': {'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-                             'data': 'BLOB', 'unix_time': 'REAL'},
-               'serial_rx': {'id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
-                             'data': 'BLOB', 'unix_time': 'REAL'}
-               }
+    _schema = {
+        'image_metadata': {
+            'id':'INTEGER PRIMARY KEY AUTOINCREMENT',
+            'x':'REAL',
+            'y':'REAL',
+            'z':'REAL',
+            'p':'REAL',
+            't':'REAL',
+            'src':'TEXT',
+            'src_action':'TEXT',
+            'img1_md5':'TEXT',
+            'img1_fname':'TEXT',
+            'img2_md5':'TEXT',
+            'img2_fname':'TEXT',
+            'session_id':'INTEGER',
+            'group_id':'INTEGER',
+            'cam_id':'INTEGER',
+            'cam_serial_no':'TXT',
+            'cam_name':'TEXT',
+            'cam_type':'TEXT',
+            'cam_desc':'TEXT',
+            'unix_time_start':'REAL',
+            'unix_time_end':'REAL'
+        },
+        'serial_tx': {
+            'id':'INTEGER PRIMARY KEY AUTOINCREMENT',
+            'data':'BLOB',
+            'unix_time':'REAL'
+        },
+        'serial_rx': {
+            'id':'INTEGER PRIMARY KEY AUTOINCREMENT',
+            'data':'BLOB',
+            'unix_time':'REAL'
+        }
+    }
 
     def __init__(self):
         self._filename = store.get_sys_db_path()
@@ -49,7 +73,7 @@ class SysDB():
         self._poses_in_play = {}
 
         self._is_initialized = True
-        print("using sysdb: ", self._filename )
+        print("using sysdb: ", self._filename)
 
     @property
     def is_initialized(self) -> bool:
@@ -127,7 +151,7 @@ class SysDB():
         db.close()
         return row_id
 
-    def start_pose(self, device: Device, src: str, session_id=-1) -> int:
+    def start_pose(self, device: Device, src: str, src_action: str, session_id: int=-1) -> int:
         """Records the start of a picture taking action and returns the last record's id."""
         if not self._is_initialized:
             return -1
@@ -140,6 +164,7 @@ class SysDB():
              device.position.p, \
              device.position.t, \
              src,               \
+             src_action,        \
              device.device_id,  \
              device.serial_no,  \
              device.name,       \
@@ -147,7 +172,7 @@ class SysDB():
              device.description,\
              time.time())
 
-        s = 'INSERT INTO image_metadata (session_id,x,y,z,p,t,src,cam_id,cam_serial_no,cam_name,cam_type,cam_desc,unix_time_start) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);'
+        s = 'INSERT INTO image_metadata (session_id,x,y,z,p,t,src,src_action,cam_id,cam_serial_no,cam_name,cam_type,cam_desc,unix_time_start) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
         db = sqlite3.connect(self._filename)
         cur = db.cursor()
         cur.execute(s, v)

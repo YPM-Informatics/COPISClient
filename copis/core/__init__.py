@@ -702,6 +702,7 @@ class COPISCore:
                 if command.atype in self.LENS_COMMANDS + self.F_STACK_COMMANDS:
                     device = self._get_device(command.device)
                     method = 'remote shutter' if get_atype_kind(command.atype) == 'SER' else 'EDSDK'
+                    action = serialize_command(command)
                     #shoe-horning a mechanism for adding a pause before and after taking pictures
                     if not pre_shutter_delay_completed and 'pre_shutter_delay_ms' in self.project.options and self.project.options['pre_shutter_delay_ms']:
                         print_debug_msg(self.console, 'begin pre shutter delay', True)
@@ -714,7 +715,7 @@ class COPISCore:
                         print_debug_msg(self.console, 'end pre shutter delay', True)
                     if 'post_shutter_delay_ms' in self.project.options and self.project.options['post_shutter_delay_ms']:
                         self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
-                    self.sys_db.start_pose(device, method, session_id = self._session_id)
+                    self.sys_db.start_pose(device, method, action, session_id = self._session_id)
 
             if not is_edsdk_needed:
                 for dvc in dvcs:
