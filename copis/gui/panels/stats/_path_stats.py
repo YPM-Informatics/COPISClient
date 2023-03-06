@@ -21,7 +21,6 @@ import wx
 from pydispatch import dispatcher
 
 from copis.gui.wxutils import simple_statictext
-from copis.globals import ActionType
 
 
 class PathStats(wx.Panel):
@@ -100,7 +99,7 @@ class PathStats(wx.Panel):
 
         def get_arg_value(arg_col, arg_key):
             arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), 0)
-            return float(arg[1])
+            return float(arg[1]) if arg and arg[1] else arg
 
         def get_counts_lbl(p_count, i_count):
             return f'{p_count or "No"} ({i_count} image{"s" if i_count != 1 else ""})'

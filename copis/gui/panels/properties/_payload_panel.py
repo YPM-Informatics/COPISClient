@@ -466,8 +466,8 @@ class PayloadPanel(wx.Panel):
                 arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), None)
                 return float(arg[1]) if arg and arg[1] else arg
 
-            step = get_arg_value(action.args, 'Z')
-            count = int(get_arg_value(action.args, 'V'))
+            step = get_arg_value(action.args, 'Z') or 0.0
+            count = int(get_arg_value(action.args, 'V') or 0.0)
             direction = 'near' if step < 0 else 'far'
             step = abs(step)
             increment = f'{step}mm'
