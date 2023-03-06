@@ -107,7 +107,7 @@ class PathStats(wx.Panel):
 
         count_imgs = lambda p_list: len([a for p in p_list for a in p.get_actions() if a.atype in self._core.SNAP_COMMANDS])
 
-        count_stack_imgs = lambda p_list: sum([get_arg_value(a.args, 'V') for p in p_list for a in p.get_actions() if a.atype in self._core.F_STACK_COMMANDS])
+        count_stack_imgs = lambda p_list: sum([get_arg_value(a.args, 'V') + 1 for p in p_list for a in p.get_actions() if a.atype in self._core.F_STACK_COMMANDS])
 
         sets = self._core.project.pose_sets
 
@@ -116,7 +116,7 @@ class PathStats(wx.Panel):
             groups = groupby(poses, c_key)
 
             pose_count = len(poses)
-            img_count = count_imgs(poses) + count_stack_imgs(poses)
+            img_count = int(count_imgs(poses) + count_stack_imgs(poses))
 
             self._set_count_caption.SetLabel(str(len(sets)))
             self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
