@@ -84,7 +84,9 @@ class PoseImgLinker:
         self.exif_time_diffs = {}
         self.save_to_db = False
         self.bin_by_session_output_folder = None
-        self.work_data = {}
+
+        self._csv_work_data = {}
+        self._db_work_data = {}
 
     def __enter__(self):
         return self
@@ -159,18 +161,13 @@ class PoseImgLinker:
     def output_csv(self, out_path):
         self._output_csv = out_path
 
-    def save_work(self):
-        """Saves all the work generated from the run."""
-        for path, data in self.work_data.items():
-            with open(path, 'w', encoding='utf-8', newline='\n') as file:
-                csv.writer(file).writerows(data)
-
     def run(self):
         """Runs the pose image linker."""
         if self._input_folder is None or self._dbfile is None or len(self._cam_sn_to_id) == 0:
             raise Exception('invalid parameters')
 
         dof = {}
+        img_link_data = {}
 
         for f_type in self.img_types.values():
             if f_type is not None and f_type != '':
@@ -189,34 +186,34 @@ class PoseImgLinker:
         self._db = sqlite3.connect(self._dbfile)
         cur = self._db.cursor()
 
-        self.work_data[self.output_csv] = [['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff']]
-        imgs_linked = 0
-        max_buf_used = 0
-        num = 0
+        self._csv_work_data[self.output_csv] = [['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff']]
 
         for ftype, lof in dof.items():
-            imgs_linked = 0
+            num = 0
+            img_link_data[ftype] = []
+
             for key, val in self.img_types.items():
                 if ftype == val:
                     num = key
             md5_param = f'img{num}_md5'
             fname_param = f'img{num}_fname'
+
             for file_path in lof:
                 img_filename = file_path
-
                 hash_code = _hash_file(img_filename)
+
                 # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
                 # We will default to using datetime_digitized.
                 with open(img_filename, 'rb') as image_file:
                     my_image = Image(image_file)
 
-                image_t  = time.mktime(time.strptime(my_image.datetime_digitized, '%Y:%m:%d %H:%M:%S'))
+                image_t = time.mktime(time.strptime(my_image.datetime_digitized, '%Y:%m:%d %H:%M:%S'))
                 # body_serial_number camera_owner_name lens_serial_number
                 cam_sn = my_image.body_serial_number
-                print(cam_sn)
                 cam_id = self._cam_sn_to_id[cam_sn]
 
-                if cam_id in self.exif_time_diffs: # Account for any time differential from improperly set cameras.
+                # Account for any time differential from improperly set cameras.
+                if cam_id in self.exif_time_diffs:
                     image_t = image_t + self.exif_time_diffs[cam_id]
 
                 # We subtract a one-second buffer to the start time.
@@ -224,70 +221,115 @@ class PoseImgLinker:
                 count = 0
 
                 while (count == 0 and buffer_sec <= self.max_buffer_secs):
-                    buffer_sec +=1
-                    sql = f"select session_id,id,cam_id,x,y,z,p,t,{md5_param}, unix_time_start, unix_time_end from image_metadata where cam_id = ? and ? >= (cast(unix_time_start as int) - {buffer_sec}) and ? <= (cast(unix_time_end as int) + {buffer_sec}); "
-                    data = cur.execute(sql,(cam_id,image_t,image_t))
+                    buffer_sec += 1
+                    sql = f"select session_id, id, cam_id, x, y, z, p, t, {md5_param}, unix_time_start, unix_time_end from image_metadata where cam_id = ? and ? >= (cast(unix_time_start as int) - {buffer_sec}) and ? <= (cast(unix_time_end as int) + {buffer_sec});"
+                    data = cur.execute(sql, (cam_id, image_t, image_t))
                     rows = data.fetchall()
                     count = len(rows)
 
-                # max_buf_used = max(max_buf_used,buffer_sec)
-                if len(rows) < 1:
-                    self.work_data[self.output_csv].append(['No timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
-                elif len(rows) > 1:
-                    self.work_data[self.output_csv].append(['>1 timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
-                else:
-                    for row in rows:
-                        t_end = row[10]
-
-                        if image_t < t_end:
-                            buffer_sec = buffer_sec * -1
-
-                        if max(abs(max_buf_used),abs(buffer_sec)) > abs(max_buf_used):
-                            max_buf_used = buffer_sec
-
-                        img_md5 = row[8]
-                        image_id = row[1]
-
-                        if img_md5 not in ('', None, hash_code):
-                            print('houston we have a problem prior sync, with diff hash detected')
-                            hash_code = ':'.join(('hash conflict',hash_code,img_md5))
-                        else:
-                            imgs_linked += 1
-
-                            if self.bin_by_session_output_folder:
-                                session_path = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]))
-                                session_csv = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]) + '.csv')
-
-                                if session_csv not in self.work_data.keys():
-                                    self.work_data[session_csv] = [['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff']]
-
-                                if not os.path.exists(session_path):
-                                    os.makedirs(session_path)
-
-                                img_filename_relative_root = img_filename.replace(self.input_folder, '', 1).lstrip('\\')
-                                dest = os.path.join(session_path, img_filename_relative_root)
-
-                                if not os.path.exists(os.path.dirname(dest)):
-                                    os.makedirs(os.path.dirname(dest))
-
-                                shutil.copy(img_filename, dest)
-
-                                file_path = os.path.join('session_' + str(row[0]), img_filename_relative_root)
-                                self.work_data[session_csv].append(row[0:8] + (file_path, hash_code, str(image_t), str(buffer_sec)))
-
-                            if self.save_to_db:
-                                sql = f'UPDATE image_metadata SET {md5_param} = ?, {fname_param} = ? where id = ?;'
-                                val = (hash_code, img_filename, image_id)
-                                cur.execute(sql, val)
-
-                        self.work_data[self.output_csv].append(row[0:8] + (img_filename, hash_code, str(image_t), str(buffer_sec)))
-            print(str(imgs_linked), ' ', str(ftype), '(s) linked')
-
-        self.save_work()
-        print('max time buffer: ', str(max_buf_used), ' seconds.')
-        self._db.commit()
+                img_link_data[ftype].append({
+                    'cam_sn': cam_sn,
+                    'md5_param': md5_param,
+                    'fname_param': fname_param,
+                    'img_filename': img_filename,
+                    'hash_code': hash_code,
+                    'image_t': image_t,
+                    'buffer_sec': buffer_sec,
+                    'rows': rows
+                })
         cur.close()
         self._db.close()
+
+        self._process_image_link_data(img_link_data)
+
+    def _process_image_link_data(self, img_link_data):
+        max_buf_used = 0
+
+        for ftype, link_data in img_link_data.items():
+            total_imgs_linked = 0
+
+            for data in link_data:
+                print(data.pop('cam_sn'))
+
+                buf_used, imgs_linked = self._link_images(**data)
+
+                if max(abs(max_buf_used),abs(buf_used)) > abs(max_buf_used):
+                    max_buf_used = buf_used
+                total_imgs_linked += imgs_linked
+            print(str(total_imgs_linked), ' ', str(ftype), '(s) linked')
+        print('max time buffer: ', str(max_buf_used), ' seconds.')
+
+        self._save_work()
+
+    def _save_work(self):
+        """Saves all the work generated from the run."""
+        if self.save_to_db:
+            self._db = sqlite3.connect(self._dbfile)
+            cur = self._db.cursor()
+
+            for _, val in self._db_work_data.items():
+                sql, params = val
+                cur.execute(sql, params)
+
+        for path, data in self._csv_work_data.items():
+            with open(path, 'w', encoding='utf-8', newline='\n') as file:
+                csv.writer(file).writerows(data)
+
+        cur.close()
+        self._db.commit()
+        self._db.close()
+
+    def _link_images(self, md5_param, fname_param, img_filename, hash_code, image_t, buffer_sec, rows):
+        imgs_linked = 0
+
+        if len(rows) < 1:
+            self._csv_work_data[self.output_csv].append(['No timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
+        elif len(rows) > 1:
+            self._csv_work_data[self.output_csv].append(['>1 timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
+        else:
+            for row in rows:
+                t_end = row[10]
+
+                if image_t < t_end:
+                    buffer_sec = buffer_sec * -1
+
+                img_md5 = row[8]
+                image_id = row[1]
+
+                if img_md5 not in ('', None, hash_code):
+                    print('houston we have a problem prior sync, with diff hash detected')
+                    hash_code = ':'.join(('hash conflict',hash_code,img_md5))
+                else:
+                    imgs_linked += 1
+
+                    if self.bin_by_session_output_folder:
+                        session_path = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]))
+                        session_csv = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]) + '.csv')
+
+                        if not self._csv_work_data.get(session_csv):
+                            self._csv_work_data[session_csv] = [['session_id', 'image_id', 'cam_id', 'x', 'y', 'z', 'p', 't', 'img_fname', 'img_md5', 'exif_timestamp', 'time_buff']]
+
+                        if not os.path.exists(session_path):
+                            os.makedirs(session_path)
+
+                        img_filename_relative_root = img_filename.replace(self.input_folder, '', 1).lstrip('\\')
+                        dest = os.path.join(session_path, img_filename_relative_root)
+
+                        if not os.path.exists(os.path.dirname(dest)):
+                            os.makedirs(os.path.dirname(dest))
+
+                        shutil.copy(img_filename, dest)
+
+                        file_path = os.path.join('session_' + str(row[0]), img_filename_relative_root)
+                        self._csv_work_data[session_csv].append(row[0:8] + (file_path, hash_code, str(image_t), str(buffer_sec)))
+
+                    if self.save_to_db:
+                        sql = f'UPDATE image_metadata SET {md5_param} = ?, {fname_param} = ? where id = ?;'
+                        val = (hash_code, img_filename, image_id)
+                        self._db_work_data[image_id] = (sql, val)
+
+                self._csv_work_data[self.output_csv].append(row[0:8] + (img_filename, hash_code, str(image_t), str(buffer_sec)))
+        return (buffer_sec, imgs_linked)
 
 
 def show_help():
