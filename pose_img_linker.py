@@ -275,9 +275,10 @@ class PoseImgLinker:
             with open(path, 'w', encoding='utf-8', newline='\n') as file:
                 csv.writer(file).writerows(data)
 
-        cur.close()
-        self._db.commit()
-        self._db.close()
+        if self.save_to_db:
+            cur.close()
+            self._db.commit()
+            self._db.close()
 
     def _link_images(self, md5_param, fname_param, img_filename, hash_code, image_t, buffer_sec, rows):
         imgs_linked = 0
