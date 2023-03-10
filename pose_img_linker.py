@@ -15,6 +15,7 @@
 
 """Simple pose metadata linker."""
 
+import re
 import sys
 import shutil
 import getopt
@@ -27,9 +28,14 @@ import json
 import exiftool
 import tkinter as tk
 
+from itertools import groupby
+from math import cos, sin
 from configparser import ConfigParser
 from tkinter import filedialog
 from exif import Image
+
+
+_SCIENTIFIC_NOTATION_PATTERN = re.compile(r'[-+]?[\d]+\.?[\d]*[Ee](?:[-+]?[\d]+)?')
 
 
 def _hash_file(filename):
@@ -43,6 +49,129 @@ def _hash_file(filename):
             hash_md5.update(chunk)
 
     return hash_md5.hexdigest()
+
+
+def _parse_src_action(cmd):
+    segments = re.split('([a-zA-Z])', cmd)
+    g_code = 0
+    a_args = []
+
+    for i, segment in enumerate(segments):
+        if len(segment) > 0 and segment.upper() in 'CGM':
+            g_code = f'{segment}{segments[i + 1]}'
+        elif len(segment) > 0 and segment.upper() in 'XYZPTFSV':
+            a_args.append((segment, segments[i + 1]))
+    return (g_code, a_args)
+
+
+def _sanitize_number(value: float) -> float:
+    """Sanitizes a number approaching zero:
+    signed zero and tiny number at 5 or more decimal places."""
+    if _SCIENTIFIC_NOTATION_PATTERN.match(str(value)):
+        value = float(f'{value:.4f}')
+
+    return value if value != 0.0 else 0.0
+
+
+def _get_end_position(start, distance):
+    x, y, z, p, t = start
+    d_places = 3
+    sin_p = round(sin(p), d_places)
+    cos_p = round(cos(p), d_places)
+    sin_t = round(sin(t), d_places)
+    cos_t = round(cos(t), d_places)
+
+    # The right formula for this is:
+    #   new_x = x + (dist * sin(pan) * cos(tilt))
+    #   new_y = y + (dist * sin(tilt))
+    #   new_z = z + (dist * cos(pan) * cos(tilt))
+    # But since our axis is rotated 90dd clockwise around the x axis so
+    # that z points up we have to adjust the formula accordingly.
+    end_x = _sanitize_number(x + (distance * sin_p * cos_t))
+    end_y = _sanitize_number(y + (distance * cos_p * cos_t))
+    end_z = _sanitize_number(z - (distance * sin_t))
+
+    return (end_x, end_y, end_z)
+
+
+def _detect_stacks(img_data_item):
+    def get_action_arg(key: str, a_args):
+        key = key.upper()
+        return next(filter(lambda a: a[0].upper() == key, a_args), (key, None))[1]
+
+    d_map = map(lambda d: d['rows'], img_data_item)
+    flat = [i for r in d_map for i in r]
+    uniq_entries = sorted(list(set(flat)), key=lambda e: e[2])
+    uniq_cams = list(set(map(lambda i: i[2], flat)))
+    cam_group = {}
+
+    if len(uniq_entries) == len(uniq_cams):
+        img_data_item = sorted(img_data_item, key=lambda d: d['image_t'])
+
+        for entry in uniq_entries:
+            src, src_action = entry[12:14]
+
+            if src_action:
+                parsed = _parse_src_action(src_action)
+                if parsed[0].upper() == 'C10':
+                    step_size = get_action_arg('Z', parsed[1])
+                    step_count = get_action_arg('V', parsed[1])
+
+                    if not step_count or not step_size:
+                        raise Exception('Missing required stack parameters.')
+
+                    step_size = float(step_size)
+                    step_count = int(step_count)
+
+                    entry_count = len(list(filter(lambda d, e=entry: d['rows'][0][2] == e[2], img_data_item)))
+
+                    if entry_count != step_count + 1:
+                        raise Exception('Mismatched stack step count vs images discovered.')
+
+                    for item in img_data_item:
+                        if len(item['rows']) > 0 and item['rows'][0][2] == entry[2]:
+                            cam_id = item['rows'][0][2]
+                            group = cam_group.get(cam_id)
+                            if not group:
+                                x, y, z, p, t = item['rows'][0][3:8]
+                                unix_time_start, unix_time_end = item['rows'][0][9:11]
+                                group_id = item['rows'][0][1]
+                                cam_name, cam_type, cam_desc = item['rows'][0][14:17]
+                                cam_group[cam_id] = {
+                                    'x': x,
+                                    'y': y,
+                                    'z': z,
+                                    'p': p,
+                                    't': t,
+                                    'unix_time_start': unix_time_start,
+                                    'unix_time_end': unix_time_end,
+                                    'group_id': group_id,
+                                    'cam_name': cam_name,
+                                    'cam_type': cam_type,
+                                    'cam_desc': cam_desc
+                                }
+                                item['rows'][0][11] = group_id
+                            else:
+                                x, y, z, p, t = map(group.get, ('x', 'y', 'z', 'p', 't'))
+                                x, y, z = _get_end_position((x, y, z, p, t), step_size)
+                                group['x'] = x
+                                group['y'] = y
+                                group['z'] = z
+                                item['rows'] = list(map(list, item['rows'])) # Because tuples are immutable.
+                                item['rows'][0][1] = None # Null out the entry id so we know it's an insert instead of an update.
+                                item['rows'][0][3] = x
+                                item['rows'][0][4] = y
+                                item['rows'][0][5] = z
+                                item['rows'][0][6] = p
+                                item['rows'][0][7] = t
+                                item['rows'][0][9] = group['unix_time_start']
+                                item['rows'][0][10] = group['unix_time_end']
+                                item['rows'][0][11] = group['group_id']
+                                item['rows'][0][12] = src
+                                item['rows'][0][13] = src_action
+                                item['rows'][0][14] = group['cam_name']
+                                item['rows'][0][15] = group['cam_type']
+                                item['rows'][0][16] = group['cam_desc']
 
 
 def use_gui():
@@ -85,8 +214,8 @@ class PoseImgLinker:
         self.save_to_db = False
         self.bin_by_session_output_folder = None
 
-        self._csv_work_data = {}
-        self._db_work_data = {}
+        self._file_data = {}
+        self._db_data = {}
 
     def __enter__(self):
         return self
@@ -167,7 +296,7 @@ class PoseImgLinker:
             raise Exception('invalid parameters')
 
         dof = {}
-        img_link_data = {}
+        img_data = {}
 
         for f_type in self.img_types.values():
             if f_type is not None and f_type != '':
@@ -186,11 +315,11 @@ class PoseImgLinker:
         self._db = sqlite3.connect(self._dbfile)
         cur = self._db.cursor()
 
-        self._csv_work_data[self.output_csv] = [['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff']]
+        self._file_data[self.output_csv] = [['session_id','image_id','cam_id','x','y','z','p','t','img_fname','img_md5','exif_timestamp','time_buff']]
 
         for ftype, lof in dof.items():
             num = 0
-            img_link_data[ftype] = []
+            img_data[ftype] = []
 
             for key, val in self.img_types.items():
                 if ftype == val:
@@ -222,12 +351,13 @@ class PoseImgLinker:
 
                 while (count == 0 and buffer_sec <= self.max_buffer_secs):
                     buffer_sec += 1
-                    sql = f"select session_id, id, cam_id, x, y, z, p, t, {md5_param}, unix_time_start, unix_time_end from image_metadata where cam_id = ? and ? >= (cast(unix_time_start as int) - {buffer_sec}) and ? <= (cast(unix_time_end as int) + {buffer_sec});"
+                    sql = (f"select session_id, id, cam_id, x, y, z, p, t, {md5_param}, unix_time_start, unix_time_end, group_id, src, src_action, cam_name, cam_type, cam_desc from image_metadata "
+                        f"where cam_id = ? and ? >= (cast(unix_time_start as int) - {buffer_sec}) and ? <= (cast(unix_time_end as int) + {buffer_sec});")
                     data = cur.execute(sql, (cam_id, image_t, image_t))
                     rows = data.fetchall()
                     count = len(rows)
 
-                img_link_data[ftype].append({
+                img_data[ftype].append({
                     'cam_sn': cam_sn,
                     'md5_param': md5_param,
                     'fname_param': fname_param,
@@ -240,79 +370,98 @@ class PoseImgLinker:
         cur.close()
         self._db.close()
 
-        self._process_image_link_data(img_link_data)
+        self._process_discovered_images(img_data)
 
-    def _process_image_link_data(self, img_link_data):
+    def _process_discovered_images(self, img_data: dict):
         max_buf_used = 0
+        poses = []
+        sessions = []
+        db_updates = []
+        db_inserts = []
 
-        for ftype, link_data in img_link_data.items():
-            total_imgs_linked = 0
+        for ftype, img_data_item in img_data.items():
+            imgs_linked = 0
 
-            for data in link_data:
+            _detect_stacks(img_data_item)
+
+            for data in img_data_item:
                 print(data.pop('cam_sn'))
 
-                buf_used, imgs_linked = self._link_images(**data)
+                results = self._process_discovered_image(data)
 
-                if max(abs(max_buf_used),abs(buf_used)) > abs(max_buf_used):
-                    max_buf_used = buf_used
-                total_imgs_linked += imgs_linked
-            print(str(total_imgs_linked), ' ', str(ftype), '(s) linked')
+                if results[2]:
+                    poses.append(results[2])
+                if results[3]:
+                    sessions.append(results[3])
+                if results[4]:
+                    db_updates.append(results[4])
+                if results[5]:
+                    db_inserts.append(results[5])
+
+                if max(abs(max_buf_used),abs(results[0])) > abs(max_buf_used):
+                    max_buf_used = results[0]
+                imgs_linked += results[1]
+            print(str(imgs_linked), ' ', str(ftype), '(s) linked')
         print('max time buffer: ', str(max_buf_used), ' seconds.')
 
-        self._save_work()
+        self._serialize_results(poses, sessions, db_updates, db_inserts)
 
-    def _save_work(self):
-        """Saves all the work generated from the run."""
-        if self.save_to_db:
+    def _serialize_results(self, poses, sessions, db_updates, db_inserts):
+        new_img_ids = {}
+
+        if db_updates or db_inserts:
             self._db = sqlite3.connect(self._dbfile)
             cur = self._db.cursor()
 
-            for _, val in self._db_work_data.items():
-                sql, params = val
+        if db_updates:
+            for update in db_updates:
+                keys, params = map(update.get, ('keys', 'params'))
+                sql = f'UPDATE image_metadata SET {keys[0]} = ?, {keys[1]} = ? where id = ?;'
                 cur.execute(sql, params)
 
-        for path, data in self._csv_work_data.items():
-            with open(path, 'w', encoding='utf-8', newline='\n') as file:
-                csv.writer(file).writerows(data)
+        if db_inserts:
+            for insert in db_inserts:
+                keys, params = map(insert.get, ('keys', 'params'))
+                sql = f'INSERT INTO image_metadata (session_id, cam_id, x, y, z, p, t, {keys[0]}, {keys[1]}, unix_time_start, unix_time_end, group_id, src, src_action, cam_name, cam_type, cam_desc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+                cur.execute(sql, params)
 
-        if self.save_to_db:
+                # Save the new image id with the unique hash code as the key.
+                new_img_ids[params[7]] = cur.lastrowid
+
+        if db_updates or db_inserts:
             cur.close()
             self._db.commit()
             self._db.close()
 
-    def _link_images(self, md5_param, fname_param, img_filename, hash_code, image_t, buffer_sec, rows):
-        imgs_linked = 0
+        if poses:
+            with open(self.output_csv, 'w', encoding='utf-8', newline='\n') as file:
+                csv.writer(file).writerow(['session_id', 'image_id', 'cam_id', 'x', 'y', 'z', 'p', 't', 'img_fname', 'img_md5', 'exif_timestamp', 'time_buff', 'group_id'])
 
-        if len(rows) < 1:
-            self._csv_work_data[self.output_csv].append(['No timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
-        elif len(rows) > 1:
-            self._csv_work_data[self.output_csv].append(['>1 timestamp match', '', '', '', '', '', '', img_filename, hash_code, str(image_t), str(buffer_sec)])
-        else:
-            for row in rows:
-                t_end = row[10]
+                for row in poses:
+                    new_img_id = new_img_ids.get(row[9])
+                    # print(f'new img id: {new_img_id}, row[1]: {row[1]}, row: {row}')
+                    row[1] = row[1] or new_img_id
+                    csv.writer(file).writerow(row)
 
-                if image_t < t_end:
-                    buffer_sec = buffer_sec * -1
+        if sessions:
+            get_session_id = lambda r: r[0]
 
-                img_md5 = row[8]
-                image_id = row[1]
+            headers = ['session_id', 'image_id', 'cam_id', 'x', 'y', 'z', 'p', 't', 'img_fname', 'img_md5', 'exif_timestamp', 'time_buff', 'group_id']
+            sorted_sessions = sorted(sessions, key=get_session_id)
+            groups = groupby(sorted_sessions, get_session_id)
 
-                if img_md5 not in ('', None, hash_code):
-                    print('houston we have a problem prior sync, with diff hash detected')
-                    hash_code = ':'.join(('hash conflict',hash_code,img_md5))
-                else:
-                    imgs_linked += 1
+            for session_id, session_rows in groups:
+                session_path = os.path.join(self.bin_by_session_output_folder, 'session_' + str(session_id))
+                session_csv = os.path.join(self.bin_by_session_output_folder, 'session_' + str(session_id) + '.csv')
 
-                    if self.bin_by_session_output_folder:
-                        session_path = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]))
-                        session_csv = os.path.join(self.bin_by_session_output_folder, 'session_' + str(row[0]) + '.csv')
+                if not os.path.exists(session_path):
+                    os.makedirs(session_path)
 
-                        if not self._csv_work_data.get(session_csv):
-                            self._csv_work_data[session_csv] = [['session_id', 'image_id', 'cam_id', 'x', 'y', 'z', 'p', 't', 'img_fname', 'img_md5', 'exif_timestamp', 'time_buff']]
+                with open(session_csv, 'w', encoding='utf-8', newline='\n') as file:
+                    csv.writer(file).writerow(headers)
 
-                        if not os.path.exists(session_path):
-                            os.makedirs(session_path)
-
+                    for row in session_rows:
+                        img_filename = row[8]
                         img_filename_relative_root = img_filename.replace(self.input_folder, '', 1).lstrip('\\')
                         dest = os.path.join(session_path, img_filename_relative_root)
 
@@ -321,16 +470,54 @@ class PoseImgLinker:
 
                         shutil.copy(img_filename, dest)
 
-                        file_path = os.path.join('session_' + str(row[0]), img_filename_relative_root)
-                        self._csv_work_data[session_csv].append(row[0:8] + (file_path, hash_code, str(image_t), str(buffer_sec)))
+                        row[8] = os.path.join('session_' + str(session_id), img_filename_relative_root)
+                        new_img_id = new_img_ids.get(row[9])
+                        row[1] = row[1] or new_img_id
+                        csv.writer(file).writerow(row)
 
-                    if self.save_to_db:
-                        sql = f'UPDATE image_metadata SET {md5_param} = ?, {fname_param} = ? where id = ?;'
-                        val = (hash_code, img_filename, image_id)
-                        self._db_work_data[image_id] = (sql, val)
+    def _process_discovered_image(self, inputs):
+        rows = inputs['rows']
+        buffer_sec = inputs['buffer_sec']
+        img_linked = 0
+        pose_metadata_row = None
+        session_row = None
+        db_update_row = None
+        db_insert_row = None
 
-                self._csv_work_data[self.output_csv].append(row[0:8] + (img_filename, hash_code, str(image_t), str(buffer_sec)))
-        return (buffer_sec, imgs_linked)
+        if len(rows) < 1:
+            pose_metadata_row = ['No timestamp match', '', '', '', '', '', '', '', inputs['img_filename'], inputs['hash_code'], str(inputs['image_t']), str(buffer_sec), '']
+        elif len(rows) > 1:
+            pose_metadata_row = ['>1 timestamp match', '', '', '', '', '', '', '', inputs['img_filename'], inputs['hash_code'], str(inputs['image_t']), str(buffer_sec), '']
+        else:
+            session_id, image_id, cam_id = rows[0][0:3]
+            img_md5 = rows[0][8]
+            unix_time_end = rows[0][10]
+            group_id = rows[0][11]
+
+            if inputs['image_t'] < unix_time_end:
+                buffer_sec = buffer_sec * -1
+
+            if img_md5 not in ('', None, inputs['hash_code']):
+                print('houston we have a problem prior sync, with diff hash detected')
+                inputs['hash_code'] = ':'.join(('hash conflict', inputs['hash_code'], img_md5))
+            else:
+                img_linked = 1
+                pose_metadata_row = [*rows[0][0:8], inputs['img_filename'], inputs['hash_code'], str(inputs['image_t']), str(buffer_sec), group_id]
+
+                if self.bin_by_session_output_folder:
+                    session_row = [*rows[0][0:8], inputs['img_filename'], inputs['hash_code'], str(inputs['image_t']), str(buffer_sec), group_id]
+                if self.save_to_db:
+                    if image_id:
+                        db_update_row = {
+                            'keys': (inputs['md5_param'], inputs['fname_param']),
+                            'params': (inputs['hash_code'], inputs['img_filename'], image_id)
+                        }
+                    else:
+                        db_insert_row = {
+                            'keys': (inputs['md5_param'], inputs['fname_param']),
+                            'params': (session_id, cam_id, *rows[0][3:8], inputs['hash_code'], inputs['img_filename'], *rows[0][9:])
+                        }
+        return (buffer_sec, img_linked, pose_metadata_row, session_row, db_update_row, db_insert_row)
 
 
 def show_help():
