@@ -406,7 +406,7 @@ class PoseImgLinker:
                 db_deletes.extend(deletes)
 
             for data in img_data_item:
-                print(data.pop('cam_sn'))
+                print(data['cam_sn'])
 
                 results = self._process_discovered_image(data)
 
@@ -447,7 +447,7 @@ class PoseImgLinker:
         if db_inserts:
             for insert in db_inserts:
                 keys, params = map(insert.get, ('keys', 'params'))
-                sql = f'INSERT INTO image_metadata (session_id, cam_id, x, y, z, p, t, {keys[0]}, {keys[1]}, unix_time_start, unix_time_end, group_id, src, src_action, cam_name, cam_type, cam_desc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
+                sql = f'INSERT INTO image_metadata (session_id, cam_id, x, y, z, p, t, {keys[0]}, {keys[1]}, cam_serial_no, unix_time_start, unix_time_end, group_id, src, src_action, cam_name, cam_type, cam_desc) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
                 cur.execute(sql, params)
 
                 # Save the new image id with the unique hash code as the key.
@@ -540,7 +540,7 @@ class PoseImgLinker:
                     else:
                         db_insert_row = {
                             'keys': (inputs['md5_param'], inputs['fname_param']),
-                            'params': (session_id, cam_id, *rows[0][3:8], inputs['hash_code'], inputs['img_filename'], *rows[0][9:])
+                            'params': (session_id, cam_id, *rows[0][3:8], inputs['hash_code'], inputs['img_filename'], inputs['cam_sn'], *rows[0][9:])
                         }
         return (buffer_sec, img_linked, pose_metadata_row, session_row, db_update_row, db_insert_row)
 
