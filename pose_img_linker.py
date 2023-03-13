@@ -132,6 +132,10 @@ def _detect_stacks(img_data_item):
                         if len(item['rows']) > 0 and item['rows'][0][2] == entry[2]:
                             cam_id = item['rows'][0][2]
                             group = cam_group.get(cam_id)
+
+                            # Because tuples are immutable, we have to convert them to lists before we can assign to them.
+                            item['rows'] = list(map(list, item['rows']))
+
                             if not group:
                                 x, y, z, p, t = item['rows'][0][3:8]
                                 unix_time_start, unix_time_end = item['rows'][0][9:11]
@@ -157,7 +161,6 @@ def _detect_stacks(img_data_item):
                                 group['x'] = x
                                 group['y'] = y
                                 group['z'] = z
-                                item['rows'] = list(map(list, item['rows'])) # Because tuples are immutable.
                                 item['rows'][0][1] = None # Null out the entry id so we know it's an insert instead of an update.
                                 item['rows'][0][3] = x
                                 item['rows'][0][4] = y
@@ -416,7 +419,7 @@ class PoseImgLinker:
         if db_updates:
             for update in db_updates:
                 keys, params = map(update.get, ('keys', 'params'))
-                sql = f'UPDATE image_metadata SET {keys[0]} = ?, {keys[1]} = ? where id = ?;'
+                sql = f'UPDATE image_metadata SET {keys[0]} = ?, {keys[1]} = ?, group_id = ? where id = ?;'
                 cur.execute(sql, params)
 
         if db_inserts:
@@ -510,7 +513,7 @@ class PoseImgLinker:
                     if image_id:
                         db_update_row = {
                             'keys': (inputs['md5_param'], inputs['fname_param']),
-                            'params': (inputs['hash_code'], inputs['img_filename'], image_id)
+                            'params': (inputs['hash_code'], inputs['img_filename'], group_id, image_id)
                         }
                     else:
                         db_insert_row = {
