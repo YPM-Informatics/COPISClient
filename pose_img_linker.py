@@ -105,6 +105,20 @@ def _detect_stacks(img_data_item):
     uniq_cams = list(set(map(lambda i: i[2], flat)))
     cam_group = {}
 
+    # Detect computed entries and remove then from img_data_item and mark them for db deletion.
+    computed = [e[1] for e in list(filter(lambda e: e[1] != e[11], uniq_entries))]
+
+    if len(computed):
+        uniq_entries = list(filter(lambda e: e[1] == e[11], uniq_entries))
+
+        for i in img_data_item:
+            i['rows'] = [r for r in i['rows'] if r[1] not in computed]
+
+            # Also blank out the hash code.
+            for idx in range(len(i['rows'])):
+                row = i['rows'][idx]
+                i['rows'][idx] = (row[0:8] + (None,) + row[9:])
+
     if len(uniq_entries) == len(uniq_cams):
         img_data_item = sorted(img_data_item, key=lambda d: d['image_t'])
 
@@ -175,6 +189,7 @@ def _detect_stacks(img_data_item):
                                 item['rows'][0][14] = group['cam_name']
                                 item['rows'][0][15] = group['cam_type']
                                 item['rows'][0][16] = group['cam_desc']
+    return computed
 
 
 def use_gui():
@@ -381,11 +396,14 @@ class PoseImgLinker:
         sessions = []
         db_updates = []
         db_inserts = []
+        db_deletes = []
 
         for ftype, img_data_item in img_data.items():
             imgs_linked = 0
+            deletes = _detect_stacks(img_data_item)
 
-            _detect_stacks(img_data_item)
+            if self.save_to_db:
+                db_deletes.extend(deletes)
 
             for data in img_data_item:
                 print(data.pop('cam_sn'))
@@ -407,14 +425,18 @@ class PoseImgLinker:
             print(str(imgs_linked), ' ', str(ftype), '(s) linked')
         print('max time buffer: ', str(max_buf_used), ' seconds.')
 
-        self._serialize_results(poses, sessions, db_updates, db_inserts)
+        self._serialize_results(poses, sessions, db_updates, db_inserts, db_deletes)
 
-    def _serialize_results(self, poses, sessions, db_updates, db_inserts):
+    def _serialize_results(self, poses, sessions, db_updates, db_inserts, db_deletes):
         new_img_ids = {}
 
-        if db_updates or db_inserts:
+        if db_deletes or db_updates or db_inserts:
             self._db = sqlite3.connect(self._dbfile)
             cur = self._db.cursor()
+
+        if db_deletes:
+            sql = 'DELETE FROM image_metadata where id = ?;'
+            cur.executemany(sql, [(d_id,) for d_id in db_deletes])
 
         if db_updates:
             for update in db_updates:
