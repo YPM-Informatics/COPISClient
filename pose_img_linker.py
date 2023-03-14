@@ -106,7 +106,7 @@ def _detect_stacks(img_data_item):
     cam_group = {}
 
     # Detect computed entries and remove then from img_data_item and mark them for db deletion.
-    computed = [e[1] for e in list(filter(lambda e: e[1] != e[11], uniq_entries))]
+    computed = [e[1] for e in list(filter(lambda e: e[11] and e[1] != e[11], uniq_entries))]
 
     if len(computed):
         uniq_entries = list(filter(lambda e: e[1] == e[11], uniq_entries))
