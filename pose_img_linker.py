@@ -102,6 +102,7 @@ def _detect_stacks(img_data_item):
     d_map = map(lambda d: d['rows'], img_data_item)
     flat = [i for r in d_map for i in r]
     uniq_entries = sorted(list(set(flat)), key=lambda e: e[2])
+    uniq_entries_cams = list(set(map(lambda i: i[2], uniq_entries)))
     uniq_cams = list(set(map(lambda i: i[2], flat)))
     cam_group = {}
 
@@ -119,7 +120,7 @@ def _detect_stacks(img_data_item):
                 row = i['rows'][idx]
                 i['rows'][idx] = (row[0:8] + (None,) + row[9:])
 
-    if len(uniq_entries) == len(uniq_cams):
+    if set(uniq_entries_cams) == set(uniq_cams):
         img_data_item = sorted(img_data_item, key=lambda d: d['image_t'])
 
         for entry in uniq_entries:
@@ -135,17 +136,17 @@ def _detect_stacks(img_data_item):
                         raise Exception('Missing required stack parameters.')
 
                     step_size = float(step_size)
-                    step_count = int(step_count)
+                    step_count = float(step_count)
 
-                    entry_count = len(list(filter(lambda d, e=entry: d['rows'][0][2] == e[2], img_data_item)))
+                    entry_count = len(list(filter(lambda d, e=entry: d['rows'][0][2] == e[2] and d['rows'][0][1] == e[1], img_data_item)))
 
                     if entry_count != step_count + 1:
                         raise Exception('Mismatched stack step count vs images discovered.')
 
                     for item in img_data_item:
-                        if len(item['rows']) > 0 and item['rows'][0][2] == entry[2]:
-                            cam_id = item['rows'][0][2]
-                            group = cam_group.get(cam_id)
+                        if len(item['rows']) > 0 and item['rows'][0][2] == entry[2] and item['rows'][0][1] == entry[1]:
+                            group_key = (item['rows'][0][2], item['rows'][0][1]) # (cam_id, img_id)
+                            group = cam_group.get(group_key)
 
                             # Because tuples are immutable, we have to convert them to lists before we can assign to them.
                             item['rows'] = list(map(list, item['rows']))
@@ -155,7 +156,7 @@ def _detect_stacks(img_data_item):
                                 unix_time_start, unix_time_end = item['rows'][0][9:11]
                                 group_id = item['rows'][0][1]
                                 cam_name, cam_type, cam_desc = item['rows'][0][14:17]
-                                cam_group[cam_id] = {
+                                cam_group[group_key] = {
                                     'x': x,
                                     'y': y,
                                     'z': z,
@@ -176,9 +177,9 @@ def _detect_stacks(img_data_item):
                                 group['y'] = y
                                 group['z'] = z
                                 item['rows'][0][1] = None # Null out the entry id so we know it's an insert instead of an update.
-                                item['rows'][0][3] = x
-                                item['rows'][0][4] = y
-                                item['rows'][0][5] = z
+                                item['rows'][0][3] = round(x, 3)
+                                item['rows'][0][4] = round(y, 3)
+                                item['rows'][0][5] = round(z, 3)
                                 item['rows'][0][6] = p
                                 item['rows'][0][7] = t
                                 item['rows'][0][9] = group['unix_time_start']
