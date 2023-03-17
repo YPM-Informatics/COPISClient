@@ -20,8 +20,6 @@ import math
 from dataclasses import dataclass, asdict
 from glm import vec3
 
-from copis.helpers import round_point
-
 @dataclass
 class Point3:
     """3 axes positional object.
@@ -228,6 +226,14 @@ class BoundingBox:
                 self.lower[i] = point[i]
             if point[i] > self.upper[i]:
                 self.upper[i] = point[i]
+
+def round_point(value: Point3, places: int=None) -> Point3:
+    """Rounds the vertices of a point."""
+    cls = type(value)
+    rounded_pt = cls.__new__(cls)
+    rounded_pt.__init__(*list(map(lambda v: round(v, places), list(value))))
+
+    return rounded_pt
 
 def _get_mid_diagonal(lower, upper):
     return round_point((lower + upper) / 2, 3)

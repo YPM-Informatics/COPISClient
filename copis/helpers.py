@@ -72,7 +72,7 @@ def xyzpt_to_mat4(x: float, y: float, z: float, p: float, t: float) -> mat4():
     return model
 
 
-def point5_to_mat4(point) -> mat4:
+def point5_to_mat4(point: Point5) -> mat4:
     """Convert Point5 into a 4x4 transformation matrix."""
     return xyzpt_to_mat4(point.x, point.y, point.z, point.p, point.t)
 
@@ -144,11 +144,6 @@ def sanitize_number(value: float) -> float:
 def sanitize_point(value: vec3) -> vec3:
     """Sanitizes a vec3 point with coordinates approaching zero."""
     return vec3(list(map(sanitize_number, list(value))))
-
-
-def round_point(value: vec3, places: int=None) -> vec3:
-    """Rounds the vertices of a vec3 point."""
-    return vec3(list(map(lambda v: round(v, places), list(value))))
 
 
 def get_timestamp(add_date:bool=False) -> str:
@@ -311,7 +306,7 @@ def get_heading(start: vec3, end: vec3):
     return vec2(pan, tilt)
 
 
-def point5_to_dict(point) -> dict:
+def point5_to_dict(point: Point5) -> dict:
     """Turns the provided list of args tuples into a dictionary."""
     dict_args = {}
 
