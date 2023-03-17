@@ -15,7 +15,7 @@
 
 """COPIS classes package."""
 
-from .bounding_box import BoundingBox
+# from .bounding_box import BoundingBox
 from .monitored_list import MonitoredList
 from .device import Device
 from .action import Action
@@ -26,6 +26,7 @@ from .proxy_objects import Object3D, CylinderObject3D, AABoxObject3D, OBJObject3
 from .settings import ApplicationSettings, MachineSettings
 
 __all__ = [
-    "Device", "BoundingBox", "Object3D", "CylinderObject3D", "AABoxObject3D",
+    # "BoundingBox",
+    "Device","Object3D", "CylinderObject3D", "AABoxObject3D",
     "OBJObject3D", "Action", "SerialResponse", "ReadThread", "MonitoredList",
     "ApplicationSettings", "MachineSettings", "Pose"]
