@@ -26,7 +26,8 @@ from collections import namedtuple
 
 from copis.command_processor import deserialize_command
 from copis.helpers import is_number
-from copis.globals import ActionType, Point5
+from copis.globals import Point5
+from copis.models.g_code import Gcode
 
 
 class MockSerialControllerMeta(type):
@@ -64,11 +65,11 @@ class MockCopisController():
     _MINS_TO_SECS_RATIO = 60
     _MSS_TO_SECS_RATIO = 1/1000
 
-    _MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
-    _MODE_COMMANDS = [ActionType.G90, ActionType.G91]
-    _RESET_COMMANDS = [ActionType.G92]
-    _HOME_COMANDS = [ActionType.G28]
-    _CAMERA_COMMANDS = [ActionType.C0, ActionType.C1]
+    _MOVE_COMMANDS = [Gcode.G0, Gcode.G1]
+    _MODE_COMMANDS = [Gcode.G90, Gcode.G91]
+    _RESET_COMMANDS = [Gcode.G92]
+    _HOME_COMANDS = [Gcode.G28]
+    _CAMERA_COMMANDS = [Gcode.C0, Gcode.C1]
 
     _BOUNDS = {
         'x': (-180, 180),
@@ -189,10 +190,10 @@ class MockCopisController():
                 action_timespan = self._DEFAULT_ACTION_TIMESPAN
                 data = None if action.argc == 0 else to_dict(action.args)
 
-                if self._is_locked[action.device] and action.atype != ActionType.M511:
+                if self._is_locked[action.device] and action.atype != Gcode.M511:
                     pass
                 elif action.atype in self._MODE_COMMANDS:
-                    self._is_absolute_move_mode[action.device] = action.atype == ActionType.G90
+                    self._is_absolute_move_mode[action.device] = action.atype == Gcode.G90
                 elif action.atype in self._RESET_COMMANDS:
                     for key in pos:
                         if data[key] is not None:
@@ -205,7 +206,7 @@ class MockCopisController():
                     else:
                         action_timespan = self._DEFAULT_SHUTTER_PRESS
                 elif action.atype in self._MOVE_COMMANDS:
-                    if action.atype == ActionType.G1:
+                    if action.atype == Gcode.G1:
                         feedrate = self._MAX_FEEDRATE / 2 \
                             if data['f'] is None else min(data['f'], self._MAX_FEEDRATE)
                     for key in pos:
@@ -225,9 +226,9 @@ class MockCopisController():
                             start = 0 if low_bound == 0 else random.randrange(low_bound, 0)
                             finish = random.randrange(0, hi_bound)
                             position[key] = finish - start
-                elif action.atype == ActionType.M511:
+                elif action.atype == Gcode.M511:
                     self._is_locked[action.device] = not self._is_locked[action.device]
-                elif action.atype == ActionType.M18:
+                elif action.atype == Gcode.M18:
                     # Disengage motors.
                     pass
                 else:
@@ -251,7 +252,7 @@ class MockCopisController():
                     if feedrate and max_delta > 0:
                         travel_time = self._MINS_TO_SECS_RATIO * max_delta / feedrate
 
-                    if action.atype == ActionType.G28:
+                    if action.atype == Gcode.G28:
                         for key in pos:
                             if data[key] is not None:
                                 position[key] = 0.0

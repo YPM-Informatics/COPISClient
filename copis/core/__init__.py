@@ -42,7 +42,8 @@ from canon.EDSDKLib import EvfDriveLens
 from copis.coms import serial_controller
 from copis.command_processor import deserialize_command, serialize_command
 from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
-from copis.globals import ActionType, ComStatus, DebugEnv, Point5, WorkType
+from copis.globals import ComStatus, DebugEnv, Point5, WorkType
+from copis.models.g_code import Gcode
 from copis.config import Config
 from copis.project import Project
 from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
@@ -59,10 +60,10 @@ class COPISCore:
     _YIELD_TIMEOUT = .001 # 1 millisecond
     _STALE_STATUS_THRESHOLD = 1
     _IMAGING_MANIFEST_FILE_NAME = 'copis_imaging_manifest.json'
-    MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
-    F_STACK_COMMANDS = [ActionType.C10, ActionType.HST_F_STACK, ActionType.EDS_F_STACK]
-    SNAP_COMMANDS = [ActionType.C0, ActionType.EDS_SNAP]
-    FOCUS_COMMANDS = [ActionType.C1, ActionType.EDS_FOCUS]
+    MOVE_COMMANDS = [Gcode.G0, Gcode.G1]
+    F_STACK_COMMANDS = [Gcode.C10, Gcode.E10]
+    SNAP_COMMANDS = [Gcode.C0, Gcode.E0]
+    FOCUS_COMMANDS = [Gcode.C1, Gcode.E1]
     LENS_COMMANDS = SNAP_COMMANDS + FOCUS_COMMANDS
 
     def __init__(self, parent=None) -> None:
@@ -160,7 +161,7 @@ class COPISCore:
         actions = []
 
         for dvc in self.project.devices:
-            cmds.append(Action(ActionType.M18, dvc.device_id))
+            cmds.append(Action(Gcode.M18, dvc.device_id))
         actions.append(cmds)
 
         return actions
@@ -289,7 +290,7 @@ class COPISCore:
         all_device_ids = [dvc.device_id for dvc in self.project.devices]
 
         if device_ids and all(did in all_device_ids for did in device_ids):
-            atype = ActionType.G90 if is_absolute else ActionType.G91
+            atype = Gcode.G90 if is_absolute else Gcode.G91
             cmds = []
 
             for did in device_ids:
@@ -307,7 +308,7 @@ class COPISCore:
             print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
 
-        cmds.append(Action(ActionType.M120, 0))
+        cmds.append(Action(Gcode.M120, 0))
 
         if cmds:
             self._keep_working = True
@@ -327,7 +328,7 @@ class COPISCore:
 
         for dvc in self.project.devices:
             if dvc.serial_response and dvc.serial_response.is_locked:
-                cmd = Action(ActionType.M511, dvc.device_id)
+                cmd = Action(Gcode.M511, dvc.device_id)
                 cmds.append(cmd)
 
         if cmds:
@@ -341,7 +342,7 @@ class COPISCore:
 
         return False
 
-    def _get_initialization_commands(self, atype: ActionType):
+    def _get_initialization_commands(self, atype: Gcode):
         step_1 = []
         step_2 = []
         actions = []
@@ -476,7 +477,7 @@ class COPISCore:
                 if busy_span and busy_span.total_seconds() > busy_bus_polling_threshold:
                     print_info_msg(self.console, f'Busy bus polling threshold of {_format_time_delta(timedelta(seconds=busy_bus_polling_threshold))} reached.')
                     print_info_msg(self.console, '**** Thawing machine ****')
-                    self._serial.write(ActionType.M120.name)
+                    self._serial.write(Gcode.M120.name)
                     self._machine_busy_since = datetime.now()
 
         print_debug_msg(self.console,
@@ -597,22 +598,22 @@ class COPISCore:
             if atype_kind == 'EDS':
                 if self.connect_edsdk(dvc.device_id):
                     dvc.is_writing_eds = True
-                    if cmd.atype == ActionType.EDS_SNAP:
+                    if cmd.atype == Gcode.E0:
                         do_af = bool(value) if key == 'V' else False
                         self._edsdk.take_picture(do_af) ## add auto disconnect
-                    elif cmd.atype == ActionType.EDS_FOCUS:
+                    elif cmd.atype == Gcode.E1:
                         shutter_release_time = value if key == 'S' else 0
                         self._edsdk.focus(shutter_release_time) ## add auto disconnect
                     else:
                         print_error_msg(self.console,
-                            f"Host command '{cmd.atype.name}' not yet handled.")
+                            f"EDSDK command '{cmd.atype.name}' not yet handled.")
                     #dvc.is_writing_eds = False
                 else:
                     print_error_msg(self.console,
                         f'Unable to connect to camera {dvc.device_id}.')
             else:
                 print_error_msg(self.console,
-                    f"Action type king '{atype_kind}' not yet handled.")
+                    f"Action type kind '{atype_kind}' not yet handled.")
 
     def _send_next(self):
         if not (self.is_serial_port_connected or self._is_edsdk_enabled):
@@ -799,7 +800,7 @@ class COPISCore:
             print_error_msg(self.console, 'Cannot set or go to ready. The machine is busy.')
             return
 
-        init_code = ActionType.G1 if self.is_machine_homed else ActionType.G92
+        init_code = Gcode.G1 if self.is_machine_homed else Gcode.G92
         cmds = self._get_initialization_commands(init_code)
 
         if cmds:
@@ -942,7 +943,7 @@ class COPISCore:
             print_error_msg(self.console, 'The machine is not connected.')
         else:
             c_args = create_action_args([shutter_release_time], 'S')
-            payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+            payload = [Action(Gcode.C0, device_id, len(c_args), c_args)]
 
             self.play_poses([Pose(payload=payload)])
 
@@ -1084,7 +1085,7 @@ class COPISCore:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             c_args = create_action_args([1 if do_af else 0], 'V')
-            payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
+            payload = [Action(Gcode.E0, device_id, len(c_args), c_args)]
 
             self.play_poses([Pose(payload=payload)])
 
@@ -1094,7 +1095,7 @@ class COPISCore:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             c_args = create_action_args([shutter_release_time], 'S')
-            payload = [Action(ActionType.EDS_FOCUS, device_id, len(c_args), c_args)]
+            payload = [Action(Gcode.E0, device_id, len(c_args), c_args)]
 
             self.play_poses([Pose(payload=payload)])
 
@@ -1421,7 +1422,7 @@ class COPISCore:
 
         ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
         # Uncomment next two lines and comment third to reenable.
-        # footer = self._get_initialization_commands(ActionType.G1)
+        # footer = self._get_initialization_commands(Gcode.G1)
         # footer.extend(self._disengage_motors_commands)
         footer = self._disengage_motors_commands
 
@@ -1476,7 +1477,7 @@ class COPISCore:
 
         header = self._get_move_commands(True, *device_ids)
         body = _chunk_actions(batch_size, homing_actions)
-        footer = self._get_initialization_commands(ActionType.G1)
+        footer = self._get_initialization_commands(Gcode.G1)
         footer.extend(self._disengage_motors_commands)
 
         self._mainqueue = []

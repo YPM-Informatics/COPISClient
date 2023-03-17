@@ -17,11 +17,8 @@
 
 import shlex
 
-from copis.helpers import print_echo_msg, get_action_args_values
-from copis.globals import ActionType, Point5
-
+from copis.helpers import print_echo_msg
 from copis.collision_detection import collision_eval_cam2cam_start, collision_eval_cam2proxy_start, collision_eval_cam2proxy_path, collision_eval_cam2cam_path
-from glm import vec3
 # pylint: disable=protected-access
 class _CommandProcessor:
     """Handle console commands processing and execution.

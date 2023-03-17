@@ -20,7 +20,7 @@ from functools import partial
 import wx
 
 from copis.classes import Action, Pose
-from copis.globals import ActionType
+from copis.models.g_code import Gcode
 from copis.gui.wxutils import simple_statictext
 from copis.helpers import (
     create_action_args, get_atype_kind, is_number,
@@ -84,7 +84,7 @@ class PayloadPanel(wx.Panel):
 
             shutter_release_time = max(0, float(spin_ctrl.Value))
             c_args = create_action_args([shutter_release_time], 'S')
-            payload_item = Action(ActionType.C0, self._pose.position.device,
+            payload_item = Action(Gcode.C0, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -120,7 +120,7 @@ class PayloadPanel(wx.Panel):
 
             shutter_release_time = max(0, float(spin_ctrl.Value))
             c_args = create_action_args([shutter_release_time], 'S')
-            payload_item = Action(ActionType.C1, self._pose.position.device,
+            payload_item = Action(Gcode.C1, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -161,7 +161,7 @@ class PayloadPanel(wx.Panel):
             step = direction * max(0, float(steps_ctrl.Value))
             snap_count = self._get_snap_count_value(count_ctrl)
             c_args = create_action_args([step, snap_count], 'ZV')
-            payload_item = Action(ActionType.HST_F_STACK, self._pose.position.device,
+            payload_item = Action(Gcode.C10, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -220,7 +220,7 @@ class PayloadPanel(wx.Panel):
 
             do_auto_focus = 1 if cb_ctrl.Value else 0
             c_args = create_action_args([do_auto_focus], 'V')
-            payload_item = Action(ActionType.EDS_SNAP, self._pose.position.device,
+            payload_item = Action(Gcode.E0, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -250,7 +250,7 @@ class PayloadPanel(wx.Panel):
 
             shutter_release_time = max(0, float(spin_ctrl.Value))
             c_args = create_action_args([shutter_release_time], 'S')
-            payload_item = Action(ActionType.EDS_FOCUS, self._pose.position.device,
+            payload_item = Action(Gcode.E1, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -301,7 +301,7 @@ class PayloadPanel(wx.Panel):
             step = direction * step
             snap_count = self._get_snap_count_value(count_ctrl)
             c_args = create_action_args([step, snap_count], 'ZV')
-            payload_item = Action(ActionType.EDS_F_STACK, self._pose.position.device,
+            payload_item = Action(Gcode.E10, self._pose.position.device,
                 len(c_args), c_args)
 
             if self._core.add_to_selected_pose_payload(payload_item):
@@ -443,14 +443,14 @@ class PayloadPanel(wx.Panel):
         caption = '<not implemented>'
         com_mode = get_atype_kind(action.atype)
 
-        if com_mode in ('SER', 'HST'):
+        if com_mode == 'SER':
             com_mode = 'REM'
 
         if action.atype in self._core.LENS_COMMANDS:
             key, value = action.args[0]
             arg = ' - release shutter in'
 
-            if action.atype == ActionType.EDS_SNAP:
+            if action.atype == Gcode.E0:
                 arg = ' - with autofocus' if float(value) else ''
 
             caption = f'{"snap" if action.atype in self._core.SNAP_COMMANDS else "autofocus"}'
@@ -458,7 +458,7 @@ class PayloadPanel(wx.Panel):
 
             if key in time_args:
                 caption = f'{caption} {value}{time_args[key]}'
-            elif action.atype != ActionType.EDS_SNAP:
+            elif action.atype != Gcode.E0:
                 caption = f'{caption} {value} <invalid time unit>'
 
         elif action.atype in self._core.F_STACK_COMMANDS:

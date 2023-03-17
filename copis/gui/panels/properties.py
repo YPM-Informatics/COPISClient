@@ -26,7 +26,7 @@ from copis.helpers import dd_to_rad, get_action_args_values, rad_to_dd, xyz_unit
 from copis.gui.wxutils import (
     FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
     simple_statictext)
-from copis.globals import ActionType
+from copis.models.g_code import Gcode
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -128,7 +128,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On ntf_a_selected, set to point view."""
 
         pose = self.core.project.poses[pose_index].position
-        if pose.atype == ActionType.G0 or pose.atype == ActionType.G1:
+        if pose.atype == Gcode.G0 or pose.atype == Gcode.G1:
             self.current = 'Point'
             args = get_action_args_values(pose.args)
             self._property_panels['transform'].set_point(*args[:5])

@@ -20,7 +20,7 @@ import wx.lib.scrolledpanel as scrolled
 
 from pydispatch import dispatcher
 
-from copis.globals import ActionType
+from copis.models.g_code import Gcode
 
 from ._default_panel import DefaultPanel
 from ._transform_panel import TransformPanel
@@ -98,7 +98,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_pose_selected(self, pose_index: int) -> None:
         """On ntf_a_selected, set to pose view."""
         pose = self.core.project.poses[pose_index]
-        if pose.position.atype in [ActionType.G0, ActionType.G1]:
+        if pose.position.atype in [Gcode.G0, Gcode.G1]:
             self._property_panels['transform'].set_pose(pose)
             self._property_panels['payload'].set_pose(pose)
             self.update_to_selected('Pose')

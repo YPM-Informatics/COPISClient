@@ -100,45 +100,45 @@ class ViewCubeSize(IntEnum):
     LARGER = 170
 
 
-class ActionType(Enum):
-    """Action types."""
-    C0 = auto()     # Press shutter.
-    C1 = auto()     # Press auto focus.
-    C10 = auto()    # Remote shutter focus stack.
+# class ActionType(Enum):
+#     """Action types."""
+#     C0 = auto()     # Press shutter.
+#     C1 = auto()     # Press auto focus.
+#     C10 = auto()    # Remote shutter focus stack.
 
-    G0 = auto()     # Rapid positioning.
-    G1 = auto()     # Linear movement.
-    G2 = auto()     # Movement in an arc.
-    G3 = auto()
-    G4 = auto()     # Pause device.
-    G17 = auto()    # XY plane.
-    G18 = auto()    # ZX plane.
-    G19 = auto()    # YZ plane.
-    G28 = auto()    # Homing.
-    G90 = auto()    # Absolute distance mode.
-    G91 = auto()    # Relative distance mode.
-    G92 = auto()    # Set axis position(s).
+#     G0 = auto()     # Rapid positioning.
+#     G1 = auto()     # Linear movement.
+#     G2 = auto()     # Movement in an arc.
+#     G3 = auto()
+#     G4 = auto()     # Pause device.
+#     G17 = auto()    # XY plane.
+#     G18 = auto()    # ZX plane.
+#     G19 = auto()    # YZ plane.
+#     G28 = auto()    # Homing.
+#     G90 = auto()    # Absolute distance mode.
+#     G91 = auto()    # Relative distance mode.
+#     G92 = auto()    # Set axis position(s).
 
-    M0 = auto()     # Pause processing.
-    M17 = auto()    # Enable all motors.
-    M18 = auto()    # Disable all motors.
-    M24 = auto()    # Resume processing.
-    M120 = auto()   # Scan for connected cards - Only applicable on main controller.
-    M360 = auto()   # Toggle multi-turn
-    M511 = auto()   # Toggle device locked.
-    M998 = auto()   # Reboot - V## Parameter is optional. Any value greater than 0 allows
-                    # any prior buffered action to finish execution before reboot.
+#     M0 = auto()     # Pause processing.
+#     M17 = auto()    # Enable all motors.
+#     M18 = auto()    # Disable all motors.
+#     M24 = auto()    # Resume processing.
+#     M120 = auto()   # Scan for connected cards - Only applicable on main controller.
+#     M360 = auto()   # Toggle multi-turn
+#     M511 = auto()   # Toggle device locked.
+#     M998 = auto()   # Reboot - V## Parameter is optional. Any value greater than 0 allows
+#                     # any prior buffered action to finish execution before reboot.
 
-    # TODO: HST_F_STACK should be removed once C10 is fully baked in.
-    # HST_PAUSE should also probably be removed is pause implementation goes a different route.
-    HST_F_STACK = auto() # Host (serial) - focus stack.
-    HST_PAUSE = auto()
+#     # TODO: HST_F_STACK should be removed once C10 is fully baked in.
+#     # HST_PAUSE should also probably be removed is pause implementation goes a different route.
+#     HST_F_STACK = auto() # Host (serial) - focus stack.
+#     HST_PAUSE = auto()
 
-    EDS_F_STACK = auto() # EDSDK - focus stack.
-    EDS_SNAP = auto() # EDSDK - press shutter.
-    EDS_FOCUS = auto() # EDSDK - press auto focus.
+#     EDS_F_STACK = auto() # EDSDK - focus stack.
+#     EDS_SNAP = auto() # EDSDK - press shutter.
+#     EDS_FOCUS = auto() # EDSDK - press auto focus.
 
-    NONE = auto()
+#     NONE = auto()
 
 
 @unique

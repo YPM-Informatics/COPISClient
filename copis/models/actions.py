@@ -19,15 +19,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from models.g_code import GCode
+from models.g_code import Gcode
 
 class ActionTypes(Enum):
     """Action types."""
-    FOCUS = GCode.C1.name
-    FOCUS_STACK = GCode.C10.name
+    FOCUS = Gcode.C1.name
+    FOCUS_STACK = Gcode.C10.name
     NO_OP = auto()          # Do nothing.
     PAUSE = auto()          # Pause.
-    SHUTTER_RELEASE = GCode.C0.name
+    SHUTTER_RELEASE = Gcode.C0.name
 
 
 class Action(ABC):

@@ -29,7 +29,8 @@ from copis.classes.action import Action
 from copis.classes.pose import Pose
 
 from copis.command_processor import serialize_command
-from copis.globals import ActionType, ToolIds
+from copis.globals import ToolIds
+from copis.models.g_code import Gcode
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import show_msg_dialog
 from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
@@ -86,7 +87,7 @@ class TimelinePanel(wx.Panel):
         if action:
             com_mode = get_atype_kind(action.atype)
 
-            if com_mode in ('SER', 'HST'):
+            if com_mode  == 'SER':
                 com_mode = 'REM'
 
             if action.atype in self.core.MOVE_COMMANDS:
@@ -94,7 +95,7 @@ class TimelinePanel(wx.Panel):
             elif action.atype in self.core.LENS_COMMANDS:
                 arg = ' - release shutter in'
 
-                if action.atype == ActionType.EDS_SNAP:
+                if action.atype == Gcode.E0:
                     arg = ' - with autofocus'
 
                 caption = \
@@ -152,7 +153,7 @@ class TimelinePanel(wx.Panel):
             if key == 'F':
                 caption = f'feed rate: {value}mm_or_dd/min'
 
-        elif action_type != ActionType.EDS_SNAP:
+        elif action_type != Gcode.E0:
             dd_keys = ['P', 'T']
             value = rad_to_dd(value) if key in dd_keys else value
             units = 'dd' if key in dd_keys else 'mm'
@@ -166,9 +167,9 @@ class TimelinePanel(wx.Panel):
         device_id, x, y, z, p, t = data
         g_args = create_action_args([x, y, z, p, t])
         c_args = create_action_args([1.5], 'S')
-        payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+        payload = [Action(Gcode.C0, device_id, len(c_args), c_args)]
 
-        self._copied_pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
+        self._copied_pose = Pose(Action(Gcode.G1, device_id, len(g_args), g_args), payload)
 
     def _on_pose_set_deselected(self, set_index):
         # Call the specified function after the current and pending event handlers have been completed.
@@ -541,9 +542,9 @@ class TimelinePanel(wx.Panel):
                         g_args = create_action_args(
                             [s_point.x, s_point.y, s_point.z, s_pan, s_tilt])
                         c_args = create_action_args([1.5], 'S')
-                        payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+                        payload = [Action(Gcode.C0, device_id, len(c_args), c_args)]
 
-                        pose = Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload)
+                        pose = Pose(Action(Gcode.G1, device_id, len(g_args), g_args), payload)
 
                         if task == 'insert_pose':
                             pose_index = self.core.project.insert_pose(set_index, pose)

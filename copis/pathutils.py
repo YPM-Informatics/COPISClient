@@ -26,9 +26,9 @@ import glm
 from glm import vec2, vec3
 
 from copis.classes import Action, Object3D, Pose
-from copis.globals import ActionType, Point5
+from copis.models.g_code import Gcode
 from copis.helpers import (create_action_args, get_heading, interleave_lists,
-    sanitize_number, sanitize_point, rad_to_dd)
+    sanitize_number, sanitize_point)
 from .mathutils import orthonormal_basis_of
 
 
@@ -215,9 +215,9 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
             #         args2 = create_action_args([pt2.x, pt2.y, pt2.z, pt2.p, pt2.t])
 
             #         poses.append(
-            #             Pose(Action(ActionType.G1, device_id, len(args1), args1), []))
+            #             Pose(Action(Gcode.G1, device_id, len(args1), args1), []))
             #         poses.append(
-            #             Pose(Action(ActionType.G1, device_id, len(args2), args2), []))
+            #             Pose(Action(Gcode.G1, device_id, len(args2), args2), []))
 
             #         # print_debug_msg(
             #         #     self.core.console, f'**** DEVICE: {device_id} IS ABOUT TO TURN!!! ****', True)
@@ -234,10 +234,10 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
 
             if not clearance_indexes or i not in clearance_indexes[device_id]:
                 c_args = create_action_args([1.5], 'S')
-                payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+                payload = [Action(Gcode.C0, device_id, len(c_args), c_args)]
 
             poses.append(
-                Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload))
+                Pose(Action(Gcode.G1, device_id, len(g_args), g_args), payload))
 
     return poses
 

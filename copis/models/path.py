@@ -23,14 +23,14 @@ from glm import vec3
 from models.geometries import Point5
 from models.actions import Action
 from models.machine import Device
-from models.g_code import GCode
+from models.g_code import Gcode
 
 class MoveTypes(Enum):
     """Move types."""
-    ARC_CW = GCode.G2.name
-    ARC_CCW = GCode.G3.name
-    LINEAR = GCode.G1.name
-    LINEAR_RAPID = GCode.G0.name
+    ARC_CW = Gcode.G2.name
+    ARC_CCW = Gcode.G3.name
+    LINEAR = Gcode.G1.name
+    LINEAR_RAPID = Gcode.G0.name
 
 
 @dataclass

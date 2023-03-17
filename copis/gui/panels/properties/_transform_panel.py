@@ -23,7 +23,8 @@ import wx
 from glm import vec3
 from pydispatch import dispatcher
 
-from copis.globals import ActionType, Point5
+from copis.globals import Point5
+from copis.models.g_code import Gcode
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
@@ -427,7 +428,7 @@ class TransformPanel(wx.Panel):
 
     def _play_position(self, values, keys):
         g_args = create_action_args(values, keys)
-        pose = Pose(Action(ActionType.G1, self._device.device_id,
+        pose = Pose(Action(Gcode.G1, self._device.device_id,
             len(g_args), g_args), [])
 
         self.parent.core.play_poses([pose])
@@ -577,9 +578,9 @@ class TransformPanel(wx.Panel):
         device_id = self._device.device_id
 
         if name == 'G91':
-            atype = ActionType.G91
+            atype = Gcode.G91
         elif name == 'G1':
-            atype = ActionType.G1
+            atype = Gcode.G1
         else:
             raise ValueError(f'Unsupported jog command {name}.')
 

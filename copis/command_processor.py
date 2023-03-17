@@ -21,7 +21,7 @@ import re
 from itertools import chain
 
 from .classes.action import Action
-from .globals import ActionType
+from .models.g_code import Gcode
 from .helpers import rad_to_dd, is_number
 
 
@@ -29,7 +29,7 @@ def deserialize_command(cmd: str) -> Action:
     """deserialize the string of an action into an Action object."""
     segments = re.split('([a-zA-Z])', cmd)
     device_id = 0
-    atype = ActionType.NONE
+    atype = None
     args = []
 
     for i, segment in enumerate(segments):
@@ -37,7 +37,7 @@ def deserialize_command(cmd: str) -> Action:
             device_id = int(segment[1:])
         elif len(segment) > 0 and segment.upper() in 'CGM':
             cmd = f'{segment}{segments[i + 1]}'
-            atype = ActionType[cmd.upper()]
+            atype = Gcode[cmd.upper()]
 
         elif len(segment) > 0 and segment.upper() in 'XYZPTFSV':
             args.append((segment, segments[i + 1]))

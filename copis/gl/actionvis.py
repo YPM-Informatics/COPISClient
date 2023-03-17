@@ -33,7 +33,8 @@ from OpenGL.GL import (
     glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
 
-from copis.globals import ActionType, Point5
+from copis.globals import Point5
+from copis.models.g_code import Gcode
 from copis.helpers import (
     create_cuboid, create_device_features, dd_to_rad, fade_color,
     get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4)
@@ -312,7 +313,7 @@ class GLActionVis:
             positions[pose.position.device].append(pose.position.args[:5])
 
             for action in pose.get_actions():
-                if action.atype in (ActionType.G0, ActionType.G1):
+                if action.atype in (Gcode.G0, Gcode.G1):
                     args = get_action_args_values(action.args)
                     data = (i + self._num_devices, xyzpt_to_mat4(*args[:5]))
 

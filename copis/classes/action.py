@@ -18,13 +18,13 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from copis.globals import ActionType
+from copis.models.g_code import Gcode
 
 @dataclass
 class Action(dict):
     """Data structure that implements a camera action."""
 
-    atype: ActionType = ActionType.NONE
+    atype: Gcode = None
     device: int = -1
     argc: int = 0
     args: Optional[List[Any]] = None
@@ -35,10 +35,10 @@ class Action(dict):
         if isinstance(a_type, str):
             a_type = a_type.upper()
 
-            if any(t.name == a_type for t in ActionType):
-                a_type = ActionType[a_type]
+            if any(t.name == a_type for t in Gcode):
+                a_type = Gcode[a_type]
             else:
-                a_type = ActionType.NONE
+                a_type = None
 
             self.__dict__['atype'] = a_type
 
