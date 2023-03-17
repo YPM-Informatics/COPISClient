@@ -17,15 +17,15 @@
 
 from enum import Enum, auto
 
-class GCode(Enum):
+class Gcode(Enum):
     """G-code commands."""
 
     C0 = auto()
-    """Shutter press."""
+    """Shutter press via remote shutter."""
     C1 = auto()
-    """Autofocus shutter press."""
+    """Autofocus via remote shutter."""
     C10 = auto()
-    """focus stack shutter press."""
+    """Focus stack via remote shutter."""
 
     G0 = auto()
     """Rapid linear movement."""
