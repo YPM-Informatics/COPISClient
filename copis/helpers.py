@@ -29,7 +29,7 @@ from itertools import zip_longest
 import glm
 from glm import mat4, vec2, vec3, vec4
 
-from copis.globals import Point5
+from copis.models.geometries import Point5
 from copis.models.g_code import Gcode
 
 

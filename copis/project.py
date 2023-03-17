@@ -16,22 +16,22 @@
 """COPIS Application project manager."""
 
 import os
+
 from importlib import import_module
-from typing import Any, Dict, Iterable, List, Tuple
-from pydispatch import dispatcher
+from typing import Any, Iterable, List, Tuple
 from itertools import groupby
+
+import wx
+
+from pydispatch import dispatcher
 from glm import vec3
 
-from copis.classes import (
-    BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
-
-from copis.globals import Point5
+from copis import store
+from copis.classes import BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D
+from copis.models.geometries import Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
-import copis.store as store
-
-import wx
 from copis.gui.wxutils import show_prompt_dialog
 
 class Project():

@@ -26,7 +26,7 @@ from mprop import mproperty
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
-from copis.globals import Point5
+from copis.models.geometries import Point5
 from copis.helpers import print_error_msg, print_raw_msg
 from copis.classes import SerialResponse
 from copis.mocks.mock_serial import MockSerial

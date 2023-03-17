@@ -18,8 +18,8 @@ from typing import List
 
 from dataclasses import dataclass
 
-from copis.globals import Point5, SysStatFlags
-
+from copis.models.geometries import Point5
+from copis.globals import SysStatFlags
 
 @dataclass
 class SerialResponse:

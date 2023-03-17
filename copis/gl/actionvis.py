@@ -33,7 +33,7 @@ from OpenGL.GL import (
     glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
 
-from copis.globals import Point5
+from copis.models.geometries import Point5
 from copis.models.g_code import Gcode
 from copis.helpers import (
     create_cuboid, create_device_features, dd_to_rad, fade_color,

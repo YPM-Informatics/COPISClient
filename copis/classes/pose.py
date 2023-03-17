@@ -16,10 +16,11 @@
 """Provide the COPIS device Pose Class."""
 
 from typing import List, NamedTuple
+from glm import vec3
+
 from copis.classes import Action
 from copis.helpers import get_action_args_values
-from copis.globals import Point5
-from glm import vec3
+from copis.models.geometries import Point5
 
 class Pose(NamedTuple):
     """Device pose data structure."""

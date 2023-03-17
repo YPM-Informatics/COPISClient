@@ -26,7 +26,7 @@ from collections import namedtuple
 
 from copis.command_processor import deserialize_command
 from copis.helpers import is_number
-from copis.globals import Point5
+from copis.models.geometries import Point5
 from copis.models.g_code import Gcode
 
 

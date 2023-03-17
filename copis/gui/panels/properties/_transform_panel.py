@@ -23,7 +23,7 @@ import wx
 from glm import vec3
 from pydispatch import dispatcher
 
-from copis.globals import Point5
+from copis.models.geometries import Point5
 from copis.models.g_code import Gcode
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)

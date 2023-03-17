@@ -21,13 +21,13 @@ from typing import NamedTuple
 MAX_ID = 16777214
 
 
-class Point5(NamedTuple):
-    """Five axes positional object."""
-    x: float = 0.0
-    y: float = 0.0
-    z: float = 0.0
-    p: float = 0.0
-    t: float = 0.0
+# class Point5(NamedTuple):
+#     """Five axes positional object."""
+#     x: float = 0.0
+#     y: float = 0.0
+#     z: float = 0.0
+#     p: float = 0.0
+#     t: float = 0.0
 
 
 class WindowState(NamedTuple):

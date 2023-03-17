@@ -42,8 +42,9 @@ from canon.EDSDKLib import EvfDriveLens
 from copis.coms import serial_controller
 from copis.command_processor import deserialize_command, serialize_command
 from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
-from copis.globals import ComStatus, DebugEnv, Point5, WorkType
+from copis.globals import ComStatus, DebugEnv, WorkType
 from copis.models.g_code import Gcode
+from copis.models.geometries import Point5
 from copis.config import Config
 from copis.project import Project
 from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
