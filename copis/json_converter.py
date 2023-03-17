@@ -27,6 +27,96 @@ from models.geometries import BoundingBox, Point3, Point5
 from models.machine import Device, DeviceGroup, DeviceSettings
 from models.path import Move, MoveTypes, Pose
 
+class JsonConvert:
+    """Custom JSON converter."""
+
+    @staticmethod
+    def serialize_move_sets(move_set_list) -> str:
+        """Returns a JSON formatted representation of a list of move sets.
+
+        :param `move_set_list`: an iterable of iterables of :class:`models.path.Move` objects.
+
+        """
+        device_key = lambda d: d.id
+
+        uniq_devices = []
+        uniq_dvc_groups = []
+        move_sets = copy.deepcopy(move_set_list)
+
+        devices = [m.device for m_set in move_sets for m in m_set]
+
+        for _, g in groupby(sorted(devices, key=device_key), device_key):
+            uniq_devices.append(next(g))
+
+        dvc_groups = [d.group for d in uniq_devices]
+
+        for _, g in groupby(sorted(dvc_groups, key=id), id):
+            uniq_dvc_groups.append(next(g))
+
+        for d_group in uniq_dvc_groups:
+            d_group.main_device = d_group.main_device.id if not isinstance(d_group.main_device, int) else d_group.main_device
+            d_group.aux_devices = [d.id if not isinstance(d, int) else d for d in d_group.aux_devices]
+
+        for m_set in move_sets:
+            for m in m_set:
+                m.device = m.device.id
+                m.destination = m.end_pose
+
+                del m.start_pose
+                del m.end_pose
+
+
+        for d in uniq_devices:
+            d.group = uniq_dvc_groups.index(d.group)
+
+        serialized = _to_json({
+            'devices': uniq_devices,
+            'device_groups' : uniq_dvc_groups,
+            'move_sets': move_sets
+        })
+
+        return serialized
+
+
+    @staticmethod
+    def deserialize_move_sets(move_set_list_json) -> list:
+        """Returns a list of move sets. JSON formatted representation of a .
+
+        :param `move_set_list_json`: a JSON formatted string representation of a COPIS structured move set.
+
+        """
+        def get_dvc_by_id(col, dvc_id):
+            return next(filter(lambda d: d.id == dvc_id, col))
+
+        dict_data = json.loads(move_set_list_json)
+        devices = list(map(_parse_device, dict_data['devices']))
+        dvc_groups = list(map(_parse_device_group, dict_data['device_groups']))
+        move_sets = list(map(_parse_move_set, dict_data['move_sets']))
+
+        for dvc in devices:
+            dvc.group = dvc_groups[dvc.group]
+
+        for dvc_group in dvc_groups:
+            dvc_group.main_device = get_dvc_by_id(devices, dvc_group.main_device)
+            dvc_group.aux_devices = list(map(partial(get_dvc_by_id, devices) , dvc_group.aux_devices))
+
+        for idx, move_set in enumerate(move_sets):
+            for move in move_set:
+                move.device = get_dvc_by_id(devices, move.device)
+
+                if idx == 0:
+                    move.start_pose = Pose(Point5(move.device.home_position))
+                else:
+                    prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
+
+                    while not prev_dvc_move:
+                        prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
+
+                    move.start_pose = Pose(prev_dvc_move.end_pose.position)
+
+        return move_sets
+
+
 def _get_clean_dict(obj):
     if isinstance(obj, Enum):
         return obj.name
@@ -116,93 +206,3 @@ def _parse_move_set(data_dic_list):
 
         move_set.append(move)
     return move_set
-
-
-class JsonConvert:
-    """Custom JSON converter."""
-
-    @staticmethod
-    def serialize_move_sets(move_set_list) -> str:
-        """Returns a JSON formatted representation of a list of move sets.
-
-        :param `move_set_list`: an iterable of iterables of :class:`models.path.Move` objects.
-
-        """
-        device_key = lambda d: d.id
-
-        uniq_devices = []
-        uniq_dvc_groups = []
-        move_sets = copy.deepcopy(move_set_list)
-
-        devices = [m.device for m_set in move_sets for m in m_set]
-
-        for _, g in groupby(sorted(devices, key=device_key), device_key):
-            uniq_devices.append(next(g))
-
-        dvc_groups = [d.group for d in uniq_devices]
-
-        for _, g in groupby(sorted(dvc_groups, key=id), id):
-            uniq_dvc_groups.append(next(g))
-
-        for d_group in uniq_dvc_groups:
-            d_group.main_device = d_group.main_device.id if not isinstance(d_group.main_device, int) else d_group.main_device
-            d_group.aux_devices = [d.id if not isinstance(d, int) else d for d in d_group.aux_devices]
-
-        for m_set in move_sets:
-            for m in m_set:
-                m.device = m.device.id
-                m.destination = m.end_pose
-
-                del m.start_pose
-                del m.end_pose
-
-
-        for d in uniq_devices:
-            d.group = uniq_dvc_groups.index(d.group)
-
-        serialized = _to_json({
-            'devices': uniq_devices,
-            'device_groups' : uniq_dvc_groups,
-            'move_sets': move_sets
-        })
-
-        return serialized
-
-
-    @staticmethod
-    def deserialize_move_sets(move_set_list_json) -> list:
-        """Returns a list of move sets. JSON formatted representation of a .
-
-        :param `move_set_list_json`: a JSON formatted string representation of a COPIS structured move set.
-
-        """
-        def get_dvc_by_id(col, dvc_id):
-            return next(filter(lambda d: d.id == dvc_id, col))
-
-        dict_data = json.loads(move_set_list_json)
-        devices = list(map(_parse_device, dict_data['devices']))
-        dvc_groups = list(map(_parse_device_group, dict_data['device_groups']))
-        move_sets = list(map(_parse_move_set, dict_data['move_sets']))
-
-        for dvc in devices:
-            dvc.group = dvc_groups[dvc.group]
-
-        for dvc_group in dvc_groups:
-            dvc_group.main_device = get_dvc_by_id(devices, dvc_group.main_device)
-            dvc_group.aux_devices = list(map(partial(get_dvc_by_id, devices) , dvc_group.aux_devices))
-
-        for idx, move_set in enumerate(move_sets):
-            for move in move_set:
-                move.device = get_dvc_by_id(devices, move.device)
-
-                if idx == 0:
-                    move.start_pose = Pose(Point5(move.device.home_position))
-                else:
-                    prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
-
-                    while not prev_dvc_move:
-                        prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
-
-                    move.start_pose = Pose(prev_dvc_move.end_pose.position)
-
-        return move_sets
