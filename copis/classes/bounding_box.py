@@ -60,7 +60,7 @@ class BoundingBox:
         """Return whether bbox intersects bbox or not."""
         return False
 
-    def vec3_intersect(self, point: vec3, epsilon: float) -> bool:
+    def is_point_inside(self, point: vec3, epsilon: float) -> bool:
         """Return whether point is in bbox or not with a buffer (epsilon)."""
         return (self.lower.x - epsilon <= point.x and
                 self.lower.y - epsilon <= point.y and
@@ -69,7 +69,7 @@ class BoundingBox:
                 self.upper.y + epsilon >= point.y and
                 self.upper.z + epsilon >= point.z)
 
-    def line_segment_intersect(self, start: vec3, end: vec3) -> bool:
+    def does_line_intersect(self, start: vec3, end: vec3) -> bool:
         """Return whether line segment intersects bbox or not.
 
         Adapted from:
@@ -138,7 +138,7 @@ class BoundingBox:
         # Ray hits box, check length
         return 0.0001 <= glm.distance(start, coord) <= glm.distance(start, end)
 
-    def vec3_extend(self, point: vec3):
+    def extend_to_point(self, point: vec3):
         """Extend bbox by a point."""
         for i in range(3):
             if point[i] < self.lower[i]:

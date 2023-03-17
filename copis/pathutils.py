@@ -319,7 +319,7 @@ def _line_cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
 
     # intersect bad!
     for obj in colliders:
-        if obj.bbox.line_segment_intersect(start, end):
+        if obj.bbox.does_line_intersect(start, end):
             return math.inf
 
     return (

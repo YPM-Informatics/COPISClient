@@ -62,7 +62,7 @@ class AABoxObject3D(Object3D):
         self._bbox = BoundingBox(self.lower, self.upper)
 
     def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
-        return self._bbox.vec3_intersect(v, epsilon)
+        return self._bbox.is_point_inside(v, epsilon)
 
     @property
     def bbox(self) -> BoundingBox:
@@ -117,10 +117,10 @@ class CylinderObject3D(Object3D):
         #     Something weird is going on with (I presume) glm pointers?
         self._bbox = BoundingBox(vec3(inf), vec3(-inf))
         for v in points:
-            self._bbox.vec3_extend(vec3(vec4(v, 1.0) * self.trans_matrix))
+            self._bbox.extend_to_point(vec3(vec4(v, 1.0) * self.trans_matrix))
 
     def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
-        return self._bbox.vec3_intersect(v, epsilon)
+        return self._bbox.is_point_inside(v, epsilon)
         # TODO: rather than use the bbox, compute distance to cylinder
 
     @property
@@ -163,10 +163,10 @@ class OBJObject3D(Object3D):
         # create bbox
         self._bbox = BoundingBox(vec3(inf), vec3(-inf))
         for v in self.vertices:
-            self._bbox.vec3_extend(v)
+            self._bbox.extend_to_point(v)
 
     def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
-        return self._bbox.vec3_intersect(v, epsilon)
+        return self._bbox.is_point_inside(v, epsilon)
 
     @property
     def bbox(self) -> BoundingBox:
