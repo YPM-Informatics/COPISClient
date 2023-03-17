@@ -20,6 +20,7 @@ import math
 from dataclasses import dataclass, asdict
 from glm import vec3
 
+from copis.helpers import round_point
 
 @dataclass
 class Point3:
@@ -115,3 +116,118 @@ class BoundingBox:
     """
     lower: Point3 = None
     upper: Point3 = None
+
+    @property
+    def volume_center(self):
+        """Returns the center of the proxy object's bounding box volume."""
+        return _get_mid_diagonal(self.lower, self.upper)
+
+    @property
+    def ceiling_center(self):
+        """Returns the center of the proxy object's bounding box ceiling."""
+        ceiling_upper = self.upper
+        ceiling_lower = Point3(self.lower.x, self.lower.y, ceiling_upper.z)
+
+        return _get_mid_diagonal(ceiling_lower, ceiling_upper)
+
+    @property
+    def floor_center(self):
+        """Returns the center of the proxy object's bounding box floor."""
+        floor_lower = self.lower
+        floor_upper = Point3(self.upper.x, self.upper.y, floor_lower.z)
+
+        return _get_mid_diagonal(floor_lower, floor_upper)
+
+    def does_bbox_intersect(self, bbox) -> bool:
+        """Return whether this bbox intersects the given bbox."""
+        # TODO: implement bbox intersection check.
+        return False
+
+    def is_point_inside(self, point: Point3, epsilon: float) -> bool:
+        """Returns whether the given point is in this bbox, with a buffer (epsilon)."""
+        return (self.lower.x - epsilon <= point.x and
+                self.lower.y - epsilon <= point.y and
+                self.lower.z - epsilon <= point.z and
+                self.upper.x + epsilon >= point.x and
+                self.upper.y + epsilon >= point.y and
+                self.upper.z + epsilon >= point.z)
+
+    def does_line_intersect(self, start: Point3, end: Point3) -> bool:
+        """Returns whether line segment intersects bbox or not.
+
+        Adapted from:
+            Andrew Woo, Fast Ray-Box Intersection, Graphics Gems, pp. 395-396
+            https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c
+
+        Args:
+            start: A vec3 representing the start of the line segment.
+            end: A vec3 representing the end of the line segment.
+        """
+        direction: Point3 = end - start
+        origin: Point3 = Point3(start)
+        coord: Point3 = Point3() # Hit point.
+
+        left, right, middle = 0, 1, 2
+        inside = True
+        quadrant = [-1 for _ in range(3)]
+        which_plane: int
+        max_t = [0.0 for _ in range(3)]
+        candidate_plane = [0.0 for _ in range(3)]
+
+        # Find candidate planes this loop can be avoided if
+        # rays cast all from the eye(assume perspective view).
+        for i in range(3):
+            if origin[i] < self.lower[i]:
+                quadrant[i] = left
+                candidate_plane[i] = self.lower[i]
+                inside = False
+            elif origin[i] > self.upper[i]:
+                quadrant[i] = right
+                candidate_plane[i] = self.upper[i]
+                inside = False
+            else:
+                quadrant[i] = middle
+
+        # Ray origin inside bounding box.
+        if inside:
+            coord = origin
+            return True
+
+        # Calculate T distances to candidate planes
+        for i in range(3):
+            if (quadrant[i] != middle and direction[i] != 0.0):
+                max_t[i] = (candidate_plane[i] - origin[i]) / direction[i]
+            else:
+                max_t[i] = -1.0
+
+        # Get largest of the maxT's for final choice of intersection
+        which_plane = 0
+        for i in range(1, 3):
+            if max_t[which_plane] < max_t[i]:
+                which_plane = i
+
+        # Check final candidate actually inside box
+        if max_t[which_plane] < 0.0:
+            return False
+
+        for i in range(3):
+            if which_plane != i:
+                coord[i] = origin[i] + max_t[which_plane] * direction[i]
+                if (coord[i] < self.lower[i] or coord[i] > self.upper[i]):
+                    return False
+            else:
+                coord[i] = candidate_plane[i]
+
+        # Ray hits box, check length.
+        return 0.0001 <= math.dist(start, coord) <= math.dist(start, end)
+
+    def extend_to_point(self, point: Point3):
+        """Extend bbox by a point."""
+        for i in range(3):
+            if point[i] < self.lower[i]:
+                self.lower[i] = point[i]
+            if point[i] > self.upper[i]:
+                self.upper[i] = point[i]
+
+def _get_mid_diagonal(lower, upper):
+    return round_point((lower + upper) / 2, 3)
