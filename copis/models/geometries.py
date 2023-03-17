@@ -15,7 +15,11 @@
 
 """Provides the COPIS geometries."""
 
-from dataclasses import dataclass
+import math
+
+from dataclasses import dataclass, asdict
+from glm import vec3
+
 
 @dataclass
 class Point3:
@@ -55,6 +59,13 @@ class Point3:
 
         return new_pt
 
+    def __getitem__(self, idx):
+        return list(self.__dict__.values())[idx]
+
+    def to_vec3(self) -> vec3:
+        """Returns a 3D glm vector from the pose's position."""
+        return vec3(list(asdict(self).values())[:3])
+
 
 @dataclass
 class Point5(Point3):
@@ -66,6 +77,10 @@ class Point5(Point3):
     """
     p: float = None
     t: float = None
+
+    def to_point3(self) -> Point3:
+        """Returns a Point3 equivalent of this instance."""
+        return Point3(self.x, self.y, self.z)
 
 
 @dataclass

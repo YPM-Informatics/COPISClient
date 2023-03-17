@@ -15,10 +15,9 @@
 
 """Provides the COPIS path related data structures."""
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
-from glm import vec3
 
 from models.geometries import Point5
 from models.actions import Action
@@ -43,10 +42,6 @@ class Pose:
     """
     position: Point5 = None
     actions: Optional[List[Action]] = None
-
-    def to_vec3(self) -> vec3:
-        """Returns a 3D glm vector from the pose's position."""
-        return vec3(list(asdict(self.position).values())[:3]) if self.position else None
 
 
 @dataclass
