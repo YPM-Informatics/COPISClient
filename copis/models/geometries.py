@@ -33,6 +33,28 @@ class Point3:
     def __iter__(self):
         return iter(self.__dict__.values())
 
+    def __add__(self, other):
+        dic = dict(
+            (k, (v or 0) + (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+        )
+
+        cls = type(self)
+        new_pt = cls.__new__(cls)
+        new_pt.__init__(**dic)
+
+        return new_pt
+
+    def __sub__(self, other):
+        dic = dict(
+            (k, (v or 0) - (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+        )
+
+        cls = type(self)
+        new_pt = cls.__new__(cls)
+        new_pt.__init__(**dic)
+
+        return new_pt
+
 
 @dataclass
 class Point5(Point3):
