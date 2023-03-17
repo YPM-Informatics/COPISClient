@@ -19,7 +19,7 @@ from typing import List
 from dataclasses import dataclass
 
 from copis.models.geometries import Point5
-from copis.globals import SysStatFlags
+from copis.models.machine import ControllerStatusFlags
 
 @dataclass
 class SerialResponse:
@@ -44,34 +44,34 @@ class SerialResponse:
     @property
     def is_locked(self) -> bool:
         """Returns a flag indicating where the serial connection is idle."""
-        return False if self.system_status_number < 0 else self.system_status_number & (1 << SysStatFlags.STA_LOCK.value) > 0
+        return False if self.system_status_number < 0 else self.system_status_number & (1 << ControllerStatusFlags.STA_LOCK.value) > 0
 
     def parse_sys_stat(self) -> List:
         """Returns system status as a listing of active flags, Empty list is idle."""
         ret = []
 
-        if self.system_status_number & (1 << SysStatFlags.STA_PROC_SERIAL.value):
-            ret.append(SysStatFlags.STA_PROC_SERIAL)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_PROC_SERIAL.value):
+            ret.append(ControllerStatusFlags.STA_PROC_SERIAL)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_PROC_TWI.value):
-            ret.append(SysStatFlags.STA_PROC_TWI)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_PROC_TWI.value):
+            ret.append(ControllerStatusFlags.STA_PROC_TWI)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_CMD_AVAIL.value):
-            ret.append(SysStatFlags.STA_CMD_AVAIL)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_CMD_AVAIL.value):
+            ret.append(ControllerStatusFlags.STA_CMD_AVAIL)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_GC_EXEC.value):
-            ret.append(SysStatFlags.STA_GC_EXEC)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_GC_EXEC.value):
+            ret.append(ControllerStatusFlags.STA_GC_EXEC)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_MOTION_QUEUED.value):
-            ret.append(SysStatFlags.STA_MOTION_QUEUED)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_MOTION_QUEUED.value):
+            ret.append(ControllerStatusFlags.STA_MOTION_QUEUED)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_MOTION_EXEC.value):
-            ret.append(SysStatFlags.STA_MOTION_EXEC)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_MOTION_EXEC.value):
+            ret.append(ControllerStatusFlags.STA_MOTION_EXEC)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_HOMING.value):
-            ret.append(SysStatFlags.STA_HOMING)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_HOMING.value):
+            ret.append(ControllerStatusFlags.STA_HOMING)
 
-        if self.system_status_number & (1 << SysStatFlags.STA_LOCK.value):
-            ret.append(SysStatFlags.STA_LOCK)
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_LOCK.value):
+            ret.append(ControllerStatusFlags.STA_LOCK)
 
         return ret

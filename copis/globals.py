@@ -162,13 +162,13 @@ class WorkType(Enum):
     SET_READY = 3
     STEPPING = 4
 
-class SysStatFlags(Enum):
-    """bit positions for each status flag"""
-    STA_PROC_SERIAL = 0
-    STA_PROC_TWI = 1
-    STA_CMD_AVAIL = 2
-    STA_GC_EXEC = 3
-    STA_MOTION_QUEUED = 4
-    STA_MOTION_EXEC = 5
-    STA_HOMING = 6
-    STA_LOCK = 7
+# class ControllerStatusFlags(Enum):
+#     """Bit positions for each COPIS controller status flag."""
+#     STA_PROC_SERIAL = 0
+#     STA_PROC_TWI = 1
+#     STA_CMD_AVAIL = 2
+#     STA_GC_EXEC = 3
+#     STA_MOTION_QUEUED = 4
+#     STA_MOTION_EXEC = 5
+#     STA_HOMING = 6
+#     STA_LOCK = 7

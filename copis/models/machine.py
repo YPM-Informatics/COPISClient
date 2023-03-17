@@ -16,9 +16,22 @@
 """Provides the COPIS machine related data structures."""
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import ClassVar
 
-from models.geometries import BoundingBox, Point5, Size3
+from copis.models.geometries import BoundingBox, Point5, Size3
+
+class ControllerStatusFlags(Enum):
+    """Bit positions for each COPIS controller status flag."""
+    STA_PROC_SERIAL = 0
+    STA_PROC_TWI = 1
+    STA_CMD_AVAIL = 2
+    STA_GC_EXEC = 3
+    STA_MOTION_QUEUED = 4
+    STA_MOTION_EXEC = 5
+    STA_HOMING = 6
+    STA_LOCK = 7
+
 
 class DeviceGroup:
     """Data structure representing a logical group of devices (i.e.: from the same chamber).
