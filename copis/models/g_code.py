@@ -69,3 +69,22 @@ class Gcode(Enum):
     M998 = auto()
     """Reboot - V## Parameter is optional. Any value greater than 0 allows
         any prior buffered action to finish execution before reboot."""
+
+    E0 = auto()
+    """Shutter press via EDSDK.
+
+    :tag `experimental`
+
+    """
+    E1 = auto()
+    """Autofocus via EDSDK.
+
+    :tag `experimental`
+
+    """
+    E10 = auto()
+    """Focus stack via EDSDK.
+
+    :tag `experimental`
+
+    """
