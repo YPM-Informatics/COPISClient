@@ -30,6 +30,9 @@ class Point3:
     y: float = None
     z: float = None
 
+    def __iter__(self):
+        return iter(self.__dict__.values())
+
 
 @dataclass
 class Point5(Point3):
