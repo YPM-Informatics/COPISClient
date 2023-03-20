@@ -107,12 +107,12 @@ class JsonConvert:
                 if idx == 0:
                     move.start_pose = Pose(Point5(move.device.home_position))
                 else:
-                    prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
+                    prev_dvc_move = next(filter(lambda m, m1=move: m.device == m1.device, move_sets[idx - 1]), None)
 
-                    while not prev_dvc_move:
-                        prev_dvc_move = next(filter(lambda m: m.device == move.device, move_sets[idx - 1]), None)
+                    while not prev_dvc_move and (idx - 1) >= 0:
+                        prev_dvc_move = next(filter(lambda m, m1=move: m.device == m1.device, move_sets[idx - 1]), None)
 
-                    move.start_pose = Pose(prev_dvc_move.end_pose.position)
+                    move.start_pose = Pose(prev_dvc_move.end_pose.position if prev_dvc_move else Point5(move.device.home_position))
 
         return move_sets
 
