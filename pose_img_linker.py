@@ -24,6 +24,7 @@ import os
 import csv
 import hashlib
 import json
+import exiftool
 import tkinter as tk
 
 from configparser import ConfigParser
@@ -75,6 +76,7 @@ class PoseImgLinker:
         self._dbfile = None
         self._db = None
         self._output_csv = None
+        self._exif_tool_path = None
         self._cam_sn_to_id = {}
         self._bin_by_session = False
         self.max_buffer_secs = 5
@@ -156,6 +158,15 @@ class PoseImgLinker:
     def output_csv(self, out_path):
         self._output_csv = out_path
 
+    @property
+    def exif_tool_path(self):
+        """Returns the exif tool executable's path."""
+        return self._exif_tool_path
+
+    @exif_tool_path.setter
+    def exif_tool_path(self, value):
+        self._exif_tool_path = value
+
     def run(self):
         """Runs the pose image linker."""
         if self._input_folder is None or self._dbfile is None or len(self._cam_sn_to_id) == 0:
@@ -198,15 +209,23 @@ class PoseImgLinker:
                     img_filename = file_path
 
                     hash_code = _hash_file(img_filename)
-                    # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
-                    # We will default to using datetime_digitized.
-                    with open(img_filename, 'rb') as image_file:
-                        my_image = Image(image_file)
 
-                    image_t  = time.mktime(time.strptime(my_image.datetime_digitized,'%Y:%m:%d %H:%M:%S'))
-                    # body_serial_number camera_owner_name lens_serial_number
-                    cam_sn = my_image.body_serial_number
-                    cam_id = self._cam_sn_to_id[cam_sn]
+                    if os.path.splitext(img_filename)[1].lower() in ('.jpg', 'jpeg'):
+                        # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
+                        # We will default to using datetime_digitized.
+                        with open(img_filename, 'rb') as image_file:
+                            my_image = Image(image_file)
+
+                        image_t = time.mktime(time.strptime(my_image.datetime_digitized,'%Y:%m:%d %H:%M:%S'))
+                        # body_serial_number camera_owner_name lens_serial_number
+                        cam_sn = my_image.body_serial_number
+                        cam_id = self._cam_sn_to_id[cam_sn]
+                    else:
+                        with exiftool.ExifToolHelper(executable=self.exif_tool_path) as exif_tool:
+                            metadata = exif_tool.get_metadata(img_filename)
+                            image_t = time.mktime(time.strptime(metadata[0]["EXIF:CreateDate"], '%Y:%m:%d %H:%M:%S'))
+                            cam_sn = str(metadata[0]["EXIF:SerialNumber"])
+                            cam_id = self._cam_sn_to_id[cam_sn]
 
                     if cam_id in self.exif_time_diffs: # Account for any time differential from improperly set cameras.
                         image_t = image_t + self.exif_time_diffs[cam_id]
@@ -291,6 +310,7 @@ def show_help():
     print('-b <buffer time in sec> default: 5')
     print('-f <img file type 1> default: .jpg')
     print('-e <img file type 2> default: None')
+    print('-l <location of exiftool.exe> default (expects exiftool.exe directory to be on the PATH): None')
     print('-s <update database> default: False')
     print('-c <folder name to copy images organized by session id> default: None')
     print('-t <comma delimited array of time diferential to apply to exif data> default: None')
@@ -301,7 +321,7 @@ def show_help():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:c:s')
+        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:c:l:s')
     except getopt.GetoptError as err:
         print(err)
         print('invalid args, for help: pose_img_linker.py -h')
@@ -329,6 +349,8 @@ if __name__ == "__main__":
             pil.profile = arg
         elif opt == '-d':
             pil.dbfile = arg
+        elif opt == '-l':
+            pil.exif_tool_path = arg
         elif opt == '-b':
             if int(arg) >= 0:
                 pil.max_buffer_secs = int(arg)
