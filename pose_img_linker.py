@@ -309,6 +309,15 @@ class PoseImgLinker:
     def output_csv(self, out_path):
         self._output_csv = out_path
 
+    @property
+    def exif_tool_path(self):
+        """Returns the exif tool executable's path."""
+        return self._exif_tool_path
+
+    @exif_tool_path.setter
+    def exif_tool_path(self, value):
+        self._exif_tool_path = value
+
     def run(self):
         """Runs the pose image linker."""
         if self._input_folder is None or self._dbfile is None or len(self._cam_sn_to_id) == 0:
@@ -350,15 +359,22 @@ class PoseImgLinker:
                 img_filename = file_path
                 hash_code = _hash_file(img_filename)
 
-                # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
-                # We will default to using datetime_digitized.
-                with open(img_filename, 'rb') as image_file:
-                    my_image = Image(image_file)
+                if os.path.splitext(img_filename)[1].lower() in ('.jpg', 'jpeg'):
+                    # Exif data has three option for date time: datetime, datetime_original, datetime_digitized.
+                    # We will default to using datetime_digitized.
+                    with open(img_filename, 'rb') as image_file:
+                        my_image = Image(image_file)
 
-                image_t = time.mktime(time.strptime(my_image.datetime_digitized, '%Y:%m:%d %H:%M:%S'))
-                # body_serial_number camera_owner_name lens_serial_number
-                cam_sn = my_image.body_serial_number
-                cam_id = self._cam_sn_to_id[cam_sn]
+                    image_t = time.mktime(time.strptime(my_image.datetime_digitized, '%Y:%m:%d %H:%M:%S'))
+                    # body_serial_number camera_owner_name lens_serial_number
+                    cam_sn = my_image.body_serial_number
+                    cam_id = self._cam_sn_to_id[cam_sn]
+                else:
+                    with exiftool.ExifToolHelper(executable=self.exif_tool_path) as exif_tool:
+                        metadata = exif_tool.get_metadata(img_filename)
+                        image_t = time.mktime(time.strptime(metadata[0]["EXIF:CreateDate"], '%Y:%m:%d %H:%M:%S'))
+                        cam_sn = str(metadata[0]["EXIF:SerialNumber"])
+                        cam_id = self._cam_sn_to_id[cam_sn]
 
                 # Account for any time differential from improperly set cameras.
                 if cam_id in self.exif_time_diffs:
