@@ -138,10 +138,12 @@ def _detect_stacks(img_data_item):
                     step_size = float(step_size)
                     step_count = float(step_count)
 
-                    entry_count = len(list(filter(lambda d, e=entry: d['rows'][0][2] == e[2] and d['rows'][0][1] == e[1], img_data_item)))
+                    entry_count = len(list(filter(lambda d, e=entry: d['rows'] and d['rows'][0][2] == e[2] and d['rows'][0][1] == e[1], img_data_item)))
+                    empty_rows_count = len(list(filter(lambda d: not d['rows'], img_data_item)))
 
                     if entry_count != step_count + 1:
-                        raise Exception('Mismatched stack step count vs images discovered.')
+                        if not empty_rows_count or empty_rows_count + entry_count != step_count + 1:
+                            raise Exception('Mismatched stack step count vs images discovered.')
 
                     for item in img_data_item:
                         if len(item['rows']) > 0 and item['rows'][0][2] == entry[2] and item['rows'][0][1] == entry[1]:
@@ -423,8 +425,6 @@ class PoseImgLinker:
                 db_deletes.extend(deletes)
 
             for data in img_data_item:
-                print(data['cam_sn'])
-
                 results = self._process_discovered_image(data)
 
                 if results[2]:
@@ -481,7 +481,6 @@ class PoseImgLinker:
 
                 for row in poses:
                     new_img_id = new_img_ids.get(row[9])
-                    # print(f'new img id: {new_img_id}, row[1]: {row[1]}, row: {row}')
                     row[1] = row[1] or new_img_id
                     csv.writer(file).writerow(row)
 
