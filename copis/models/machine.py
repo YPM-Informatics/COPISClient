@@ -37,7 +37,7 @@ class DeviceGroup:
     """Data structure representing a logical group of devices (i.e.: from the same chamber).
 
         Attributes:
-            main_device: main device (role=0) that orchestrates the others.
+            main_device: main device (role>=1) that orchestrates the others.
             aux_devices: secondary (auxiliary) devices.
             tx_thread: transmit (write) thread.
             rx_thread: receive (read) thread.
@@ -178,7 +178,7 @@ class Device:
 
         Attributes:
             id: identifier.
-            role: a primary device has a role of 0, all others have 1.
+            role: a primary device has a role >= 1, all others have 0.
             name: a short device description.
             type: the device's imaging hardware name, e.g.: Camera,
             serial_no: the device's imaging hardware serial number.
