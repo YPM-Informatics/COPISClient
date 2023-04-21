@@ -35,7 +35,6 @@ from random import shuffle as rand_shuffle
 from typing import List, Tuple
 from datetime import datetime, timedelta
 from itertools import groupby, zip_longest
-from glm import vec2, vec3
 from pydispatch import dispatcher
 
 from canon.EDSDKLib import EvfDriveLens
@@ -44,7 +43,7 @@ from copis.command_processor import deserialize_command, serialize_command
 from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
 from copis.globals import ComStatus, DebugEnv, WorkType
 from copis.models.g_code import Gcode
-from copis.models.geometries import Point5
+from copis.models.geometries import Point3, Point5
 from copis.config import Config
 from copis.project import Project
 from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
@@ -69,7 +68,7 @@ class COPISCore:
 
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
-        self.config = parent.config if parent else Config(vec2(800, 600))
+        self.config = parent.config if parent else Config((800, 600))
         print ("using config:", store.get_ini_path())
         print ("using profile: ", store.get_profile_path())
 
@@ -117,7 +116,7 @@ class COPISCore:
         self._selected_proxy: int = -1
         self._selected_device: int = -1
 
-        self._imaging_target: vec3 = vec3()
+        self._imaging_target: Point3 = Point3(0, 0, 0)
         self._imaging_session_path = None
         self._imaging_session_queue = None
         self._imaging_session_manifest = None
@@ -251,12 +250,12 @@ class COPISCore:
         return self._imaging_session_path
 
     @property
-    def imaging_target(self) -> vec3:
+    def imaging_target(self) -> Point3:
         """Returns the coordinates of the last target; (0,0,0) if application just started."""
         return self._imaging_target
 
     @imaging_target.setter
-    def imaging_target(self, value: vec3) -> None:
+    def imaging_target(self, value: Point3) -> None:
         self._imaging_target = value
 
     @property
@@ -1233,7 +1232,7 @@ class COPISCore:
         for pose in self.project.poses:
             pose_position = pose.position
             args = get_action_args_values(pose_position.args)
-            end_pan, end_tilt = get_heading(vec3(args[:3]), self.imaging_target)
+            end_pan, end_tilt = get_heading(Point3(*args[:3]), self.imaging_target)
 
             args[3] = sanitize_number(end_pan)
             args[4] = sanitize_number(end_tilt)

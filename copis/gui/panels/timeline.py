@@ -24,17 +24,16 @@ import wx.lib.agw as aui
 
 from pydispatch import dispatcher
 
-from glm import vec3
 from copis.classes.action import Action
 from copis.classes.pose import Pose
 
 from copis.command_processor import serialize_command
 from copis.globals import ToolIds
 from copis.models.g_code import Gcode
+from copis.models.geometries import Point3
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
-    print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
+from copis.helpers import create_action_args, get_atype_kind, get_heading, is_number, print_debug_msg, rad_to_dd, sanitize_number, sanitize_point
 
 
 class TimelinePanel(wx.Panel):
@@ -526,14 +525,14 @@ class TimelinePanel(wx.Panel):
                     device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
                         .split(' ')[0])
                     device = self.core.project.devices[device_id]
-                    point = vec3(dlg.x_ctrl.num_value,
+                    point = Point3(dlg.x_ctrl.num_value,
                         dlg.y_ctrl.num_value,
                         dlg.z_ctrl.num_value)
-                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = Point3(dlg.lookat_x_ctrl.num_value,
                         dlg.lookat_y_ctrl.num_value,
                         dlg.lookat_z_ctrl.num_value)
 
-                    if device and device.range_3d.vec3_intersect(point, 0.0):
+                    if device and device.range_3d.is_point_inside(point, 0.0):
                         pan, tilt = get_heading(point, lookat)
                         s_point = sanitize_point(point)
                         s_pan = sanitize_number(pan)

@@ -19,7 +19,7 @@ import wx
 import wx.lib.agw.aui as aui
 
 from pydispatch import dispatcher
-from glm import vec2, vec3
+from glm import vec3
 
 import copis.store as store
 
@@ -781,7 +781,7 @@ class MainWindow(wx.Frame):
         """Initialize camera liveview panel."""
         if 'evf' not in self.panels:
             # Live view jpg comes out at (960, 640) on Canon EOS 80D.
-            evf_size = (vec2(960, 640) * .75).to_tuple()
+            evf_size = (960 * .75, 640 * .75)
 
             self.panels['evf'] = EvfPanel(self, size=evf_size)
             self._mgr.AddPane(

@@ -302,7 +302,7 @@ def _point_cost(start: vec3, end: vec3, colliders: List[Object3D]) -> float:
 
     # intersect bad!
     for obj in colliders:
-        if obj.vec3_intersect(end, 10.0):
+        if obj.is_point_inside(end, 10.0):
             return math.inf
 
     return (

@@ -33,7 +33,7 @@ from OpenGL.GL import (
     glDrawArrays, glDrawArraysInstanced)
 from OpenGL.GLU import ctypes
 
-from copis.models.geometries import Point5
+from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 from copis.helpers import (
     create_cuboid, create_device_features, dd_to_rad, fade_color,
@@ -337,8 +337,8 @@ class GLActionVis:
                     position = get_action_args_values(args)
                     next_position = get_action_args_values(value[i + 1])
 
-                    start = vec3(position[:3])
-                    end = vec3(next_position[:3])
+                    start = Point3(*position[:3])
+                    end = Point3(*next_position[:3])
                     midpoint = [sum(i)/2 for i in list(zip(start, end))]
                     heading = get_heading(start, end)
                     midpoint.extend(heading)

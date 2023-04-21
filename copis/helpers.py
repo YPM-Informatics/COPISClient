@@ -27,9 +27,9 @@ from typing import Callable, List
 from itertools import zip_longest
 
 import glm
-from glm import mat4, vec2, vec3, vec4
+from glm import mat4, vec3, vec4
 
-from copis.models.geometries import Point5
+from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 
 
@@ -141,9 +141,9 @@ def sanitize_number(value: float) -> float:
     return value if value != 0.0 else 0.0
 
 
-def sanitize_point(value: vec3) -> vec3:
-    """Sanitizes a vec3 point with coordinates approaching zero."""
-    return vec3(list(map(sanitize_number, list(value))))
+def sanitize_point(value: Point3) -> Point3:
+    """Sanitizes a point with coordinates approaching zero."""
+    return Point3(*list(map(sanitize_number, list(value))))
 
 
 def get_timestamp(add_date:bool=False) -> str:
@@ -295,7 +295,7 @@ def collapse_whitespaces(string: str) -> str:
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
 
 
-def get_heading(start: vec3, end: vec3):
+def get_heading(start: Point3, end: Point3):
     """Returns the heading (pan and tilt) between two points."""
     direction = start - end
     dir_x, dir_y, dir_z = direction
@@ -303,7 +303,7 @@ def get_heading(start: vec3, end: vec3):
     pan = atan2(dir_x, dir_y)
     tilt = -atan2(dir_z, sqrt(dir_x * dir_x + dir_y * dir_y))
 
-    return vec2(pan, tilt)
+    return (pan, tilt)
 
 
 def point5_to_dict(point: Point5) -> dict:

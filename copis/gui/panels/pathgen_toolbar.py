@@ -22,15 +22,13 @@ from typing import List, Tuple
 from glm import vec3
 
 import wx
-import wx.lib.agw.aui as aui
+from wx.lib.agw import aui
 from copis.classes.device import Device
-
+from copis.models.geometries import Point3
 from copis.globals import PathIds
-from copis.gui.wxutils import (
-    FancyTextCtrl, create_scaled_bitmap, simple_statictext)
+from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_statictext
 from copis.helpers import is_number, print_debug_msg, xyz_units
-from copis.pathutils import (build_pose_sets, create_circle, create_helix, create_line,
-    interleave_poses, process_path)
+from copis.pathutils import build_pose_sets, create_circle, create_helix, create_line, interleave_poses, process_path
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -253,16 +251,16 @@ class PathgenToolbar(aui.AuiToolBar):
 
         # group points into devices
         for i in range(count):
-            point = vec3(vertices[i * 3:i * 3 + 3])
+            point = Point3(vertices[i * 3:i * 3 + 3])
             device_id = -1
             for id_ in device_list:
                 max_zs[id_] = devices[id_].range_3d.upper.z
-                if devices[id_].range_3d.vec3_intersect(point, 0.0):
+                if devices[id_].range_3d.is_point_inside(point, 0.0):
                     device_id = id_
 
             # ignore if point not in bounds of any device
             if device_id != -1:
-                grouped_points[device_id].append(point)
+                grouped_points[device_id].append(point.to_vec3())
 
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
         self.core.project.pose_sets.extend(pose_sets)

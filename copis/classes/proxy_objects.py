@@ -37,9 +37,9 @@ class Object3D(ABC):
         self.selected: bool = False
 
     @abstractmethod
-    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+    def is_point_inside(self, v: Point3, epsilon: float) -> bool:
         """Return whether vec3 is inside or not with a buffer (epsilon)."""
-        raise NotImplementedError(f'You must implement the vec3_intersect method in {self.__class__}.')
+        raise NotImplementedError(f'You must implement the is_point_inside method in {self.__class__}.')
 
     @property
     @abstractmethod
@@ -61,7 +61,7 @@ class AABoxObject3D(Object3D):
         self.upper: Point3 = upper
         self._bbox = BoundingBox(self.lower, self.upper)
 
-    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+    def is_point_inside(self, v: Point3, epsilon: float) -> bool:
         return self._bbox.is_point_inside(v, epsilon)
 
     @property
@@ -110,11 +110,11 @@ class CylinderObject3D(Object3D):
             vec3(-self.radius, -self.radius, self.height))
 
         # Inflate OBB into AABB.
-        self._bbox = BoundingBox(Point3(*[-inf] * 3), Point3(*[inf] * 3))
+        self._bbox = BoundingBox(Point3(*[inf] * 3), Point3(*[-inf] * 3))
         for v in points:
             self._bbox.extend_to_point(vec3(vec4(v, 1.0) * self.trans_matrix))
 
-    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+    def is_point_inside(self, v: Point3, epsilon: float) -> bool:
         return self._bbox.is_point_inside(v, epsilon)
         # TODO: rather than use the bbox, compute distance to cylinder
 
@@ -156,11 +156,11 @@ class OBJObject3D(Object3D):
             break
 
         # create bbox
-        self._bbox = BoundingBox(Point3(*[-inf] * 3), Point3(*[inf] * 3))
+        self._bbox = BoundingBox(Point3(*[inf] * 3), Point3(*[-inf] * 3))
         for v in self.vertices:
             self._bbox.extend_to_point(v)
 
-    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
+    def is_point_inside(self, v: Point3, epsilon: float) -> bool:
         return self._bbox.is_point_inside(v, epsilon)
 
     @property
