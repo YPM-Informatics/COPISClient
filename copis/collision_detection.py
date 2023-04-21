@@ -271,7 +271,7 @@ def cam_bounds_along_line(device : Device, start_pos: vec3, end_pos: vec3, incre
 
 def is_collision_between_moving_cams(cam1: Device, cam1_start_pos: vec3, cam1_end_pos: vec3, cam2: Device, cam2_start_pos: vec3, cam2_end_pos: vec3):
     cb_list1 = cam_bounds_along_line(cam1, cam1_start_pos, cam1_end_pos, 5)
-    cb_list2 = cam_bounds_along_line(cam1, cam2_start_pos, cam2_end_pos, 5)
+    cb_list2 = cam_bounds_along_line(cam2, cam2_start_pos, cam2_end_pos, 5)
     for cb1 in cb_list1:
         for cb2 in cb_list2:
             if (is_collision_between_cam_bounds(cb1,cb2)):
