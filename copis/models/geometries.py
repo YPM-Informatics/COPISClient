@@ -58,6 +58,42 @@ class Point3:
 
         return new_pt
 
+    def __mul__(self, other):
+        if isinstance(other, type(self)):
+            dic = dict(
+                (k, (v or 0) * (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+            )
+        elif isinstance(other, (int, float)):
+            dic = dict(
+                (k, (v or 0) * other) for k, v in self.__dict__.items()
+            )
+        else:
+            raise TypeError(f"unsupported operand type(s) for *: 'Point3' and '{type(other)}'.")
+
+        cls = type(self)
+        new_pt = cls.__new__(cls)
+        new_pt.__init__(**dic)
+
+        return new_pt
+
+    def __truediv__(self, other):
+        if isinstance(other, type(self)):
+            dic = dict(
+                (k, (v or 0) / (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+            )
+        elif isinstance(other, (int, float)):
+            dic = dict(
+                (k, (v or 0) / other) for k, v in self.__dict__.items()
+            )
+        else:
+            raise TypeError(f"unsupported operand type(s) for /: 'Point3' and '{type(other)}'.")
+
+        cls = type(self)
+        new_pt = cls.__new__(cls)
+        new_pt.__init__(**dic)
+
+        return new_pt
+
     def __getitem__(self, idx):
         return list(self.__dict__.values())[idx]
 
