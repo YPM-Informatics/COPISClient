@@ -97,6 +97,10 @@ class Point3:
     def __getitem__(self, idx):
         return list(self.__dict__.values())[idx]
 
+    def __setitem__(self, idx, value):
+        prop = list(self.__dict__.keys())[idx]
+        setattr(self, prop, value)
+
     def to_vec3(self) -> vec3:
         """Returns a 3D glm vector from the pose's position."""
         return vec3(list(asdict(self).values())[:3])
