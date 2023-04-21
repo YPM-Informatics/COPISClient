@@ -37,7 +37,7 @@ class Object3D(ABC):
         self.selected: bool = False
 
     @abstractmethod
-    def vec3_intersect(self, v: vec3, episolon: float) -> bool:
+    def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
         """Return whether vec3 is inside or not with a buffer (epsilon)."""
         pass
 
