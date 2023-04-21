@@ -26,8 +26,8 @@ from glm import vec3, vec4, mat4, u32vec3
 import glm
 import pywavefront
 
+from copis.models.geometries import BoundingBox, Point3
 from copis.mathutils import orthonormal_basis_of
-from . import BoundingBox
 
 
 class Object3D(ABC):
@@ -39,13 +39,13 @@ class Object3D(ABC):
     @abstractmethod
     def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
         """Return whether vec3 is inside or not with a buffer (epsilon)."""
-        pass
+        raise NotImplementedError(f'You must implement the vec3_intersect method in {self.__class__}.')
 
     @property
     @abstractmethod
     def bbox(self) -> BoundingBox:
         """Return bbox of object."""
-        pass
+        raise NotImplementedError(f'You must implement the bbox method in {self.__class__}.')
 
     @abstractmethod
     def __repr__(self) -> str:
@@ -55,10 +55,10 @@ class Object3D(ABC):
 class AABoxObject3D(Object3D):
     """Axis-aligned box object."""
 
-    def __init__(self, lower: vec3, upper: vec3):
+    def __init__(self, lower: Point3, upper: Point3):
         super().__init__()
-        self.lower: vec3 = vec3(lower)
-        self.upper: vec3 = vec3(upper)
+        self.lower: Point3 = lower
+        self.upper: Point3 = upper
         self._bbox = BoundingBox(self.lower, self.upper)
 
     def vec3_intersect(self, v: vec3, epsilon: float) -> bool:
@@ -109,13 +109,8 @@ class CylinderObject3D(Object3D):
             vec3(self.radius, -self.radius, self.height),
             vec3(-self.radius, -self.radius, self.height))
 
-        # inflate OBB into AABB
-        # TODO:
-        #     BoundingBox _should_ have default values - we shouldn't have to
-        #     initialize with inf and -inf manually. but if we do that,
-        #     it seems to initialize with other BoundingBox's values.
-        #     Something weird is going on with (I presume) glm pointers?
-        self._bbox = BoundingBox(vec3(inf), vec3(-inf))
+        # Inflate OBB into AABB.
+        self._bbox = BoundingBox(Point3(*[-inf] * 3), Point3(*[inf] * 3))
         for v in points:
             self._bbox.extend_to_point(vec3(vec4(v, 1.0) * self.trans_matrix))
 
@@ -161,7 +156,7 @@ class OBJObject3D(Object3D):
             break
 
         # create bbox
-        self._bbox = BoundingBox(vec3(inf), vec3(-inf))
+        self._bbox = BoundingBox(Point3(*[-inf] * 3), Point3(*[inf] * 3))
         for v in self.vertices:
             self._bbox.extend_to_point(v)
 

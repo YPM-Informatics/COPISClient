@@ -3,7 +3,7 @@ import math
 from typing import List
 import glm
 from glm import vec3
-from copis.classes import (BoundingBox, Object3D, OBJObject3D, Device)
+from copis.classes import Device
 import copis.globals
 
 from copis.project import Project

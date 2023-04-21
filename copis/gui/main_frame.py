@@ -23,6 +23,7 @@ from glm import vec2, vec3
 
 import copis.store as store
 
+from copis.models.geometries import Point3
 from copis.helpers import print_error_msg
 from copis.globals import WindowState
 from copis.classes import AABoxObject3D, CylinderObject3D, Action, Pose
@@ -611,10 +612,10 @@ class MainWindow(wx.Frame):
         """Opens dialog to generate box proxy object."""
         with ProxygenAABB(self) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
-                lower = vec3(dlg.lower_x_ctrl.num_value,
+                lower = Point3(dlg.lower_x_ctrl.num_value,
                              dlg.lower_y_ctrl.num_value,
                              dlg.lower_z_ctrl.num_value)
-                upper = vec3(dlg.upper_x_ctrl.num_value,
+                upper = Point3(dlg.upper_x_ctrl.num_value,
                              dlg.upper_y_ctrl.num_value,
                              dlg.upper_z_ctrl.num_value)
                 self.core.project.proxies.append(AABoxObject3D(lower, upper))

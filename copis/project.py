@@ -27,8 +27,8 @@ from pydispatch import dispatcher
 from glm import vec3
 
 from copis import store
-from copis.classes import BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D
-from copis.models.geometries import Point5
+from copis.classes import Device, Action, Pose, MonitoredList, Object3D, OBJObject3D
+from copis.models.geometries import BoundingBox, Point3, Point5
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
@@ -183,8 +183,8 @@ class Project():
 
     def _init_devices(self):
         def parse_device(data):
-            lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
-            upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
+            lower_corner = Point3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
+            upper_corner = Point3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
              #if gantry style not present (as in older profiles files) we default to standard overhead gantry since all files before were overhead only
             if 'head_radius' not in data:
                 data['head_radius'] = 200

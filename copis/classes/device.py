@@ -17,14 +17,12 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from math import inf
 from glm import vec3
 from pydispatch import dispatcher
 
 from copis.classes.serial_response import SerialResponse
 from copis.globals import ComStatus
-from copis.models.geometries import Point5
-from . import BoundingBox
+from copis.models.geometries import BoundingBox, Point5
 
 
 @dataclass
@@ -35,8 +33,8 @@ class Device:
     name: str = ''
     type: str = ''
     description: str = ''
-    home_position: Point5 = Point5()
-    range_3d: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
+    home_position: Point5 = None
+    range_3d: BoundingBox = None
     size: vec3 = vec3()
     port: str = ''
     head_radius: float = 0
