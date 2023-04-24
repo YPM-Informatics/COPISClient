@@ -20,9 +20,8 @@ from datetime import datetime
 from glm import vec3
 from pydispatch import dispatcher
 
-from copis.globals import ComStatus
 from copis.models.geometries import BoundingBox, Point5
-from copis.models.machine import SerialResponse
+from copis.models.machine import MachineStatus, SerialResponse
 
 
 @dataclass
@@ -92,30 +91,30 @@ class Device:
         return self._last_reported_on
 
     @property
-    def serial_status(self) -> ComStatus:
+    def serial_status(self) -> MachineStatus:
         """Returns the device's serial status based on its last serial response."""
         if self.serial_response is None:
             if self._is_homed:
-                return ComStatus.IDLE
+                return MachineStatus.IDLE
 
-            return ComStatus.BUSY if self._is_writing_ser else ComStatus.UNKNOWN
+            return MachineStatus.BUSY if self._is_writing_ser else MachineStatus.UNKNOWN
 
         if self.serial_response.error:
-            return ComStatus.ERROR
+            return MachineStatus.ERROR
 
         if self._is_writing_ser or not self.serial_response.is_idle:
-            return ComStatus.BUSY
+            return MachineStatus.BUSY
 
         if self.serial_response.is_idle:
-            return ComStatus.IDLE
+            return MachineStatus.IDLE
 
         raise ValueError('Unsupported device serial status code path.')
 
     @property
-    def status(self) -> ComStatus:
+    def status(self) -> MachineStatus:
         """Returns the device's aggregate status."""
         if self._is_writing_eds:
-            return ComStatus.BUSY
+            return MachineStatus.BUSY
 
         return self.serial_status
 

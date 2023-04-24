@@ -91,12 +91,6 @@ class DebugEnv(Enum):
     PROD = 'prod'
     DEV = 'dev'
 
-class ComStatus(Enum):
-    """Communication protocol statuses."""
-    ERROR = 0
-    BUSY = 1
-    UNKNOWN = 2
-    IDLE = 3
 
 class WorkType(Enum):
     """Thread work types."""

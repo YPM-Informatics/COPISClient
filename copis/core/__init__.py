@@ -41,10 +41,10 @@ from canon.EDSDKLib import EvfDriveLens
 from copis.coms import serial_controller
 from copis.command_processor import deserialize_command, serialize_command
 from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
-from copis.globals import ComStatus, DebugEnv, WorkType
+from copis.globals import DebugEnv, WorkType
 from copis.models.g_code import Gcode
 from copis.models.geometries import Point3, Point5
-from copis.models.machine import SerialResponse
+from copis.models.machine import MachineStatus, SerialResponse
 from copis.config import Config
 from copis.project import Project
 from copis.classes import Action, MonitoredList, Pose, ReadThread
@@ -151,7 +151,7 @@ class COPISCore:
         if any(not dvc.serial_response for dvc in self.project.devices):
             return False
 
-        return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.project.devices)
+        return all(dvc.serial_status != MachineStatus.UNKNOWN for dvc in self.project.devices)
 
     @property
     def _disengage_motors_commands(self):
@@ -187,7 +187,7 @@ class COPISCore:
     @property
     def is_machine_idle(self):
         """Returns a value indicating whether the machine is idle."""
-        return all(dvc.status == ComStatus.IDLE for dvc in self.project.devices)
+        return all(dvc.status == MachineStatus.IDLE for dvc in self.project.devices)
 
     @property
     def is_machine_homed(self):
@@ -589,7 +589,7 @@ class COPISCore:
         for cmd in commands:
             dvc = self._get_device(cmd.device)
 
-            while dvc.status not in [ComStatus.IDLE, ComStatus.UNKNOWN]:
+            while dvc.status not in [MachineStatus.IDLE, MachineStatus.UNKNOWN]:
                 time.sleep(self._YIELD_TIMEOUT)
 
             key, value = cmd.args[0]
@@ -780,7 +780,7 @@ class COPISCore:
             self.config.update_recent_projects(path)
 
     def _on_device_ser_updated(self, device):
-        if device.serial_status == ComStatus.IDLE:
+        if device.serial_status == MachineStatus.IDLE:
             self.sys_db.end_pose(device)
 
     def _on_device_eds_updated(self, device):

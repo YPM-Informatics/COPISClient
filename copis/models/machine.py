@@ -34,6 +34,14 @@ class ControllerStatusFlags(Enum):
     STA_LOCK = 7
 
 
+class MachineStatus(Enum):
+    """Machine communication protocols statuses."""
+    ERROR = 0
+    BUSY = 1
+    UNKNOWN = 2
+    IDLE = 3
+
+
 class DeviceGroup:
     """Data structure representing a logical group of devices (i.e.: from the same chamber).
 
