@@ -38,12 +38,12 @@ class SerialResponse:
 
     @property
     def is_idle(self) -> bool:
-        """Returns a flag indicating where the serial connection is idle."""
+        """Returns a flag indicating whether the serial connection is idle."""
         return self.system_status_number == 0
 
     @property
     def is_locked(self) -> bool:
-        """Returns a flag indicating where the serial connection is idle."""
+        """Returns a flag indicating whether the serial connection is idle."""
         return False if self.system_status_number < 0 else self.system_status_number & (1 << ControllerStatusFlags.STA_LOCK.value) > 0
 
     def parse_sys_stat(self) -> List:
