@@ -133,6 +133,9 @@ class Size2:
     width: float = None
     height: float = None
 
+    def __iter__(self):
+        return iter(self.__dict__.values())
+
 
 @dataclass
 class Size3(Size2):
