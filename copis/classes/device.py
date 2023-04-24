@@ -20,9 +20,9 @@ from datetime import datetime
 from glm import vec3
 from pydispatch import dispatcher
 
-from copis.classes.serial_response import SerialResponse
 from copis.globals import ComStatus
 from copis.models.geometries import BoundingBox, Point5
+from copis.models.machine import SerialResponse
 
 
 @dataclass

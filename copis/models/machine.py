@@ -16,10 +16,11 @@
 """Provides the COPIS machine related data structures."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import ClassVar
+from typing import ClassVar, List
 
-from copis.models.geometries import BoundingBox, Point5, Size3
+from .geometries import BoundingBox, Point5, Size3
 
 class ControllerStatusFlags(Enum):
     """Bit positions for each COPIS controller status flag."""
@@ -52,6 +53,62 @@ class DeviceGroup:
         """Executes a string of g-code."""
         # TODO: to be implemented.
         pass
+
+
+@dataclass
+class SerialResponse:
+    """Data structure that implements a parsed COPIS serial response."""
+    device_id: int = -1
+    system_status_number: int = -1
+    position: Point5 = Point5()
+    error: str = None
+
+    # TODO: This might be obsolete. leaving it in for now to see if I end up using it.
+    # @property
+    # def system_status_flags(self) -> str:
+    #     """Returns the system status flags, on per binary digit."""
+    #     return f'{self.system_status_number:08b}' \
+    #         if self.system_status_number >= 0 else None
+
+    @property
+    def is_idle(self) -> bool:
+        """Returns a flag indicating whether the serial connection is idle."""
+        return self.system_status_number == 0
+
+    @property
+    def is_locked(self) -> bool:
+        """Returns a flag indicating whether the serial connection is idle."""
+        return False if self.system_status_number < 0 else self.system_status_number & (1 << ControllerStatusFlags.STA_LOCK.value) > 0
+
+    def parse_sys_stat(self) -> List:
+        """Returns system status as a listing of active flags, Empty list is idle."""
+        ret = []
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_PROC_SERIAL.value):
+            ret.append(ControllerStatusFlags.STA_PROC_SERIAL)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_PROC_TWI.value):
+            ret.append(ControllerStatusFlags.STA_PROC_TWI)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_CMD_AVAIL.value):
+            ret.append(ControllerStatusFlags.STA_CMD_AVAIL)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_GC_EXEC.value):
+            ret.append(ControllerStatusFlags.STA_GC_EXEC)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_MOTION_QUEUED.value):
+            ret.append(ControllerStatusFlags.STA_MOTION_QUEUED)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_MOTION_EXEC.value):
+            ret.append(ControllerStatusFlags.STA_MOTION_EXEC)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_HOMING.value):
+            ret.append(ControllerStatusFlags.STA_HOMING)
+
+        if self.system_status_number & (1 << ControllerStatusFlags.STA_LOCK.value):
+            ret.append(ControllerStatusFlags.STA_LOCK)
+
+        return ret
 
 
 @dataclass

@@ -19,12 +19,12 @@ from .monitored_list import MonitoredList
 from .device import Device
 from .action import Action
 from .pose import Pose
-from .serial_response import SerialResponse
+# from .serial_response import SerialResponse
 from .read_thread import ReadThread
 from .proxy_objects import Object3D, CylinderObject3D, AABoxObject3D, OBJObject3D
 from .settings import ApplicationSettings, MachineSettings
 
-__all__ = [
+__all__ = [ #"SerialResponse", 
     "Device","Object3D", "CylinderObject3D", "AABoxObject3D",
-    "OBJObject3D", "Action", "SerialResponse", "ReadThread", "MonitoredList",
+    "OBJObject3D", "Action","ReadThread", "MonitoredList",
     "ApplicationSettings", "MachineSettings", "Pose"]

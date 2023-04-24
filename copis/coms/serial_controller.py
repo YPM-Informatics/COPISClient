@@ -27,8 +27,8 @@ from serial.serialutil import SerialException
 from serial.tools import list_ports
 
 from copis.models.geometries import Point5
+from copis.models.machine import SerialResponse
 from copis.helpers import print_error_msg, print_raw_msg
-from copis.classes import SerialResponse
 from copis.mocks.mock_serial import MockSerial
 from copis.classes.sys_db import SysDB
 

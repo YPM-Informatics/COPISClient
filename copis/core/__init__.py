@@ -44,9 +44,10 @@ from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, prin
 from copis.globals import ComStatus, DebugEnv, WorkType
 from copis.models.g_code import Gcode
 from copis.models.geometries import Point3, Point5
+from copis.models.machine import SerialResponse
 from copis.config import Config
 from copis.project import Project
-from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
+from copis.classes import Action, MonitoredList, Pose, ReadThread
 from copis import store
 from copis.classes.sys_db import SysDB
 from copis.mathutils import optimize_rotation_move_to_angle
