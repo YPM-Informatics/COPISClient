@@ -194,7 +194,7 @@ class Device:
             settings: the device's controller's settings.
             description: a long device description.
     """
-    id: int = None
+    d_id: int = None
     role: int = None
     name: str = None
     type: str = None

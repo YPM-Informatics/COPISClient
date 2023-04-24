@@ -37,7 +37,7 @@ class JsonConvert:
         :param `move_set_list`: an iterable of iterables of :class:`models.path.Move` objects.
 
         """
-        device_key = lambda d: d.id
+        device_key = lambda d: d.d_id
 
         uniq_devices = []
         uniq_dvc_groups = []
@@ -54,12 +54,12 @@ class JsonConvert:
             uniq_dvc_groups.append(next(g))
 
         for d_group in uniq_dvc_groups:
-            d_group.main_device = d_group.main_device.id if not isinstance(d_group.main_device, int) else d_group.main_device
-            d_group.aux_devices = [d.id if not isinstance(d, int) else d for d in d_group.aux_devices]
+            d_group.main_device = d_group.main_device.d_id if not isinstance(d_group.main_device, int) else d_group.main_device
+            d_group.aux_devices = [d.d_id if not isinstance(d, int) else d for d in d_group.aux_devices]
 
         for m_set in move_sets:
             for m in m_set:
-                m.device = m.device.id
+                m.device = m.device.d_id
                 m.destination = m.end_pose
 
                 del m.start_pose
@@ -86,7 +86,7 @@ class JsonConvert:
 
         """
         def get_dvc_by_id(col, dvc_id):
-            return next(filter(lambda d: d.id == dvc_id, col))
+            return next(filter(lambda d: d.d_id == dvc_id, col))
 
         dict_data = json.loads(move_set_list_json)
         devices = list(map(_parse_device, dict_data['devices']))
