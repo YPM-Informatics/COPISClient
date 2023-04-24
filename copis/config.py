@@ -17,8 +17,9 @@
 
 from glm import vec3
 import copis.store as store
-from .globals import DebugEnv, Size, WindowState
+from .globals import DebugEnv, WindowState
 from .classes import ApplicationSettings, MachineSettings
+from .models.geometries import Size2
 
 
 def _get_bool(val):
@@ -104,7 +105,7 @@ class Config():
         app = self._config_parser[section]
 
         parts = get_size_parts(app['window_min_size'])
-        window_min_size = Size(*parts)
+        window_min_size = Size2(*parts)
 
         parts = _get_state_parts(app['window_state'])
         window_state = WindowState(*parts)

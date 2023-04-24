@@ -30,12 +30,6 @@ class WindowState(NamedTuple):
     is_maximized: bool = False
 
 
-class Size(NamedTuple):
-    """Structure representing size."""
-    width: int = 0
-    height: int = 0
-
-
 class ToolIds(Enum):
     """Toolbar item IDs."""
     PLAY_ALL = 1

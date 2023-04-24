@@ -20,14 +20,15 @@ from math import inf
 from typing import List
 from glm import vec3
 
-from copis.globals import DebugEnv, Size, WindowState
+from copis.globals import DebugEnv, WindowState
+from copis.models.geometries import Size2
 
 
 @dataclass
 class ApplicationSettings:
     """Application settings data structure."""
     debug_env: DebugEnv = DebugEnv.PROD
-    window_min_size: Size = Size(800, 600)
+    window_min_size: Size2 = Size2(800, 600)
 
     window_state: WindowState = WindowState(0, 0, 800, 600, False)
     last_output_path: str = ''
