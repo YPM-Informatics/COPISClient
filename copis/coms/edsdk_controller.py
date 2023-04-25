@@ -31,7 +31,7 @@ from canon.EDSDKLib import (
     EdsStorageType, EvfDriveLens, ImageQuality)
 
 from copis.helpers import print_error_msg, print_info_msg, get_hardware_id
-from copis.classes import Device as COPIS_Device
+from copis.models.machine import Device as COPIS_Device
 from copis.classes.sys_db import SysDB
 
 class EDSDKController():
@@ -307,7 +307,7 @@ class EDSDKController():
             True if successful, False otherwise.
         """
         hard_id = copis_device.port
-        soft_id = copis_device.device_id
+        soft_id = copis_device.d_id
 
         self._update_camera_list()
 

@@ -118,7 +118,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_device_selected(self, device) -> None:
         """On ntf_d_selected, set to device view."""
         self.current = 'Device'
-        self._property_panels['device_info'].device_id = device.device_id
+        self._property_panels['device_info'].d_id = device.d_id
         self._property_panels['device_info'].device_name = device.name
         self._property_panels['device_info'].device_type = device.type
         self._property_panels['device_info'].device_desc = device.description

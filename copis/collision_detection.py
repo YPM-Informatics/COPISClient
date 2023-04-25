@@ -1,10 +1,7 @@
-﻿from ast import Return
-import math
+﻿import math
 from typing import List
-import glm
 from glm import vec3
-from copis.classes import Device
-import copis.globals
+from copis.models.machine import Device
 
 from copis.project import Project
 
@@ -16,20 +13,20 @@ def collision_eval_cam2cam_path() -> List[dict]:
         for i in range(0,len(proj.pose_sets)-1):
             for k in range(0, len(proj.devices)):
                 a = proj.devices[k]
-                a_start = proj.last_pose_by_dev_id(i,a.device_id)
+                a_start = proj.last_pose_by_dev_id(i,a.d_id)
                 if a_start != None:
-                    a_end = proj.pose_by_dev_id(i + 1,a.device_id) 
+                    a_end = proj.pose_by_dev_id(i + 1,a.d_id) 
                     if a_end == None:
                         a_end = a_start
                     for j in range(k+1, len(proj.devices)):
                         b = proj.devices[j]
-                        b_start = proj.last_pose_by_dev_id(i,b.device_id)
+                        b_start = proj.last_pose_by_dev_id(i,b.d_id)
                         if b_start != None:
-                            b_end = proj.pose_by_dev_id(i + 1,b.device_id)
+                            b_end = proj.pose_by_dev_id(i + 1,b.d_id)
                             if b_end == None:
                                 b_end = b_start
                             if is_collision_between_moving_cams(a, a_start.position_as_vec3, a_end.position_as_vec3, b, b_start.position_as_vec3, b_end.position_as_vec3):
-                                collisions.append({'ps_idx':i+1,'cams':(a.device_id,b.device_id)}) 
+                                collisions.append({'ps_idx':i+1,'cams':(a.d_id,b.d_id)}) 
                             
     return collisions
 
@@ -40,14 +37,14 @@ def collision_eval_cam2proxy_path() -> List[dict]:
         for i in range(0,len(proj.pose_sets)-1):
             for k in range(0, len(proj.devices)):
                 a = proj.devices[k]
-                a_start = proj.last_pose_by_dev_id(i,a.device_id)
+                a_start = proj.last_pose_by_dev_id(i,a.d_id)
                 if a_start != None:
-                    a_end = proj.pose_by_dev_id(i + 1,a.device_id)
+                    a_end = proj.pose_by_dev_id(i + 1,a.d_id)
                     if a_end == None:
                         a_end = a_start
                     for proxy in proj.proxies:
                         if is_collision_between_proxy_cam_move(a, a_start.position_as_vec3, a_end.position_as_vec3, proxy.bbox) :
-                            collisions.append({'ps_idx':i+1,'cams':(a.device_id,-1)})
+                            collisions.append({'ps_idx':i+1,'cams':(a.d_id,-1)})
     return collisions
 
 def collision_eval_cam2proxy_start() -> List[dict]:
@@ -56,7 +53,7 @@ def collision_eval_cam2proxy_start() -> List[dict]:
     if proj._is_initialized:
         if len(proj.pose_sets) > 0:
             for device in proj.devices:
-                first_pose = proj.first_pose_by_dev_id(0, device.device_id)
+                first_pose = proj.first_pose_by_dev_id(0, device.d_id)
                 if first_pose != None:
                     for proxy in proj.proxies:
                         if is_collision_between_proxy_cam_move(device, device.position,first_pose.position_as_vec3, proxy.bbox):
@@ -70,14 +67,14 @@ def collision_eval_cam2cam_start() -> List[dict]:
         if len(proj.pose_sets) > 0:
             for k in range(0, len(proj.devices)):
                 a = proj.devices[k]
-                first_pose_a = proj.first_pose_by_dev_id(0,a.device_id)
+                first_pose_a = proj.first_pose_by_dev_id(0,a.d_id)
                 if first_pose_a != None: 
                     for j in range(k+1, len(proj.devices)):
                         b = proj.devices[j]
-                        first_pose_b = proj.first_pose_by_dev_id(0,b.device_id)
+                        first_pose_b = proj.first_pose_by_dev_id(0,b.d_id)
                         if first_pose_b != None:
                             if is_collision_between_moving_cams(a, a.position, first_pose_a.position_as_vec3, b, b.position, first_pose_b.position_as_vec3):
-                                collisions.append({'ps_idx':-1,'cams':(a.device_id,b.device_id)})           
+                                collisions.append({'ps_idx':-1,'cams':(a.d_id,b.d_id)})           
     return collisions
 
 

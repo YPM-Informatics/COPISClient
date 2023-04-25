@@ -35,9 +35,7 @@ from OpenGL.GLU import ctypes
 
 from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
-from copis.helpers import (
-    create_cuboid, create_device_features, dd_to_rad, fade_color,
-    get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4)
+from copis.helpers import create_cuboid, create_device_features, dd_to_rad, fade_color, get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4
 
 ArrayInfo = namedtuple('ArrayInfo', 'name key')
 
@@ -88,13 +86,13 @@ class GLActionVis:
         """Bind VAOs to define vertex data."""
         # Initialize device boxes.
         for dvc in self.core.project.devices:
-            key = dvc.device_id
-            size = vec3(dvc.size.x, dvc.size.y / 2, dvc.size.z)
+            key = dvc.d_id
+            size = vec3(dvc.head_dims.width, dvc.head_dims.height / 2, dvc.head_dims.depth)
             scale = 2 * self._SCALE_FACTOR
             size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
             vertices = glm.array(*create_cuboid(size_nm))
             feat_vertices = np.array(
-                create_device_features(dvc.size, 3 * self._SCALE_FACTOR),
+                create_device_features(dvc.head_dims, 3 * self._SCALE_FACTOR),
                 dtype=np.float32)
 
             triangle = glm.array(
@@ -277,7 +275,7 @@ class GLActionVis:
 
             for key, value in self._items['device'].items():
                 mats = glm.array([mat * scale for mat in value])
-                device = next(filter(lambda d, k = key: d.device_id == k,
+                device = next(filter(lambda d, k = key: d.d_id == k,
                     self.core.project.devices))
 
                 color = self.colors[key % len(self.colors)]
@@ -358,7 +356,7 @@ class GLActionVis:
             args = get_action_args_values(device.position)
             args = [a if i < 3 else dd_to_rad(a) for i, a in enumerate(args)]
 
-            self._items['device'][device.device_id].append(point5_to_mat4(Point5(*args)))
+            self._items['device'][device.d_id].append(point5_to_mat4(Point5(*args)))
 
         self.update_device_vaos()
 

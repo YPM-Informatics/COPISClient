@@ -23,7 +23,7 @@ from glm import vec3
 
 import wx
 from wx.lib.agw import aui
-from copis.classes.device import Device
+from copis.models.machine import Device
 from copis.models.geometries import Point3
 from copis.globals import PathIds
 from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_statictext
@@ -198,7 +198,7 @@ class PathgenToolbar(aui.AuiToolBar):
             with _PathgenLine(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     print_debug_msg(self.core.console, 'Line path added', self.core.is_dev_env)
-                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
+                    dvc_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
                         .split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
@@ -214,13 +214,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions(vertices, count, lookat, (device_id,))
+                    self._extend_actions(vertices, count, lookat, (dvc_id,))
 
         elif event.Id == PathIds.POINT.value:
             with PathgenPoint(self, self.parent.core.project.devices) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     print_debug_msg(self.core.console, 'Point path added', self.core.is_dev_env)
-                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
+                    dvc_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
                         .split(' ')[0])
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
@@ -229,13 +229,13 @@ class PathgenToolbar(aui.AuiToolBar):
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
-                    self._extend_actions((x, y, z), 1, lookat, (device_id,))
+                    self._extend_actions((x, y, z), 1, lookat, (dvc_id,))
 
     def _extend_actions(self,
                         vertices,
                         count: int,
                         lookat: vec3,
-                        device_list: Tuple[int]) -> None:
+                        device_ids: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
         TODO: #120: move this somewhere else
@@ -248,22 +248,22 @@ class PathgenToolbar(aui.AuiToolBar):
             lookat: A vec3 representing the lookat point in space.
         """
 
-        devices = self.core.project.devices
         grouped_points = defaultdict(list)
         max_zs = defaultdict(float)
 
-        # group points into devices
+        # Group points by device.
         for i in range(count):
             point = Point3(vertices[i * 3:i * 3 + 3])
-            device_id = -1
-            for id_ in device_list:
-                max_zs[id_] = devices[id_].range_3d.upper.z
-                if devices[id_].range_3d.is_point_inside(point, 0.0):
-                    device_id = id_
+            dvc_id = -1
+            for d_id in device_ids:
+                dvc: Device = self.core.project.get_device_by_id(d_id)
+                max_zs[d_id] = dvc.range_3d.upper.z
+                if dvc.range_3d.is_point_inside(point, 0.0):
+                    dvc_id = d_id
 
-            # ignore if point not in bounds of any device
-            if device_id != -1:
-                grouped_points[device_id].append(point.to_vec3())
+            # Ignore if point not in bounds of any device.
+            if dvc_id != -1:
+                grouped_points[dvc_id].append(point.to_vec3())
 
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
         self.core.project.pose_sets.extend(pose_sets)

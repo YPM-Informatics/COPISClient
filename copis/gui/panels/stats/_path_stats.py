@@ -72,13 +72,13 @@ class PathStats(wx.Panel):
         self._dvc_captions = {}
 
         for dvc in self._core.project.devices:
-            self._dvc_captions[dvc.device_id] = text_ctrl(f=self._parent.font)
-            name = f'{dvc.name} {dvc.type} ({dvc.device_id})'
+            self._dvc_captions[dvc.d_id] = text_ctrl(f=self._parent.font)
+            name = f'{dvc.name} {dvc.type} ({dvc.d_id})'
             device_grid.AddMany([
                 (20, 0),
                 (simple_statictext(
                     self, f'{name}:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
-                (self._dvc_captions[dvc.device_id], 0, wx.EXPAND, 0)])
+                (self._dvc_captions[dvc.d_id], 0, wx.EXPAND, 0)])
 
         self._box_sizer.Add(path_grid, 0,
             wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 5)
@@ -121,7 +121,7 @@ class PathStats(wx.Panel):
             self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
 
             for key, group in groups:
-                if key in [d.device_id for d in self._core.project.devices]:
+                if key in [d.d_id for d in self._core.project.devices]:
                     poses = list(group)
                     pose_count = len(poses)
                     img_count = count_imgs(poses) + count_stack_imgs(poses)

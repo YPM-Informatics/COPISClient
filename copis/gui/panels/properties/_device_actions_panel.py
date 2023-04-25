@@ -18,7 +18,7 @@
 import wx
 from pydispatch import dispatcher
 
-from copis.classes import Device
+from copis.models.machine import Device
 from copis.globals import ToolIds
 from copis.gui.wxutils import show_msg_dialog
 import copis.store as store
@@ -135,19 +135,19 @@ class DeviceActionsPanel(wx.Panel):
     def _on_start_live_view(self, _) -> None:
         self._parent.parent.remove_evf_pane()
 
-        if self._parent.core.connect_edsdk(self._device.device_id):
+        if self._parent.core.connect_edsdk(self._device.d_id):
             self._parent.parent.add_evf_pane()
         else:
             show_msg_dialog('Please connect the camera to start live view.',
                 'Start Live View')
 
     def _on_snap_edsdk_picture(self, event: wx.CommandEvent) -> None:
-        if self._parent.core.connect_edsdk(self._device.device_id):
+        if self._parent.core.connect_edsdk(self._device.d_id):
             pos = event.GetEventObject().GetScreenPosition()
 
             def snap_shot_handler():
                 self._parent.core.snap_edsdk_picture(self._af_option.Value,
-                    self._device.device_id)
+                    self._device.d_id)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -163,7 +163,7 @@ class DeviceActionsPanel(wx.Panel):
 
             def snap_shot_handler():
                 self._parent.core.snap_serial_picture(shutter_release_time,
-                    self._device.device_id)
+                    self._device.d_id)
                 self._parent.Parent.hide_imaging_toolbar()
 
             actions = [(ToolIds.SNAP_SHOT, True, snap_shot_handler)]
@@ -173,7 +173,7 @@ class DeviceActionsPanel(wx.Panel):
                 'Take a Picture - Serial')
 
     def _on_transfer_edsdk_pictures(self, _) -> None:
-        if self._parent.core.connect_edsdk(self._device.device_id):
+        if self._parent.core.connect_edsdk(self._device.d_id):
             if not self._device.edsdk_save_to_path:
                 show_msg_dialog('Provide edsdk_save_to_path in your camera profile.',
                     'Transfer Pictures - EDSDK')

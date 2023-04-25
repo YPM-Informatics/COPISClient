@@ -23,13 +23,14 @@ import wx
 from glm import vec3
 from pydispatch import dispatcher
 
+from copis.models.machine import Device
 from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position, get_heading, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
-from copis.classes import Action, Device, Pose
+from copis.classes import Action, Pose
 from copis import store
 
 
@@ -376,7 +377,7 @@ class TransformPanel(wx.Panel):
         self.Layout()
 
     def _on_copy_position(self, _) -> None:
-        copy = (self._device.device_id, self.x, self.y, self.z,
+        copy = (self._device.d_id, self.x, self.y, self.z,
             dd_to_rad(self.p), dd_to_rad(self.t))
 
         dispatcher.send('ntf_device_position_copied', data=copy)
@@ -427,7 +428,7 @@ class TransformPanel(wx.Panel):
 
     def _play_position(self, values, keys):
         g_args = create_action_args(values, keys)
-        pose = Pose(Action(Gcode.G1, self._device.device_id,
+        pose = Pose(Action(Gcode.G1, self._device.d_id,
             len(g_args), g_args), [])
 
         self.parent.core.play_poses([pose])
@@ -574,7 +575,7 @@ class TransformPanel(wx.Panel):
             args = []
 
         atype = None
-        device_id = self._device.device_id
+        device_id = self._device.d_id
 
         if name == 'G91':
             atype = Gcode.G91
@@ -678,7 +679,7 @@ class TransformPanel(wx.Panel):
                     self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def _on_device_updated(self, device):
-        if self._device and self._device.device_id == device.device_id:
+        if self._device and self._device.d_id == device.d_id:
             self.set_device(device)
 
     def _set_text_controls(self, position: Point5) -> None:

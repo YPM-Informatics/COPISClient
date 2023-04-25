@@ -18,7 +18,7 @@
 import time
 import sqlite3
 from copis import store
-from copis.classes import Device
+from copis.models.machine import Device
 from copis.helpers import hash_file_md5
 
 class SysDB():
@@ -165,7 +165,7 @@ class SysDB():
              device.position.t, \
              src,               \
              src_action,        \
-             device.device_id,  \
+             device.d_id,  \
              device.serial_no,  \
              device.name,       \
              device.type,       \
@@ -178,10 +178,10 @@ class SysDB():
         cur.execute(s, v)
         row_id = cur.lastrowid
 
-        if device.device_id not in self._poses_in_play:
-            self._poses_in_play[device.device_id] = [row_id]
+        if device.d_id not in self._poses_in_play:
+            self._poses_in_play[device.d_id] = [row_id]
         else:
-            self._poses_in_play[device.device_id].append(row_id)
+            self._poses_in_play[device.d_id].append(row_id)
 
         cur.close()
         db.commit()
@@ -193,10 +193,10 @@ class SysDB():
         if not self._is_initialized:
             return -1
 
-        if device.device_id in self._poses_in_play and len(self._poses_in_play[device.device_id]) > 0:
+        if device.d_id in self._poses_in_play and len(self._poses_in_play[device.d_id]) > 0:
             # The reason we maintain a list even though only one image can be taken at a time per device, is that in case the device signals it is finished and
             # receives another image request while we are still processing the last.
-            p_id = self._poses_in_play[device.device_id][0]
+            p_id = self._poses_in_play[device.d_id][0]
 
             db = sqlite3.connect(self._filename)
             cur = db.cursor()
@@ -226,13 +226,13 @@ class SysDB():
         """Records the end of a picture taking action and returns the entry's id."""
         if not self._is_initialized:
             return -1
-        if device.device_id in self._poses_in_play and len(self._poses_in_play[device.device_id]) > 0:
+        if device.d_id in self._poses_in_play and len(self._poses_in_play[device.d_id]) > 0:
 
             # The reason we maintain a list even though only one image can be taken at a time per device, is that in case the device signals it is finished and
             # receives another image request while we are still processing the last.
-            p_id = self._poses_in_play[device.device_id][0]
+            p_id = self._poses_in_play[device.d_id][0]
 
-            self._poses_in_play[device.device_id].pop(0)
+            self._poses_in_play[device.d_id].pop(0)
             db = sqlite3.connect(self._filename)
             cur = db.cursor()
             s = 'UPDATE image_metadata SET unix_time_end = ? WHERE id =? and unix_time_end is null;'

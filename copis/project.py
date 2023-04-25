@@ -26,8 +26,9 @@ import wx
 from pydispatch import dispatcher
 
 from copis import store
-from copis.classes import Device, Action, Pose, MonitoredList, Object3D, OBJObject3D
-from copis.models.geometries import BoundingBox, Point3, Point5
+from copis.classes import Action, Pose, MonitoredList, Object3D, OBJObject3D
+from copis.models.machine import Device
+from copis.models.geometries import BoundingBox, Point3, Point5, Size3
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
@@ -202,20 +203,20 @@ class Project():
             if data['edsdk_save_to_path'] and not (data['edsdk_save_to_path']).isspace() and not os.path.exists(data['edsdk_save_to_path']):
                 os.makedirs(data['edsdk_save_to_path'])
             return Device(
-                data['id'],
-                data['serial_no'],
-                data['name'],
-                data['type'],
-                data['description'],
-                Point5(*data['home_position']),
-                BoundingBox(lower_corner, upper_corner),
-                vec3(data['size']),
-                data['port'],
-                data['head_radius'],
-                vec3(data['body_dims']),
-                vec3(data['gantry_dims']),
-                data['gantry_orientation'],
-                data['edsdk_save_to_path']
+                d_id=data['id'],
+                serial_no=data['serial_no'],
+                name=data['name'],
+                type=data['type'],
+                description=data['description'],
+                home_position= Point5(*data['home_position']),
+                range_3d=BoundingBox(lower_corner, upper_corner),
+                head_dims=Size3(*data['size']),
+                # data['port'],
+                head_radius=data['head_radius'],
+                z_body_dims=Size3(*data['body_dims']),
+                gantry_dims=Size3(data['gantry_dims']),
+                gantry_orientation=data['gantry_orientation'],
+                edsdk_save_to_path=data['edsdk_save_to_path']
             )
 
         key = 'devices'
@@ -534,13 +535,13 @@ class Project():
                 self._pose_sets.clear(False)
                 self._pose_sets.extend(build_pose_sets(interleaved))
 
-    def can_add_pose(self, set_index: int, device_id: int):
+    def can_add_pose(self, set_index: int, device_id: int) -> bool:
         """Returns a flag indicating where a pose with the specified device
             can be added to the pose."""
         if not self._pose_sets or set_index >= len(self._pose_sets):
             return False
 
-        if not self._devices or not any(d.device_id == device_id for d in self._devices):
+        if not self._devices or not any(d.d_id == device_id for d in self._devices):
             return False
 
         pose_set = self._pose_sets[set_index]
@@ -553,14 +554,18 @@ class Project():
 
         return True
 
-    def get_allowed_devices(self, set_index: int):
+    def get_allowed_devices(self, set_index: int) -> List[Device]:
         """Returns the devices not already in the set."""
         if not self._pose_sets or set_index >= len(self._pose_sets):
             return []
 
         set_dvc_ids = [p.position.device for p in self._pose_sets[set_index]]
 
-        return [d for d in self._devices if d.device_id not in set_dvc_ids]
+        return [d for d in self._devices if d.d_id not in set_dvc_ids]
+
+    def get_device_by_id(self, device_id: int) -> Device:
+        """Returns a device given its id."""
+        return next(filter(lambda d: d.d_id == device_id, self.devices), None)
 
 
 def _pose_from_json_map(set_data: Iterable[Any]) -> Pose:

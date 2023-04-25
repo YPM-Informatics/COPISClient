@@ -70,7 +70,7 @@ class TimelinePanel(wx.Panel):
         self.Layout()
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self.core.project.devices),
+        return next(filter(lambda d: d.d_id == device_id, self.core.project.devices),
             None)
 
     def _get_device_caption(self, device_id):
@@ -645,7 +645,7 @@ class TimelinePanel(wx.Panel):
         device_ids = list(set(p.position.device for p in self.core.project.poses))
         device_ids.sort()
         devices = [self._get_device(did) for did in device_ids]
-        device_choices = list(map(lambda d: f'{d.device_id} ({d.name})', devices))
+        device_choices = list(map(lambda d: f'{d.d_id} ({d.name})', devices))
         device_choices.insert(0, 'All')
 
         dialog_size = (120, -1)

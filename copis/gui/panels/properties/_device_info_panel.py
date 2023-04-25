@@ -56,7 +56,7 @@ class DeviceInfoPanel(wx.Panel):
 
     def set_device(self, device):
         """Parses the selected device into the panel."""
-        self._id_text.Label = str(device.device_id)
+        self._id_text.Label = str(device.d_id)
         self._name_text.Label = device.name
         self._type_text.Label = device.type
         self._desc_text.Label = device.description

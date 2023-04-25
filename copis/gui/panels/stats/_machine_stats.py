@@ -100,18 +100,18 @@ class MachineStats(wx.Panel):
         ])
 
         for dvc in self._core.project.devices:
-            self._dvc_captions[dvc.device_id]['name'] = text_ctrl(
+            self._dvc_captions[dvc.d_id]['name'] = text_ctrl(
                 wx.ALIGN_LEFT|wx.TEXT_ALIGNMENT_LEFT|wx.ST_ELLIPSIZE_END, self._parent.font)
-            self._dvc_captions[dvc.device_id]['x'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.device_id]['y'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.device_id]['z'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.device_id]['p'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.device_id]['t'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.device_id]['status'] = text_ctrl(
+            self._dvc_captions[dvc.d_id]['x'] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['y'] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['z'] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['p'] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['t'] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['status'] = text_ctrl(
                 f=self._parent.font)
 
-            for key in self._dvc_captions[dvc.device_id]:
-                device_grid.Add(self._dvc_captions[dvc.device_id][key], 0, wx.EXPAND, 0)
+            for key in self._dvc_captions[dvc.d_id]:
+                device_grid.Add(self._dvc_captions[dvc.d_id][key], 0, wx.EXPAND, 0)
 
             self._update_device(dvc)
 
@@ -159,7 +159,7 @@ class MachineStats(wx.Panel):
     def _update_device(self, device):
         format_num = lambda n: f'{n:.3f}'
 
-        name = f'{device.name} {device.type} ({device.device_id})'
+        name = f'{device.name} {device.type} ({device.d_id})'
         name = name.title()
         status = device.status.name.lower()
 
@@ -168,19 +168,19 @@ class MachineStats(wx.Panel):
         else:
             x, y, z, p, t = ['?'] * 5
 
-        self._dvc_captions[device.device_id]['name'].SetLabel(name)
-        self._dvc_captions[device.device_id]['name'].SetMaxSize((90, -1))
-        self._dvc_captions[device.device_id]['name'].SetToolTip(
+        self._dvc_captions[device.d_id]['name'].SetLabel(name)
+        self._dvc_captions[device.d_id]['name'].SetMaxSize((90, -1))
+        self._dvc_captions[device.d_id]['name'].SetToolTip(
             wx.ToolTip(name))
 
-        self._dvc_captions[device.device_id]['x'].SetLabel(x)
-        self._dvc_captions[device.device_id]['y'].SetLabel(y)
-        self._dvc_captions[device.device_id]['z'].SetLabel(z)
-        self._dvc_captions[device.device_id]['p'].SetLabel(p)
-        self._dvc_captions[device.device_id]['t'].SetLabel(t)
+        self._dvc_captions[device.d_id]['x'].SetLabel(x)
+        self._dvc_captions[device.d_id]['y'].SetLabel(y)
+        self._dvc_captions[device.d_id]['z'].SetLabel(z)
+        self._dvc_captions[device.d_id]['p'].SetLabel(p)
+        self._dvc_captions[device.d_id]['t'].SetLabel(t)
 
-        self._dvc_captions[device.device_id]['status'].SetLabel(status)
-        self._dvc_captions[device.device_id]['status'].SetToolTip(
+        self._dvc_captions[device.d_id]['status'].SetLabel(status)
+        self._dvc_captions[device.d_id]['status'].SetToolTip(
             wx.ToolTip(status))
 
     def on_device_updated(self, device):

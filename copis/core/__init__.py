@@ -162,7 +162,7 @@ class COPISCore:
         actions = []
 
         for dvc in self.project.devices:
-            cmds.append(Action(Gcode.M18, dvc.device_id))
+            cmds.append(Action(Gcode.M18, dvc.d_id))
         actions.append(cmds)
 
         return actions
@@ -288,7 +288,7 @@ class COPISCore:
 
     def _get_move_commands(self, is_absolute, *device_ids):
         actions = []
-        all_device_ids = [dvc.device_id for dvc in self.project.devices]
+        all_device_ids = [dvc.d_id for dvc in self.project.devices]
 
         if device_ids and all(did in all_device_ids for did in device_ids):
             atype = Gcode.G90 if is_absolute else Gcode.G91
@@ -329,7 +329,7 @@ class COPISCore:
 
         for dvc in self.project.devices:
             if dvc.serial_response and dvc.serial_response.is_locked:
-                cmd = Action(Gcode.M511, dvc.device_id)
+                cmd = Action(Gcode.M511, dvc.d_id)
                 cmds.append(cmd)
 
         if cmds:
@@ -350,7 +350,7 @@ class COPISCore:
         g_code = str(atype).split('.')[1]
 
         for dvc in self.project.devices:
-            device_id = dvc.device_id
+            device_id = dvc.d_id
             cmd_id = ''
             cmd_str_1 = ''
             cmd_str_2 = ''
@@ -386,7 +386,7 @@ class COPISCore:
         return port.name if port else None
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self.project.devices), None)
+        return next(filter(lambda d: d.d_id == device_id, self.project.devices), None)
 
     def _listener(self) -> None:
         """Implements a listening thread."""
@@ -545,7 +545,7 @@ class COPISCore:
             pics = [a for p in list(group) for a in p.get_actions()
                 if a.atype in self.SNAP_COMMANDS]
             device = self._get_device(key)
-            device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
+            device_key = f'{device.name}_{device.type}_id_{device.d_id}'.lower()
             counts[device_key] = len(pics)
 
         return ('expected_image_counts', counts)
@@ -597,7 +597,7 @@ class COPISCore:
             atype_kind = get_atype_kind(cmd.atype)
 
             if atype_kind == 'EDS':
-                if self.connect_edsdk(dvc.device_id):
+                if self.connect_edsdk(dvc.d_id):
                     dvc.is_writing_eds = True
                     if cmd.atype == Gcode.E0:
                         do_af = bool(value) if key == 'V' else False
@@ -611,7 +611,7 @@ class COPISCore:
                     #dvc.is_writing_eds = False
                 else:
                     print_error_msg(self.console,
-                        f'Unable to connect to camera {dvc.device_id}.')
+                        f'Unable to connect to camera {dvc.d_id}.')
             else:
                 print_error_msg(self.console,
                     f"Action type kind '{atype_kind}' not yet handled.")
@@ -679,7 +679,7 @@ class COPISCore:
         chunks = []
 
         for command in commands:
-            if not any(d.device_id == command.device for d in dvcs):
+            if not any(d.d_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
 
             if chunks and \
@@ -697,7 +697,7 @@ class COPISCore:
 
         if cmd_lines:
             print_debug_msg(self.console, 'Writing> [{0}] to device{1} '.format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
+                f'{", ".join([str(d.d_id) for d in dvcs])}.', self._is_dev_env)
 
             pre_shutter_delay_completed = False
             for command in commands:
@@ -742,7 +742,7 @@ class COPISCore:
                         elif check_chunk_kind(chunk, 'EDS'):
                             if serial_cmds:
                                 for dvc in dvcs:
-                                    if dvc.device_id in [c.device for c in serial_cmds]:
+                                    if dvc.d_id in [c.device for c in serial_cmds]:
                                         dvc.set_is_writing_ser()
 
                                 self._serial.write(
@@ -1353,7 +1353,7 @@ class COPISCore:
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
 
-        last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
+        last_dvc_statuses = [(d.d_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
 
         self.project.start()
@@ -1371,7 +1371,7 @@ class COPISCore:
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
 
-        last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
+        last_dvc_statuses = [(d.d_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
 
         resp = self.project.open(path)
@@ -1418,7 +1418,7 @@ class COPISCore:
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
-        header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
+        header = self._get_move_commands(True, *[dvc.d_id for dvc in self.project.devices])
         body = process_pose_sets()
 
         ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
@@ -1470,7 +1470,7 @@ class COPISCore:
             return False
 
         # Only send homing commands for connected devices.
-        all_device_ids = [d.device_id for d in self.project.devices]
+        all_device_ids = [d.d_id for d in self.project.devices]
         homing_actions = list(filter(lambda c: c.device in all_device_ids, homing_actions))
 
         device_ids = list(set(a.device for a in homing_actions))
