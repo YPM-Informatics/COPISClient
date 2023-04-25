@@ -292,7 +292,7 @@ class TimelinePanel(wx.Panel):
         set_index = 0
         idx_in_set = pose_index
 
-        if pose_index >= len(sets[0]):
+        if sets and pose_index >= len(sets[0]):
             for i in range(1, len(sets) + 1):
                 sums = sum([len(s) for s in sets[:i]])
                 if sums > pose_index:
