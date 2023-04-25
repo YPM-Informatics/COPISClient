@@ -29,7 +29,7 @@ from itertools import zip_longest
 import glm
 from glm import mat4, vec3, vec4
 
-from copis.models.geometries import Point3, Point5
+from copis.models.geometries import Point3, Point5, Size3
 from copis.models.g_code import Gcode
 
 
@@ -247,30 +247,29 @@ def create_cuboid(size: vec3) -> List[vec3]:
     return list(map(lambda e: vertices[e], face_map))
 
 
-def create_device_features(size: vec3, scale: float, offset: vec3 = vec3(0)):
+def create_device_features(size: Size3, scale: float, offset: Point3 = Point3(0, 0, 0)):
     """Returns imaging device features (axes & lens lines) centered at 0,0,0
         given the device size."""
-    size_nm = glm.normalize(size) * scale
+    size_nm = Size3(*glm.normalize(list(size))) * scale
 
-    size_nm_lens = size_nm * .75 # vec3([round(v, 1) for v in size *.75])
-    lens_top_left = vec3(size_nm_lens.xy * -1, size_nm_lens.z)
-    lens_top_right = vec3(lens_top_left.x * -1, lens_top_left.yz)
-    lens_bottom_left = (size_nm_lens * -1)
-    lens_bottom_right = vec3(lens_bottom_left.x * -1, lens_bottom_left.yz)
+    size_nm_lens = size_nm * .75
+    lens_top_left = Point3(size_nm_lens.width * -1, size_nm_lens.height * -1, size_nm_lens.depth)
+    lens_top_right = Point3(size_nm_lens.width, size_nm_lens.height * -1, size_nm_lens.depth)
+    lens_bottom_left = Point3(*size_nm_lens) * -1
+    lens_bottom_right = Point3(size_nm_lens.width, size_nm_lens.height * -1, size_nm_lens.depth * -1)
 
     lens_top_left = offset + lens_top_left
     lens_top_right = offset + lens_top_right
     lens_bottom_left = offset + lens_bottom_left
     lens_bottom_right = offset + lens_bottom_right
 
-    x_dist, y_dist, z_dist = [offset.xyz for i in [1] * 3]
+    x_dist, y_dist, z_dist = [Point3(*offset) for _ in [1] * 3]
+    x_dist.x, y_dist.y, z_dist.z = offset + Point3(*size_nm)
 
-    x_dist.x, y_dist.y, z_dist.z = offset + size_nm
-
-    red = vec3(1, 0, 0)
-    green = vec3(0, 1, 0)
-    blue = vec3(0, 0, 1)
-    gray = vec3(.7)
+    red = Point3(1, 0, 0)
+    green = Point3(0, 1, 0)
+    blue = Point3(0, 0, 1)
+    gray = Point3(.7, .7, .7)
 
     points = [*x_dist, *red, *offset, *red]
     points.extend([*y_dist, *green, *offset, *green])

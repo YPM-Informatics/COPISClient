@@ -24,7 +24,6 @@ from itertools import groupby
 import wx
 
 from pydispatch import dispatcher
-from glm import vec3
 
 from copis import store
 from copis.classes import Device, Action, Pose, MonitoredList, Object3D, OBJObject3D
@@ -235,7 +234,7 @@ class Project():
         if proxies is None:
             # Start with handsome dan :)
             # On init a new project is created with handsome dan as the proxy.
-            handsome_dan = OBJObject3D(self._default_proxy_path, scale=vec3(20, 20, 20))
+            handsome_dan = OBJObject3D(self._default_proxy_path, scale=Point3(20, 20, 20))
             proxies = [handsome_dan]
 
         if self._proxies is not None:
@@ -338,8 +337,7 @@ class Project():
                     is_dirty = True
 
                 if proxy_path:
-                    proxies.append(OBJObject3D(
-                        proxy_path, scale=vec3(20, 20, 20)))
+                    proxies.append(OBJObject3D(proxy_path, scale=Point3(20, 20, 20)))
                 else:
                     resp = f'Proxy path "{proxy_path or proxy["data"]}" does not exist'
             else:

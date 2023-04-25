@@ -132,11 +132,9 @@ class CylinderObject3D(Object3D):
 class OBJObject3D(Object3D):
     """.obj object. TODO"""
 
-    def __init__(self, filename: str, scale: vec3 = vec3(1.0)):
+    def __init__(self, filename: str, scale: Point3=Point3(1.0, 1.0, 1.0)):
         super().__init__()
         self._filename = filename
-        self._wavefront_vertices: glm.array
-        self.scale = vec3(scale)
 
         self.vertices: glm.array
         self.normals: glm.array
@@ -147,8 +145,8 @@ class OBJObject3D(Object3D):
             v = material.vertices
             v = [v[i:i + 8] for i in range(0, len(v), 8)]
 
-            self.vertices = glm.array([vec3(chunk[5:8]) * scale for chunk in v])
-            self.normals = glm.array([vec3(chunk[2:5]) for chunk in v])
+            self.vertices = glm.array([(Point3(*chunk[5:8]) * scale).to_vec3() for chunk in v])
+            self.normals = glm.array([Point3(*chunk[2:5]).to_vec3() for chunk in v])
             self.indices = \
                 glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
 
