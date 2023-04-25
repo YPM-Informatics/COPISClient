@@ -42,10 +42,8 @@ class Point3:
         )
 
         cls = type(self)
-        new_pt = cls.__new__(cls)
-        new_pt.__init__(**dic)
 
-        return new_pt
+        return cls(**dic)
 
     def __sub__(self, other):
         dic = dict(
@@ -53,10 +51,8 @@ class Point3:
         )
 
         cls = type(self)
-        new_pt = cls.__new__(cls)
-        new_pt.__init__(**dic)
 
-        return new_pt
+        return cls(**dic)
 
     def __mul__(self, other):
         if isinstance(other, type(self)):
@@ -68,13 +64,11 @@ class Point3:
                 (k, (v or 0) * other) for k, v in self.__dict__.items()
             )
         else:
-            raise TypeError(f"unsupported operand type(s) for *: 'Point3' and '{type(other)}'.")
+            raise TypeError(f"unsupported operand type(s) for *: '{type(self)}' and '{type(other)}'.")
 
         cls = type(self)
-        new_pt = cls.__new__(cls)
-        new_pt.__init__(**dic)
 
-        return new_pt
+        return cls(**dic)
 
     def __truediv__(self, other):
         if isinstance(other, type(self)):
@@ -86,13 +80,11 @@ class Point3:
                 (k, (v or 0) / other) for k, v in self.__dict__.items()
             )
         else:
-            raise TypeError(f"unsupported operand type(s) for /: 'Point3' and '{type(other)}'.")
+            raise TypeError(f"unsupported operand type(s) for /: '{type(self)}' and '{type(other)}'.")
 
         cls = type(self)
-        new_pt = cls.__new__(cls)
-        new_pt.__init__(**dic)
 
-        return new_pt
+        return cls(**dic)
 
     def __getitem__(self, idx):
         return list(self.__dict__.values())[idx]
@@ -102,7 +94,7 @@ class Point3:
         setattr(self, prop, value)
 
     def to_vec3(self) -> vec3:
-        """Returns a 3D glm vector from the pose's position."""
+        """Returns a 3D glm vector from the Point."""
         return vec3(list(asdict(self).values())[:3])
 
 
@@ -111,6 +103,9 @@ class Point5(Point3):
     """Five axes positional object. Inherits from Point3.
 
         Attributes:
+            x: the x coordinate.
+            y: the y coordinate.
+            z: the z coordinate.
             p: the pan coordinate.
             t: the tilt coordinate.
     """
@@ -136,15 +131,78 @@ class Size2:
     def __iter__(self):
         return iter(self.__dict__.values())
 
+    def __add__(self, other):
+        dic = dict(
+            (k, (v or 0) + (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+        )
+
+        cls = type(self)
+
+        return cls(**dic)
+
+    def __sub__(self, other):
+        dic = dict(
+            (k, (v or 0) - (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+        )
+
+        cls = type(self)
+
+        return cls(**dic)
+
+    def __mul__(self, other):
+        if isinstance(other, type(self)):
+            dic = dict(
+                (k, (v or 0) * (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+            )
+        elif isinstance(other, (int, float)):
+            dic = dict(
+                (k, (v or 0) * other) for k, v in self.__dict__.items()
+            )
+        else:
+            raise TypeError(f"unsupported operand type(s) for *: '{type(self)}' and '{type(other)}'.")
+
+        cls = type(self)
+
+        return cls(**dic)
+
+    def __truediv__(self, other):
+        if isinstance(other, type(self)):
+            dic = dict(
+                (k, (v or 0) / (other.__dict__[k] or 0)) for k, v in self.__dict__.items()
+            )
+        elif isinstance(other, (int, float)):
+            dic = dict(
+                (k, (v or 0) / other) for k, v in self.__dict__.items()
+            )
+        else:
+            raise TypeError(f"unsupported operand type(s) for /: '{type(self)}' and '{type(other)}'.")
+
+        cls = type(self)
+
+        return cls(**dic)
+
+    def __getitem__(self, idx):
+        return list(self.__dict__.values())[idx]
+
+    def __setitem__(self, idx, value):
+        prop = list(self.__dict__.keys())[idx]
+        setattr(self, prop, value)
+
 
 @dataclass
 class Size3(Size2):
     """3 axes dimensional object. Inherits from Size2.
 
         Attributes:
+            width: the width dimension.
+            height: the height dimension.
             depth: the depth dimension.
     """
     depth: float = None
+
+    def to_vec3(self) -> vec3:
+        """Returns a 3D glm vector from the Size3."""
+        return vec3(list(asdict(self).values()))
 
 
 @dataclass
@@ -270,13 +328,11 @@ class BoundingBox:
             if point[i] > self.upper[i]:
                 self.upper[i] = point[i]
 
-def round_point(value: Point3, places: int=None) -> Point3:
+def round_point(value: Point3, places: int=1) -> Point3:
     """Rounds the vertices of a point."""
     cls = type(value)
-    rounded_pt = cls.__new__(cls)
-    rounded_pt.__init__(*list(map(lambda v: round(v, places), list(value))))
 
-    return rounded_pt
+    return cls(*list(map(lambda v: round(v, places), list(value))))
 
 def _get_mid_diagonal(lower, upper):
     return round_point((lower + upper) / 2, 3)
