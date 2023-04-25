@@ -19,8 +19,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import ClassVar, List
+from pydispatch import dispatcher
 
-from .geometries import BoundingBox, Point5, Size3
+from copis.models.geometries import BoundingBox, Point5, Size3
+
 
 class ControllerStatusFlags(Enum):
     """Bit positions for each COPIS controller status flag."""
@@ -57,18 +59,24 @@ class DeviceGroup:
         self.tx_thread = tx_thread
         self.rx_thread = rx_thread
 
-    def execute_raw(self, g_code: str) -> None:
+    def execute_raw(self, device_id, g_code: str) -> None:
         """Executes a string of g-code."""
         # TODO: to be implemented.
-        pass
 
 
 @dataclass
 class SerialResponse:
-    """Data structure that implements a parsed COPIS serial response."""
-    device_id: int = -1
-    system_status_number: int = -1
-    position: Point5 = Point5()
+    """Data structure that implements a parsed COPIS serial response.
+
+        Attributes:
+            device_id: the parent device's identifier.
+            system_status_number: the status integer returned by the controller.
+            position: the controller's current reported position.
+            error: any error string returned by the controller.
+    """
+    device_id: int = None
+    system_status_number: int = None
+    position: Point5 = None
     error: str = None
 
     # TODO: This might be obsolete. leaving it in for now to see if I end up using it.
@@ -242,7 +250,7 @@ class Device:
     """Data structure that represents an imaging device; e.g.: a camera and a COPIS controller pair.
 
         Attributes:
-            id: identifier.
+            d_id: identifier.
             role: a primary device has a role >= 1, all others have 0.
             name: a short device description.
             type: the device's imaging hardware name, e.g.: Camera,
@@ -253,7 +261,7 @@ class Device:
             home_position: the coordinates of the device at its homed position.
             range_3d: The available 3 dimensional range of move for the device.
             head_radius: the device's head radius.
-            head_dims: the devices's head dimensions.
+            head_dims: the devices's head dimensions (size).
             z_body_dims: the device's Z axis body dimensions.
             gantry_dims: the device's X axis dimensions.
             settings: the device's controller's settings.
@@ -275,3 +283,109 @@ class Device:
     gantry_dims: Size3 = None
     settings: DeviceSettings = None
     description: str = None
+
+    _serial_response = None
+    _is_homed = False
+    _is_writing_ser = False
+    _is_writing_eds = False
+    _last_reported_on = None
+
+    def execute_g_code(self, g_code: str) -> None:
+        """Executes a string of g-code."""
+        # TODO: to be implemented.
+
+    @property
+    def position(self):
+        """Returns the device's current position base of if it's homed."""
+        return self.serial_response.position if self._is_homed else self.home_position
+
+    @property
+    def is_writing(self) -> bool:
+        """Returns the device's unified IsWriting flag."""
+        return self._is_writing_ser or self._is_writing_eds
+
+    @property
+    def is_writing_ser(self) -> bool:
+        """Returns the device's IsWriting flag for serial com."""
+        return self._is_writing_ser
+
+    @property
+    def is_writing_eds(self) -> bool:
+        """Returns the device's IsWriting flag for EDSDK com."""
+        return self._is_writing_eds
+
+    @is_writing_eds.setter
+    def is_writing_eds(self, value: bool) -> None:
+        old_value = self._is_writing_eds
+        self._is_writing_eds = value
+
+        if self._is_writing_eds != old_value:
+            dispatcher.send('ntf_device_eds_updated', device=self)
+
+    @property
+    def is_homed(self) -> bool:
+        """Returns the device's IsHomed flag."""
+        return self._is_homed
+
+    @property
+    def serial_response(self) -> SerialResponse:
+        """Returns the device's last serial response."""
+        return self._serial_response
+
+    @property
+    def last_reported_on(self) -> datetime:
+        """Returns the device's last serial response date."""
+        return self._last_reported_on
+
+    @property
+    def serial_status(self) -> MachineStatus:
+        """Returns the device's serial status based on its last serial response."""
+        if self.serial_response is None:
+            if self._is_homed:
+                return MachineStatus.IDLE
+
+            return MachineStatus.BUSY if self._is_writing_ser else MachineStatus.UNKNOWN
+
+        if self.serial_response.error:
+            return MachineStatus.ERROR
+
+        if self._is_writing_ser or not self.serial_response.is_idle:
+            return MachineStatus.BUSY
+
+        if self.serial_response.is_idle:
+            return MachineStatus.IDLE
+
+        raise ValueError('Unsupported device serial status code path.')
+
+    @property
+    def status(self) -> MachineStatus:
+        """Returns the device's aggregate status."""
+        if self._is_writing_eds:
+            return MachineStatus.BUSY
+
+        return self.serial_status
+
+    def set_is_writing_ser(self) -> None:
+        """Sets the device's IsWriting flag."""
+        self._is_writing_ser = True
+
+        dispatcher.send('ntf_device_ser_updated', device=self)
+
+    def set_is_homed(self) -> None:
+        """Sets the device's IsHomed flag and notifies."""
+        self._is_homed = True
+
+        dispatcher.send('ntf_device_homed')
+
+    def set_serial_response(self, response: SerialResponse) -> None:
+        """Sets the device's serial response."""
+        self._serial_response = response
+
+        if response:
+            self._last_reported_on = datetime.now()
+        else:
+            self._last_reported_on = None
+
+        self._is_writing_ser = False
+
+        dispatcher.send('ntf_device_ser_updated', device=self)
