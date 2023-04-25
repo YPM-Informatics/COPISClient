@@ -37,5 +37,5 @@
 			"edsdk_save_to_path": ""
 		}
 	],
-	"homing_sequence": "G28Z\n 1\nG1Z300\n// batch 2\nG28YF2000\nG92Y-400\nG28XF2000\n// batch 3\nG1X-5\nG92X344\nG1X-344\n// batchxxx\nG28PTF1500\n// batch 9"
+	"homing_sequence": "G28Z\n// batch 1\nG1Z300\n// batch 2\nG28YF2000\n// batch 3\nG92Y-400\n// batch 4\nG28XF2000\n// batch 5\nG1X-5\n// batch 6\nG92X344\n// batch 7\nG1X-344\n// batch 8\nG28PTF1500\n// batch 9"
 }
