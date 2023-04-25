@@ -263,8 +263,8 @@ class BoundingBox:
             end: A vec3 representing the end of the line segment.
         """
         direction: Point3 = end - start
-        origin: Point3 = Point3(start)
-        coord: Point3 = Point3() # Hit point.
+        origin: Point3 = Point3(*start)
+        coord: Point3 = Point3(0, 0, 0) # Hit point.
 
         left, right, middle = 0, 1, 2
         inside = True

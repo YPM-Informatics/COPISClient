@@ -253,7 +253,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
         # Group points by device.
         for i in range(count):
-            point = Point3(vertices[i * 3:i * 3 + 3])
+            point = Point3(*vertices[i * 3:i * 3 + 3])
             dvc_id = -1
             for d_id in device_ids:
                 dvc: Device = self.core.project.get_device_by_id(d_id)
