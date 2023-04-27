@@ -19,10 +19,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
 
-from models.geometries import Point5
-from models.actions import Action
-from models.machine import Device
-from models.g_code import Gcode
+from copis.models.geometries import Point5
+from copis.models.actions import Action
+from copis.models.machine import Device
+from copis.models.g_code import Gcode
 
 class MoveTypes(Enum):
     """Move types."""
@@ -59,6 +59,6 @@ class Move:
     type: MoveTypes = None
     start_pose: Pose = None
     end_pose: Pose = None
-    feed_rate: float = None
+    feed_rate: float = 2500.0
     device: Device = None
     waypoints: List[Point5] = None

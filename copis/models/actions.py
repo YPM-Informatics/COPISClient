@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from models.g_code import Gcode
+from copis.models.g_code import Gcode
 
 class ActionTypes(Enum):
     """Action types."""
@@ -78,7 +78,7 @@ class FocusStackAction(Action):
             step_count: how many images in the stack.
             step_size_mm: how far to travel (in millimeters) between images.
     """
-    feed_rate: float = None                 # F
+    feed_rate: float = 2500.0                 # F
     post_shutter_delay_ms: float = None     # Y
     pre_shutter_delay_ms: float = None      # X
     return_to_start: bool = False           # T
