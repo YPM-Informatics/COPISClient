@@ -29,6 +29,7 @@ from copis import store
 from copis.classes import Action, Pose, MonitoredList, Object3D, OBJObject3D
 from copis.models.machine import Device
 from copis.models.geometries import BoundingBox, Point3, Point5, Size3
+from copis.models.path import Move
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.pathutils import build_pose_sets
@@ -85,6 +86,9 @@ class Project():
         if not hasattr(self, '_pose_sets'):
             self._pose_sets = None
 
+        if not hasattr(self, '_move_sets'):
+            self._move_sets = None
+
         if not hasattr(self, '_core'):
             self._core = None
 
@@ -115,6 +119,11 @@ class Project():
     def pose_sets(self) -> List[List[Pose]]:
         """Returns the pose set list."""
         return self._pose_sets
+
+    @property
+    def move_sets(self) -> List[List[Move]]:
+        """Returns the move set list."""
+        return self._move_sets
 
     @property
     def poses(self) ->List[Pose]:
@@ -225,7 +234,7 @@ class Project():
         if key in self._profile and self._profile[key]:
             devices = [parse_device(d) for d in self._profile[key]]
 
-        if self._devices is not None:               
+        if self._devices is not None:
             self._devices.clear(False)
             self._devices.extend(devices)
         else:
@@ -255,6 +264,17 @@ class Project():
                 self._pose_sets = MonitoredList('ntf_a_list_changed', sets)
             else:
                 self._pose_sets = MonitoredList('ntf_a_list_changed')
+
+    def _init_move_sets(self, sets=None):
+        if self._move_sets is not None:
+            self._move_sets.clear(sets is None)
+            if sets is not None:
+                self._move_sets.extend(sets)
+        else:
+            if sets:
+                self._move_sets = MonitoredList('ntf_a_list_changed', sets)
+            else:
+                self._move_sets = MonitoredList('ntf_a_list_changed')
 
     def update_imaging_option(self, name: str, value: Any) -> None:
         """Updates the value of the give option in the imaging options dictionary."""

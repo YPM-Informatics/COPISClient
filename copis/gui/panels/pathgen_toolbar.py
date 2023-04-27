@@ -29,6 +29,7 @@ from copis.globals import PathIds
 from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_statictext
 from copis.helpers import is_number, print_debug_msg, xyz_units
 from copis.pathutils import build_pose_sets, create_circle, create_helix, create_line, interleave_poses, process_path
+from copis.utils.path import build_path
 
 
 _UNIT = 'mm'
@@ -62,7 +63,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
         Icons taken from https://material.io/resources/icons/?style=baseline.
         """
-        # add path shape adders
+        # Add path shape adders.
         _bmp = create_scaled_bitmap('cylinder_path', 24)
         self.AddTool(PathIds.CYLINDER.value, 'Cylinder', _bmp, _bmp,
             aui.ITEM_NORMAL, short_help_string='Add cylinder path')
@@ -135,7 +136,7 @@ class PathgenToolbar(aui.AuiToolBar):
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = Point3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -158,7 +159,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                  dlg.base_z_ctrl.num_value),
                         vec3(0, 0, 1 if height > 0 else -1), radius, pitch, rotations, points)
 
-                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = Point3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -188,7 +189,7 @@ class PathgenToolbar(aui.AuiToolBar):
                         vertices.extend(v[:-3].tolist())
                         count += c - 1
 
-                    lookat = vec3(dlg.center_x_ctrl.num_value,
+                    lookat = Point3(dlg.center_x_ctrl.num_value,
                                       dlg.center_y_ctrl.num_value,
                                       dlg.center_z_ctrl.num_value)
 
@@ -210,7 +211,7 @@ class PathgenToolbar(aui.AuiToolBar):
                                    dlg.end_z_ctrl.num_value)
                     vertices, count = create_line(start, end, points)
 
-                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = Point3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -225,7 +226,7 @@ class PathgenToolbar(aui.AuiToolBar):
                     x = dlg.x_ctrl.num_value
                     y = dlg.y_ctrl.num_value
                     z = dlg.z_ctrl.num_value
-                    lookat = vec3(dlg.lookat_x_ctrl.num_value,
+                    lookat = Point3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
 
@@ -234,7 +235,7 @@ class PathgenToolbar(aui.AuiToolBar):
     def _extend_actions(self,
                         vertices,
                         count: int,
-                        lookat: vec3,
+                        lookat: Point3,
                         device_ids: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
@@ -245,10 +246,11 @@ class PathgenToolbar(aui.AuiToolBar):
         Args:
             vertices: A flattened list of vertices, where length = count * 3.
             count: An integer representing the number of vertices.
-            lookat: A vec3 representing the lookat point in space.
+            lookat: A Point3 representing the lookat point in space.
         """
 
         grouped_points = defaultdict(list)
+        device_info = {}
         max_zs = defaultdict(float)
 
         # Group points by device.
@@ -257,6 +259,10 @@ class PathgenToolbar(aui.AuiToolBar):
             dvc_id = -1
             for d_id in device_ids:
                 dvc: Device = self.core.project.get_device_by_id(d_id)
+
+                if d_id not in device_info:
+                    device_info[d_id] = (dvc, dvc.home_position)
+
                 max_zs[d_id] = dvc.range_3d.upper.z
                 if dvc.range_3d.is_point_inside(point, 0.0):
                     dvc_id = d_id
@@ -266,6 +272,7 @@ class PathgenToolbar(aui.AuiToolBar):
                 grouped_points[dvc_id].append(point.to_vec3())
 
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
+        move_sets = build_path(device_info, vertices, lookat)
         self.core.project.pose_sets.extend(pose_sets)
         self.core.imaging_target = lookat
 
