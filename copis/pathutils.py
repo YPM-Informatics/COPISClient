@@ -27,7 +27,7 @@ from glm import vec2, vec3
 
 from copis.classes import Action, Object3D, Pose
 from copis.models.g_code import Gcode
-from copis.helpers import (create_action_args, get_heading, interleave_lists,
+from copis.helpers import (create_action_args, get_heading_rad, interleave_lists,
     sanitize_number, sanitize_point)
 from .mathutils import orthonormal_basis_of
 
@@ -174,7 +174,7 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
 
     for device_id in ordered_points:
         for i, point in enumerate(ordered_points[device_id]):
-            pan, tilt = get_heading(point, lookat)
+            pan, tilt = get_heading_rad(point, lookat)
 
             # Add action. skip feed rate for now.
             s_point = sanitize_point(point)

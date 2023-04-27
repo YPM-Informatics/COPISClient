@@ -28,7 +28,7 @@ from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
     simple_statictext)
-from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position, get_heading, is_number, rad_to_dd, sanitize_number,
+from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position, get_heading_rad, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
 from copis.classes import Action, Pose
 from copis import store
@@ -500,7 +500,7 @@ class TransformPanel(wx.Panel):
                 self.parent.core.imaging_target = proxy_bbox.volume_center
 
         if proxy_index is not None or is_custom:
-            end_pan, end_tilt = get_heading(Point3(self.x, self.y, self.z),
+            end_pan, end_tilt = get_heading_rad(Point3(self.x, self.y, self.z),
                 self.parent.core.imaging_target)
 
             self.p = rad_to_dd(end_pan)
@@ -527,7 +527,7 @@ class TransformPanel(wx.Panel):
 
 
         # Face the target, first and foremost.
-        end_pan, end_tilt = get_heading(Point3(self.x, self.y, self.z),
+        end_pan, end_tilt = get_heading_rad(Point3(self.x, self.y, self.z),
             self.parent.core.imaging_target)
 
         self.p = rad_to_dd(end_pan)
@@ -545,7 +545,7 @@ class TransformPanel(wx.Panel):
             end_x, end_y, end_z = get_end_position(
                 Point5(self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)), dist)
 
-            end_pan, end_tilt = get_heading(Point3(end_x, end_y, end_z),
+            end_pan, end_tilt = get_heading_rad(Point3(end_x, end_y, end_z),
                 self.parent.core.imaging_target)
 
             self.x = end_x

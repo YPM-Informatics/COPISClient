@@ -35,7 +35,7 @@ from OpenGL.GLU import ctypes
 
 from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
-from copis.helpers import create_cuboid, create_device_features, dd_to_rad, fade_color, get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4
+from copis.helpers import create_cuboid, create_device_features, dd_to_rad, fade_color, get_action_args_values, get_heading_rad, point5_to_mat4, shade_color, xyzpt_to_mat4
 
 ArrayInfo = namedtuple('ArrayInfo', 'name key')
 
@@ -338,7 +338,7 @@ class GLActionVis:
                     start = Point3(*position[:3])
                     end = Point3(*next_position[:3])
                     midpoint = [sum(i)/2 for i in list(zip(start, end))]
-                    heading = get_heading(start, end)
+                    heading = get_heading_rad(start, end)
                     midpoint.extend(heading)
 
                     self._items['midline'][key].append(xyzpt_to_mat4(*midpoint))

@@ -40,7 +40,7 @@ from pydispatch import dispatcher
 from canon.EDSDKLib import EvfDriveLens
 from copis.coms import serial_controller
 from copis.command_processor import deserialize_command, serialize_command
-from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
+from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading_rad, sanitize_number, locked
 from copis.globals import DebugEnv, WorkType
 from copis.models.g_code import Gcode
 from copis.models.geometries import Point3, Point5
@@ -1233,7 +1233,7 @@ class COPISCore:
         for pose in self.project.poses:
             pose_position = pose.position
             args = get_action_args_values(pose_position.args)
-            end_pan, end_tilt = get_heading(Point3(*args[:3]), self.imaging_target)
+            end_pan, end_tilt = get_heading_rad(Point3(*args[:3]), self.imaging_target)
 
             args[3] = sanitize_number(end_pan)
             args[4] = sanitize_number(end_tilt)
@@ -1256,7 +1256,7 @@ class COPISCore:
             args = get_action_args_values(pose_position.args)
 
             end = get_end_position(Point5(*args[:5]), distance)
-            end_pan, end_tilt = get_heading(end, self.imaging_target)
+            end_pan, end_tilt = get_heading_rad(end, self.imaging_target)
 
             args[0] = end.x
             args[1] = end.y

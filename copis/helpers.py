@@ -21,7 +21,7 @@ import threading
 from hashlib import md5
 from collections import OrderedDict
 from functools import wraps
-from math import cos, sin, pi, atan2, sqrt
+from math import cos, degrees, sin, pi, atan2, sqrt
 from time import time
 from typing import Callable, List
 from itertools import zip_longest
@@ -294,13 +294,24 @@ def collapse_whitespaces(string: str) -> str:
     return _CLOSE_PAREN_SPACE_PATTERN.sub(')', output)
 
 
-def get_heading(start: Point3, end: Point3):
+def get_heading_rad(start: Point3, end: Point3):
     """Returns the heading (pan and tilt) between two points."""
     direction = start - end
     dir_x, dir_y, dir_z = direction
 
     pan = atan2(dir_x, dir_y)
     tilt = -atan2(dir_z, sqrt(dir_x * dir_x + dir_y * dir_y))
+
+    return (pan, tilt)
+
+
+def get_heading(start: Point3, end: Point3):
+    """Returns the heading (pan and tilt) between two points."""
+    direction = start - end
+    dir_x, dir_y, dir_z = direction
+
+    pan = degrees(atan2(dir_x, dir_y))
+    tilt = degrees(-atan2(dir_z, sqrt(dir_x * dir_x + dir_y * dir_y)))
 
     return (pan, tilt)
 

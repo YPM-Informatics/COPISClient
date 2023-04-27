@@ -33,7 +33,7 @@ from copis.models.g_code import Gcode
 from copis.models.geometries import Point3
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
 from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import create_action_args, get_atype_kind, get_heading, is_number, print_debug_msg, rad_to_dd, sanitize_number, sanitize_point
+from copis.helpers import create_action_args, get_atype_kind, get_heading_rad, is_number, print_debug_msg, rad_to_dd, sanitize_number, sanitize_point
 
 
 class TimelinePanel(wx.Panel):
@@ -533,7 +533,7 @@ class TimelinePanel(wx.Panel):
                         dlg.lookat_z_ctrl.num_value)
 
                     if device and device.range_3d.is_point_inside(point, 0.0):
-                        pan, tilt = get_heading(point, lookat)
+                        pan, tilt = get_heading_rad(point, lookat)
                         s_point = sanitize_point(point)
                         s_pan = sanitize_number(pan)
                         s_tilt = sanitize_number(tilt)
