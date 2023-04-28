@@ -269,10 +269,10 @@ class PathgenToolbar(aui.AuiToolBar):
 
             # Ignore if point not in bounds of any device.
             if dvc_id != -1:
-                grouped_points[dvc_id].append(point.to_vec3())
+                grouped_points[dvc_id].append(point)
 
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
-        move_sets = build_path(device_info, vertices, lookat)
+        move_sets = build_path(device_info, grouped_points, lookat)
         self.core.project.pose_sets.extend(pose_sets)
         self.core.imaging_target = lookat
 

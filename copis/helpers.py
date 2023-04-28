@@ -161,8 +161,13 @@ def get_timestamped(msg) -> str:
     return f'({get_timestamp()}) {msg}'
 
 
-def interleave_lists(*args):
+def interleave_lists(*args, **kw):
     """Interleaves items from provided lists into one list."""
+    keep_none = kw.get('keep_def_fill_val')
+
+    if keep_none:
+        return [val for tup in zip_longest(*args) for val in tup]
+
     return [val for tup in zip_longest(*args) for val in tup if val is not None]
 
 

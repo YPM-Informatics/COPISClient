@@ -33,21 +33,21 @@ def build_path(device_info: dict, vertices: dict, target: Point3) -> List[List[M
     """
     keyed_moves = defaultdict(list)
 
-    for dvc_id, dvc_vertices in vertices.items():
-        last_position = device_info[dvc_id][1]
+    for dvc_id, info in device_info.items():
+        last_position = info[1]
 
-        for vtx in dvc_vertices:
+        for vtx in vertices[dvc_id]:
             pan, tilt = get_heading(vtx, target)
 
             position = Point5(*sanitize_point(vtx), sanitize_number(pan), sanitize_number(tilt))
             start_pose = Pose(last_position)
             end_pose = Pose(position, [ShutterReleaseAction(1500)])
 
-            keyed_moves[dvc_id].append(Move(MoveTypes.LINEAR, start_pose, end_pose, device=device_info[dvc_id][0]))
+            keyed_moves[dvc_id].append(Move(MoveTypes.LINEAR, start_pose, end_pose, device=info[0]))
 
             last_position = position
 
-    interleaved = interleave_lists(*list(keyed_moves.values()))
+    interleaved = interleave_lists(*list(keyed_moves.values()), keep_def_fill_val=True)
     set_size = len(device_info)
-
-    return [interleaved[i:i+set_size] for i in range(0, len(interleaved), set_size)]
+    lists = [interleaved[i:i+set_size] for i in range(0, len(interleaved), set_size)]
+    return [[m for m in l if m is not None] for l in lists]
