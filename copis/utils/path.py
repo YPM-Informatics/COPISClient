@@ -24,30 +24,40 @@ from copis.models.geometries import Point3, Point5
 from copis.models.path import Move, MoveTypes, Pose
 
 
-def build_path(device_info: dict, vertices: dict, target: Point3) -> List[List[Move]]:
+def build_path(devices: dict, vertices: dict, target: Point3) -> List[List[Move]]:
     """Returns a COPIS imaging path as a list of lists of moves.
         Args:
-            device_info: a collection of (Device, Point5) tuples - Where Point5 is the the device's last position - grouped by device id.
+            devices: a collection of devices keyed by their id.
             vertices: a collection of Point3 vertices grouped by device id.
             target: a 3D point representing the target of imaging.
     """
     keyed_moves = defaultdict(list)
 
-    for dvc_id, info in device_info.items():
-        last_position = info[1]
+    # Fill all extend all arrays with their last items, up to the longest arrays length.
+    # We do this to ensure each move set has a move from each device, even if a device
+    # does not move in a particular set.
+    max_len = max(map(len, vertices.values()))
+
+    for l in vertices.values():
+        cur_len = len(l)
+        if cur_len < max_len:
+            l.extend([l[-1]] * (max_len - cur_len))
+
+    for dvc_id, dvc in devices.items():
+        last_pose = None
 
         for vtx in vertices[dvc_id]:
             pan, tilt = get_heading(vtx, target)
 
             position = Point5(*sanitize_point(vtx), sanitize_number(pan), sanitize_number(tilt))
-            start_pose = Pose(last_position)
+            start_pose = last_pose
             end_pose = Pose(position, [ShutterReleaseAction(1500)])
 
-            keyed_moves[dvc_id].append(Move(MoveTypes.LINEAR, start_pose, end_pose, device=info[0]))
+            keyed_moves[dvc_id].append(Move(MoveTypes.LINEAR, start_pose, end_pose, device=dvc))
 
-            last_position = position
+            last_pose = end_pose
 
     interleaved = interleave_lists(*list(keyed_moves.values()), keep_def_fill_val=True)
-    set_size = len(device_info)
+    set_size = len(devices)
     lists = [interleaved[i:i+set_size] for i in range(0, len(interleaved), set_size)]
     return [[m for m in l if m is not None] for l in lists]
