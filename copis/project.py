@@ -15,7 +15,9 @@
 
 """COPIS Application project manager."""
 
+import copy
 import os
+import operator as op
 
 from importlib import import_module
 from typing import Any, Iterable, List, Tuple
@@ -26,13 +28,13 @@ import wx
 from pydispatch import dispatcher
 
 from copis import store
-from copis.classes import Action, Pose, MonitoredList, Object3D, OBJObject3D
+from copis.classes import Action, MonitoredList, Object3D, OBJObject3D
+from copis.models.path import Pose
 from copis.models.machine import Device
 from copis.models.geometries import BoundingBox, Point3, Point5, Size3
 from copis.models.path import Move
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
-from copis.pathutils import build_pose_sets
 from copis.gui.wxutils import show_prompt_dialog
 
 class Project():
@@ -83,6 +85,7 @@ class Project():
         if not hasattr(self, '_proxies'):
             self._proxies = None
 
+        # TODO: [DELETE]
         if not hasattr(self, '_pose_sets'):
             self._pose_sets = None
 
@@ -115,6 +118,7 @@ class Project():
         """Returns the list of proxy objects."""
         return self._proxies
 
+    # TODO: [DELETE]
     @property
     def pose_sets(self) -> List[List[Pose]]:
         """Returns the pose set list."""
@@ -127,13 +131,11 @@ class Project():
 
     @property
     def poses(self) ->List[Pose]:
-        """Returns all poses in the pose set list."""
-        p_sets = self._pose_sets
-
-        if not p_sets:
+        """Returns all poses in the move set list."""
+        if not self._move_sets:
             return []
 
-        return[pose for p_set in p_sets for pose in p_set]
+        return[move.end_pose for m_set in self._move_sets for move in m_set]
 
     @property
     def options(self) -> dict:
@@ -144,6 +146,11 @@ class Project():
     def is_dirty(self) -> bool:
         """Returns whether the project is dirty."""
         return self._is_dirty
+
+    @property
+    def is_initialized(self) -> bool:
+        """Returns whether the project is initialized."""
+        return self._is_initialized
 
     @property
     def homing_sequence(self) -> List[str]:
@@ -223,7 +230,7 @@ class Project():
                 # data['port'],
                 head_radius=data['head_radius'],
                 z_body_dims=Size3(*data['body_dims']),
-                gantry_dims=Size3(data['gantry_dims']),
+                gantry_dims=Size3(*data['gantry_dims']),
                 gantry_orientation=data['gantry_orientation'],
                 edsdk_save_to_path=data['edsdk_save_to_path']
             )
@@ -254,6 +261,7 @@ class Project():
             self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
                 proxies)
 
+    # TODO: [DELETE]
     def _init_pose_sets(self, sets=None):
         if self._pose_sets is not None:
             self._pose_sets.clear(sets is None)
@@ -288,35 +296,35 @@ class Project():
         if name not in self._options or self._options[name] != value:
             self._options[name] = value
 
-    def pose_by_dev_id(self, pose_set_idx, device_id) ->Pose:
-        """Returns a pose in a given pose set with device id.
-           if no pose is present for that device in the pose set, None is returned."""
-        if pose_set_idx < len(self._pose_sets):
-            for pose in self._pose_sets[pose_set_idx]:
-                if device_id == pose.position.device:
-                    return pose
+    def pose_by_dev_id(self, move_set_idx, device_id) -> Point3:
+        """Returns a pose in a given move set with device id.
+           if no pose is present for that device in the move set, None is returned."""
+        if move_set_idx < len(self._move_sets):
+            for move in self._move_sets[move_set_idx]:
+                if device_id == move.device.d_id:
+                    return move.end_pose.position.to_point3()
         return None
 
-    def last_pose_by_dev_id(self, pose_set_idx, device_id):
-        """Returns the last (highest index) pose and index accross all pose sets up to pose_set_idx for device id.
-           if no pose is present for that device up to the pose set idx, None is returned.
+    def last_pose_by_dev_id(self, move_set_idx, device_id) -> Point3:
+        """Returns the last (highest index) pose and index accross all move sets up to move_set_idx for device id.
+           if no pose is present for that device up to the move set idx, None is returned.
         """
-        if pose_set_idx < len(self._pose_sets):
-            for i in range(pose_set_idx,-1,-1):
-                for pose in self._pose_sets[i]:
-                    if device_id == pose.position.device:
-                        return pose
+        if move_set_idx < len(self._move_sets):
+            for i in range(move_set_idx, -1, -1):
+                for move in self._move_sets[i]:
+                    if device_id == move.device.d_id:
+                        return move.end_pose.position.to_point3()
         return None
 
-    def first_pose_by_dev_id(self, pose_set_idx, device_id):
+    def first_pose_by_dev_id(self, move_set_idx, device_id) -> Point3:
         """Returns the first (lowest index) pose accross all pose sets up for device id, starting with pose_idx
            if no pose is present for that device, none is returned.
         """
-        if pose_set_idx < len(self._pose_sets):
-            for i in range(pose_set_idx, len(self._pose_sets)):
-                for pose in self._pose_sets[i]:
-                    if device_id == pose.position.device:
-                        return pose
+        if move_set_idx < len(self._move_sets):
+            for i in range(move_set_idx, len(self._move_sets)):
+                for move in self._move_sets[i]:
+                    if device_id == move.device.d_id:
+                        return move.end_pose.position.to_point3()
         return None
 
     def start(self) -> None:
@@ -327,7 +335,11 @@ class Project():
         self._profile = store.load_json(store.get_profile_path())
         self._init_devices()
         self._init_proxies()
+
+        # TODO: [DELETE]
         self._init_pose_sets()
+
+        self._init_move_sets()
 
         self._path = None
         self._unset_dirty_flag()
@@ -378,7 +390,11 @@ class Project():
                 self._profile = proj_data['profile']
                 self._init_devices()
         self._init_proxies(proxies)
+
+        # TODO: [DELETE]
         self._init_pose_sets(p_sets)
+
+        self._init_move_sets(p_sets)
 
         if 'imaging_options' in proj_data:
             self._options = proj_data['imaging_options']
@@ -526,34 +542,60 @@ class Project():
 
         return index
 
+    # TODO: [DELETE]
     def reverse_pose_sets(self):
         """Reverses the order of the pose sets."""
         self._pose_sets.reverse()
 
-    def reverse_poses(self, device_ids: List=None):
+    def reverse_poses(self, device_ids: List[int]=None):
         """Reverses the order of the poses for the given devices.
             Applies to all devices if none provided."""
-        get_device = lambda a: a.position.device
+        sets_changed = False
+        cur_device_ids = [d.d_id for d in self._devices]
+        cur_device_ids.sort()
 
-        if self.poses and len(self.poses):
-            sorted_poses = sorted(self.poses, key=get_device)
-            grouped = groupby(sorted_poses, get_device)
-            groups = []
-            sets_changed = False
+        if device_ids:
+            device_ids.sort()
 
-            for key, group in grouped:
-                group = list(group)
+        if self._move_sets and len(self._move_sets):
+            m_sets = copy.deepcopy(list(self.move_sets))
 
-                if not device_ids or key in device_ids:
-                    group.reverse()
-                    sets_changed = True
+            if not device_ids or device_ids == cur_device_ids:
+                sets_changed = True
+                m_sets.reverse()
 
-                groups.append(group)
+                for l in m_sets:
+                    for m in l:
+                        end = m.start_pose
+                        m.start_pose = m.end_pose
+                        m.end_pose = end
+            else:
+                keyed_moves = groupby(sorted([m for l in m_sets for m in l], key=op.attrgetter('device.d_id')), op.attrgetter('device.d_id'))
+                groups = []
+
+                for key, group in keyed_moves:
+                    group = list(group)
+
+                    if key in device_ids:
+                        sets_changed = True
+                        group.reverse()
+
+                        for m in group:
+                            end = m.start_pose
+                            m.start_pose = m.end_pose
+                            m.end_pose = end
+
+                    groups.append(group)
+
+                if sets_changed:
+                    interleaved = interleave_lists(*groups, keep_def_fill_val=True)
+                    set_size = len(cur_device_ids)
+                    m_sets = [interleaved[i:i+set_size] for i in range(0, len(interleaved), set_size)]
+                    m_sets = [[m for m in l if m is not None] for l in m_sets]
 
             if sets_changed:
-                interleaved = interleave_lists(*groups)
-                self._pose_sets.clear(False)
-                self._pose_sets.extend(build_pose_sets(interleaved))
+                self.move_sets.clear(False)
+                self.move_sets.extend(m_sets)
 
     def can_add_pose(self, set_index: int, device_id: int) -> bool:
         """Returns a flag indicating where a pose with the specified device

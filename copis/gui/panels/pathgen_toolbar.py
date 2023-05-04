@@ -97,7 +97,7 @@ class PathgenToolbar(aui.AuiToolBar):
     def on_interleave_paths(self, _) -> None:
         """On interleave paths button pressed, rearrange poses to alternate by
         camera.
-        This allows us to simultaneously play paths that have be created sequentially."""
+        This allows us to simultaneously play paths that have been created sequentially."""
         interleaved = interleave_poses(self.core.project.poses)
 
         self.core.project.pose_sets.clear(False)
@@ -261,7 +261,7 @@ class PathgenToolbar(aui.AuiToolBar):
                 dvc: Device = self.core.project.get_device_by_id(d_id)
 
                 if d_id not in device_info:
-                    device_info[d_id] = (dvc, dvc.home_position)
+                    device_info[d_id] = dvc
 
                 max_zs[d_id] = dvc.range_3d.upper.z
                 if dvc.range_3d.is_point_inside(point, 0.0):
@@ -274,6 +274,7 @@ class PathgenToolbar(aui.AuiToolBar):
         pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
         move_sets = build_path(device_info, grouped_points, lookat)
         self.core.project.pose_sets.extend(pose_sets)
+        self.core.project.move_sets.extend(move_sets)
         self.core.imaging_target = lookat
 
     def __del__(self) -> None:
