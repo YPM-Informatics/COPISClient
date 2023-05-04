@@ -196,7 +196,7 @@ class _CommandProcessor:
 
         def collision():
             if (len(opts) < 1):
-                self._print('Additonal parameters required to engage feature.')
+                self._print('Additional parameters required to engage feature.')
                 return
             elif (opts[0].lower() == 'cams'):
                 r = collision_eval_cam2cam_path()
@@ -215,7 +215,6 @@ class _CommandProcessor:
                 print (r)
                 return
         def default():
-            # self._print("Command not implemented.")
             if not self._core.is_serial_port_connected:
                 self._print('A serial port needs to be open in order to execute G code.')
             else:
@@ -239,5 +238,3 @@ class _CommandProcessor:
     def _print(self, *msgs):
         msg = ''.join(msgs)
         print_echo_msg(self._core.console, msg)
-
-    
