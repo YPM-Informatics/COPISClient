@@ -15,12 +15,14 @@
 
 """COPIS path section of stats panel."""
 
+import operator as op
 from itertools import groupby
 import wx
 
 from pydispatch import dispatcher
 
 from copis.gui.wxutils import simple_static_text
+from copis.models.g_code import Gcode
 
 
 class PathStats(wx.Panel):
@@ -99,36 +101,36 @@ class PathStats(wx.Panel):
         wx.CallAfter(self._update_path_stats)
 
     def _update_path_stats(self):
-        c_key = lambda p: p.position.device
-
-        def get_arg_value(arg_col, arg_key):
-            arg = next(filter(lambda a, k=arg_key: a[0] == k, arg_col), 0)
-            return float(arg[1]) if arg and arg[1] else arg
-
         def get_counts_lbl(p_count, i_count):
             return f'{p_count or "No"} ({i_count} image{"s" if i_count != 1 else ""})'
 
-        count_imgs = lambda p_list: len([a for p in p_list for a in p.get_actions() if a.atype in self._core.SNAP_COMMANDS])
+        def get_img_count(moves):
+            return len([m for m in moves \
+                        if m.end_pose and m.end_pose.position != (m.start_pose.position if m.start_pose else None) and any(Gcode[a.type.value] in self._core.SNAP_COMMANDS for a in m.end_pose.actions)])
 
-        count_stack_imgs = lambda p_list: sum([get_arg_value(a.args, 'V') + 1 for p in p_list for a in p.get_actions() if a.atype in self._core.F_STACK_COMMANDS])
+        def get_stack_count(moves):
+            actions_lists = [m.end_pose.actions for m in moves \
+                        if m.end_pose and m.end_pose.position != (m.start_pose.position if m.start_pose else None) and any(Gcode[a.type.value] in self._core.F_STACK_COMMANDS for a in m.end_pose.actions)]
 
-        sets = self._core.project.pose_sets
+            return sum(a.step_count + 1 for l in actions_lists for a in l if Gcode[a.type.value] in self._core.F_STACK_COMMANDS)
 
-        if sets:
-            poses = sorted(self._core.project.poses, key=c_key)
-            groups = groupby(poses, c_key)
+        move_sets = self._core.project.move_sets
 
-            pose_count = len(poses)
-            img_count = int(count_imgs(poses) + count_stack_imgs(poses))
+        if move_sets:
+            moves = [m for l in move_sets for m in l]
+            keyed_moves = groupby(sorted(moves, key=op.attrgetter('device.d_id')), op.attrgetter('device.d_id'))
 
-            self._set_count_caption.SetLabel(str(len(sets)))
+            pose_count = len([m for m in moves if m.end_pose and m.end_pose.position != (m.start_pose.position if m.start_pose else None)])
+            img_count = get_img_count(moves) + get_stack_count(moves)
+
+            self._set_count_caption.SetLabel(str(len(move_sets)))
             self._pose_count_caption.SetLabel(get_counts_lbl(pose_count, img_count))
 
-            for key, group in groups:
+            for key, group in keyed_moves:
                 if key in [d.d_id for d in self._core.project.devices]:
-                    poses = list(group)
-                    pose_count = len(poses)
-                    img_count = count_imgs(poses) + count_stack_imgs(poses)
+                    g_list = list(group)
+                    pose_count = len([m for m in g_list if m.end_pose and m.end_pose.position != (m.start_pose.position if m.start_pose else None)])
+                    img_count = get_img_count(g_list) + get_stack_count(g_list)
                     self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
 
     def _estimate_execution_time(self):
