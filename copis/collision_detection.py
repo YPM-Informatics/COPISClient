@@ -1,6 +1,24 @@
-﻿import math
+﻿# This file is part of COPISClient.
+#
+# COPISClient is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# COPISClient is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
+
+"""Collision detection module."""
+
+import math
 
 from typing import List
+from dataclasses import dataclass
 
 from copis.models.geometries import Point3
 from copis.models.machine import Device
@@ -98,18 +116,18 @@ def collision_eval_cam2cam_start() -> List[dict]:
     return collisions
 
 
+@dataclass
 class Sphere:
     """Object representing a sphere with center point and a radius."""
-    def __init__(self, center:Point3, radius:float):
-        self.center = center
-        self.radius = radius
+    center:Point3
+    radius:float
 
 
+@dataclass
 class Aab:
     """Object representing an axis-aligned box."""
-    def __init__(self, lower:Point3, upper:Point3):
-        self.lower = lower
-        self.upper = upper
+    lower: Point3
+    upper: Point3
 
 
 class CamBounds:
@@ -162,22 +180,22 @@ def _is_collision_between_aab_sphere(box:Aab, sphere:Sphere):
 def _is_collision_between_cam_bounds(bounds_a:CamBounds, bounds_b:CamBounds):
     # Note: gantry only needs to be checked against other gantries since they can't collide with anything else.
     # Head_a to all_b
-    if _is_collision_between_sphere(bounds_a.head,bounds_b.head):
+    if _is_collision_between_sphere(bounds_a.head, bounds_b.head):
         return True
-    if _is_collision_between_aab_sphere(bounds_b.body,bounds_a.head):
+    if _is_collision_between_aab_sphere(bounds_b.body, bounds_a.head):
         return True
-    if _is_collision_between_aab_sphere(bounds_b.gantry,bounds_a.head):
+    if _is_collision_between_aab_sphere(bounds_b.gantry, bounds_a.head):
         return True
     # Body_a to body_b and gantry_b.
-    if _is_collision_between_aab(bounds_a.body,bounds_b.body):
+    if _is_collision_between_aab(bounds_a.body, bounds_b.body):
         return True
-    if _is_collision_between_aab(bounds_a.body,bounds_b.gantry):
+    if _is_collision_between_aab(bounds_a.body, bounds_b.gantry):
         return True
     # Gantry_a to gantry_b.
-    if _is_collision_between_aab(bounds_a.gantry,bounds_b.gantry):
+    if _is_collision_between_aab(bounds_a.gantry, bounds_b.gantry):
         return True
     # Head_b to body_a.
-    if _is_collision_between_aab_sphere(bounds_a.body,bounds_b.head):
+    if _is_collision_between_aab_sphere(bounds_a.body, bounds_b.head):
         return True
     return False
 
