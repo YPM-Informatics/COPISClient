@@ -53,7 +53,7 @@ class StatsPanel(scrolled.ScrolledPanel):
         return self._font
 
     def _sync_path_stats_panel(self):
-        is_shown = bool(self.core.project.pose_sets)
+        is_shown = bool(self.core.project.move_sets)
 
         if self._stats_panels['path_stats'].IsShown() != is_shown:
             self._stats_panels['path_stats'].Show(is_shown)
