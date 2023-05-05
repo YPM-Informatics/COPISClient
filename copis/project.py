@@ -132,7 +132,8 @@ class Project():
     @property
     def poses(self) ->List[Pose]:
         """Returns all poses in the move set list."""
-        return [move.end_pose for m_set in self._move_sets for move in m_set] if self._move_sets else []
+        # return [move.end_pose for m_set in self._move_sets for move in m_set] if self._move_sets else []
+        return [p for p_set in self._pose_sets for p in p_set] if self._pose_sets else []
 
     @property
     def options(self) -> dict:
