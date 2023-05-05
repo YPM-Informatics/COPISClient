@@ -21,7 +21,7 @@ import wx
 
 from copis.classes import Action, Pose
 from copis.models.g_code import Gcode
-from copis.gui.wxutils import simple_statictext
+from copis.gui.wxutils import simple_static_text
 from copis.helpers import (
     create_action_args, get_atype_kind, is_number,
 print_error_msg, print_info_msg)
@@ -102,7 +102,7 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
+            (simple_static_text(self._payload_dlg, 'Release shutter in (seconds): ', -1),
                 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
@@ -138,7 +138,7 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
+            (simple_static_text(self._payload_dlg, 'Release shutter in (seconds): ', -1),
                 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
@@ -186,13 +186,13 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, focus_dir, focus_step, num_shots))
 
         cell_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Increment (mm): ', -1),
+            (simple_static_text(self._payload_dlg, 'Increment (mm): ', -1),
                 0, wx.ALIGN_CENTER_VERTICAL, 0),
             (focus_step, 0, 0, 0)
         ])
 
         cell_sizer_1.AddMany([
-            (simple_statictext(self._payload_dlg, 'Snap count: ', -1),
+            (simple_static_text(self._payload_dlg, 'Snap count: ', -1),
                 0, wx.ALIGN_CENTER_VERTICAL, 0),
             (num_shots, 0, 0, 0)
         ])
@@ -268,7 +268,7 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, shutter_release_times))
 
         ctrl_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Release shutter in (seconds): ', -1),
+            (simple_static_text(self._payload_dlg, 'Release shutter in (seconds): ', -1),
                 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (shutter_release_times, 0, wx.EXPAND, 0)
         ])
@@ -324,7 +324,7 @@ class PayloadPanel(wx.Panel):
         add_btn.Bind(wx.EVT_BUTTON, partial(on_add, focus_dir, focus_step, num_shots))
 
         cell_sizer.AddMany([
-            (simple_statictext(self._payload_dlg, 'Snap count: ', -1),
+            (simple_static_text(self._payload_dlg, 'Snap count: ', -1),
                 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (num_shots, 0, 0, 0)
         ])
@@ -521,7 +521,7 @@ class PayloadPanel(wx.Panel):
             edit_btn.Bind(wx.EVT_BUTTON, self._on_edit_payload_item)
 
             caption_text = self._get_payload_item_caption(action)
-            caption = simple_statictext(self, caption_text, width=220, style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
+            caption = simple_static_text(self, caption_text, width=220, style=wx.ALIGN_LEFT|wx.ST_ELLIPSIZE_END)
             caption.SetToolTip(wx.ToolTip(caption_text))
 
             crud_sizer = wx.BoxSizer(wx.HORIZONTAL)

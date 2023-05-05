@@ -23,7 +23,7 @@ from pydispatch import dispatcher
 
 import wx
 
-from copis.gui.wxutils import simple_statictext
+from copis.gui.wxutils import simple_static_text
 
 
 class MachineStats(wx.Panel):
@@ -53,10 +53,8 @@ class MachineStats(wx.Panel):
         dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
 
     def _build_panel(self):
-        text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, f=None: simple_statictext(
-            self, label='',
-            style=s,
-            font=f)
+        def text_ctrl(style=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, font=self._parent.font):
+            return simple_static_text(self, style=style, font=font)
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Machine Stats'),
@@ -67,16 +65,16 @@ class MachineStats(wx.Panel):
 
         device_grid = wx.FlexGridSizer(self._num_devices + 1, 7, 0, 0)
 
-        self._device_count_caption = text_ctrl(f=self._parent.font)
-        self._machine_status_caption = text_ctrl(f=self._parent.font)
-        self._machine_is_homed_caption = text_ctrl(f=self._parent.font)
+        self._device_count_caption = text_ctrl()
+        self._machine_status_caption = text_ctrl()
+        self._machine_is_homed_caption = text_ctrl()
 
         machine_grid.AddMany([
-            (simple_statictext(self, 'Status:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Status:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
             (self._machine_status_caption, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Is Homed:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Is Homed:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
             (self._machine_is_homed_caption, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Device Count:', 80,
+            (simple_static_text(self, 'Device Count:', 80,
              font=self._parent.font), 0, wx.EXPAND, 0),
             (self._device_count_caption, 0, wx.EXPAND, 0),
         ])
@@ -85,30 +83,28 @@ class MachineStats(wx.Panel):
 
         device_grid.AddMany([
             (0, 0),
-            (simple_statictext(self, 'X', 40, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'X', 40, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Y', 40, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'Y', 40, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Z', 40, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'Z', 40, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'P', 40, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'P', 40, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'T', 40, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'T', 40, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Status', 50, style=wx.ALIGN_RIGHT,
+            (simple_static_text(self, 'Status', 50, style=wx.ALIGN_RIGHT,
              font=self._parent.font), 0, wx.EXPAND, 0)
         ])
 
         for dvc in self._core.project.devices:
-            self._dvc_captions[dvc.d_id]['name'] = text_ctrl(
-                wx.ALIGN_LEFT|wx.TEXT_ALIGNMENT_LEFT|wx.ST_ELLIPSIZE_END, self._parent.font)
-            self._dvc_captions[dvc.d_id]['x'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.d_id]['y'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.d_id]['z'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.d_id]['p'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.d_id]['t'] = text_ctrl(f=self._parent.font)
-            self._dvc_captions[dvc.d_id]['status'] = text_ctrl(
-                f=self._parent.font)
+            self._dvc_captions[dvc.d_id]['name'] = text_ctrl(style=wx.ALIGN_LEFT|wx.TEXT_ALIGNMENT_LEFT|wx.ST_ELLIPSIZE_END)
+            self._dvc_captions[dvc.d_id]['x'] = text_ctrl()
+            self._dvc_captions[dvc.d_id]['y'] = text_ctrl()
+            self._dvc_captions[dvc.d_id]['z'] = text_ctrl()
+            self._dvc_captions[dvc.d_id]['p'] = text_ctrl()
+            self._dvc_captions[dvc.d_id]['t'] = text_ctrl()
+            self._dvc_captions[dvc.d_id]['status'] = text_ctrl()
 
             for key in self._dvc_captions[dvc.d_id]:
                 device_grid.Add(self._dvc_captions[dvc.d_id][key], 0, wx.EXPAND, 0)

@@ -19,7 +19,7 @@ import wx
 
 from pydispatch import dispatcher
 
-from copis.gui.wxutils import FancyTextCtrl, simple_statictext, EVT_FANCY_TEXT_UPDATED_EVENT
+from copis.gui.wxutils import FancyTextCtrl, simple_static_text, EVT_FANCY_TEXT_UPDATED_EVENT
 from copis.helpers import time_units
 
 
@@ -120,14 +120,14 @@ class DefaultPanel(wx.Panel):
         self.Bind(wx.EVT_BUTTON, self._on_optimize_pan_angles_btn_clicked)
 
         shutter_delay_options_grid.AddMany([
-            (simple_statictext(self, f'Post Shutter Delay ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+            (simple_static_text(self, f'Post Shutter Delay ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
             (self._post_shutter_delay, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'Pre Shutter Delay ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+            (simple_static_text(self, f'Pre Shutter Delay ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
             (self._pre_shutter_delay, 0, wx.EXPAND, 0)
         ])
 
         busy_bus_polling_options_grid.AddMany([
-            (simple_statictext(self, f'Busy Bus Polling Interval ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
+            (simple_static_text(self, f'Busy Bus Polling Interval ({self._TIME_UNIT}):', 80), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
             (self._busy_bus_polling_interval, 0, wx.EXPAND, 0)])
 
         disable_idle_motor_options_grid.Add(self._disable_idle_motors_opt, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 3)

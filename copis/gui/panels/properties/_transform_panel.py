@@ -27,7 +27,7 @@ from copis.models.machine import Device
 from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, create_scaled_bitmap,
-    simple_statictext)
+    simple_static_text)
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position, get_heading_rad, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
 from copis.classes import Action, Pose
@@ -155,23 +155,23 @@ class TransformPanel(wx.Panel):
         grid.AddGrowableCol(2, 0)
 
         grid.AddMany([
-            (simple_statictext(self, f'X ({self._XYZ_UNIT}):', 50), 0,
+            (simple_static_text(self, f'X ({self._XYZ_UNIT}):', 50), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self._x_ctrl, 0, wx.EXPAND, 0),
             (10, 0),
-            (simple_statictext(self, f'P ({self._PT_UNIT}):', 50), 0,
+            (simple_static_text(self, f'P ({self._PT_UNIT}):', 50), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self._p_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Y ({self._XYZ_UNIT}):', 50), 0,
+            (simple_static_text(self, f'Y ({self._XYZ_UNIT}):', 50), 0,
                 wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
             (self._y_ctrl, 0, wx.EXPAND, 0),
             (10, 0),
-            (simple_statictext(self, f'T ({self._PT_UNIT}):', 50), 0,
+            (simple_static_text(self, f'T ({self._PT_UNIT}):', 50), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self._t_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Z ({self._XYZ_UNIT}):', 50), 0,
+            (simple_static_text(self, f'Z ({self._XYZ_UNIT}):', 50), 0,
                 wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
             (self._z_ctrl, 0, wx.EXPAND, 0),
             (10, 0),
@@ -194,13 +194,13 @@ class TransformPanel(wx.Panel):
         step_size_grid.AddGrowableCol(0)
 
         step_size_grid.AddMany([
-            (simple_statictext(self, 'Increments', 180), 0,
+            (simple_static_text(self, 'Increments', 180), 0,
                 wx.EXPAND, 0),
             (0, 0),
-            (simple_statictext(self, f'XYZ ({self._XYZ_UNIT}):', 80), 0,
+            (simple_static_text(self, f'XYZ ({self._XYZ_UNIT}):', 80), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
             (self._xyz_step_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'PT ({self._PT_UNIT}):', 80), 0,
+            (simple_static_text(self, f'PT ({self._PT_UNIT}):', 80), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
             (self._pt_step_ctrl, 0, wx.EXPAND, 0)
         ])
@@ -208,7 +208,7 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._feed_rate_ctrl.Show()
             step_size_grid.AddMany([
-                (simple_statictext(self, 'Feed Rate (mm_or_dd/min):', 80), 0,
+                (simple_static_text(self, 'Feed Rate (mm_or_dd/min):', 80), 0,
                     wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
                 (self._feed_rate_ctrl, 0, wx.EXPAND, 0)
             ])
@@ -453,13 +453,13 @@ class TransformPanel(wx.Panel):
                 num_value=img_target.z, default_unit=self._XYZ_UNIT, unit_conversions=xyz_units)
 
             grid.AddMany([
-                (simple_statictext(target_dialog, f'X ({self._XYZ_UNIT}):', 60), 0,
+                (simple_static_text(target_dialog, f'X ({self._XYZ_UNIT}):', 60), 0,
                     wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
                 (target_dialog.target_x_ctrl, 0, wx.EXPAND, 0),
-                (simple_statictext(target_dialog, f'Y ({self._XYZ_UNIT}):', 60), 0,
+                (simple_static_text(target_dialog, f'Y ({self._XYZ_UNIT}):', 60), 0,
                     wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
                 (target_dialog.target_y_ctrl, 0, wx.EXPAND, 0),
-                (simple_statictext(target_dialog, f'Z ({self._XYZ_UNIT}):', 60), 0,
+                (simple_static_text(target_dialog, f'Z ({self._XYZ_UNIT}):', 60), 0,
                     wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 20),
                 (target_dialog.target_z_ctrl, 0, wx.EXPAND, 0)
             ])

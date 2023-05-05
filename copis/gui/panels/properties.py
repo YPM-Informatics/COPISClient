@@ -23,9 +23,7 @@ import wx.lib.scrolledpanel as scrolled
 from pydispatch import dispatcher
 
 from copis.helpers import dd_to_rad, get_action_args_values, rad_to_dd, xyz_units, pt_units
-from copis.gui.wxutils import (
-    FancyTextCtrl, EVT_FANCY_TEXT_UPDATED_EVENT,
-    simple_statictext)
+from copis.gui.wxutils import EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, simple_static_text
 from copis.models.g_code import Gcode
 
 
@@ -208,21 +206,21 @@ class _PropTransform(wx.Panel):
         more_btn = wx.Button(self, label='More...', size=(55, -1))
 
         grid.AddMany([
-            (simple_statictext(self, f'X ({xyz_unit}):', 45), 0,
+            (simple_static_text(self, f'X ({xyz_unit}):', 45), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.x_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'Pan: ({pt_unit})', 50), 0,
+            (simple_static_text(self, f'Pan: ({pt_unit})', 50), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.p_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Y ({xyz_unit}):', 45), 0,
+            (simple_static_text(self, f'Y ({xyz_unit}):', 45), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.y_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'Tilt: ({pt_unit})', 50), 0,
+            (simple_static_text(self, f'Tilt: ({pt_unit})', 50), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.t_ctrl, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, f'Z ({xyz_unit}):', 45), 0,
+            (simple_static_text(self, f'Z ({xyz_unit}):', 45), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.z_ctrl, 0, wx.EXPAND, 0),
             (0, 0),
@@ -248,10 +246,10 @@ class _PropTransform(wx.Panel):
         step_size_grid.AddGrowableCol(1, 0)
 
         step_size_grid.AddMany([
-            (simple_statictext(self, f'XYZ step ({xyz_unit}):', 180), 0,
+            (simple_static_text(self, f'XYZ step ({xyz_unit}):', 180), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.xyz_step_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'PT step ({pt_unit}):', 180), 0,
+            (simple_static_text(self, f'PT step ({pt_unit}):', 180), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.pt_step_ctrl, 0, wx.EXPAND, 0),
         ])
@@ -487,16 +485,16 @@ class _PropDeviceInfo(wx.Panel):
         self.desc_text = wx.StaticText(self, label='')
 
         grid.AddMany([
-            (simple_statictext(self, 'ID:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'ID:', 80), 0, wx.EXPAND, 0),
             (self.id_text, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Type:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Type:', 80), 0, wx.EXPAND, 0),
             (self.type_text, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Name:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Name:', 80), 0, wx.EXPAND, 0),
             (self.name_text, 0, wx.EXPAND, 0),
 
-            (simple_statictext(self, 'Description:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Description:', 80), 0, wx.EXPAND, 0),
             (self.desc_text, 0, wx.EXPAND, 0),
         ])
 

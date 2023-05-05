@@ -20,7 +20,7 @@ import wx
 
 from pydispatch import dispatcher
 
-from copis.gui.wxutils import simple_statictext
+from copis.gui.wxutils import simple_static_text
 
 
 class PathStats(wx.Panel):
@@ -35,14 +35,12 @@ class PathStats(wx.Panel):
         self._build_panel()
 
         # Bind listeners.
-        dispatcher.connect(self.on_path_changed, signal='ntf_a_list_changed')
+        dispatcher.connect(self._on_path_changed, signal='ntf_a_list_changed')
         dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
 
     def _build_panel(self):
-        text_ctrl = lambda s=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, f=None: simple_statictext(
-            self, label='',
-            style=s,
-            font=f)
+        def text_ctrl():
+            return simple_static_text(self, style=wx.ALIGN_RIGHT|wx.TEXT_ALIGNMENT_RIGHT, font=self._parent.font)
 
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Path Stats'), wx.VERTICAL)
 
@@ -55,28 +53,28 @@ class PathStats(wx.Panel):
         device_grid.AddGrowableCol(1, 0)
         device_grid.AddGrowableCol(2, 0)
 
-        self._set_count_caption = text_ctrl(f=self._parent.font)
-        self._pose_count_caption = text_ctrl(f=self._parent.font)
+        self._set_count_caption = text_ctrl()
+        self._pose_count_caption = text_ctrl()
 
         path_grid.AddMany([
-            (simple_statictext(self, 'Total set count:',
+            (simple_static_text(self, 'Total set count:',
              150, font=self._parent.font), 0, wx.EXPAND, 0),
             (self._set_count_caption, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Total pose count:',
+            (simple_static_text(self, 'Total pose count:',
              150, font=self._parent.font), 0, wx.EXPAND, 0),
             (self._pose_count_caption, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Per device pose count',
+            (simple_static_text(self, 'Per device pose count',
              150, font=self._parent.font), 0, wx.EXPAND, 0)
         ])
 
         self._dvc_captions = {}
 
         for dvc in self._core.project.devices:
-            self._dvc_captions[dvc.d_id] = text_ctrl(f=self._parent.font)
+            self._dvc_captions[dvc.d_id] = text_ctrl()
             name = f'{dvc.name} {dvc.type} ({dvc.d_id})'
             device_grid.AddMany([
                 (20, 0),
-                (simple_statictext(
+                (simple_static_text(
                     self, f'{name}:', 80, font=self._parent.font), 0, wx.EXPAND, 0),
                 (self._dvc_captions[dvc.d_id], 0, wx.EXPAND, 0)])
 
@@ -93,6 +91,12 @@ class PathStats(wx.Panel):
     def _on_device_list_changed(self):
         self.DestroyChildren()
         self._build_panel()
+
+    def _on_path_changed(self):
+        """Handles path change event."""
+        # Call the specified function after the current and pending event handlers have been completed.
+        # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
+        wx.CallAfter(self._update_path_stats)
 
     def _update_path_stats(self):
         c_key = lambda p: p.position.device
@@ -128,11 +132,5 @@ class PathStats(wx.Panel):
                     self._dvc_captions[key].SetLabel(get_counts_lbl(pose_count, img_count))
 
     def _estimate_execution_time(self):
-        # TODO
+        # TODO: It would be nice to have this feature.
         pass
-
-    def on_path_changed(self):
-        """Handles path change event."""
-        # Call the specified function after the current and pending event handlers have been completed.
-        # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
-        wx.CallAfter(self._update_path_stats)

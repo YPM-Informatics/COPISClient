@@ -17,7 +17,7 @@
 
 import wx
 
-from copis.gui.wxutils import simple_statictext
+from copis.gui.wxutils import simple_static_text
 
 
 class DeviceInfoPanel(wx.Panel):
@@ -40,13 +40,13 @@ class DeviceInfoPanel(wx.Panel):
         self._desc_text = wx.StaticText(self, label='')
 
         grid.AddMany([
-            (simple_statictext(self, 'ID:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'ID:', 80), 0, wx.EXPAND, 0),
             (self._id_text, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Type:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Type:', 80), 0, wx.EXPAND, 0),
             (self._type_text, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Name:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Name:', 80), 0, wx.EXPAND, 0),
             (self._name_text, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Description:', 80), 0, wx.EXPAND, 0),
+            (simple_static_text(self, 'Description:', 80), 0, wx.EXPAND, 0),
             (self._desc_text, 0, wx.EXPAND, 0)
         ])
 

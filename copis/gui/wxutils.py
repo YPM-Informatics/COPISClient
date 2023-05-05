@@ -73,7 +73,7 @@ def create_scaled_bitmap(bmp_name: str,
     return image
 
 
-def simple_statictext(
+def simple_static_text(
     parent: Any,
     label: str='',
     width: int=-1,
