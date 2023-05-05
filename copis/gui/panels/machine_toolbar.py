@@ -189,7 +189,7 @@ class MachineToolbar(aui.AuiToolBar):
         """On start imaging button pressed, initiate imaging workflow."""
         self._core._session_guid = str(uuid.uuid4())
         is_connected = self._core.is_serial_port_connected
-        has_path = len(self._core.project.pose_sets)
+        has_path = len(self._core.project.move_sets)
         is_homed = self._core.is_machine_homed
         can_image = is_connected and has_path and is_homed
 
