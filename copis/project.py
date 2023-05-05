@@ -204,7 +204,7 @@ class Project():
             if 'body_dims' not in data:
                 data['body_dims'] = [100, 40, 740]
             if 'gantry_dims' not in data:
-                data['gantry_dims'] = [ 1000, 125, 100 ]
+                data['gantry_dims'] = [1000, 125, 100]
             if 'gantry_orientation' not in data:
                 data['gantry_orientation'] = 1
             if 'serial_no' not in data:
@@ -221,13 +221,13 @@ class Project():
                 name=data['name'],
                 type=data['type'],
                 description=data['description'],
-                home_position= Point5(*data['home_position']),
+                home_position=Point5(*data['home_position']),
                 range_3d=BoundingBox(lower_corner, upper_corner),
                 head_dims=Size3(*data['size']),
                 # data['port'],
                 head_radius=data['head_radius'],
-                z_body_dims=Size3(*data['body_dims']),
-                gantry_dims=Size3(*data['gantry_dims']),
+                z_body_dims=Point3(*data['body_dims']).to_Size3(),
+                gantry_dims=Point3(*data['gantry_dims']).to_Size3(),
                 gantry_orientation=data['gantry_orientation'],
                 edsdk_save_to_path=data['edsdk_save_to_path']
             )

@@ -97,6 +97,10 @@ class Point3:
         """Returns a 3D glm vector from the Point."""
         return vec3(list(asdict(self).values())[:3])
 
+    def to_Size3(self) -> 'Size3':
+        """Returns a Size3 object from the Point."""
+        return Size3(self.x, self.z, self.y)
+
 
 @dataclass
 class Point5(Point3):
