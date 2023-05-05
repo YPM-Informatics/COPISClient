@@ -299,7 +299,7 @@ class Project():
         if move_set_idx < len(self._move_sets):
             for move in self._move_sets[move_set_idx]:
                 if device_id == move.device.d_id:
-                    return move.end_pose.position.to_point3()
+                    return (move.end_pose or move.start_pose).position.to_point3()
         return None
 
     def last_pose_by_dev_id(self, move_set_idx, device_id) -> Point3:
@@ -310,7 +310,7 @@ class Project():
             for i in range(move_set_idx, -1, -1):
                 for move in self._move_sets[i]:
                     if device_id == move.device.d_id:
-                        return move.end_pose.position.to_point3()
+                        return (move.end_pose or move.start_pose).position.to_point3()
         return None
 
     def first_pose_by_dev_id(self, move_set_idx, device_id) -> Point3:
@@ -321,7 +321,7 @@ class Project():
             for i in range(move_set_idx, len(self._move_sets)):
                 for move in self._move_sets[i]:
                     if device_id == move.device.d_id:
-                        return move.end_pose.position.to_point3()
+                        return (move.end_pose or move.start_pose).position.to_point3()
         return None
 
     def start(self) -> None:
