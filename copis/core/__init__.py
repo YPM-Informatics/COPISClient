@@ -168,6 +168,15 @@ class COPISCore:
         return actions
 
     @property
+    def session_guid(self):
+        """Returns the session GUID."""
+        return self._session_guid
+
+    @session_guid.setter
+    def session_guid(self, value: str) -> None:
+        self._session_guid = value
+
+    @property
     def machine_status(self):
         """Returns the machine's status."""
         status = 'unknown'
