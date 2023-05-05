@@ -44,6 +44,7 @@ class MachineStatus(Enum):
     IDLE = 3
 
 
+@dataclass
 class DeviceGroup:
     """Data structure representing a logical group of devices (i.e.: from the same chamber).
 
@@ -53,11 +54,10 @@ class DeviceGroup:
             tx_thread: transmit (write) thread.
             rx_thread: receive (read) thread.
     """
-    def __init__(self, main_device = None, aux_devices = None, tx_thread = None, rx_thread = None) -> None:
-        self.main_device = main_device
-        self.aux_devices = aux_devices
-        self.tx_thread = tx_thread
-        self.rx_thread = rx_thread
+    main_device: 'Device' = None
+    aux_devices: List['Device'] = None
+    tx_thread: str = None
+    rx_thread: str = None
 
     def execute_raw(self, device_id, g_code: str) -> None:
         """Executes a string of g-code."""
