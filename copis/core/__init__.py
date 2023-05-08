@@ -111,7 +111,7 @@ class COPISCore:
         self._pose_set_offset_start: int = -1
         self._pose_set_offset_end: int = -1
         self._current_mainqueue_item: int = -1
-        self._imaged_pose_sets: List[int] = MonitoredList('ntf_i_list_changed', [])
+        self._imaged_move_sets: List[int] = MonitoredList('ntf_i_list_changed', [])
         self._selected_pose: int = -1
         self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
@@ -279,10 +279,10 @@ class COPISCore:
         return self._selected_pose_set
 
     @property
-    def imaged_pose_sets(self):
+    def imaged_move_sets(self):
         """Returns a list of pose set indexes that have been imaged
             in the current run."""
-        return self._imaged_pose_sets
+        return self._imaged_move_sets
 
     @property
     def work_type_name(self):
@@ -526,8 +526,8 @@ class COPISCore:
             if not self._is_machine_paused:
                 if self._work_type == WorkType.IMAGING:
                     self._current_mainqueue_item = -1
-                    self.select_pose_set(-1)
-                    self._imaged_pose_sets.clear()
+                    self.select_move_set(-1)
+                    self._imaged_move_sets.clear()
                     self._session_id = self.sys_db.last_session_id() +1
 
                 self._work_type = None
@@ -770,14 +770,14 @@ class COPISCore:
                 previous_pose_set = current_pose_set - 1
 
                 if previous_pose_set > -1:
-                    self._imaged_pose_sets.append(previous_pose_set)
+                    self._imaged_move_sets.append(previous_pose_set)
 
-                self.select_pose_set(current_pose_set)
+                self.select_move_set(current_pose_set)
             else:
                 if self._current_mainqueue_item == self._pose_set_offset_end + 1:
-                    self._imaged_pose_sets.append(current_pose_set)
+                    self._imaged_move_sets.append(current_pose_set)
 
-                self.select_pose_set(-1)
+                self.select_move_set(-1)
 
             self._current_mainqueue_item = self._current_mainqueue_item + 1
 
@@ -1157,7 +1157,7 @@ class COPISCore:
         elif index < len(self.project.proxies):
             self.select_device(-1)
             self.select_pose(-1)
-            self.select_pose_set(-1)
+            self.select_move_set(-1)
 
             self._selected_proxy = index
 
@@ -1176,7 +1176,7 @@ class COPISCore:
             self.select_proxy(-1)
             self.select_pose(-1)
             self.select_device(-1)
-            self.select_pose_set(-1)
+            self.select_move_set(-1)
 
             self._selected_device = index
 
@@ -1184,7 +1184,7 @@ class COPISCore:
         else:
             print_error_msg(self.console, f'Device index {index} is out of range.')
 
-    def select_pose_set(self, index: int) -> None:
+    def select_move_set(self, index: int) -> None:
         """Highlights poses in a set given pose set index."""
         if index < 0:
             selected = self._selected_pose_set
@@ -1192,11 +1192,11 @@ class COPISCore:
                 self._selected_pose_set = -1
 
                 dispatcher.send('ntf_s_deselected', set_index=selected)
-        elif index < len(self.project.pose_sets):
+        elif index < len(self.project.move_sets):
             self.select_device(-1)
             self.select_proxy(-1)
             self.select_pose(-1)
-            self.select_pose_set(-1)
+            self.select_move_set(-1)
 
             self._selected_pose_set = index
 
@@ -1215,7 +1215,7 @@ class COPISCore:
             self.select_device(-1)
             self.select_proxy(-1)
             self.select_pose(-1)
-            self.select_pose_set(-1)
+            self.select_move_set(-1)
 
             self._selected_pose = index
 
@@ -1328,11 +1328,11 @@ class COPISCore:
             pose_position = pose.position
             device_id = pose[0].device
             args = get_action_args_values(pose_position.args)
-            pt = Point5(*args[:5])
+            pos = Point5(*args[:5])
             if device_id not in last_position_by_id:
-                last_position_by_id[device_id] = pt
+                last_position_by_id[device_id] = pos
             else:
-                optimized_pan_angle = optimize_rotation_move_to_angle(last_position_by_id[device_id].p, pt.p)
+                optimized_pan_angle = optimize_rotation_move_to_angle(last_position_by_id[device_id].p, pos.p)
                 args[3] = sanitize_number(optimized_pan_angle)
                 args = create_action_args(args)
                 argc = min(len(pose_position.args), len(args))
@@ -1341,14 +1341,13 @@ class COPISCore:
                 pose_position.argc = argc
                 pose_position.update()
                 args = get_action_args_values(pose_position.args)
-                pt = Point5(*args[:5])
-                last_position_by_id[device_id] = pt
+                last_position_by_id[device_id] = Point5(*args[:5])
         dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True)
         #self.select_pose(self.selected_pose) # Reselect the current selected pose (if one was selected) to update variables in transform panel.
 
     def optimize_all_poses_randomize(self) -> None:
         """Optimizes all the poses to minimize panning motion cost."""
-        rand_shuffle(self.project.pose_sets)
+        rand_shuffle(self.project.move_sets)
         dispatcher.send('ntf_a_list_changed')
 
     def start_new_project(self) -> None:
@@ -1359,8 +1358,8 @@ class COPISCore:
         self._pose_set_offset_start = -1
         self._pose_set_offset_end = -1
         self._current_mainqueue_item = -1
-        self.select_pose_set(-1)
-        self._imaged_pose_sets.clear()
+        self.select_move_set(-1)
+        self._imaged_move_sets.clear()
 
         last_dvc_statuses = [(d.d_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
@@ -1377,8 +1376,8 @@ class COPISCore:
         self._pose_set_offset_start = -1
         self._pose_set_offset_end = -1
         self._current_mainqueue_item = -1
-        self.select_pose_set(-1)
-        self._imaged_pose_sets.clear()
+        self.select_move_set(-1)
+        self._imaged_move_sets.clear()
 
         last_dvc_statuses = [(d.d_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
@@ -1398,10 +1397,10 @@ class COPISCore:
 
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the defined action path."""
-        def process_pose_sets():
+        def process_move_sets():
             packets = []
 
-            for i, p_set in enumerate(self.project.pose_sets):
+            for i, p_set in enumerate(self.project.move_sets):
                 zipped = [(i, [val for val in tup if val is not None]) for tup in
                     zip_longest(*[p.get_seq_actions() for p in p_set])]
                 packets.extend(zipped)
@@ -1428,7 +1427,7 @@ class COPISCore:
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
 
         header = self._get_move_commands(True, *[dvc.d_id for dvc in self.project.devices])
-        body = process_pose_sets()
+        body = process_move_sets()
 
         ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
         # Uncomment next two lines and comment third to reenable.
@@ -1520,8 +1519,8 @@ class COPISCore:
             self._pose_set_offset_start = -1
             self._pose_set_offset_end = -1
             self._current_mainqueue_item = -1
-            self.select_pose_set(-1)
-            self._imaged_pose_sets.clear()
+            self.select_move_set(-1)
+            self._imaged_move_sets.clear()
 
             work_type_name = self.work_type_name
             self._work_type = None

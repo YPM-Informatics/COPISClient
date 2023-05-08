@@ -16,6 +16,7 @@
 """PathgenToolbar class."""
 
 import math
+import copy
 
 from collections import defaultdict
 from typing import List, Tuple
@@ -28,8 +29,8 @@ from copis.models.geometries import Point3
 from copis.globals import PathIds
 from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_static_text
 from copis.helpers import is_number, print_debug_msg, xyz_units
-from copis.pathutils import build_pose_sets, create_circle, create_helix, create_line, interleave_poses, process_path
-from copis.utils.path import build_path
+from copis.pathutils import create_circle, create_helix, create_line
+from copis.utils.path import interleave_moves
 
 
 _UNIT = 'mm'
@@ -95,20 +96,18 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddSpacer(5)
 
     def on_interleave_paths(self, _) -> None:
-        """On interleave paths button pressed, rearrange poses to alternate by
-        camera.
-        This allows us to simultaneously play paths that have been created sequentially."""
-        interleaved = interleave_poses(self.core.project.poses)
-
-        self.core.project.pose_sets.clear(False)
-        self.core.project.pose_sets.extend(build_pose_sets(interleaved))
+        """On interleave paths button pressed, rearrange moves to alternate by camera.
+            This allows us to simultaneously play paths that have been created sequentially.
+        """
+        self.core.project.move_sets.clear(False)
+        self.core.project.move_sets.extend(interleave_moves(copy.deepcopy(list(self.core.project.move_sets))))
 
     def on_clear_path(self, _) -> None:
         """On clear button pressed, clear core action list"""
-        if len(self.core.project.pose_sets) > 0:
-            self.core.select_pose_set(-1)
+        if len(self.core.project.move_sets) > 0:
+            self.core.select_move_set(-1)
             self.core.select_pose(-1)
-            self.core.project.pose_sets.clear()
+            self.core.project.move_sets.clear()
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
         """On toolbar tool selected, create pathgen dialog and process accordingly.
@@ -271,9 +270,7 @@ class PathgenToolbar(aui.AuiToolBar):
             if dvc_id != -1:
                 grouped_points[dvc_id].append(point)
 
-        pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
         move_sets = build_path(device_info, grouped_points, lookat)
-        self.core.project.pose_sets.extend(pose_sets)
         self.core.project.move_sets.extend(move_sets)
         self.core.imaging_target = lookat
 

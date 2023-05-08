@@ -545,9 +545,12 @@ class Project():
         """Reverses the order of the pose sets."""
         self._pose_sets.reverse()
 
-    def reverse_poses(self, device_ids: List[int]=None):
+    def reverse_moves(self, device_ids: List[int]=None):
         """Reverses the order of the poses for the given devices.
-            Applies to all devices if none provided."""
+            Applies to all devices if none provided.
+            Args:
+                device_ids: a collection of id for the devices for which to reverse moves
+        """
         sets_changed = False
         cur_device_ids = [d.d_id for d in self._devices]
         cur_device_ids.sort()
@@ -587,7 +590,7 @@ class Project():
 
                 if sets_changed:
                     interleaved = interleave_lists(*groups, keep_def_fill_val=True)
-                    set_size = len(cur_device_ids)
+                    set_size = len(groups)
                     m_sets = [interleaved[i:i+set_size] for i in range(0, len(interleaved), set_size)]
                     m_sets = [[m for m in l if m is not None] for l in m_sets]
 

@@ -63,7 +63,7 @@ class TimelinePanel(wx.Panel):
         dispatcher.connect(self._on_action_list_changed, signal='ntf_a_list_changed')
         dispatcher.connect(self._on_pose_selected, signal='ntf_a_selected')
         dispatcher.connect(self._on_pose_deselected, signal='ntf_a_deselected')
-        dispatcher.connect(self._on_pose_set_selected, signal='ntf_s_selected')
+        dispatcher.connect(self._on_move_set_selected, signal='ntf_s_selected')
         dispatcher.connect(self._on_pose_set_deselected, signal='ntf_s_deselected')
         dispatcher.connect(self._on_device_position_copied, signal='ntf_device_position_copied')
 
@@ -173,9 +173,9 @@ class TimelinePanel(wx.Panel):
     def _on_pose_set_deselected(self, set_index):
         # Call the specified function after the current and pending event handlers have been completed.
         # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
-        wx.CallAfter(self._deselect_pose_set, set_index)
+        wx.CallAfter(self._deselect_move_set, set_index)
 
-    def _deselect_pose_set(self, set_index):
+    def _deselect_move_set(self, set_index):
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
@@ -198,10 +198,10 @@ class TimelinePanel(wx.Panel):
 
         self.timeline.Bind(wx.EVT_TREE_SEL_CHANGED, self._on_selection_changed)
 
-    def _on_pose_set_selected(self, set_index):
-        wx.CallAfter(self._select_pose_set, set_index)
+    def _on_move_set_selected(self, set_index):
+        wx.CallAfter(self._select_move_set, set_index)
 
-    def _select_pose_set(self, set_index):
+    def _select_move_set(self, set_index):
         root = self.timeline.GetRootItem()
 
         if not root.IsOk():
@@ -362,12 +362,12 @@ class TimelinePanel(wx.Panel):
 
                 self.core.select_pose(idx_in_poses)
             elif data['item'] == 'set':
-                self.core.select_pose_set(data['index'])
+                self.core.select_move_set(data['index'])
         else:
             self._toggle_buttons()
 
             if item == self.timeline.GetRootItem():
-                self.core.select_pose_set(-1)
+                self.core.select_move_set(-1)
                 self.core.select_pose(-1)
 
                 is_root_item_selected = True
@@ -511,7 +511,7 @@ class TimelinePanel(wx.Panel):
             event.EventObject.Parent.Close()
 
             set_index = self.core.project.add_pose_set()
-            self.core.select_pose_set(set_index)
+            self.core.select_move_set(set_index)
 
         def on_add_pose(event: wx.CommandEvent):
             event.EventObject.Parent.Close()
@@ -611,7 +611,7 @@ class TimelinePanel(wx.Panel):
             dialog.ShowModal()
         else:
             set_index = self.core.project.add_pose_set()
-            self.core.select_pose_set(set_index)
+            self.core.select_move_set(set_index)
 
     def on_reverse_command(self, event: wx.CommandEvent):
         """"Reverses the play order of poses or pose sets."""
@@ -791,7 +791,7 @@ class TimelinePanel(wx.Panel):
             set_index = data['index']
             set_index = self.core.project.insert_pose_set(set_index)
 
-            self.core.select_pose_set(set_index)
+            self.core.select_move_set(set_index)
 
     def on_move_command(self, event: wx.CommandEvent) -> None:
         """Moves a set up or down"""
@@ -816,7 +816,7 @@ class TimelinePanel(wx.Panel):
                 new_index = self.core.project.move_set(index, set_count - 1 - index)
 
             if new_index is not None and new_index >= 0:
-                self.core.select_pose_set(new_index)
+                self.core.select_move_set(new_index)
                 self._toggle_buttons(data)
 
     def on_delete_command(self, _) -> None:
@@ -827,9 +827,9 @@ class TimelinePanel(wx.Panel):
             if data['item'] == 'set':
                 set_index = data['index']
 
-                self.core.select_pose_set(-1)
+                self.core.select_move_set(-1)
                 self.core.project.delete_pose_set(set_index)
-                self.core.select_pose_set(set_index - 1)
+                self.core.select_move_set(set_index - 1)
             elif data['item'] == 'pose':
                 set_index = data['set index']
                 pose_index = data['index']
@@ -839,7 +839,7 @@ class TimelinePanel(wx.Panel):
                 self.core.project.delete_pose(set_index, pose_index)
 
                 if prev_pose_index < 0:
-                    self.core.select_pose_set(set_index)
+                    self.core.select_move_set(set_index)
                 else:
                     idx_in_poses = self._get_index_poses(set_index, prev_pose_index)
                     self.core.select_pose(idx_in_poses)

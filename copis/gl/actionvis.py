@@ -37,7 +37,7 @@ from copis.models.geometries import Point3, Point5
 from copis.models.g_code import Gcode
 from copis.helpers import create_cuboid, create_device_features, dd_to_rad, fade_color, get_action_args_values, get_heading_rad, point5_to_mat4, shade_color, xyzpt_to_mat4
 
-ArrayInfo = namedtuple('ArrayInfo', 'name key')
+ArrayInfo = namedtuple('ArrayInfo', [('name', str), ('key', int)])
 
 class GLActionVis:
     """Manage action list rendering in a GLCanvas."""
@@ -204,28 +204,28 @@ class GLActionVis:
             color = self.colors[key % len(self.colors)]
             cols = glm.array([color] * len(value))
 
-            self._bind_directional_keys(('midline', key), mats, cols)
+            self._bind_directional_keys(ArrayInfo('midline', key), mats, cols)
 
         # --- bind data for points ---
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
 
         if self._num_points > 0:
-            sets = self.core.project.pose_sets
+            sets = self.core.project.move_sets
 
             selected_poses = []
             if self.core.selected_pose != -1:
                 selected_poses.append(self.core.selected_pose)
             elif self.core.selected_pose_set != -1:
                 set_index = self.core.selected_pose_set
-                start = sum([len(s) for s in sets[:set_index]])
+                start = sum(len(s) for s in sets[:set_index])
 
                 for i in range(len(sets[set_index])):
                     selected_poses.append(start + i)
 
             imaged_poses = []
-            for set_index in self.core.imaged_pose_sets:
-                start = sum([len(s) for s in sets[:set_index]])
+            for set_index in self.core.imaged_move_sets:
+                start = sum(len(s) for s in sets[:set_index])
 
                 for i in range(len(sets[set_index])):
                     imaged_poses.append(start + i)
@@ -263,8 +263,8 @@ class GLActionVis:
 
                 ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
 
-                self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
-                self._bind_device_features(('pt_feature', key), feat_mats, feat_color_mods)
+                self._bind_vao_mat_col_id(ArrayInfo('point', key), mats, cols, ids)
+                self._bind_device_features(ArrayInfo('pt_feature', key), feat_mats, feat_color_mods)
 
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
@@ -289,8 +289,8 @@ class GLActionVis:
 
                 ids = glm.array(ctypes.c_int, key)
 
-                self._bind_vao_mat_col_id(('device', key), mats, glm.array(color), ids)
-                self._bind_device_features(('dvc_feature', key), mats, glm.array(feat_color_mods))
+                self._bind_vao_mat_col_id(ArrayInfo('device', key), mats, glm.array(color), ids)
+                self._bind_device_features(ArrayInfo('dvc_feature', key), mats, glm.array(feat_color_mods))
 
     def update_poses(self) -> None:
         """Update lines and poses when pose list changes.
@@ -388,7 +388,7 @@ class GLActionVis:
         # --- render devices ---
 
         for key, value in self._items['device'].items():
-            index_count = self._get_dvc_feature_vtx_count(('dvc_feature_vtx', key))
+            index_count = self._get_dvc_feature_vtx_count(ArrayInfo('dvc_feature_vtx', key))
 
             glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
             glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
@@ -410,8 +410,7 @@ class GLActionVis:
                     self.parent.shaders['instanced_model_multi_colors'])
                 glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
                 glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-                index_count = self._get_dvc_feature_vtx_count(
-                    ('pt_feature_vtx', key))
+                index_count = self._get_dvc_feature_vtx_count(ArrayInfo('pt_feature_vtx', key))
                 glBindVertexArray(self._vaos['pt_feature'][key])
                 glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
 
