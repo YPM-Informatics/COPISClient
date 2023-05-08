@@ -29,13 +29,14 @@ from pydispatch import dispatcher
 
 from copis import store
 from copis.classes import Action, MonitoredList, Object3D, OBJObject3D
-from copis.models.path import Pose
+from copis.models.path import MoveTypes, Pose
 from copis.models.machine import Device
 from copis.models.geometries import BoundingBox, Point3, Point5, Size3
 from copis.models.path import Move
 from copis.command_processor import deserialize_command
 from copis.helpers import collapse_whitespaces, interleave_lists
 from copis.gui.wxutils import show_prompt_dialog
+
 
 class Project():
     """A singleton that manages COPIS project operations."""
@@ -85,10 +86,6 @@ class Project():
         if not hasattr(self, '_proxies'):
             self._proxies = None
 
-        # TODO: [DELETE]
-        if not hasattr(self, '_pose_sets'):
-            self._pose_sets = None
-
         if not hasattr(self, '_move_sets'):
             self._move_sets = None
 
@@ -118,22 +115,10 @@ class Project():
         """Returns the list of proxy objects."""
         return self._proxies
 
-    # TODO: [DELETE]
-    @property
-    def pose_sets(self) -> List[List[Pose]]:
-        """Returns the pose set list."""
-        return self._pose_sets
-
     @property
     def move_sets(self) -> List[List[Move]]:
         """Returns the move set list."""
         return self._move_sets
-
-    @property
-    def poses(self) ->List[Pose]:
-        """Returns all poses in the move set list."""
-        # return [move.end_pose for m_set in self._move_sets for move in m_set] if self._move_sets else []
-        return [p for p_set in self._pose_sets for p in p_set] if self._pose_sets else []
 
     @property
     def options(self) -> dict:
@@ -259,18 +244,6 @@ class Project():
             self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
                 proxies)
 
-    # TODO: [DELETE]
-    def _init_pose_sets(self, sets=None):
-        if self._pose_sets is not None:
-            self._pose_sets.clear(sets is None)
-            if sets is not None:
-                self._pose_sets.extend(sets)
-        else:
-            if sets:
-                self._pose_sets = MonitoredList('ntf_a_list_changed', sets)
-            else:
-                self._pose_sets = MonitoredList('ntf_a_list_changed')
-
     def _init_move_sets(self, sets=None):
         if self._move_sets is not None:
             self._move_sets.clear(sets is None)
@@ -334,9 +307,6 @@ class Project():
         self._init_devices()
         self._init_proxies()
 
-        # TODO: [DELETE]
-        self._init_pose_sets()
-
         self._init_move_sets()
 
         self._path = None
@@ -389,9 +359,6 @@ class Project():
                 self._init_devices()
         self._init_proxies(proxies)
 
-        # TODO: [DELETE]
-        self._init_pose_sets(p_sets)
-
         self._init_move_sets(p_sets)
 
         if 'imaging_options' in proj_data:
@@ -408,10 +375,9 @@ class Project():
 
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
-        get_module = lambda i: '.'.join(i.split(".")[:2])
 
         proj_data = {
-            'imaging_path': self._pose_sets,
+            'imaging_path': self._move_sets,
             'imaging_options': self._options,
             'profile': self._profile,
             'proxies': []
@@ -425,7 +391,7 @@ class Project():
             else:
                 cls_name = type(proxy).__qualname__
                 proxy_data = {
-                    'module': get_module(type(proxy).__module__),
+                    'module': '.'.join(type(proxy).__module__.split(".")[:2]),
                     'cls': cls_name,
                     'repr': collapse_whitespaces(repr(proxy))
                 }
@@ -451,29 +417,62 @@ class Project():
         self._path = path
         self._unset_dirty_flag()
 
-    def add_pose(self, set_index: int, pose: Pose) -> int:
-        """Adds a pose to a pose set in the pose set list.
-            Returns the index of the added pose."""
-        if self.can_add_pose(set_index, pose.position.device):
-            pose_set = self._pose_sets[set_index].copy()
-            pose_set.append(pose)
-            pose_set.sort(key=lambda p: p.position.device)
+    def add_pose(self, set_index: int, device_id: int, pose: Pose) -> None:
+        """Adds a pose to the device's move in the set of moves.
 
-            self._pose_sets[set_index] = pose_set
+            Args:
+                set_index: the position of the move set in which the pose will be added.
+                device_id: the id of the device for which to add the pose.
+                pose: the (end) pose to add.
+        """
+        if self.can_add_pose(set_index, device_id):
+            move: Move = next(filter(lambda m: m.device.d_id == device_id, self._move_sets[set_index]))
+            move.end_pose = pose
 
-            return pose_set.index(pose)
-        else:
-            return -1
+            # TODO: If pose linking is working as expected this logic should not be needed as setting the end pose previously
+            # would mean that the next pose's start move would also be set. So I am commenting this out for now and we'll
+            # see what happens.
+            # if set_index + 1 < len(self._move_sets):
+            #     next_move: Move = next(filter(lambda m: m.device.d_id == device_id, self._move_sets[set_index + 1]))
+            #     next_move.start_pose = move.end_pose               
 
-    def insert_pose(self, set_index: int, pose: Pose) -> int:
-        """Inserts a pose to a pose set in the pose set list;
-            even if a pose for the camera already exists in the set.
-            In which case poses are shifted down to the end of the list
-            or until a set without a pose for the camera is encountered.
-            Returns the index of the inserted pose."""
+            dispatcher.send('ntf_a_list_changed', is_project_dirty=self._is_dirty)
+
+    def insert_pose(self, set_index: int, device_id: int, pose: Pose) -> None:
+        """Inserts a move for the device with the pose as its end pose, in the set of moves;
+            shifting moves down through move sets to the end of the list where a new move set is added.
+
+            Args:
+                set_index: the position where to insert the move.
+                device_id: the id of the device for which to insert the pose.
+                pose: the (end) pose to insert.
+        """
+        if not self._move_sets or set_index >= len(self._move_sets):
+            return False
+
+        if not self._devices or not any(d.d_id == device_id for d in self._devices):
+            return False
+
+        # This should never happen; unless we start allowing more than one move/device/set.
+        if len(self._move_sets[set_index]) != len(self._devices):
+            return False
+
+        m_dvcs = [m.device for m in self._move_sets[set_index]]
+        self._move_sets.append([])
+
+        for dvc in m_dvcs:
+            move: Move = next(filter(lambda m: m.device.d_id == device_id, self._move_sets[-2]))
+
+            if dvc.d_id == device_id:
+                self._move_sets[-1].append(move)
+            else:
+                self._move_sets[-1].append(Move(MoveTypes.LINEAR, move.start_pose, move.start_pose, device=dvc))
+
+        for i in range(len(self._move_sets) - 2, set_index + 1, -1):
+            #TODO: shift the rest of the device's moves down from move set to move set.
+
         if not self.can_add_pose(set_index, pose.position.device):
-            free_set_indices = [i for i, set_ in enumerate(self._pose_sets) if i > set_index \
-                and not any(p.position.device == pose.position.device for p in set_)]
+            free_set_indices = [i for i, set_ in enumerate(self._pose_sets) if i > set_index and not any(p.position.device == pose.position.device for p in set_)]
 
             if free_set_indices:
                 free_set_index = free_set_indices[0]
@@ -540,12 +539,7 @@ class Project():
 
         return index
 
-    # TODO: [DELETE]
-    def reverse_pose_sets(self):
-        """Reverses the order of the pose sets."""
-        self._pose_sets.reverse()
-
-    def reverse_moves(self, device_ids: List[int]=None):
+    def reverse_moves(self, device_ids: List[int]=None) -> None:
         """Reverses the order of the poses for the given devices.
             Applies to all devices if none provided.
             Args:
@@ -599,20 +593,27 @@ class Project():
                 self.move_sets.extend(m_sets)
 
     def can_add_pose(self, set_index: int, device_id: int) -> bool:
-        """Returns a flag indicating where a pose with the specified device
-            can be added to the pose."""
-        if not self._pose_sets or set_index >= len(self._pose_sets):
+        """Returns a flag indicating where a pose with the specified device can be added to the pose.
+
+            Args:
+                set_index: the index of the set where the pose will be added.
+                device_id: the device for which the pose will be added.
+        """
+        if not self._move_sets or set_index >= len(self._move_sets):
             return False
 
         if not self._devices or not any(d.d_id == device_id for d in self._devices):
             return False
 
-        pose_set = self._pose_sets[set_index]
-
-        if len(pose_set) >= len(self._devices):
+        # This should never happen; unless we start allowing more than one move/device/set.
+        if len(self._move_sets[set_index]) != len(self._devices):
             return False
 
-        if any(p.position.device == device_id for p in pose_set):
+        # There should always be a move for each device in a given move set.
+        # If not we'd want to know about it, so let it fail.
+        move: Move = next(filter(lambda m: m.device.d_id == device_id, self._move_sets[set_index]))
+
+        if move.start_pose != move.end_pose:
             return False
 
         return True
