@@ -20,6 +20,22 @@ import math
 from dataclasses import dataclass, asdict
 from glm import vec3
 
+def _get_mid_diagonal(lower, upper):
+    return round_point((lower + upper) / 2, 3)
+
+
+def round_point(value: 'Point3', places: int=1) -> 'Point3':
+    """Rounds the vertices of a point.
+
+    Args:
+        value: the point for which to round the vertices.
+        places: the number of decimal places to round to.
+    """
+    cls = type(value)
+
+    return cls(*list(map(lambda v: round(v, places), list(value))))
+
+
 @dataclass
 class Point3:
     """3 axes positional object.
@@ -242,12 +258,21 @@ class BoundingBox:
         return _get_mid_diagonal(floor_lower, floor_upper)
 
     def does_bbox_intersect(self, bbox) -> bool:
-        """Return whether this bbox intersects the given bbox."""
+        """Returns whether this bbox intersects the given bbox.
+
+        Args:
+            bbox: the bounding box to check intersection against.
+        """
         # TODO: implement bbox intersection check.
         return False
 
     def is_point_inside(self, point: Point3, epsilon: float) -> bool:
-        """Returns whether the given point is in this bbox, with a buffer (epsilon)."""
+        """Returns whether the given point is in this bbox, with a buffer (epsilon).
+
+        Args:
+            point: point to check bounding box against.
+            epsilon: buffer value.
+        """
         return (self.lower.x - epsilon <= point.x and
                 self.lower.y - epsilon <= point.y and
                 self.lower.z - epsilon <= point.z and
@@ -325,18 +350,13 @@ class BoundingBox:
         return 0.0001 <= math.dist(start, coord) <= math.dist(start, end)
 
     def extend_to_point(self, point: Point3):
-        """Extend bbox by a point."""
+        """Extend bbox by a point.
+
+        Args:
+            point: the point to extend the bounding box to.
+        """
         for i in range(3):
             if point[i] < self.lower[i]:
                 self.lower[i] = point[i]
             if point[i] > self.upper[i]:
                 self.upper[i] = point[i]
-
-def round_point(value: Point3, places: int=1) -> Point3:
-    """Rounds the vertices of a point."""
-    cls = type(value)
-
-    return cls(*list(map(lambda v: round(v, places), list(value))))
-
-def _get_mid_diagonal(lower, upper):
-    return round_point((lower + upper) / 2, 3)
