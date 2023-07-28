@@ -255,19 +255,17 @@ class SerialController():
         line = resp.strip('\r\n')
         if self._OBJECT_PATTERN.match(line):
             result = SerialResponse()
-
-            for pair in self._PAIR_PATTERN.findall(line):
-                for key_val in self._KEY_VAL_PATTERN.findall(pair.rstrip(',')):
-                    key = self._KEY_MAP[key_val[0]]
-                    value = key_val[1]
-
-                    if (key in ['device_id', 'system_status_number']):
-                        value = int(value)
-                    elif key == 'position':
-                        x, y, z, p, t = [float(v) for v in [*key_val[1].split(',')]]
-                        value = Point5(x, y, z, p ,t)
-
-                    setattr(result, key, value)
+            if key_val[0] in self._KEY_MAP:
+                for pair in self._PAIR_PATTERN.findall(line):
+                    for key_val in self._KEY_VAL_PATTERN.findall(pair.rstrip(',')):
+                        key = self._KEY_MAP[key_val[0]]
+                        value = key_val[1]
+                        if (key in ['device_id', 'system_status_number']):
+                            value = int(value)
+                        elif key == 'position':
+                            x, y, z, p, t = [float(v) for v in [*key_val[1].split(',')]]
+                            value = Point5(x, y, z, p ,t)
+                        setattr(result, key, value)
             return result
 
         return line
