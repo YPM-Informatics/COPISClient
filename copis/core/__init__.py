@@ -98,9 +98,11 @@ class COPISCore:
 
         # True if sending actions, false if paused.
         self._keep_working = False
+
         self._is_machine_paused = False
         self._work_type = None
         self._machine_busy_since = None
+        self._last_machine_status = None
 
         self._read_threads = []
         self._working_thread = None
@@ -217,7 +219,7 @@ class COPISCore:
         return safe_list
 
     @property
-    def is_serial_port_connected(self):
+    def is_serial_port_connected(self) -> bool:
         """Returns a flag indicating whether the active serial port is connected."""
         return self._serial.is_port_open
 
@@ -416,7 +418,7 @@ class COPISCore:
                 else:
                     self._clear_to_send = controllers_unlocked or self.is_machine_idle
 
-                if self.is_machine_idle:
+                if self._last_machine_status != self.machine_status and self.is_machine_idle:
                     print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
 
                     if len(self._mainqueue) <= 0:
@@ -478,6 +480,8 @@ class COPISCore:
                     print_info_msg(self.console, '**** Thawing machine ****')
                     self._serial.write(ActionType.M120.name)
                     self._machine_busy_since = datetime.now()
+
+            self._last_machine_status = self.machine_status
 
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
@@ -927,6 +931,7 @@ class COPISCore:
                 self._working_thread.join()
 
             self._working_thread = None
+            self._last_machine_status = None
 
         if self._is_serial_enabled:
             self._serial.terminate()
@@ -989,7 +994,7 @@ class COPISCore:
         """disconnects from the active serial port."""
         self._keep_working = False
 
-        # self.is_serial_port_connected is a property and pylint can see that for some reason.
+        # self.is_serial_port_connected is a property and pylint can't see that for some reason.
         # pylint: disable=using-constant-test
         if self.is_serial_port_connected:
             port_name = self._get_active_serial_port_name()
@@ -1006,6 +1011,7 @@ class COPISCore:
                 self._working_thread.join()
 
             self._working_thread = None
+            self._last_machine_status = None
 
         if self.is_serial_port_connected:
             self._serial.close_port()
