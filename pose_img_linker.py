@@ -228,11 +228,11 @@ class PoseImgLinker:
         self._output_csv = None
         self._exif_tool_path = None
         self._cam_sn_to_id = {}
-        self._bin_by_session = False
         self.max_buffer_secs = 5
         self.img_types = {1:'.jpg', 2:None}
         self.exif_time_diffs = {}
         self.save_to_db = False
+        self.bin_by_img_type = False
         self.bin_by_session_output_folder = None
 
         self._file_data = {}
@@ -504,14 +504,15 @@ class PoseImgLinker:
                     for row in session_rows:
                         img_filename = row[8]
                         img_filename_relative_root = img_filename.replace(self.input_folder, '', 1).lstrip('\\')
-                        dest = os.path.join(session_path, img_filename_relative_root)
+                        type_bin = os.path.splitext(img_filename_relative_root)[1].strip('.').upper() if self.bin_by_img_type else ''
+                        dest = os.path.join(session_path, type_bin, img_filename_relative_root)
 
                         if not os.path.exists(os.path.dirname(dest)):
                             os.makedirs(os.path.dirname(dest))
 
                         shutil.copy(img_filename, dest)
 
-                        row[8] = os.path.join('session_' + str(session_id), img_filename_relative_root)
+                        row[8] = os.path.join('session_' + str(session_id), type_bin, img_filename_relative_root)
                         new_img_id = new_img_ids.get(row[9])
                         row[1] = row[1] or new_img_id
                         csv.writer(file).writerow(row)
@@ -569,6 +570,7 @@ def show_help():
     print('-e <img file type 2> default: None')
     print('-l <location of exiftool.exe> default (expects exiftool.exe directory to be on the PATH): None')
     print('-s <update database> default: False')
+    print('-g <organize images by type with the session> default: False')
     print('-c <folder name to copy images organized by session id> default: None')
     print('-t <comma delimited array of time diferential to apply to exif data> default: None')
     print('    format: camid:timediff_sec,camid2:timdiff_sec2...')
@@ -578,7 +580,7 @@ def show_help():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:c:l:s')
+        opts, args = getopt.getopt(sys.argv[1:], 'i:o:p:d:h:b:f:e:t:c:l:sg')
     except getopt.GetoptError as err:
         print(err)
         print('invalid args, for help: pose_img_linker.py -h')
@@ -619,6 +621,8 @@ if __name__ == "__main__":
             pil.img_types[2] = arg
         elif opt == '-s':
             pil.save_to_db = True
+        elif opt == '-g':
+            pil.bin_by_img_type = True
         elif opt == '-t':
             for a in arg.split(','):
                 kv = a.split(':')
