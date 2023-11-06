@@ -56,7 +56,7 @@ from ._console_output import ConsoleOutput
 class COPISCore:
     """COPISCore. Connects and interacts with devices in system."""
 
-    _YIELD_TIMEOUT = .001 # 1 millisecond
+    YIELD_TIMEOUT = .001 # 1 millisecond
     _STALE_STATUS_THRESHOLD = 1
     _IMAGING_MANIFEST_FILE_NAME = 'copis_imaging_manifest.json'
     MOVE_COMMANDS = [ActionType.G0, ActionType.G1]
@@ -399,7 +399,7 @@ class COPISCore:
         print_debug_msg(self.console, f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
 
         while continue_listening():
-            time.sleep(self._YIELD_TIMEOUT)
+            time.sleep(self.YIELD_TIMEOUT)
             resp = self._serial.read(read_thread.port)
             controllers_unlocked = False
 
@@ -592,7 +592,7 @@ class COPISCore:
             dvc = self._get_device(cmd.device)
 
             while dvc.status not in [ComStatus.IDLE, ComStatus.UNKNOWN]:
-                time.sleep(self._YIELD_TIMEOUT)
+                time.sleep(self.YIELD_TIMEOUT)
 
             key, value = cmd.args[0]
             value = float(value)
@@ -625,7 +625,7 @@ class COPISCore:
         # Wait until we get the ok from listener.
         while self.is_serial_port_connected and not self._clear_to_send \
             and self._keep_working:
-            time.sleep(self._YIELD_TIMEOUT)
+            time.sleep(self.YIELD_TIMEOUT)
 
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
@@ -644,7 +644,7 @@ class COPISCore:
                     print_debug_msg(self.console, 'begin post shutter delay', True)
                     while round(time.time() * 1000) - start_timestamp_ms < self._ressetable_send_delay_ms:
                         #could do something during delay
-                        pass
+                        time.sleep(self.YIELD_TIMEOUT)
                     self._ressetable_send_delay_ms = 0
                     print_debug_msg(self.console, 'end post shutter delay', True)
                 self._send(*packet)
@@ -699,7 +699,7 @@ class COPISCore:
 
         if cmd_lines:
             print_debug_msg(self.console, 'Writing> [{0}] to device{1} '.format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                f'{", ".join([str(d.device_id) for d in dvcs])}.', self._is_dev_env)
+                f'{", ".join([str(d.device_id) for d in dvcs])}.', True)
 
             pre_shutter_delay_completed = False
             for command in commands:
@@ -714,7 +714,7 @@ class COPISCore:
                         start_timestamp_ms = round(time.time() * 1000)
                         while round(time.time() * 1000) - start_timestamp_ms < time_delay_ms:
                             #could do something while delay is happening
-                            pass
+                            time.sleep(self.YIELD_TIMEOUT)
                         pre_shutter_delay_completed = True
                         print_debug_msg(self.console, 'end pre shutter delay', True)
                     if 'post_shutter_delay_ms' in self.project.options and self.project.options['post_shutter_delay_ms']:
@@ -935,7 +935,7 @@ class COPISCore:
 
         if self._is_serial_enabled:
             self._serial.terminate()
-            time.sleep(self._YIELD_TIMEOUT * 5)
+            time.sleep(self.YIELD_TIMEOUT * 5)
 
     def update_serial_ports(self) -> None:
         """Updates the serial ports list."""
@@ -1015,7 +1015,7 @@ class COPISCore:
 
         if self.is_serial_port_connected:
             self._serial.close_port()
-            time.sleep(self._YIELD_TIMEOUT * 5)
+            time.sleep(self.YIELD_TIMEOUT * 5)
 
         self._is_new_connection = False
         self._connected_on = None
