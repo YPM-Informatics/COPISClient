@@ -25,7 +25,7 @@ class SysDB():
     """Represents a system database object in sqlite that can be used for tracking all image and serial requests.
        Sys db can be used to sync images with positional information
     """
-
+    _yield_timeout = .001
     _schema = {
         'image_metadata': {
             'id':'INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -73,6 +73,7 @@ class SysDB():
         self._poses_in_play = {}
 
         self._is_initialized = True
+        self._is_writing = False
         print("using sysdb: ", self._filename)
 
     @property
@@ -121,6 +122,10 @@ class SysDB():
         if not self._is_initialized:
             return -1
 
+        while self._is_writing:
+            time.sleep(self._yield_timeout)
+
+        self._is_writing = True
         s = 'INSERT INTO serial_tx (data, unix_time) VALUES(?,?);'
         db = sqlite3.connect(self._filename)
         cur = db.cursor()
@@ -130,6 +135,7 @@ class SysDB():
         cur.close()
         db.commit()
         db.close()
+        self._is_writing = False
         return row_id
 
     def serial_rx(self, b : bytes) -> int:
@@ -137,9 +143,13 @@ class SysDB():
         if not self._is_initialized:
             return -1
 
-        if len(b) <1:
+        if len(b) < 1:
             return -2
 
+        while self._is_writing:
+            time.sleep(self._yield_timeout)
+
+        self._is_writing = True
         s = 'INSERT INTO serial_rx (data, unix_time) VALUES(?,?);'
         db = sqlite3.connect(self._filename)
         cur = db.cursor()
@@ -149,6 +159,7 @@ class SysDB():
         cur.close()
         db.commit()
         db.close()
+        self._is_writing = False
         return row_id
 
     def start_pose(self, device: Device, src: str, src_action: str, session_id: int=-1) -> int:
@@ -172,6 +183,10 @@ class SysDB():
              device.description,\
              time.time())
 
+        while self._is_writing:
+            time.sleep(self._yield_timeout)
+
+        self._is_writing = True
         s = 'INSERT INTO image_metadata (session_id,x,y,z,p,t,src,src_action,cam_id,cam_serial_no,cam_name,cam_type,cam_desc,unix_time_start) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?);'
         db = sqlite3.connect(self._filename)
         cur = db.cursor()
@@ -186,6 +201,7 @@ class SysDB():
         cur.close()
         db.commit()
         db.close()
+        self._is_writing = False
         return row_id
 
     def update_pose_output(self, device: Device, fname:str) -> int:
@@ -198,6 +214,10 @@ class SysDB():
             # receives another image request while we are still processing the last.
             p_id = self._poses_in_play[device.device_id][0]
 
+            while self._is_writing:
+                time.sleep(self._yield_timeout)
+
+            self._is_writing = True
             db = sqlite3.connect(self._filename)
             cur = db.cursor()
             s = f'select img1_fname, img2_fname from image_metadata WHERE id = {p_id} and unix_time_end is null;'
@@ -219,6 +239,7 @@ class SysDB():
             cur.close()
             db.commit()
             db.close()
+            self._is_writing = False
             return p_id
         return -2
 
@@ -233,6 +254,11 @@ class SysDB():
             p_id = self._poses_in_play[device.device_id][0]
 
             self._poses_in_play[device.device_id].pop(0)
+
+            while self._is_writing:
+                time.sleep(self._yield_timeout)
+
+            self._is_writing = True
             db = sqlite3.connect(self._filename)
             cur = db.cursor()
             s = 'UPDATE image_metadata SET unix_time_end = ? WHERE id =? and unix_time_end is null;'
@@ -241,5 +267,6 @@ class SysDB():
             cur.close()
             db.commit()
             db.close()
+            self._is_writing = False
             return p_id
         return -2
