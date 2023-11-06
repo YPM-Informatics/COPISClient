@@ -36,6 +36,8 @@ class MachineStats(wx.Panel):
         self._core = parent.core
         self._keep_polling = True
         self._num_devices = len(self._core.project.devices)
+        self._last_machine_status = None
+        self._last_machine_homed_status = None
 
         self._build_panel()
 
@@ -49,7 +51,6 @@ class MachineStats(wx.Panel):
         # Bind listeners.
         dispatcher.connect(self.on_device_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self.on_device_updated, signal='ntf_device_eds_updated')
-        dispatcher.connect(self.on_machine_idle, signal='ntf_machine_idle')
         dispatcher.connect(self._on_device_list_changed, signal='ntf_d_list_changed')
 
     def _build_panel(self):
@@ -128,6 +129,7 @@ class MachineStats(wx.Panel):
 
     def _on_device_list_changed(self):
         self._num_devices = len(self._core.project.devices)
+        self._device_count_caption.SetLabel(str(self._num_devices))
         self._keep_polling = False
         self._polling_thread.join()
 
@@ -144,17 +146,22 @@ class MachineStats(wx.Panel):
         self._polling_thread.start()
 
     def _poll_machine_stats(self):
+        wx.CallAfter(self._device_count_caption.SetLabel, str(self._num_devices))
+
         while self._keep_polling:
             if self._device_count_caption:
                 status = self._core.machine_status
-                if status == 'idle' and self._machine_status_caption.GetLabel() != 'idle':
-                    status = 'clear'
+                homed = str(self._core.is_machine_homed).lower()
 
-                self._device_count_caption.SetLabel(str(self._num_devices))
-                self._machine_status_caption.SetLabel(status)
-                self._machine_is_homed_caption.SetLabel(str(self._core.is_machine_homed).lower())
+                if self._last_machine_homed_status != homed:
+                    self._last_machine_homed_status = homed
+                    wx.CallAfter(self._machine_is_homed_caption.SetLabel, str(self._core.is_machine_homed).lower())
 
-            time.sleep(.5)
+                if self._last_machine_status != status:
+                    self._last_machine_status = status
+                    wx.CallAfter(self._machine_status_caption.SetLabel, status)
+
+            time.sleep(self._core.YIELD_TIMEOUT)
 
     def _update_device(self, device):
         format_num = lambda n: f'{n:.3f}'
@@ -188,7 +195,3 @@ class MachineStats(wx.Panel):
         # Call the specified function after the current and pending event handlers have been completed.
         # This is good for making GUI method calls from non-GUI threads, in order to prevent hangs.
         wx.CallAfter(self._update_device, device)
-
-    def on_machine_idle(self):
-        """Handles machine idle event."""
-        wx.CallAfter(self._machine_status_caption.SetLabel, 'idle')
