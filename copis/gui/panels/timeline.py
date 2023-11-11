@@ -289,17 +289,22 @@ class TimelinePanel(wx.Panel):
 
     def _place_pose_in_sets(self, pose_index):
         sets = self.core.project.pose_sets
+        pose_count = 0
         set_index = 0
-        idx_in_set = pose_index
+        idx_in_set = 0
 
-        if pose_index >= len(sets[0]):
-            for i in range(1, len(sets) + 1):
-                sums = sum([len(s) for s in sets[:i]])
-                if sums > pose_index:
-                    set_index = i - 1
-                    idx_in_set = pose_index - sum([len(s) for s in sets[:set_index]])
-                    break
+        for i, set_ in enumerate(sets):
+            set_index = i
 
+            if pose_count + len(set_) >= pose_index:
+                idx_in_set = pose_index - pose_count
+
+                if pose_count + len(set_) == pose_index:
+                    idx_in_set = 0
+                    set_index += 1
+
+                break
+            pose_count += len(set_)
         return set_index, idx_in_set
 
     def _toggle_buttons(self, data=None):
