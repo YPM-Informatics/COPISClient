@@ -86,10 +86,6 @@ class CylinderObject3D(Object3D):
         self.height: float = glm.distance(self.start, self.end)
         self.normal: vec3 = glm.normalize(self.end - self.start)
 
-        self.b1: vec3
-        self.b2: vec3
-        self.b1, self.b2 = orthonormal_basis_of(self.normal)
-
         # calculate rotation matrix for cylinder
         self.trans_matrix: mat4 = glm.orientation(vec3(0.0, 0.0, 1.0), self.normal)
 

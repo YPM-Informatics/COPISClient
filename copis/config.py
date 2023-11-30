@@ -44,6 +44,26 @@ class Config():
         self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
 
+        self._log_serial_tx = False
+        self._log_serial_rx = False
+        db_path = store.get_sys_db_path()
+
+        if db_path and self._config_parser.has_option('System', 'log_serial_tx'):
+            self._log_serial_tx = _get_bool(self._config_parser['System']['log_serial_tx'])
+
+        if db_path and self._config_parser.has_option('System', 'log_serial_rx'):
+            self._log_serial_rx = _get_bool(self._config_parser['System']['log_serial_rx'])
+
+    @property
+    def log_serial_tx(self) -> bool:
+        """Returns a flag indicating whether to log serial Tx, if a database is configured."""
+        return self._log_serial_tx
+
+    @property
+    def log_serial_rx(self) -> bool:
+        """Returns a flag indicating whether to log serial Rx, if a database is configured."""
+        return self._log_serial_rx
+
     @property
     def application_settings(self) -> ApplicationSettings:
         """Application configuration settings getter."""
@@ -112,7 +132,7 @@ class Config():
         debug_env = app['debug_env']
 
         if not any(e.value == debug_env for e in DebugEnv):
-            debug_env = self._DEFAULT_CONFIG[section]['debug_env']
+            debug_env = 'prod'
 
         app_settings = ApplicationSettings(DebugEnv(debug_env), window_min_size, window_state)
 
