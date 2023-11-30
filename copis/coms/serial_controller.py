@@ -75,6 +75,7 @@ class SerialController():
 
     def __init__(self):
         self._sys_db = None
+        self._log_options = None
         self._ports = []
         self._active_port = None
         self._console = None
@@ -94,11 +95,12 @@ class SerialController():
 
         self.update_port_list()
 
-    def attach_sys_db(self, sys_db : SysDB) -> bool:
+    def attach_sys_db(self, sys_db : SysDB, log_options: dict=None) -> bool:
         """Mounts the system database if it is provided."""
         if sys_db.is_initialized:
             self._sys_db = sys_db
             self._db_attached = True
+            self._log_options = log_options
         else:
             self._db_attached = False
         return self._db_attached
@@ -181,7 +183,7 @@ class SerialController():
             data = data.rstrip("\r")
             data = f'{data}\r'.encode()
 
-            if self._db_attached:
+            if self._db_attached and self._log_options and self._log_options.get('log_tx'):
                 self._sys_db.serial_tx(data)
 
             active_port.connection.write(data)
@@ -236,8 +238,9 @@ class SerialController():
             p_bytes = port.connection.readline()
             resp = p_bytes.decode()
 
-            if self._db_attached:
+            if self._db_attached and self._log_options and self._log_options.get('log_rx'):
                 self._sys_db.serial_rx(p_bytes)
+
             if resp:
                 self._print_raw_msg(self._console, resp)
 
