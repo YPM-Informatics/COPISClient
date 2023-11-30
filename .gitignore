@@ -4,6 +4,7 @@
 
 # User-specific files
 *.ini
+!ex/*.ini
 *.suo
 *.user
 *.userosscache
