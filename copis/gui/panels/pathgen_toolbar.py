@@ -25,12 +25,12 @@ import wx
 import wx.lib.agw.aui as aui
 from copis.classes.device import Device
 
-from copis.globals import PathIds
+from copis.globals import PathIds, Point5
 from copis.gui.wxutils import (
     FancyTextCtrl, create_scaled_bitmap, simple_statictext)
 from copis.helpers import is_number, print_debug_msg, xyz_units
 from copis.pathutils import (build_pose_sets, create_circle, create_helix, create_line,
-    interleave_poses, process_path)
+    interleave_poses, process_path, create_slot_along_x, get_heading, build_poses_from_XYZPT)
 
 
 class PathgenToolbar(aui.AuiToolBar):
@@ -71,6 +71,9 @@ class PathgenToolbar(aui.AuiToolBar):
         _bmp = create_scaled_bitmap('sphere_path', 24)
         self.AddTool(PathIds.SPHERE.value, 'Sphere', _bmp, _bmp,
             aui.ITEM_NORMAL, short_help_string='Add sphere path')
+        _bmp = create_scaled_bitmap('capsule_path', 24)
+        self.AddTool(PathIds.CAPSULE.value, 'Capsule', _bmp, _bmp,
+            aui.ITEM_NORMAL, short_help_string='Add capsule path')
         _bmp = create_scaled_bitmap('line_path', 24)
         self.AddTool(PathIds.LINE.value, 'Line', _bmp, _bmp,
             aui.ITEM_NORMAL, short_help_string='Add line path')
@@ -197,8 +200,7 @@ class PathgenToolbar(aui.AuiToolBar):
             with _PathgenLine(self) as dlg:
                 if dlg.ShowModal() == wx.ID_OK:
                     print_debug_msg(self.core.console, 'Line path added', self.core.is_dev_env)
-                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection)
-                        .split(' ')[0])
+                    device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
                     points = int(dlg.points_ctrl.GetValue())
 
                     start = vec3(dlg.start_x_ctrl.num_value,
@@ -208,12 +210,44 @@ class PathgenToolbar(aui.AuiToolBar):
                                    dlg.end_y_ctrl.num_value,
                                    dlg.end_z_ctrl.num_value)
                     vertices, count = create_line(start, end, points)
-
                     lookat = vec3(dlg.lookat_x_ctrl.num_value,
                                       dlg.lookat_y_ctrl.num_value,
                                       dlg.lookat_z_ctrl.num_value)
-
-                    self._extend_actions(vertices, count, lookat, (device_id,))
+        elif event.Id == PathIds.CAPSULE.value:
+            with _PathgenCapsule(self) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    print_debug_msg(self.core.console, 'Capsule path added', self.core.is_dev_env)
+                    #device_id = int(dlg.device_choice.GetString(dlg.device_choice.Selection).split(' ')[0])
+                    selected_devices = dlg.device_checklist.CheckedItems
+                    center_points = int(dlg.centerline_points_ctrl.GetValue())
+                    semicicle_points = int(dlg.semicircle_points_ctrl.GetValue())
+                    buffer_dist = dlg.buffer_dist_ctrl.num_value
+                    start = vec3(dlg.start_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.start_z_ctrl.num_value)
+                    end = vec3(dlg.end_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.end_z_ctrl.num_value)
+                    vertices, count = create_slot_along_x(start, end, buffer_dist, center_points, semicicle_points)
+                    #lookat = vec3(dlg.lookat_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.lookat_z_ctrl.num_value)
+                    #self._extend_actions(vertices, count, lookat, (device_id,))
+                    devices = self.core.project.devices
+                    grouped_points = defaultdict(list)
+                    max_zs = defaultdict(float)
+                    # group points into devices
+                    for i in range(count):
+                        point = vec3(vertices[i*5 : i*5+3])
+                        p5 = Point5(vertices[i*5], vertices[i*5+1], vertices[i*5+2], vertices[i*5+3], vertices[i*5+4])
+                        device_id = -1
+                        for id_ in selected_devices:
+                            max_zs[id_] = devices[id_].range_3d.upper.z
+                            if devices[id_].range_3d.vec3_intersect(point, 0.0):
+                                device_id = id_
+                        # ignore if point not in bounds of any device
+                        if device_id != -1:
+                            grouped_points[device_id].append(p5)
+                    #pose_sets = process_path(grouped_points, self.core.project.proxies, max_zs, lookat)
+                    poses = build_poses_from_XYZPT(grouped_points, [])
+                    poses = interleave_poses(poses)
+                    pose_sets = build_pose_sets(poses)                    
+                    self.core.project.pose_sets.extend(pose_sets)
+                    #self.core.imaging_target = lookat
 
         elif event.Id == PathIds.POINT.value:
             with PathgenPoint(self, self.parent.core.project.devices) as dlg:
@@ -230,11 +264,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
                     self._extend_actions((x, y, z), 1, lookat, (device_id,))
 
-    def _extend_actions(self,
-                        vertices,
-                        count: int,
-                        lookat: vec3,
-                        device_list: Tuple[int]) -> None:
+    def _extend_actions(self, vertices,count: int, lookat: vec3, device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
 
         TODO: #120: move this somewhere else
@@ -395,10 +425,7 @@ class _PathgenHelix(wx.Dialog):
         """Initializes _PathgenHelix with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Helix Path', size=(200, -1))
         self.parent = parent
-
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
-            self.parent.core.project.devices))
-
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
@@ -597,11 +624,119 @@ class _PathgenSphere(wx.Dialog):
         self._affirmative_button.SetDefault()
 
 
+class _PathgenCapsule(wx.Dialog):
+    """Dialog to generate a capsule path."""
+
+    def __init__(self, parent, *args, **kwargs):
+        """Initializes _PathgenCapsule with constructors."""
+        super().__init__(parent, wx.ID_ANY, 'Add Capsule Path', size=(200, -1))
+        self.parent = parent
+
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',self.parent.core.project.devices))
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # ---
+
+        indent = '    '
+        unit = 'mm'
+
+        options_grid = wx.FlexGridSizer(13, 2, 12, 8)
+        options_grid.AddGrowableCol(1, 0)
+        
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
+        self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.centerline_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.buffer_dist_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.centerline_points_ctrl = wx.TextCtrl(self, size=(48, -1))
+        self.semicircle_points_ctrl = wx.TextCtrl(self, size=(48, -1))
+
+
+        options_grid.AddMany([
+            (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.device_checklist, 0, wx.EXPAND, 0),
+            
+            (simple_statictext(self, 'Start', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
+            
+            (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            #(simple_statictext(self, f'{indent} Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            #(self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+            (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+            (simple_statictext(self, 'End', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
+            
+            (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+            (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+            (simple_statictext(self, 'Centerline Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.centerline_y_ctrl, 0, wx.EXPAND, 0),
+            
+            (simple_statictext(self, 'Buffer:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.buffer_dist_ctrl, 0, wx.EXPAND, 0),
+            
+            (simple_statictext(self, 'Number of Points', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (0, 0),
+            
+            (simple_statictext(self, f'{indent} Centerline', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.centerline_points_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+            (simple_statictext(self, f'{indent} Semicircle', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.semicircle_points_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
+
+        ])
+
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+        # ---
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+
+        self.Layout()
+        self.SetMinSize((200, -1))
+        self.Fit()
+
+        # ---
+        self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
+        self.centerline_points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.semicircle_points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+
+    def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
+        if (not self.device_checklist.CheckedItems or
+            self.semicircle_points_ctrl.Value == '' or not is_number(self.semicircle_points_ctrl.Value) or
+            self.centerline_points_ctrl.Value == '' or not is_number(self.centerline_points_ctrl.Value)):
+            self._affirmative_button.Disable()
+            return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
+
+
 class _PathgenLine(wx.Dialog):
     """Dialog to generate a line path."""
 
     def __init__(self, parent, *args, **kwargs):
-        """Initializes _PathgenLine with constructors."""
+        """Initializes _PathgenCapsule with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Line Path', size=(200, -1))
         self.parent = parent
 

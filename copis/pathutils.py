@@ -18,6 +18,7 @@
 import math
 
 from collections import defaultdict
+from re import X
 from typing import List, Tuple
 from itertools import groupby
 
@@ -36,6 +37,100 @@ _XY_COST = 1.0
 _Z_COST = 10.0
 _Z_BUFFER = 50.0
 
+
+def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_points: int = 2, semicircle_points: int = 1) -> Tuple[np.ndarray, int]:
+    """Create line given start position, end position, and # points."""
+    if centerline_points < 2:
+        raise IndexError('number of points in line must be greater than 2')
+    total_points = centerline_points * 2 + semicircle_points * 2
+    
+    vertices = np.empty(total_points * 5)
+    
+    vertices_line1 = np.empty(centerline_points * 5)
+    vertices_line2 = np.empty(centerline_points * 5)
+    vertices_curve1 = np.empty(semicircle_points * 5)
+    vertices_curve2 = np.empty(semicircle_points * 5)
+
+    center_y = (start.y + end.y)/2
+    refpt = vec3(start.x,start.y + buffer_dist,start.z)
+    lookat = vec3(start.x,center_y,start.z)
+    p,t = get_heading(refpt,lookat)
+    
+    vertices_line1[::5] = np.linspace(start.x, end.x, centerline_points)
+    vertices_line1[1::5] = np.linspace(start.y + buffer_dist, end.y + buffer_dist, centerline_points)
+    vertices_line1[2::5] = np.linspace(start.z, end.z, centerline_points)   
+    vertices_line1[3::5] = np.full((1,centerline_points), p)
+    vertices_line1[4::5] = np.full((1,centerline_points), t) 
+
+    center = (end.x, (start.y +buffer_dist + end.y -buffer_dist) / 2)
+    radius = buffer_dist;
+    theta = np.linspace(0, np.pi, semicircle_points)
+    x = center[0] + radius * np.cos(theta)    
+    y = center[1] + radius * np.sin(theta)
+   
+    segment_start_x = end.x
+    segment_start_y = end.y +buffer_dist
+    segment_start_z = end.z
+    segment_end_x = end.x
+    segment_end_y = start.y -buffer_dist
+    segment_end_z = end.z
+    center_x = (segment_start_x + segment_end_x)/2
+    center_y = (segment_start_y + segment_end_y)/2
+    center_z = (segment_start_z + segment_end_z)/2
+    
+    #lookat = vec3(segment_start_x,center_y,segment_start_z)
+    #ref_pt = vec3(segment_start_x,segment_start_y,segment_start_z)
+    #p,t = get_heading(ref_pt,lookat)
+    angle_increment = np.pi / (semicircle_points + 1) 
+    angle = 0
+    if start.x > end.x:
+        angle_increment =  angle_increment * -1
+    for i in range(semicircle_points):
+        angle = angle + angle_increment
+        vertices_curve1[i * 5] = (radius * np.sin(angle)) + center_x
+        vertices_curve1[i * 5 + 1] =  (radius * np.cos(angle)) + center_y
+        vertices_curve1[i * 5 + 2] = segment_start_z
+        refpt = vec3(vertices_curve1[i * 5],vertices_curve1[i * 5 + 1],vertices_curve1[i * 5 + 2])
+        lookat = vec3(center_x,center_y,segment_start_z)
+        p,t = get_heading(refpt,lookat)        
+        vertices_curve1[i * 5 + 3] = p
+        vertices_curve1[i * 5 + 4] = t
+    
+    center_y = (start.y + end.y)/2
+    refpt = vec3(start.x,start.y - buffer_dist,start.z)
+    lookat = vec3(start.x,center_y,start.z)
+    p,t = get_heading(refpt,lookat)
+    
+    vertices_line2[::5] = np.linspace(end.x,start.x,centerline_points)
+    vertices_line2[1::5] = np.linspace(start.y - buffer_dist, end.y - buffer_dist,centerline_points)
+    vertices_line2[2::5] = np.linspace(end.z, start.z,centerline_points)     
+    vertices_line2[3::5] = np.full((1,centerline_points), p)
+    vertices_line2[4::5] = np.full((1,centerline_points), t) 
+    
+    segment_start_x = start.x
+    segment_start_y = start.y - buffer_dist
+    segment_start_z = start.z
+    segment_end_x = start.x
+    segment_end_y = start.y + buffer_dist
+    segment_end_z = start.z
+    center_x = (segment_start_x + segment_end_x)/2
+    center_y = (segment_start_y + segment_end_y)/2
+    center_z = (segment_start_z + segment_end_z)/2
+    
+    angle = math.pi
+    for i in range(semicircle_points):
+         angle = angle + angle_increment
+         vertices_curve2[i * 5] =  (radius * np.sin(angle)) + center_x
+         vertices_curve2[i * 5 + 1] =  (radius * np.cos(angle)) + center_y
+         vertices_curve2[i * 5 + 2] = segment_start_z
+         refpt = vec3(vertices_curve2[i * 5],vertices_curve2[i * 5 + 1],vertices_curve2[i * 5 + 2])
+         lookat = vec3(center_x,center_y,segment_start_z)
+         p,t = get_heading(refpt,lookat)        
+         vertices_curve2[i * 5 + 3] = p
+         vertices_curve2[i * 5 + 4] = t
+         
+    vertices = np.concatenate((vertices_line1,vertices_curve1,vertices_line2,vertices_curve2))
+    return vertices, total_points
 
 def create_circle(p: vec3,
                   n: vec3,
@@ -236,11 +331,27 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
                 c_args = create_action_args([1.5], 'S')
                 payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
 
-            poses.append(
-                Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload))
+            poses.append(Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload))
 
     return poses
 
+def build_poses_from_XYZPT(ordered_points, clearance_indexes):
+    poses = []
+    pos_records = {}
+    for device_id in ordered_points:
+        for i, point in enumerate(ordered_points[device_id]):
+            point_x = sanitize_number(point.x)
+            point_y = sanitize_number(point.y)
+            point_z = sanitize_number(point.z)
+            point_p = sanitize_number(point.p)
+            point_t = sanitize_number(point.t)
+            g_args = create_action_args([point_x, point_y, point_z, point_p, point_t])
+            payload = []
+            if not clearance_indexes or i not in clearance_indexes[device_id]:
+                c_args = create_action_args([1.5], 'S')
+                payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
+            poses.append(Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload))
+    return poses
 
 def _order_points(grouped_points, colliders, max_zs):
         # greedily expand path from starting point
