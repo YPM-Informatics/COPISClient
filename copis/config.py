@@ -27,7 +27,6 @@ def _get_bool(val):
 
 def _get_state_parts(state_str):
     parts = state_str.split(',')
-
     return list(int(s)
         if i < len(parts) - 1 else _get_bool(s)
             for i, s in enumerate(parts))
@@ -43,14 +42,11 @@ class Config():
         self._ensure_window_state_exists(display_size, self._config_parser)
         self._application_settings = self._populate_application_settings()
         self._machine_settings = self._populate_machine_settings()
-
         self._log_serial_tx = False
         self._log_serial_rx = False
         db_path = store.get_sys_db_path()
-
         if db_path and self._config_parser.has_option('System', 'log_serial_tx'):
             self._log_serial_tx = _get_bool(self._config_parser['System']['log_serial_tx'])
-
         if db_path and self._config_parser.has_option('System', 'log_serial_rx'):
             self._log_serial_rx = _get_bool(self._config_parser['System']['log_serial_rx'])
 
@@ -76,18 +72,14 @@ class Config():
 
     def _ensure_window_state_exists(self, display_rect, parser):
         get_sixty_pct = lambda val: int(val * 60 / 100)
-
         app = parser['App']
-
         min_width, min_height = [int(d) for d in app['window_min_size'].split(',')]
         x, y, width, height, is_maximized = None, None, int(min_width), int(min_height), False
-
         if 'window_state' in app:
             state_parts = _get_state_parts(app['window_state'])
             x, y, width, height, is_maximized = state_parts
         else:
             width, height = [get_sixty_pct(d) for d in display_rect[2:4]]
-
         if not is_maximized:
             if x is not None and y is not None:
                 if x < 0:
@@ -113,58 +105,45 @@ class Config():
             else:
                 x = int((display_rect.X - width) / 2)
                 y = int((display_rect.Y - height) / 2)
-
             app['window_state'] = f'{x},{y},{width},{height},{is_maximized}'
             store.save_config_parser(parser)
 
     def _populate_application_settings(self) -> ApplicationSettings:
         get_size_parts = lambda val: list(int(i) for i in val.split(','))
-
         section = 'App'
         app = self._config_parser[section]
-
         parts = get_size_parts(app['window_min_size'])
         window_min_size = Size(*parts)
-
         parts = _get_state_parts(app['window_state'])
         window_state = WindowState(*parts)
-
         debug_env = app['debug_env']
-
         if not any(e.value == debug_env for e in DebugEnv):
             debug_env = 'prod'
-
         app_settings = ApplicationSettings(DebugEnv(debug_env), window_min_size, window_state)
-
         key = 'last_output_path'
         if key in app:
             last_output_path = app[key]
             if last_output_path:
                 app_settings.last_output_path = last_output_path
-
         key = 'recent_projects'
         if key in app:
             recent_projects = app[key]
             if recent_projects:
                 app_settings.recent_projects = [
                     l.strip('\t') for l in recent_projects.splitlines()]
-
         return app_settings
 
     def _populate_machine_settings(self) -> MachineSettings:
         section = 'Machine'
         machine = self._config_parser[section]
-
         size_x = machine.getfloat('size_x')
         size_y = machine.getfloat('size_y')
         size_z = machine.getfloat('size_z')
         origin_x = machine.getfloat('origin_x')
         origin_y = machine.getfloat('origin_y')
         origin_z = machine.getfloat('origin_z')
-
         origin = vec3(origin_x, origin_y, origin_z)
         dimensions = vec3(size_x, size_y, size_z)
-
         return MachineSettings(origin, dimensions)
 
     def update_window_state(self, state: WindowState) -> None:
@@ -177,7 +156,6 @@ class Config():
         """Updates the recent projects and last output path application settings."""
         self.application_settings.last_output_path = store.get_directory(path)
         self.application_settings.recent_projects.insert(0, path)
-
         if len(self.application_settings.recent_projects) > self._MAX_RECENT_PROJECTS_COUNT:
             self.application_settings.recent_projects = self.application_settings.recent_projects[
                 :self._MAX_RECENT_PROJECTS_COUNT]
@@ -188,7 +166,6 @@ class Config():
         """Removes a recent projects entry."""
         recent_projects = list(map(str.lower, self.application_settings.recent_projects))
         index = recent_projects.index(path.strip().lower())
-
         if index >= 0:
             self.application_settings.recent_projects.pop(index)
             store.save_config(self)
@@ -198,5 +175,4 @@ class Config():
         config = {}
         config.update(self.application_settings.as_dict())
         config.update(self.machine_settings.as_dict())
-
         return config

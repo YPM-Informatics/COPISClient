@@ -38,8 +38,11 @@ _Z_COST = 10.0
 _Z_BUFFER = 50.0
 
 
-def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_points: int = 2, semicircle_points: int = 1) -> Tuple[np.ndarray, int]:
+def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_points: int = 2, semicircle_points: int = 1, z_tilt_target: float =0.0) -> Tuple[np.ndarray, int]:
     """Create line given start position, end position, and # points."""
+    #note current limitation - straight line sections that tilt to target derive tilt angle from for first point of the segment x & y
+    # in practice this is not an issue, but does does not correclty derive titl angle for straigt lines that have different start and end z (diaganols) easy to fix. resolve later when that its acyually needed.
+
     if centerline_points < 2:
         raise IndexError('number of points in line must be greater than 2')
     total_points = centerline_points * 2 + semicircle_points * 2
@@ -53,7 +56,8 @@ def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_
 
     center_y = (start.y + end.y)/2
     refpt = vec3(start.x,start.y + buffer_dist,start.z)
-    lookat = vec3(start.x,center_y,start.z)
+    #lookat = vec3(start.x,center_y,start.z) #no tilt
+    lookat = vec3(start.x,center_y,z_tilt_target) #tilt to target
     p,t = get_heading(refpt,lookat)
     
     vertices_line1[::5] = np.linspace(start.x, end.x, centerline_points)
@@ -91,14 +95,16 @@ def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_
         vertices_curve1[i * 5 + 1] =  (radius * np.cos(angle)) + center_y
         vertices_curve1[i * 5 + 2] = segment_start_z
         refpt = vec3(vertices_curve1[i * 5],vertices_curve1[i * 5 + 1],vertices_curve1[i * 5 + 2])
-        lookat = vec3(center_x,center_y,segment_start_z)
+        #lookat = vec3(center_x,center_y,segment_start_z) #no tilt
+        lookat = vec3(center_x,center_y,z_tilt_target) #tilt to target
         p,t = get_heading(refpt,lookat)        
         vertices_curve1[i * 5 + 3] = p
         vertices_curve1[i * 5 + 4] = t
     
     center_y = (start.y + end.y)/2
     refpt = vec3(start.x,start.y - buffer_dist,start.z)
-    lookat = vec3(start.x,center_y,start.z)
+    #lookat = vec3(start.x,center_y,start.z) #no tilt
+    lookat = vec3(start.x,center_y,z_tilt_target) #tilt to target
     p,t = get_heading(refpt,lookat)
     
     vertices_line2[::5] = np.linspace(end.x,start.x,centerline_points)
@@ -124,7 +130,8 @@ def create_slot_along_x(start: vec3, end: vec3, buffer_dist:int=100, centerline_
          vertices_curve2[i * 5 + 1] =  (radius * np.cos(angle)) + center_y
          vertices_curve2[i * 5 + 2] = segment_start_z
          refpt = vec3(vertices_curve2[i * 5],vertices_curve2[i * 5 + 1],vertices_curve2[i * 5 + 2])
-         lookat = vec3(center_x,center_y,segment_start_z)
+         #lookat = vec3(center_x,center_y,segment_start_z) #no tilt
+         lookat = vec3(center_x,center_y,z_tilt_target)
          p,t = get_heading(refpt,lookat)        
          vertices_curve2[i * 5 + 3] = p
          vertices_curve2[i * 5 + 4] = t

@@ -70,11 +70,9 @@ class COPISCore:
         self.config = parent.config if parent else Config(vec2(800, 600))
         print ("using config:", store.get_ini_path())
         print ("using profile: ", store.get_profile_path())
-
         self.sys_db = SysDB()
         self._session_id = self.sys_db.last_session_id() + 1
         self._session_guid = str(uuid.uuid4()) # Global session if, useful is merging dbs.
-
         self.project = Project()
         self.project.start()
         self.console = ConsoleOutput(parent)
@@ -85,7 +83,6 @@ class COPISCore:
         self._serial = None
         self._is_new_connection = False
         self._connected_on = None
-
         self.init_edsdk()
         self.init_serial()
         serial_log_opts = {
@@ -96,21 +93,16 @@ class COPISCore:
         self._edsdk.attach_sys_db(self.sys_db)
         # Attach serial.
         self._check_configs()
-
         # Clear to send, enabled after responses.
         self._clear_to_send = False
-
         # True if sending actions, false if paused.
         self._keep_working = False
-
         self._is_machine_paused = False
         self._work_type = None
         self._machine_busy_since = None
         self._last_machine_status = None
-
         self._read_threads = []
         self._working_thread = None
-
         self._mainqueue = []
         self._pose_set_offset_start: int = -1
         self._pose_set_offset_end: int = -1
@@ -120,7 +112,6 @@ class COPISCore:
         self._selected_pose_set: int = -1
         self._selected_proxy: int = -1
         self._selected_device: int = -1
-
         self._imaging_target: vec3 = vec3()
         self._imaging_session_path = None
         self._imaging_session_queue = None
@@ -128,7 +119,6 @@ class COPISCore:
         self._initialized_manifests = []
         self._save_imaging_session = False
         self._image_counters = {}
-
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
 
     @property
@@ -154,38 +144,31 @@ class COPISCore:
     def _has_machine_reported(self):
         if any(not dvc.serial_response for dvc in self.project.devices):
             return False
-
         return all(dvc.serial_status != ComStatus.UNKNOWN for dvc in self.project.devices)
 
     @property
     def _disengage_motors_commands(self):
         if not self._disable_idle_motors:
             return []
-
         cmds = []
         actions = []
-
         for dvc in self.project.devices:
             cmds.append(Action(ActionType.M18, dvc.device_id))
         actions.append(cmds)
-
         return actions
 
     @property
     def machine_status(self):
         """Returns the machine's status."""
         status = 'unknown'
-
         if self._is_machine_paused:
             status = 'paused'
         else:
             statuses = list(set(dvc.status for dvc in self.project.devices))
-
             if len(statuses) == 1 and statuses[0]:
                 status = statuses[0].name.lower()
             elif len(statuses) > 1:
                 status = 'mixed'
-
         return status
 
     @property
@@ -209,7 +192,6 @@ class COPISCore:
         of the serial ports list."""
         safe_list = []
         device = namedtuple('SerialDevice', 'name is_connected is_active')
-
         # pylint: disable=not-an-iterable
         for port in self._serial.port_list:
             safe_port = device(
@@ -217,9 +199,7 @@ class COPISCore:
                 is_connected=port.connection is not None and port.connection.is_open,
                 is_active=port.is_active
             )
-
             safe_list.append(safe_port)
-
         return safe_list
 
     @property
@@ -231,12 +211,10 @@ class COPISCore:
     def edsdk_device_list(self) -> List:
         """Returns the list of detected EDSDK devices."""
         device_list = []
-
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             device_list = self._edsdk.device_list
-
         return device_list
 
     @property
@@ -293,28 +271,21 @@ class COPISCore:
     def _get_move_commands(self, is_absolute, *device_ids):
         actions = []
         all_device_ids = [dvc.device_id for dvc in self.project.devices]
-
         if device_ids and all(did in all_device_ids for did in device_ids):
             atype = ActionType.G90 if is_absolute else ActionType.G91
             cmds = []
-
             for did in device_ids:
                 cmds.append(Action(atype, did))
-
             actions.append(cmds)
-
         return actions
 
     def _query_machine(self):
         print_info_msg(self.console, '**** Querying machine ****')
         cmds = []
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot query. The machine is busy.')
             return
-
         cmds.append(Action(ActionType.M120, 0))
-
         if cmds:
             self._keep_working = True
             self._clear_to_send = True
@@ -326,16 +297,13 @@ class COPISCore:
     def _unlock_machine(self):
         print_info_msg(self.console, '**** Unlocking machine ****')
         cmds = []
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot unlock. The machine is busy.')
             return False
-
         for dvc in self.project.devices:
             if dvc.serial_response and dvc.serial_response.is_locked:
                 cmd = Action(ActionType.M511, dvc.device_id)
                 cmds.append(cmd)
-
         if cmds:
             self._keep_working = True
             self._clear_to_send = True
@@ -344,7 +312,6 @@ class COPISCore:
             self._send_next()
             self._keep_working = False
             return True
-
         return False
 
     def _get_initialization_commands(self, atype: ActionType):
@@ -352,23 +319,18 @@ class COPISCore:
         step_2 = []
         actions = []
         g_code = str(atype).split('.')[1]
-
         for dvc in self.project.devices:
             device_id = dvc.device_id
             cmd_id = ''
             cmd_str_1 = ''
             cmd_str_2 = ''
             x, y, z, p, t = self._get_device(device_id).home_position
-
             if device_id > 0:
                 cmd_id = f'>{device_id}'
-
             cmd_str_1 = f'{cmd_id}{g_code}Z{z}'
             cmd_str_2 = f'{cmd_id}{g_code}X{x}Y{y}P{p}T{t}'
-
             step_1.append(deserialize_command(cmd_str_1))
             step_2.append(deserialize_command(cmd_str_2))
-
         actions.append(step_1)
         actions.append(step_2)
         return actions
@@ -378,75 +340,65 @@ class COPISCore:
             if status:
                 did, is_homed, resp = status
                 device = self._get_device(did)
-
                 if is_homed and device and resp:
                     device.set_serial_response(resp)
                     device.set_is_homed()
 
     def _get_active_serial_port_name(self):
-        port = next(
-                filter(lambda p: p.is_active, self.serial_port_list), None
-            )
+        port = next(filter(lambda p: p.is_active, self.serial_port_list), None)
         return port.name if port else None
 
     def _get_device(self, device_id):
-        return next(filter(lambda d: d.device_id == device_id, self.project.devices), None)
+        for device in self.project.devices:
+            if device.device_id == device_id:
+                return device
+        return None
 
     def _listener(self) -> None:
         """Implements a listening thread."""
-        read_thread = next(filter(lambda t: t.thread == threading.current_thread(), self._read_threads))
-
-        continue_listening = lambda t = read_thread: not t.stop
-
+        current_thread = threading.current_thread()
+        read_thread = None
+        for t in self._read_threads:
+            if t.thread == current_thread:
+                read_thread = t
+                break
+        continue_listening =  True
         machine_queried = False
-
         print_debug_msg(self.console, f'{read_thread.thread.name.capitalize()} started', self._is_dev_env)
-
-        while continue_listening():
+        while not read_thread.stop: #continue_listening():
             time.sleep(self.YIELD_TIMEOUT)
             resp = self._serial.read(read_thread.port)
             controllers_unlocked = False
-
             if resp:
                 if isinstance(resp, SerialResponse):
                     dvc = self._get_device(resp.device_id)
-
                     if dvc:
                         dvc.set_serial_response(resp)
-
                 if self._keep_working and self._is_machine_locked:
-
                     print_info_msg(self.console, '**** Machine error-locked. stopping imaging!! ****')
-
                     self.stop_work()
                 else:
                     self._clear_to_send = controllers_unlocked or self.is_machine_idle
-
                 if self._last_machine_status != self.machine_status and self.is_machine_idle:
                     print_debug_msg(self.console, '**** Machine is clear ****', self._is_dev_env)
-
                     if len(self._mainqueue) <= 0:
                         print_info_msg(self.console, '**** Machine is idle ****')
                         dispatcher.send('ntf_machine_idle')
-
             if self._is_new_connection:
                 if self._has_machine_reported:
                     if self._is_machine_locked and not controllers_unlocked:
                         controllers_unlocked = self._unlock_machine()
                         self._clear_to_send = controllers_unlocked or self.is_machine_idle
-
                         if controllers_unlocked:
                             self._connected_on = None
                             self._is_new_connection = False
                             machine_queried = False
                     else:
                         # If this connection happened after the devices last reported, query them.
-                        if not machine_queried and \
-                            self._connected_on >= self._machine_last_reported_on:
+                        if not machine_queried and self._connected_on >= self._machine_last_reported_on:
                             print_debug_msg(self.console,
                             f'Machine status stale (last: {self.machine_status}).',
                             self._is_dev_env)
-
                             self._query_machine()
                             machine_queried = True
                         elif self.is_machine_idle:
@@ -455,91 +407,67 @@ class COPISCore:
                             machine_queried = False
                 else:
                     no_report_span = datetime.now() - self._connected_on
-
-                    if not self._machine_last_reported_on or \
-                        self._connected_on >= self._machine_last_reported_on:
-                        print_debug_msg(self.console, f'Machine status stale (last: {self.machine_status}) for {_format_time_delta(no_report_span)}.',
-                            self._is_dev_env)
-
+                    if not self._machine_last_reported_on or self._connected_on >= self._machine_last_reported_on:
+                        print_debug_msg(self.console, f'Machine status stale (last: {self.machine_status}) for {_format_time_delta(no_report_span)}.',self._is_dev_env)
                     # If no device has reported for 1 second since connecting, query the devices.
                     if not machine_queried and no_report_span.total_seconds() > self._STALE_STATUS_THRESHOLD:
                         print_info_msg(self.console, f'Stale status threshold of {_format_time_delta(timedelta(seconds=self._STALE_STATUS_THRESHOLD))} reached.')
                         self._query_machine()
                         machine_queried = True
-
             if self.is_machine_homed and 'busy_bus_polling_interval_ms' in self.project.options and self.project.options['busy_bus_polling_interval_ms'] > 0:
                 busy_bus_polling_threshold = int(self.project.options['busy_bus_polling_interval_ms'] / 1000)
                 busy_span = None
-
                 if self.machine_status not in ('mixed', 'busy'):
                     self._machine_busy_since = None
-
                 if self._machine_busy_since:
                     busy_span = (datetime.now() - self._machine_busy_since)
-                    print_debug_msg(self.console, f'Machine has been busy for {_format_time_delta(busy_span)}.',
-                        self._is_dev_env)
-
+                    print_debug_msg(self.console, f'Machine has been busy for {_format_time_delta(busy_span)}.',self._is_dev_env)
                 if busy_span and busy_span.total_seconds() > busy_bus_polling_threshold:
                     print_info_msg(self.console, f'Busy bus polling threshold of {_format_time_delta(timedelta(seconds=busy_bus_polling_threshold))} reached.')
                     print_info_msg(self.console, '**** Thawing machine ****')
                     self._serial.write(ActionType.M120.name)
                     self._machine_busy_since = datetime.now()
-
+            print(self._last_machine_status)
             self._last_machine_status = self.machine_status
-
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)
 
     def _worker(self, resuming=False, extra_callback=None) -> None:
         """Implements a worker thread."""
         t_name = self.work_type_name
-
         state = "resumed" if resuming else "started"
         print_debug_msg(self.console, f'{t_name} thread {state}', self._is_dev_env)
-
         def callback():
             if extra_callback:
                 extra_callback()
             print_info_msg(self.console, f'{t_name} ended')  #where stepping ended was being generated
-
         dispatcher.connect(callback, signal='ntf_machine_idle')
-
         print_info_msg(self.console, f'{t_name} {state}')
-
         had_error = False
         try:
-            while self._keep_working and \
-                (self.is_serial_port_connected or self._is_edsdk_enabled):
+            while self._keep_working and (self.is_serial_port_connected or self._is_edsdk_enabled):
                 self._send_next()
-
         except AttributeError as err:
             print_error_msg(self.console, f'{t_name} thread stopped unexpectedly: {err.args[0]}')
             had_error = True
-
         finally:
             self._working_thread = None
             self._keep_working = False
-
             if not self._is_machine_paused:
                 if self._work_type == WorkType.IMAGING:
                     self._current_mainqueue_item = -1
                     self.select_pose_set(-1)
                     self._imaged_pose_sets.clear()
                     self._session_id = self.sys_db.last_session_id() +1
-
                 self._work_type = None
-
             if not had_error:
                 print_debug_msg(self.console, f'{t_name} thread stopped', self._is_dev_env)
 
     def _get_next_img_rank(self, device_id):
         counter = 1
-
         if device_id in self._image_counters:
             counter = self._image_counters[device_id] + counter
-
         self._image_counters[device_id] = counter
-
         return counter
 
     def _get_image_counts(self, pose_list=None):
@@ -553,7 +481,6 @@ class COPISCore:
             device = self._get_device(key)
             device_key = f'{device.name}_{device.type}_id_{device.device_id}'.lower()
             counts[device_key] = len(pics)
-
         return ('expected_image_counts', counts)
 
     def _update_imaging_manifest(self, pairs):
@@ -561,10 +488,8 @@ class COPISCore:
             manifest = self._imaging_session_manifest.pop(-1)
             self._imaging_session_manifest.clear()
             self._imaging_session_manifest.append(manifest)
-
         for key, value in pairs:
             self._imaging_session_manifest[-1][key] = value
-
         if pairs:
             store.save_json_2(self._imaging_session_path,
                 self._IMAGING_MANIFEST_FILE_NAME,
@@ -574,16 +499,13 @@ class COPISCore:
         warn = self._is_dev_env
         msg = None
         machine_config = self.config.machine_settings
-
         if machine_config is None:
             # If the machine is not configured, throw no matter what.
             warn = False
             msg = 'The machine is not configured.'
-
         # TODO:
         # - Check 3 cameras per chamber max.
         # - Check cameras within chamber bounds.
-
         if msg is not None:
             warning = UserWarning(msg)
             if warn:
@@ -594,14 +516,11 @@ class COPISCore:
     def _process_host_commands(self, commands):
         for cmd in commands:
             dvc = self._get_device(cmd.device)
-
             while dvc.status not in [ComStatus.IDLE, ComStatus.UNKNOWN]:
                 time.sleep(self.YIELD_TIMEOUT)
-
             key, value = cmd.args[0]
             value = float(value)
             atype_kind = get_atype_kind(cmd.atype)
-
             if atype_kind == 'EDS':
                 if self.connect_edsdk(dvc.device_id):
                     dvc.is_writing_eds = True
@@ -625,12 +544,10 @@ class COPISCore:
     def _send_next(self):
         if not (self.is_serial_port_connected or self._is_edsdk_enabled):
             return
-
         # Wait until we get the ok from listener.
         while self.is_serial_port_connected and not self._clear_to_send \
             and self._keep_working:
             time.sleep(self.YIELD_TIMEOUT)
-
         if self._keep_working and len(self._mainqueue) > 0:
             packet = self._mainqueue.pop(0)
             packet_size = len(packet)
@@ -638,7 +555,6 @@ class COPISCore:
                 packet_size = len(packet[1])
             print_debug_msg(self.console, f'Packet size is: {packet_size}',
                 self._is_dev_env)
-
             if packet:
                 # Temporary shoehorn of a post shutter delay.
                 # We set a delay via _send_delay_ms when a shutter command is sent,
@@ -655,7 +571,6 @@ class COPISCore:
                 self._clear_to_send = False #why is this set after the send and not before?
             else:
                 print_debug_msg(self.console, 'Not writing empty packet.', self._is_dev_env)
-
         else:
             self._keep_working = False
             self._clear_to_send = True
@@ -663,48 +578,33 @@ class COPISCore:
     def _send(self, *commands):
         """Send command to machine."""
         current_pose_set = -1
-
-        if isinstance(commands, tuple) and \
-            list(map(type, commands)) == [int, list]:
+        if isinstance(commands, tuple) and list(map(type, commands)) == [int, list]:
             current_pose_set = commands[0]
             commands = commands[1]
-
         is_serial_needed = any(get_atype_kind(c.atype) == 'SER' for c in commands)
         is_serial_checked = not is_serial_needed or self.is_serial_port_connected
-
         is_edsdk_needed = any(get_atype_kind(c.atype) == 'EDS' for c in commands)
         is_edsdk_checked = not is_edsdk_needed or self._is_edsdk_enabled
-
         are_requirements_met = is_serial_checked and is_edsdk_checked
-
         if not are_requirements_met:
             return
-
         dvcs = []
         cmds = []
         chunks = []
-
         for command in commands:
             if not any(d.device_id == command.device for d in dvcs):
                 dvcs.append(self._get_device(command.device))
-
-            if chunks and \
-                any(get_atype_kind(c.atype) != get_atype_kind(command.atype) for c in chunks):
+            if chunks and any(get_atype_kind(c.atype) != get_atype_kind(command.atype) for c in chunks):
                 cmds.append(chunks)
                 chunks = []
                 chunks.append(command)
             else:
                 chunks.append(command)
-
         if chunks:
             cmds.append(chunks)
-
         cmd_lines = '\r'.join([serialize_command(i) for c in cmds for i in c])
-
         if cmd_lines:
-            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '.format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") +
-                f'{", ".join([str(d.device_id) for d in dvcs])}.', True)
-
+            print_debug_msg(self.console, 'Writing> [{0}] to device{1} '.format(cmd_lines.replace("\r", "\\r"), "s" if len(dvcs) > 1 else "") + f'{", ".join([str(d.device_id) for d in dvcs])}.', True)
             pre_shutter_delay_completed = False
             for command in commands:
                 if command.atype in self.LENS_COMMANDS + self.F_STACK_COMMANDS:
@@ -724,7 +624,6 @@ class COPISCore:
                     if 'post_shutter_delay_ms' in self.project.options and self.project.options['post_shutter_delay_ms']:
                         self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
                     self.sys_db.start_pose(device, method, action, session_id = self._session_id)
-
             if not is_edsdk_needed:
                 for dvc in dvcs:
                     if self._machine_busy_since is None:
@@ -734,9 +633,7 @@ class COPISCore:
             else:
                 serial_cmds = []
                 host_cmds = []
-                check_chunk_kind = \
-                    lambda items, kind: all(get_atype_kind(i.atype) == kind for i in items)
-
+                check_chunk_kind = lambda items, kind: all(get_atype_kind(i.atype) == kind for i in items)
                 while cmds:
                     chunk = cmds.pop(0)
                     if chunk:
@@ -750,38 +647,29 @@ class COPISCore:
                                 for dvc in dvcs:
                                     if dvc.device_id in [c.device for c in serial_cmds]:
                                         dvc.set_is_writing_ser()
-
-                                self._serial.write(
-                                    '\r'.join([serialize_command(c) for c in serial_cmds]))
+                                self._serial.write('\r'.join([serialize_command(c) for c in serial_cmds]))
                                 serial_cmds = []
                             host_cmds.extend(chunk)
                 if serial_cmds:
-                    self._serial.write(
-                        '\r'.join([serialize_command(c) for c in serial_cmds]))
+                    self._serial.write('\r'.join([serialize_command(c) for c in serial_cmds]))
                 if host_cmds:
                     self._process_host_commands(host_cmds)
 
         if self._work_type == WorkType.IMAGING:
-            if self._pose_set_offset_start <= self._current_mainqueue_item and \
-                self._current_mainqueue_item <= self._pose_set_offset_end:
+            if self._pose_set_offset_start <= self._current_mainqueue_item and self._current_mainqueue_item <= self._pose_set_offset_end:
                 previous_pose_set = current_pose_set - 1
-
                 if previous_pose_set > -1:
                     self._imaged_pose_sets.append(previous_pose_set)
-
                 self.select_pose_set(current_pose_set)
             else:
                 if self._current_mainqueue_item == self._pose_set_offset_end + 1:
                     self._imaged_pose_sets.append(current_pose_set)
-
                 self.select_pose_set(-1)
-
             self._current_mainqueue_item = self._current_mainqueue_item + 1
 
     def _update_recent_projects(self, path) -> None:
         recent_projects = list(map(str.lower,
             self.config.application_settings.recent_projects))
-
         if path.lower() not in recent_projects:
             self.config.update_recent_projects(path)
 
@@ -802,29 +690,19 @@ class COPISCore:
         def set_ready_callback():
             for dvc in self.project.devices:
                 dvc.set_is_homed()
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot set or go to ready. The machine is busy.')
             return
-
         init_code = ActionType.G1 if self.is_machine_homed else ActionType.G92
         cmds = self._get_initialization_commands(init_code)
-
         if cmds:
             self._mainqueue = []
             self._mainqueue.extend(cmds)
             self._mainqueue.extend(self._disengage_motors_commands)
             self._work_type = WorkType.SET_READY
-
             self._keep_working = True
             self._clear_to_send = True
-            self._working_thread = threading.Thread(
-                target=self._worker,
-                name='working thread',
-                kwargs={
-                    "extra_callback": set_ready_callback
-                }
-            )
+            self._working_thread = threading.Thread(target=self._worker, name='working thread', kwargs={"extra_callback": set_ready_callback})
             self._working_thread.start()
 
     def jog(self, action: Action):
@@ -833,88 +711,63 @@ class COPISCore:
             print_error_msg(self.console,
                 'The machine needs to be connected before jogging can start.')
             return
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot jog. The machine is busy.')
             return
-
         if not self.is_machine_idle:
             print_error_msg(self.console, 'The machine needs to be homed before jogging can start.')
             return
-
         header = self._get_move_commands(False, action.device)
         body = [action]
         footer = self._get_move_commands(True, action.device)
-
         self._mainqueue = []
         self._mainqueue.extend(header)
         self._mainqueue.append(body)
         self._mainqueue.extend(footer)
         self._work_type = WorkType.JOGGING
-
         self._keep_working = True
         self._clear_to_send = True
-        self._working_thread = threading.Thread(
-            target=self._worker,
-            name='working thread'
-        )
+        self._working_thread = threading.Thread(target=self._worker, name='working thread')
         self._working_thread.start()
 
     def play_poses(self, poses: List[Pose]):
         """Play the given pose set."""
         self._session_guid = str(uuid.uuid4())
-        process_poses = lambda: [[val for val in tup if val is not None] for tup in
-            zip_longest(*[p.get_seq_actions() for p in poses])]
-
+        process_poses = lambda: [[val for val in tup if val is not None] for tup in zip_longest(*[p.get_seq_actions() for p in poses])]
         processed_poses = process_poses()
         commands = []
         commands.extend([c for p in processed_poses for c in p])
         is_serial_needed = any(get_atype_kind(p.atype) == 'SER' for p in commands)
         is_edsdk_needed = any(get_atype_kind(p.atype) == 'EDS' for p in commands)
-
         if is_serial_needed:
             if not self.is_serial_port_connected:
-                print_error_msg(self.console,
-                    'The machine needs to be connected before stepping can start.')
+                print_error_msg(self.console, 'The machine needs to be connected before stepping can start.')
                 return
-
             if self._is_machine_busy:
                 print_error_msg(self.console, 'Cannot step. The machine is busy.')
                 return
-
             if not self.is_machine_idle:
                 print_error_msg(self.console,
                     'The machine needs to be homed before stepping can start.')
                 return
-
         if is_edsdk_needed:
             if not self._is_edsdk_enabled:
                 print_error_msg(self.console, 'EDSDK is not enabled.')
                 return
-
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
-
         self._mainqueue = []
         self._mainqueue.extend(processed_poses)
         self._work_type = WorkType.IMAGING
-
         self._keep_working = True
         self._clear_to_send = True
-        self._working_thread = threading.Thread(
-            target=self._worker,
-            name='working thread',
-            kwargs={
-                "extra_callback": self._imaging_callback
-            }
-        )
+        self._working_thread = threading.Thread(target=self._worker, name='working thread', kwargs={"extra_callback": self._imaging_callback})
         self._working_thread.start()
 
     def init_serial(self) -> None:
         """Initializes the serial controller."""
         if self._is_serial_enabled:
             return
-
         self._serial = serial_controller
         self._serial.initialize(self.console, self._is_dev_env)
         self._is_serial_enabled = True
@@ -922,21 +775,16 @@ class COPISCore:
     def terminate_serial(self):
         """Disconnects all serial connections; and terminates all serial threading activity."""
         self._keep_working = False
-
         if self._is_serial_enabled:
             for read_thread in self._read_threads:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
                     read_thread.thread.join()
-
             self._read_threads.clear()
-
             if self._working_thread:
                 self._working_thread.join()
-
             self._working_thread = None
             self._last_machine_status = None
-
         if self._is_serial_enabled:
             self._serial.terminate()
             time.sleep(self.YIELD_TIMEOUT * 5)
@@ -952,7 +800,6 @@ class COPISCore:
         else:
             c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
-
             self.play_poses([Pose(payload=payload)])
 
     @locked
@@ -961,7 +808,6 @@ class COPISCore:
         selected = self._serial.select_port(name)
         if not selected:
             print_error_msg(self.console, 'Unable to select serial port.')
-
         return selected
 
     @locked
@@ -971,25 +817,15 @@ class COPISCore:
             print_error_msg(self.console, 'Serial is not enabled.')
         else:
             connected = self._serial.open_port(baud)
-
             if connected:
                 self._connected_on = datetime.now()
-
-                port_name = next(
-                        filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)
-                    ).name
-
+                port_name = next(filter(lambda p: p.is_connected and p.is_active, self.serial_port_list)).name
                 print_info_msg(self.console, f'Connected to device {port_name}')
-
-                read_thread = threading.Thread(
-                    target=self._listener,
-                    name=f'read thread {port_name}')
-
+                read_thread = threading.Thread(target=self._listener,name=f'read thread {port_name}')
                 self._read_threads.append(ReadThread(thread=read_thread, port=port_name))
                 read_thread.start()
             else:
                 print_error_msg(self.console, 'Unable to connect to device.')
-
         self._is_new_connection = connected
         return connected
 
@@ -997,30 +833,23 @@ class COPISCore:
     def disconnect_serial(self):
         """disconnects from the active serial port."""
         self._keep_working = False
-
         # self.is_serial_port_connected is a property and pylint can't see that for some reason.
         # pylint: disable=using-constant-test
         if self.is_serial_port_connected:
             port_name = self._get_active_serial_port_name()
             read_thread = next(filter(lambda t: t.port == port_name, self._read_threads))
-
             if read_thread:
                 read_thread.stop = True
                 if threading.current_thread() != read_thread.thread:
                     read_thread.thread.join()
-
                 self._read_threads.remove(read_thread)
-
             if self._working_thread:
                 self._working_thread.join()
-
             self._working_thread = None
             self._last_machine_status = None
-
         if self.is_serial_port_connected:
             self._serial.close_port()
             time.sleep(self.YIELD_TIMEOUT * 5)
-
         self._is_new_connection = False
         self._connected_on = None
         print_info_msg(self.console, f'Disconnected from device {port_name}')
@@ -1029,10 +858,8 @@ class COPISCore:
         """Initializes the Canon EDSDK controller."""
         if self._is_edsdk_enabled:
             return
-
         self._edsdk = import_module('copis.coms.edsdk_controller')
         self._edsdk.initialize(self.console)
-
         self._is_edsdk_enabled = self._edsdk.is_enabled
 
     def terminate_edsdk(self):
@@ -1043,24 +870,20 @@ class COPISCore:
     def connect_edsdk(self, device_id):
         """Connects to the provided camera via EDSDK."""
         connected = False
-
         if not self._is_edsdk_enabled:
             print_error_msg(self.console, 'EDSDK is not enabled.')
         else:
             device = self._get_device(device_id)
-
             if device:
                 connected = self._edsdk.connect(device)
             else:
                 print_error_msg(self.console, f'Camera {device_id} cannot be found.')
-
         return connected
 
     def disconnect_edsdk(self):
         """Disconnects from the currently connect camera via EDSDK."""
         if self._is_edsdk_enabled:
             return self._edsdk.disconnect()
-
         return True
 
     def start_edsdk_live_view(self):
@@ -1095,7 +918,6 @@ class COPISCore:
         else:
             c_args = create_action_args([1 if do_af else 0], 'V')
             payload = [Action(ActionType.EDS_SNAP, device_id, len(c_args), c_args)]
-
             self.play_poses([Pose(payload=payload)])
 
     def do_edsdk_focus(self, shutter_release_time, device_id):
@@ -1105,7 +927,6 @@ class COPISCore:
         else:
             c_args = create_action_args([shutter_release_time], 'S')
             payload = [Action(ActionType.EDS_FOCUS, device_id, len(c_args), c_args)]
-
             self.play_poses([Pose(payload=payload)])
 
     def do_evf_edsdk_focus(self):
@@ -1151,15 +972,12 @@ class COPISCore:
         if index < 0:
             if self._selected_proxy >= 0:
                 self._selected_proxy = -1
-
                 dispatcher.send('ntf_o_deselected')
         elif index < len(self.project.proxies):
             self.select_device(-1)
             self.select_pose(-1)
             self.select_pose_set(-1)
-
             self._selected_proxy = index
-
             dispatcher.send('ntf_o_selected', object=self._selected_proxy)
         else:
             print_error_msg(self.console, f'Proxy object index {index} is out of range.')
@@ -1169,16 +987,13 @@ class COPISCore:
         if index < 0:
             if self._selected_device >= 0:
                 self._selected_device = -1
-
                 dispatcher.send('ntf_d_deselected')
         elif index < len(self.project.devices):
             self.select_proxy(-1)
             self.select_pose(-1)
             self.select_device(-1)
             self.select_pose_set(-1)
-
             self._selected_device = index
-
             dispatcher.send('ntf_d_selected', device=self.project.devices[self._selected_device])
         else:
             print_error_msg(self.console, f'Device index {index} is out of range.')
@@ -1189,16 +1004,13 @@ class COPISCore:
             selected = self._selected_pose_set
             if self._selected_pose_set >= 0:
                 self._selected_pose_set = -1
-
                 dispatcher.send('ntf_s_deselected', set_index=selected)
         elif index < len(self.project.pose_sets):
             self.select_device(-1)
             self.select_proxy(-1)
             self.select_pose(-1)
             self.select_pose_set(-1)
-
             self._selected_pose_set = index
-
             dispatcher.send('ntf_s_selected', set_index=self._selected_pose_set)
         else:
             print_error_msg(self.console, f'Pose set index {index} is out of range.')
@@ -1215,9 +1027,7 @@ class COPISCore:
             self.select_proxy(-1)
             self.select_pose(-1)
             self.select_pose_set(-1)
-
             self._selected_pose = index
-
             dispatcher.send('ntf_a_selected', pose_index=self._selected_pose)
         else:
             print_error_msg(self.console, f'Pose index {index} is out of range.')
@@ -1227,13 +1037,10 @@ class COPISCore:
         args = create_action_args(args)
         pose_position = self.project.poses[self._selected_pose].position
         argc = min(len(pose_position.args), len(args))
-
         for i in range(argc):
             pose_position.args[i] = args[i]
-
         pose_position.argc = argc
         pose_position.update()
-
         dispatcher.send('ntf_a_list_changed')
 
     def re_target_all_poses(self) -> None:
@@ -1242,19 +1049,14 @@ class COPISCore:
             pose_position = pose.position
             args = get_action_args_values(pose_position.args)
             end_pan, end_tilt = get_heading(vec3(args[:3]), self.imaging_target)
-
             args[3] = sanitize_number(end_pan)
             args[4] = sanitize_number(end_tilt)
             args = create_action_args(args)
-
             argc = min(len(pose_position.args), len(args))
-
             for i in range(argc):
                 pose_position.args[i] = args[i]
-
             pose_position.argc = argc
             pose_position.update()
-
         dispatcher.send('ntf_a_list_changed')
 
     def target_vector_step_all_poses(self, distance) -> None:
@@ -1262,61 +1064,46 @@ class COPISCore:
         for pose in self.project.poses:
             pose_position = pose.position
             args = get_action_args_values(pose_position.args)
-
             end = get_end_position(Point5(*args[:5]), distance)
             end_pan, end_tilt = get_heading(end, self.imaging_target)
-
             args[0] = end.x
             args[1] = end.y
             args[2] = end.z
             args[3] = sanitize_number(end_pan)
             args[4] = sanitize_number(end_tilt)
             args = create_action_args(args)
-
             argc = min(len(pose_position.args), len(args))
-
             for i in range(argc):
                 pose_position.args[i] = args[i]
-
             pose_position.argc = argc
             pose_position.update()
-
         dispatcher.send('ntf_a_list_changed')
 
     def add_to_selected_pose_payload(self, item: Action) -> bool:
         """Appends an action to the selected pose's payload."""
         pose = self.project.poses[self._selected_pose]
         pose.payload.append(item)
-
         dispatcher.send('ntf_a_list_changed')
-
         return True
 
     def delete_from_selected_pose_payload(self, index: int) -> bool:
         """Deletes an action from the selected pose's payload, given an index."""
         pose = self.project.poses[self._selected_pose]
         pose.payload.pop(index)
-
         dispatcher.send('ntf_a_list_changed')
-
         return True
 
     def export_poses(self, filename: str = None) -> list:
         """Serialize action list and write to file.
-
         TODO: Expand to include not just G0 and C0 actions
         """
-
         lines = []
-
         for pose in self.project.poses:
             line = serialize_command(pose)
             lines.append(line)
-
         if filename is not None:
             with open(filename, 'w', encoding='utf-8') as file:
                 file.write('\n'.join(lines))
-
         dispatcher.send('ntf_a_exported', filename=filename)
         return lines
 
@@ -1360,12 +1147,9 @@ class COPISCore:
         self._current_mainqueue_item = -1
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
-
         last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
-
         self.project.start()
-
         self._reconcile_machine(last_dvc_statuses)
 
     def open_project(self, path) -> Tuple:
@@ -1378,63 +1162,48 @@ class COPISCore:
         self._current_mainqueue_item = -1
         self.select_pose_set(-1)
         self._imaged_pose_sets.clear()
-
         last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
-
         resp = self.project.open(path)
-
         self._update_recent_projects(path)
         self._reconcile_machine(last_dvc_statuses)
-
         return resp
 
     def save_project(self, path) -> None:
         """Saves a project and update recent projects."""
         self.project.save(path)
-
         self._update_recent_projects(path)
 
     def start_imaging(self) -> bool:
         """Starts the imaging sequence, following the defined action path."""
         def process_pose_sets():
             packets = []
-
             for i, p_set in enumerate(self.project.pose_sets):
                 zipped = [(i, [val for val in tup if val is not None]) for tup in
                     zip_longest(*[p.get_seq_actions() for p in p_set])]
                 packets.extend(zipped)
-
             return packets
-
         if self._is_machine_paused:
             return self.resume_work()
-
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before imaging can start.')
             return False
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot image. The machine is busy.')
             return False
-
         if not self.is_machine_idle:
             print_error_msg(self.console, 'The machine needs to be homed before imaging can start.')
             return False
-
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
-
         header = self._get_move_commands(True, *[dvc.device_id for dvc in self.project.devices])
         body = process_pose_sets()
-
         ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
         # Uncomment next two lines and comment third to reenable.
         # footer = self._get_initialization_commands(ActionType.G1)
         # footer.extend(self._disengage_motors_commands)
         footer = self._disengage_motors_commands
-
         self._mainqueue = []
         self._mainqueue.extend(header)
         self._mainqueue.extend(body)
@@ -1443,16 +1212,9 @@ class COPISCore:
         self._pose_set_offset_end = self._pose_set_offset_start + len(body) - 1
         self._current_mainqueue_item = 0
         self._work_type = WorkType.IMAGING
-
         self._keep_working = True
         self._clear_to_send = True
-        self._working_thread = threading.Thread(
-            target=self._worker,
-            name='working thread',
-            kwargs={
-                "extra_callback": self._imaging_callback
-            }
-        )
+        self._working_thread = threading.Thread(target=self._worker, name='working thread', kwargs={ "extra_callback": self._imaging_callback })
         self._working_thread.start()
         return True
 
@@ -1461,55 +1223,39 @@ class COPISCore:
         def homing_callback():
             for dvc in self.project.devices:
                 dvc.set_is_homed()
-
         if not self.is_serial_port_connected:
             print_error_msg(self.console,
                 'The machine needs to be connected before homing can start.')
             return False
-
         if self._is_machine_busy:
             print_error_msg(self.console, 'Cannot home. The machine is busy.')
             return False
-
         homing_actions = self.project.homing_actions
-
         if not homing_actions or len(homing_actions) == 0:
             print_error_msg(self.console, 'No homing sequence to provided.')
             return False
-
         # Only send homing commands for connected devices.
         all_device_ids = [d.device_id for d in self.project.devices]
         homing_actions = list(filter(lambda c: c.device in all_device_ids, homing_actions))
-
         device_ids = list(set(a.device for a in homing_actions))
         batch_size = len(device_ids)
-
         header = self._get_move_commands(True, *device_ids)
         body = _chunk_actions(batch_size, homing_actions)
         footer = self._get_initialization_commands(ActionType.G1)
         footer.extend(self._disengage_motors_commands)
-
         self._mainqueue = []
         self._mainqueue.extend(header)
         self._mainqueue.extend(body)
         self._mainqueue.extend(footer)
         self._work_type = WorkType.HOMING
-
         self._keep_working = True
         self._clear_to_send = True
-        self._working_thread = threading.Thread(
-            target=self._worker,
-            name='working thread',
-            kwargs={
-                "extra_callback": homing_callback
-            }
-        )
+        self._working_thread = threading.Thread(target=self._worker, name='working thread', kwargs={"extra_callback": homing_callback})
         self._working_thread.start()
         return True
 
     def stop_work(self) -> None:
         """Stops work in progress."""
-
         paused = self._is_machine_paused
         self._session_id = self.sys_db.last_session_id() +1
         if paused or self.pause_work():
@@ -1521,89 +1267,61 @@ class COPISCore:
             self._current_mainqueue_item = -1
             self.select_pose_set(-1)
             self._imaged_pose_sets.clear()
-
             work_type_name = self.work_type_name
             self._work_type = None
-
             if paused:
                 self._query_machine()
-
             print_info_msg(self.console, f'{work_type_name} stopped')
 
     def pause_work(self) -> bool:
         """Pause work in progress, saving the current position."""
-
         if not self._working_thread:
             print_error_msg(self.console, 'Cannot pause. The machine is not busy.')
             return False
-
         self._is_machine_paused = True
         self._keep_working = False
-
         # Join the working thread of finish work if we are it.
         if threading.current_thread() != self._working_thread:
             self._working_thread.join()
-
         self._working_thread = None
         print_info_msg(self.console, f'{self.work_type_name} paused')
         return True
 
     def resume_work(self) -> bool:
         """Resume the current run."""
-
         if not self._is_machine_paused:
             print_error_msg(self.console, 'Cannot resume; machine is not paused.')
             return False
-
-        kwargs = {
-            "resuming": True
-        }
-
+        kwargs = {"resuming": True}
         if self._work_type == WorkType.IMAGING:
             kwargs['extra_callback'] = self._imaging_callback
-
         self._is_machine_paused = False
         self._keep_working = True
         self._clear_to_send = True
-        self._working_thread = threading.Thread(
-            target=self._worker,
-            name='working thread',
-            kwargs=kwargs
-        )
-
+        self._working_thread = threading.Thread(target=self._worker, name='working thread', kwargs=kwargs)
         self._working_thread.start()
         return True
 
-
 def _chunk_actions(batch_size, actions):
     chunks = []
-
     for i in range(0, len(actions), batch_size):
         chunk = actions[i:i + batch_size]
         chunks.append(chunk)
-
     return chunks
 
 def _format_time_delta(delta):
     str_delta = str(delta)
     parts = [0]
     units_map = {'d': 'day', 'h': 'hour', 'm': 'minute', 's': 'second', 'u': 'millisecond'}
-
     if 'day' in str_delta:
         parts = [int(str_delta.split()[0])]
         str_delta = str_delta.split(', ')[1]
-
     parts.extend([int(p1) for p in str_delta.split(':') for p1 in p.split('.')])
-
     if len(parts) < len(units_map) and '.' not in str_delta:
         parts.append(0)
-
     parts[-1] = int(parts[-1] / 1000)
-
     for (i, key) in enumerate(units_map):
         if parts[i] > 1:
             units_map[key] = f'{units_map[key]}s'
-
     format_str = ', '.join([f'{z[0]} {{{z[1]}}}' for z in list(zip(parts, 'dhmsu')) if z[0] > 0])
-
     return ' and'.join(format_str.format_map(units_map).rsplit(',', 1))

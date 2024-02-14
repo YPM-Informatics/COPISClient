@@ -19,7 +19,6 @@ import threading
 
 from dataclasses import dataclass
 
-
 @dataclass
 class ReadThread:
     """Data structure that implements a COPIS read thread object."""

@@ -31,7 +31,6 @@ def show_folder_dialog(caption: str, path: str='') -> str:
     """Shows a wx.DirDialog to prompt for a folder."""
     dialog = wx.DirDialog(None, caption, path)
     choice = dialog.ShowModal()
-
     return None if choice == wx.ID_CANCEL else dialog.Path
 
 def show_msg_dialog(msg: str, caption=' ') -> None:
@@ -42,36 +41,25 @@ def show_msg_dialog(msg: str, caption=' ') -> None:
 def show_prompt_dialog(msg: str, caption:str=' ', show_cancel_btn:bool=False, show_help_btn:bool=False, help_btn_label:str=None) -> Any:
     """Show a wx.MessageDialog confirmation prompt."""
     style = wx.YES_NO
-
     if show_cancel_btn:
         style = style|wx.CANCEL
     if show_help_btn:
         style = style|wx.HELP
-
     modal = wx.MessageDialog(None, msg, caption, style)
-
     if show_help_btn and help_btn_label:
         modal.HelpLabel = help_btn_label
-
     choice = modal.ShowModal()
-
     return choice
 
-def create_scaled_bitmap(bmp_name: str,
-                         px_cnt: int = 16) -> wx.Bitmap:
+def create_scaled_bitmap(bmp_name: str, px_cnt: int = 16) -> wx.Bitmap:
     """Return scaled wx.Bitmap from svg file name.
-
     Args:
         bmp_name: A string representing the svg image to convert.
         px_cnt: Optional; Size to scale to, with aspect ratio 1. Defaults to 16.
     """
     filename = 'img/' + bmp_name + '.svg'
-
-
     image = svg.SVGimage.CreateFromFile(store.find_path(filename)).ConvertToScaledBitmap((px_cnt, px_cnt))
-
     return image
-
 
 def simple_statictext(
     parent: Any,

@@ -251,19 +251,16 @@ class SerialController():
     def _get_port(self, name):
         if len(self._ports) < 1:
             return None
-
         return next(filter(lambda p, n = name: p.name == n, self._ports), None)
 
     def _parse_response(self, resp) -> object:
         line = resp.strip('\r\n')
         if self._OBJECT_PATTERN.match(line):
             result = SerialResponse()
-
             for pair in self._PAIR_PATTERN.findall(line):
                 for key_val in self._KEY_VAL_PATTERN.findall(pair.rstrip(',')):
                     key = self._KEY_MAP.get(key_val[0])
                     value = key_val[1]
-
                     if key:
                         if (key in ['device_id', 'system_status_number']):
                             value = int(value)
@@ -290,9 +287,7 @@ class SerialController():
         """Returns a copy of the serial ports list."""
         return self._ports.copy()
 
-
 _instance = SerialController()
-
 initialize = _instance.initialize
 update_port_list = _instance.update_port_list
 select_port = _instance.select_port

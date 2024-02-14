@@ -82,13 +82,10 @@ class CylinderObject3D(Object3D):
         self.start: vec3 = vec3(start)
         self.end: vec3 = vec3(end)
         self.radius: float = radius
-
         self.height: float = glm.distance(self.start, self.end)
         self.normal: vec3 = glm.normalize(self.end - self.start)
-
         # calculate rotation matrix for cylinder
         self.trans_matrix: mat4 = glm.orientation(vec3(0.0, 0.0, 1.0), self.normal)
-
         # add translation to matrix
         self.trans_matrix[0][3] = start.x
         self.trans_matrix[1][3] = start.y
@@ -104,7 +101,6 @@ class CylinderObject3D(Object3D):
             vec3(-self.radius, self.radius, self.height),
             vec3(self.radius, -self.radius, self.height),
             vec3(-self.radius, -self.radius, self.height))
-
         # inflate OBB into AABB
         # TODO:
         #     BoundingBox _should_ have default values - we shouldn't have to
@@ -138,24 +134,18 @@ class OBJObject3D(Object3D):
         self._filename = filename
         self._wavefront_vertices: glm.array
         self.scale = vec3(scale)
-
         self.vertices: glm.array
         self.normals: glm.array
         self.indices: glm.array
-
         self.obj = pywavefront.Wavefront(filename)
         for _, material in self.obj.materials.items():
             v = material.vertices
             v = [v[i:i + 8] for i in range(0, len(v), 8)]
-
             self.vertices = glm.array([vec3(chunk[5:8]) * scale for chunk in v])
             self.normals = glm.array([vec3(chunk[2:5]) for chunk in v])
-            self.indices = \
-                glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
-
+            self.indices = glm.array([u32vec3(i*3, i*3+1, i*3+2) for i in range(len(self.vertices) // 3)])
             # only use first mesh
             break
-
         # create bbox
         self._bbox = BoundingBox(vec3(inf), vec3(-inf))
         for v in self.vertices:

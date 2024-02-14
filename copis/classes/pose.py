@@ -29,21 +29,16 @@ class Pose(NamedTuple):
     def get_actions(self) -> List[Action]:
         """Flattens the pose into its constituent list of actions and returns it."""
         actions = [self.position] if self.position else []
-
         if self.payload and len(self.payload) > 0:
             actions.extend(self.payload)
-
         return actions
 
     def get_seq_actions(self) -> List[Action]:
         """Works like get_actions except it still holds a spot in the list
             even if there's no position."""
-
         actions = [self.position] if self.position else [None]
-
         if self.payload and len(self.payload) > 0:
             actions.extend(self.payload)
-
         return actions
 
     @property

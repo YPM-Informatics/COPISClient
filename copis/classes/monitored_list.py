@@ -26,13 +26,11 @@ class MonitoredList(list):
     def __init__(self, signal: str, iterable=None) -> None:
         if iterable is None:
             iterable = []
-
         super().__init__(iterable)
         self.signal = signal
-
+        
     def clear(self, dispatch=True) -> None:
         super().clear()
-
         if dispatch:
             self._dispatch()
 
@@ -76,6 +74,5 @@ class MonitoredList(list):
         does not need to happen for an object being unpickled because it's just a monitored list
         being restored and not technically being actively changed. Besides, there is no need to
         dispatch if there's no registered signal."""
-
         if 'signal' in self.__dict__:
             dispatcher.send(self.signal)

@@ -224,7 +224,8 @@ class PathgenToolbar(aui.AuiToolBar):
                     buffer_dist = dlg.buffer_dist_ctrl.num_value
                     start = vec3(dlg.start_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.start_z_ctrl.num_value)
                     end = vec3(dlg.end_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.end_z_ctrl.num_value)
-                    vertices, count = create_slot_along_x(start, end, buffer_dist, center_points, semicicle_points)
+                    z_tilt_target = dlg.tilt_z_target_ctrl.num_value
+                    vertices, count = create_slot_along_x(start, end, buffer_dist, center_points, semicicle_points, z_tilt_target)
                     #lookat = vec3(dlg.lookat_x_ctrl.num_value, dlg.centerline_y_ctrl.num_value, dlg.lookat_z_ctrl.num_value)
                     #self._extend_actions(vertices, count, lookat, (device_id,))
                     devices = self.core.project.devices
@@ -641,7 +642,7 @@ class _PathgenCapsule(wx.Dialog):
         indent = '    '
         unit = 'mm'
 
-        options_grid = wx.FlexGridSizer(13, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(14, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
         
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
@@ -651,6 +652,7 @@ class _PathgenCapsule(wx.Dialog):
         self.end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
         self.centerline_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
         self.buffer_dist_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.tilt_z_target_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
         self.centerline_points_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.semicircle_points_ctrl = wx.TextCtrl(self, size=(48, -1))
 
@@ -679,11 +681,14 @@ class _PathgenCapsule(wx.Dialog):
             (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             
-            (simple_statictext(self, 'Centerline Y:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Centerline Y ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.centerline_y_ctrl, 0, wx.EXPAND, 0),
             
-            (simple_statictext(self, 'Buffer:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Buffer ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.buffer_dist_ctrl, 0, wx.EXPAND, 0),
+            
+            (simple_statictext(self, f'Tilt to Target Z ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.tilt_z_target_ctrl, 0, wx.EXPAND, 0),
             
             (simple_statictext(self, 'Number of Points', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
