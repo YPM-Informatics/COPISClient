@@ -252,13 +252,11 @@ def build_pose_sets(poses: List[Pose]) -> List[List[Pose]]:
         Each set contains at most one pose per device."""
     if not poses:
         return poses
-
     sets = []
     set_ = []
 
     for pose in poses:
-        if set_ and any(p.position.device ==
-            pose.position.device for p in set_):
+        if set_ and any(p.position.device == pose.position.device for p in set_):
             sets.append(set_)
             set_ = []
 
@@ -342,19 +340,34 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
 
     return poses
 
-def build_poses_from_XYZPT(ordered_points, clearance_indexes):
+
+
+def build_pose_from_XYZPT(dev_id : int, p5 : Point5, gen_payload=True) -> Pose:
+    point_x = sanitize_number(p5.x)
+    point_y = sanitize_number(p5.y)
+    point_z = sanitize_number(p5.z)
+    point_p = sanitize_number(p5.p)
+    point_t = sanitize_number(p5.t)
+    g_args = create_action_args([point_x, point_y, point_z, point_p, point_t])
+    payload = []
+    if gen_payload:
+        c_args = create_action_args([1.5], 'S')
+        payload = [Action(ActionType.C0, dev_id, len(c_args), c_args)]
+    return Pose(Action(ActionType.G1, dev_id, len(g_args), g_args), payload)
+
+
+def build_poses_from_XYZPT(ordered_points, clearance_indexes, gen_payload=True):
     poses = []
-    pos_records = {}
     for device_id in ordered_points:
         for i, point in enumerate(ordered_points[device_id]):
-            point_x = sanitize_number(point.x)
-            point_y = sanitize_number(point.y)
-            point_z = sanitize_number(point.z)
-            point_p = sanitize_number(point.p)
-            point_t = sanitize_number(point.t)
+            point_x = sanitize_number(point[0].x)
+            point_y = sanitize_number(point[0].y)
+            point_z = sanitize_number(point[0].z)
+            point_p = sanitize_number(point[0].p)
+            point_t = sanitize_number(point[0].t)
             g_args = create_action_args([point_x, point_y, point_z, point_p, point_t])
             payload = []
-            if not clearance_indexes or i not in clearance_indexes[device_id]:
+            if gen_payload and (not clearance_indexes or i not in clearance_indexes[device_id]):
                 c_args = create_action_args([1.5], 'S')
                 payload = [Action(ActionType.C0, device_id, len(c_args), c_args)]
             poses.append(Pose(Action(ActionType.G1, device_id, len(g_args), g_args), payload))

@@ -683,14 +683,11 @@ class TimelinePanel(wx.Panel):
                 node = self.timeline.AppendItem(root, f'Pose set {i}', data=data)
                 for j, pose in enumerate(pose_set):
                     data = { 'item': 'pose', 'set index': i, 'index': j }
-                    node_1 = self.timeline.AppendItem(node,
-                        self._get_device_caption(pose.position.device), data=data)
+                    node_1 = self.timeline.AppendItem(node, self._get_device_caption(pose.position.device), data=data)
                     for action in pose.get_actions():
-                        node_2 = self.timeline.AppendItem(node_1,
-                            self._get_action_caption(action))
+                        node_2 = self.timeline.AppendItem(node_1, self._get_action_caption(action))
                         for arg in action.args:
-                            self.timeline.AppendItem(node_2,
-                                self._get_action_arg_caption(action.atype, arg))
+                            self.timeline.AppendItem(node_2, self._get_action_arg_caption(action.atype, arg))
                 self.timeline.Expand(node)
             self.timeline.Expand(root)
             if keep_imaging_path_selected:

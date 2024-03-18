@@ -97,17 +97,13 @@ class GLCanvas3D(glcanvas.GLCanvas):
     zoom_min = 0.5
     zoom_max = 6.0
 
-    def __init__(self, parent,
-                 build_dimensions: List[int] = [400, 400, 400, 200, 200, 200],
-                 every: int = 100,
-                 subdivisions: int = 10) -> None:
+    def __init__(self, parent, build_dimensions: List[int] = [400, 400, 400, 200, 200, 200], every: int = 100, subdivisions: int = 10) -> None:
         """Initializes GLCanvas3D with constructors."""
         self.parent = parent
         self.core = self.parent.core
         display_attrs = glcanvas.GLAttributes()
         display_attrs.MinRGBA(8, 8, 8, 8).DoubleBuffer().Depth(24).EndList()
-        super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition,
-            size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
+        super().__init__(self.parent, display_attrs, id=wx.ID_ANY, pos=wx.DefaultPosition, size=wx.DefaultSize, style=wx.BORDER_DEFAULT, name='GLCanvas', palette=wx.NullPalette)
         self._canvas = self
         self._context = glcanvas.GLContext(self._canvas)
         self._build_dimensions = build_dimensions
@@ -128,8 +124,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._mouse_pos = None
 
         # other objects
-        self._dist = 0.5 * (self._build_dimensions[2] +
-                            max(self._build_dimensions[0], self._build_dimensions[1]))
+        self._dist = 0.5 * (self._build_dimensions[2] + max(self._build_dimensions[0], self._build_dimensions[1]))
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
@@ -141,8 +136,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._inside = False
         self._rot_quat = quat()
         self._rot_lock = Lock()
-        self._center = vec3(0.0, 0.0, ((2.0 * self._build_dimensions[5]) -
-            self._build_dimensions[2]) / 2.0)
+        self._center = vec3(0.0, 0.0, ((2.0 * self._build_dimensions[5]) - self._build_dimensions[2]) / 2.0)
         self._object_scale = 3.0
 
         # Bind listeners.
@@ -206,10 +200,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         # compile shader programs
         self._shaders['default'] = shaderlib.compile_shader(*shaderlib.default)
         self._shaders['single_color'] = shaderlib.compile_shader(*shaderlib.single_color)
-        self._shaders['instanced_model_color'] = \
-            shaderlib.compile_shader(*shaderlib.instanced_model_color)
-        self._shaders['instanced_model_multi_colors'] = \
-            shaderlib.compile_shader(*shaderlib.instanced_model_multi_colors)
+        self._shaders['instanced_model_color'] = shaderlib.compile_shader(*shaderlib.instanced_model_color)
+        self._shaders['instanced_model_multi_colors'] = shaderlib.compile_shader(*shaderlib.instanced_model_multi_colors)
         self._shaders['instanced_picking'] = shaderlib.compile_shader(*shaderlib.instanced_picking)
         self._shaders['diffuse'] = shaderlib.compile_shader(*shaderlib.diffuse)
         self._shaders['solid'] = shaderlib.compile_shader(*shaderlib.solid)
@@ -219,8 +211,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def create_vaos(self) -> None:
         """Bind VAOs to define vertex data."""
-        self._vaos['box'], self._vaos['side'], \
-        self._vaos['top'] = glGenVertexArrays(3)
+        self._vaos['box'], self._vaos['side'], self._vaos['top'] = glGenVertexArrays(3)
         vbo = glGenBuffers(4)
 
         vertices = np.array([

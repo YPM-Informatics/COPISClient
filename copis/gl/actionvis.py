@@ -19,6 +19,11 @@ TODO: Add rendering functionality to more than just G0 and C0 actions.
 TODO: Signify via color or border when action is selected
 """
 from collections import defaultdict, namedtuple
+import OpenGL
+from OpenGL.GL.VERSION.GL_1_5 import glGetBufferParameteriv
+
+from OpenGL.GL import GLint
+from OpenGL.GL import GL_BUFFER_SIZE
 
 import numpy as np
 
@@ -37,7 +42,7 @@ from copis.globals import ActionType, Point5
 from copis.helpers import (
     create_cuboid, create_device_features, dd_to_rad, fade_color,
     get_action_args_values, get_heading, point5_to_mat4, shade_color, xyzpt_to_mat4)
-
+import json
 ArrayInfo = namedtuple('ArrayInfo', 'name key')
 
 class GLActionVis:
@@ -92,9 +97,7 @@ class GLActionVis:
             scale = 2 * self._SCALE_FACTOR
             size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
             vertices = glm.array(*create_cuboid(size_nm))
-            feat_vertices = np.array(
-                create_device_features(dvc.size, 3 * self._SCALE_FACTOR),
-                dtype=np.float32)
+            feat_vertices = np.array(create_device_features(dvc.size, 3 * self._SCALE_FACTOR), dtype=np.float32)
 
             triangle = glm.array(
                 vec3(0.0, 0.0, 0.0),
@@ -102,7 +105,6 @@ class GLActionVis:
                 vec3(0.0, -1.0, 0.0),
                 vec3(0.0, 1.0, -1.0),
                 vec3(0.0, 0.0, 0.0),
-
                 vec3(-1.0, 1.0, 0.0),
                 vec3(0.0, -1.0, 0.0),
                 vec3(1.0, 1.0, 0.0),
@@ -179,38 +181,44 @@ class GLActionVis:
 
         # --- bind data for lines ---
 
-        for key, value in self._items['line'].items():
+        for key, value in self._items['line'].items():  #'line' represents the motion lines connecting poses
+            #print("binding line")
+            #print(key)
+            #print(value)
             # ignore if 1 or fewer points
             if len(value) <= 1:
                 continue
-
             points = glm.array([vec3(mat[1][3]) for mat in value])
-
             vbo = glGenBuffers(1)
             glBindBuffer(GL_ARRAY_BUFFER, vbo)
             glBufferData(GL_ARRAY_BUFFER, points.nbytes, points.ptr, GL_STATIC_DRAW)
-
             vao = glGenVertexArrays(1)
             glBindVertexArray(vao)
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
             glEnableVertexAttribArray(0)
             self._vaos['line'][key] = vao
-
             glBindVertexArray(0)
 
         # --- bind data for imaging direction indicator ---
 
-        for key, value in self._items['midline'].items():
+        for key, value in self._items['midline'].items():  #direction arrow along line
             mats = glm.array([mat * scale for mat in value])
             color = self.colors[key % len(self.colors)]
             cols = glm.array([color] * len(value))
-
             self._bind_directional_keys(('midline', key), mats, cols)
 
         # --- bind data for points ---
 
         self._num_points = sum(len(i) for i in self._items['point'].values())
-
+        
+        #print(f'Num Points: {self._num_points}')
+        #print(f'_items:\n {self._items}')
+        j = json.dumps(self._items, indent=4, default=str)
+        #print(f'_items json:\n {j}')
+        #print(f'_vaos:\n {self._vaos}')
+        j = json.dumps(self._vaos, indent=4, default=str)
+        #print(f'_vaos json:\n {j}')        
+        #print('********************') 
         if self._num_points > 0:
             sets = self.core.project.pose_sets
 
@@ -230,8 +238,13 @@ class GLActionVis:
 
                 for i in range(len(sets[set_index])):
                     imaged_poses.append(start + i)
+            
 
-            for key, value in self._items['point'].items():
+            for key, value in self._items['point'].items(): #represents each camera pose 
+                #print("binding cameras")
+                #print(f'key={key}')
+                #print(f'value={value}')
+               
                 mats = glm.array([p[1] * scale for p in value])
                 feat_mats = []
 
@@ -261,12 +274,20 @@ class GLActionVis:
 
                         if v[2]:
                             feat_color_mods[i - feat_offset] = vec3(3, 1, 1)
+                
+                ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))  
 
-                ids = glm.array.from_numbers(ctypes.c_int, *(p[0] for p in value))
+                #print(f'mats={mats}')
+                #print(f'cols={cols}')
+                #print(f'ids={ids}')
+                #print(f'feat_mats={feat_mats}')
+                #print(f'feat_color_mods={feat_color_mods}')
 
-                self._bind_vao_mat_col_id(('point', key), mats, cols, ids)
-                self._bind_device_features(('pt_feature', key), feat_mats, feat_color_mods)
-
+                self._bind_vao_mat_col_id(('point', key), mats, cols, ids)  #point is the camera box
+                self._bind_device_features(('pt_feature', key), feat_mats, feat_color_mods) #pt_feature represents the "payload" or lens extension from camera box
+                    
+                #print('********************') 
+                
     def update_device_vaos(self) -> None:
         """Update VAO when device list changes."""
         self._num_devices = len(self.core.project.devices)
@@ -308,22 +329,22 @@ class GLActionVis:
 
         positions = defaultdict(list)
 
+#this is where I should probably be solvng the drawing of the payload.  opengl crashes when removing last payload of a given devices
         for i, pose in enumerate(self.core.project.poses):
             positions[pose.position.device].append(pose.position.args[:5])
-
             for action in pose.get_actions():
                 if action.atype in (ActionType.G0, ActionType.G1):
                     args = get_action_args_values(action.args)
                     data = (i + self._num_devices, xyzpt_to_mat4(*args[:5]))
-
+                    #print(data)
                     self._items['line'][action.device].append(data)
                     self._items['point'][action.device].append(data + (False,))
                     # For now draw the same GUI lens for focus stacks as for snaps and focuses.
                 elif action.atype in self.core.LENS_COMMANDS + self.core.F_STACK_COMMANDS:
                     if action.device not in self._items['line'].keys():
                         continue
-
                     data = list(self._items['point'][action.device][-1])
+                    #print(tuple(data))
                     data[2] = True
                     self._items['point'][action.device][-1] = tuple(data)
                 else:
@@ -404,17 +425,30 @@ class GLActionVis:
             glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         # --- render points ---
-
+            
         if self._num_points > 0:
             for key, value in self._items['point'].items():
-                glUseProgram(
-                    self.parent.shaders['instanced_model_multi_colors'])
+                ###########
+                #print(f'render poses for device key={key}')
+                #print(f'render poses value={value}') #(idx, mat4, bool) the bool indicates if we render the camera extension (shutter) 
+                #if value[0][2] == True:
+                #this is the block that needs to be omitted when no action is to be displayed:
+                glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
                 glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
                 glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-                index_count = self._get_dvc_feature_vtx_count(
-                    ('pt_feature_vtx', key))
-                glBindVertexArray(self._vaos['pt_feature'][key])
-                glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
+                index_count = self._get_dvc_feature_vtx_count(('pt_feature_vtx', key))
+                #print(f'pt feature idx count ={index_count}')
+                #print(self._items['pt_feature_vtx'][key])
+                #when ALL poses for a camera lack the pt_feature trying to render them on some GPUs causes a crash, so we test to see if any features exist before adding them to the render pipeline
+                render_features = False   
+                for q in value:
+                    if q[2] == True:
+                       render_features = True
+                       break
+                if render_features: 
+                    glBindVertexArray(self._vaos['pt_feature'][key])
+                    glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
+                ###########
 
                 glUseProgram(self.parent.shaders['instanced_model_color'])
                 glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
@@ -489,12 +523,10 @@ class GLActionVis:
         glVertexAttribDivisor(3, 1)
         glEnableVertexAttribArray(4)
         glVertexAttribDivisor(4, 1)
-        glVertexAttribPointer(
-            5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(32)) # 2 * sizeof(glm::vec4)
         glEnableVertexAttribArray(5)
         glVertexAttribDivisor(5, 1)
-        glVertexAttribPointer(
-            6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(48)) # 3 * sizeof(glm::vec4)
         glEnableVertexAttribArray(6)
         glVertexAttribDivisor(6, 1)
 
@@ -515,19 +547,29 @@ class GLActionVis:
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
+        #print(f'{name}({key}) vbo={vbo}')
         glDeleteBuffers(3, vbo)
 
     def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, color_mods: glm.array):
         name, key = vao_info
         vao = self._vaos[name][key]
         vbo = glGenBuffers(2)
+        
+
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
 
         if mat:
             glBufferData(GL_ARRAY_BUFFER, mat.nbytes, mat.ptr, GL_STATIC_DRAW)
         else:
-            glBufferData(GL_ARRAY_BUFFER, 0, ctypes.c_void_p(0), GL_STATIC_DRAW)
+            glBufferData(GL_ARRAY_BUFFER, 0, ctypes.c_void_p(0), GL_STATIC_DRAW) ### I THINK THIS IS THE LINE FAILING ON GPU WHEN ALL FEATURES ARE EMPTY
+            #glDeleteBuffers(2, vbo) ##NREDIT
+            ##return                  ##NREDIT
         glBindVertexArray(vao)
+
+       
+        #buffer_size = GLint(0)
+        #glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, ctypes.byref(buffer_size))
+        #print(f'buffer size={buffer_size.value}')
 
         # Modelmats.
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 64, ctypes.c_void_p(0))
@@ -547,13 +589,20 @@ class GLActionVis:
 
         # Color modifications.
         glBindBuffer(GL_ARRAY_BUFFER, vbo[1])
-        glBufferData(GL_ARRAY_BUFFER, color_mods.nbytes, color_mods.ptr, GL_STATIC_DRAW)
+        if color_mods:
+            glBufferData(GL_ARRAY_BUFFER, color_mods.nbytes, color_mods.ptr, GL_STATIC_DRAW)
+        else:
+            glBufferData(GL_ARRAY_BUFFER, 0, ctypes.c_void_p(0), GL_STATIC_DRAW) ### I THINK THIS IS THE LINE FAILING ON GPU WHEN ALL FEATURES ARE EMPTY
+   
+
+        #glBufferData(GL_ARRAY_BUFFER, color_mods.nbytes, color_mods.ptr, GL_STATIC_DRAW)
         glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
         glEnableVertexAttribArray(7)
         glVertexAttribDivisor(7, 1)
 
         glEnableVertexAttribArray(0)
         glBindVertexArray(0)
+        #print(f'{name}({key}) vbo={vbo}')
         glDeleteBuffers(2, vbo)
 
     def _get_dvc_feature_vtx_count(self, item_info: ArrayInfo):

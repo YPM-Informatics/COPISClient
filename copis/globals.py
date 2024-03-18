@@ -65,6 +65,7 @@ class PathIds(Enum):
     LINE = auto()
     POINT = auto()
     CAPSULE = auto()  #2 parrallel lines connected by half circles on each end
+    TURNTABLE = auto()
 
 
 class CamAxis(Enum):
