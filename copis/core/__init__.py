@@ -427,7 +427,7 @@ class COPISCore:
                     print_info_msg(self.console, '**** Thawing machine ****')
                     self._serial.write(ActionType.M120.name)
                     self._machine_busy_since = datetime.now()
-            print(self._last_machine_status)
+            #print(self._last_machine_status)
             self._last_machine_status = self.machine_status
         print_debug_msg(self.console,
             f'{read_thread.thread.name.capitalize()} stopped', self._is_dev_env)

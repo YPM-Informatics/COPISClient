@@ -96,7 +96,7 @@ class SysDB():
                 for k, v in tbl_schema.items():
                     if len ([item for item in rows if item[1] == k]) == 0:
                         s = f'ALTER TABLE {tbl_name} ADD COLUMN {k} {v};'
-                        print(s)
+                        #print(s)
                         db.execute(s)
         db.commit()
         db.close()
