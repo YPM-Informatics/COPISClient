@@ -15,12 +15,15 @@
 
 """PathgenToolbar class."""
 
+from logging.handlers import RotatingFileHandler
 import math
 
 from collections import defaultdict
+from multiprocessing import Value
 from tkinter import Label
 from typing import List, Tuple
 from glm import vec3
+from numpy import rot90
 
 import wx
 import wx.lib.agw.aui as aui
@@ -39,8 +42,7 @@ class PathgenToolbar(aui.AuiToolBar):
 
     def __init__(self, parent) -> None:
         """Initializes PathgenToolbar with constructors."""
-        super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
-            aui.AUI_TB_PLAIN_BACKGROUND)
+        super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
 
         self.parent = parent
         self.core = self.parent.core
@@ -52,8 +54,7 @@ class PathgenToolbar(aui.AuiToolBar):
         # when the toolbar is floating, even if all the items fit.
         # This allows the overflow button to be visible only when they don't;
         # no matter if the toolbar is floating or docked.
-        self.Bind(wx.EVT_MOTION,
-            lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
+        self.Bind(wx.EVT_MOTION, lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
         self.Bind(wx.EVT_TOOL, self.on_tool_selected)
 
@@ -73,6 +74,8 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddTool(PathIds.CAPSULE.value, 'Capsule', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add capsule path')
         _bmp = create_scaled_bitmap('line_path', 24)
         self.AddTool(PathIds.LINE.value, 'Line', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add line path')
+        _bmp = create_scaled_bitmap('grid_path', 24)
+        self.AddTool(PathIds.GRID.value, 'Grid', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add grid')
         _bmp = create_scaled_bitmap('turn_table_path', 24)
         self.AddTool(PathIds.TURNTABLE.value, 'Turntable', _bmp, _bmp, aui.ITEM_NORMAL, short_help_string='Add turntable')
         self.AddSeparator()
@@ -256,6 +259,51 @@ class PathgenToolbar(aui.AuiToolBar):
                             else:
                                 pose_sets.append([build_pose_from_XYZPT(device_id,p5,False)])                  
                     self.core.project.pose_sets.extend(pose_sets)
+        elif event.Id == PathIds.GRID.value:
+            with _PathgenGrid(self, self.parent.core.project.devices) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    print_debug_msg(self.core.console, 'Gridded path added', self.core.is_dev_env)
+                    devices = self.core.project.devices
+                    selected_devices = dlg.device_checklist.CheckedItems
+                    x = dlg.x_start_ctrl.num_value
+                    y = dlg.y_start_ctrl.num_value
+                    z = dlg.z_start_ctrl.num_value
+                    p = dlg.p_start_ctrl.num_value
+                    t = dlg.t_start_ctrl.num_value
+                    x_num = int(dlg.x_poses_ctrl.GetValue())
+                    y_num = int(dlg.y_poses_ctrl.GetValue())
+                    z_num = int(dlg.z_poses_ctrl.GetValue())
+                    p_num = int(dlg.p_poses_ctrl.GetValue())
+                    t_num = int(dlg.t_poses_ctrl.GetValue())
+                    x_inc = dlg.x_increment_ctrl.num_value
+                    y_inc = dlg.y_increment_ctrl.num_value
+                    z_inc = dlg.z_increment_ctrl.num_value
+                    p_inc = dlg.p_increment_ctrl.num_value
+                    t_inc = dlg.t_increment_ctrl.num_value
+                    vertices = []
+                    grouped_points = defaultdict(list)
+                    max_zs = defaultdict(float)
+                    for i_z in range(z_num):
+                        for i_y in range(y_num):
+                            for i_x in range(x_num):
+                                for i_p in range(p_num):
+                                    for i_t in range(t_num):
+                                        p5 = Point5(x + x_inc * i_x, y + y_inc * i_y, z + z_inc * i_z, dd_to_rad(p + p_inc * i_p), dd_to_rad(t + t_inc * i_t))
+                                        vertices.append(p5)
+                                        # group points into devices
+                                        device_id = -1
+                                        for id_ in selected_devices:
+                                             max_zs[id_] = devices[id_].range_3d.upper.z
+                                             if devices[id_].range_3d.vec3_intersect(vec3(p5.x,p5.y,p5.z), 0.0):
+                                                 device_id = id_
+                                         # ignore if point not in bounds of any device
+                                        if device_id != -1:
+                                             grouped_points[device_id].append((p5,True))
+                        poses = build_poses_from_XYZPT(grouped_points, [])
+                    poses = build_poses_from_XYZPT(grouped_points, [])
+                    poses = interleave_poses(poses)
+                    pose_sets = build_pose_sets(poses)                    
+                    self.core.project.pose_sets.extend(pose_sets)
 
     def _extend_actions(self, vertices,count: int, lookat: vec3, device_list: Tuple[int]) -> None:
         """Extend core actions list by given vertices.
@@ -385,7 +433,6 @@ class _PathgenHelix(wx.Dialog):
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
-
         unit = 'mm'
         indent = '    '
 
@@ -393,24 +440,16 @@ class _PathgenHelix(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
-            default_unit=unit, unit_conversions=xyz_units)
+        self.base_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.base_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.base_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, default_unit=unit, unit_conversions=xyz_units)
+        self.height_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, default_unit=unit, unit_conversions=xyz_units)
         self.rotation_ctrl = wx.TextCtrl(self, size=(48, -1))
         self.points_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -423,17 +462,13 @@ class _PathgenHelix(wx.Dialog):
             (self.base_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.base_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'Radius ({unit}):', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Radius ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.radius_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, f'Height ({unit}):', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, f'Height ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.height_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Number of Rotations:', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Number of Rotations:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.rotation_ctrl, 0, wx.EXPAND, 0),
-            (simple_statictext(self, 'Points per Rotation:', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Points per Rotation:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.points_ctrl, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Target', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
@@ -487,10 +522,7 @@ class _PathgenSphere(wx.Dialog):
         """Initializes _PathgenSphere with constructors."""
         super().__init__(parent, wx.ID_ANY, 'Add Sphere Path', size=(200, -1))
         self.parent = parent
-
-        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',
-            self.parent.core.project.devices))
-
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})', self.parent.core.project.devices))
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
         # ---
@@ -502,17 +534,12 @@ class _PathgenSphere(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
-        self.center_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.center_y_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.center_z_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
-            default_unit=unit, unit_conversions=xyz_units)
+        self.center_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.center_y_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.center_z_ctrl = FancyTextCtrl( self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100, default_unit=unit, unit_conversions=xyz_units)
         self.z_div_ctrl = wx.TextCtrl(self, size=(48, -1))
-        self.distance_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=10,
-            default_unit=unit, unit_conversions=xyz_units)
+        self.distance_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=10, default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -543,20 +570,16 @@ class _PathgenSphere(wx.Dialog):
         self.Sizer.AddSpacer(8)
 
         # ---
-
         button_sizer = self.CreateStdDialogButtonSizer(0)
         self._affirmative_button = wx.Button(self, wx.ID_OK)
         self._affirmative_button.Disable()
         button_sizer.SetAffirmativeButton(self._affirmative_button)
         button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
         button_sizer.Realize()
-
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
-
         self.Layout()
         self.SetMinSize((200, -1))
         self.Fit()
-
         # ---
 
         self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
@@ -608,66 +631,48 @@ class _PathgenCapsule(wx.Dialog):
         options_grid.AddMany([
             (simple_statictext(self, 'Devices:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_checklist, 0, wx.EXPAND, 0),
-            
             (simple_statictext(self, 'Start', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
-            
             (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             #(simple_statictext(self, f'{indent} Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             #(self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
             (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
             (simple_statictext(self, 'End', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
-            
             (simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
             (simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
             (simple_statictext(self, f'Centerline Y ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.centerline_y_ctrl, 0, wx.EXPAND, 0),
-            
             (simple_statictext(self, f'Buffer ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.buffer_dist_ctrl, 0, wx.EXPAND, 0),
-            
             (simple_statictext(self, f'Tilt to Target Z ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.tilt_z_target_ctrl, 0, wx.EXPAND, 0),
-            
             (simple_statictext(self, 'Number of Points', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
-            
             (simple_statictext(self, f'{indent} Centerline', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.centerline_points_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
             (simple_statictext(self, f'{indent} Semicircle', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.semicircle_points_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            
-
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
         self.Sizer.AddSpacer(8)
 
         # ---
-
         button_sizer = self.CreateStdDialogButtonSizer(0)
         self._affirmative_button = wx.Button(self, wx.ID_OK)
         self._affirmative_button.Disable()
         button_sizer.SetAffirmativeButton(self._affirmative_button)
         button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
         button_sizer.Realize()
-
         self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
-
         self.Layout()
         self.SetMinSize((200, -1))
         self.Fit()
-
         # ---
         self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
         self.centerline_points_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
@@ -804,44 +809,31 @@ class PathgenPoint(wx.Dialog):
         options_grid.AddGrowableCol(1, 0)
 
         self.device_choice = wx.Choice(self, choices=self._device_choices)
-        self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-            default_unit=unit, unit_conversions=xyz_units)
-        self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-                default_unit=unit, unit_conversions=xyz_units)
-        self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-                default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-                default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-                default_unit=unit, unit_conversions=xyz_units)
-        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
-                default_unit=unit, unit_conversions=xyz_units)
+        self.x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.lookat_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
 
         options_grid.AddMany([
             (simple_statictext(self, 'Device:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (self.device_choice, 0, wx.EXPAND, 0),
             (simple_statictext(self, 'Position', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
-            (simple_statictext(self, f'{indent}X ({unit}):', 72), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'{indent}Y ({unit}):', 72), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'{indent}Z ({unit}):', 72), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, 'Target', 72), 0,
-             wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
+            (simple_statictext(self, 'Target', 72), 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
-            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}X ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
-            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
-                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.lookat_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
         ])
 
@@ -1003,4 +995,131 @@ class PathgenTurnTable(wx.Dialog):
         
     def _on_ctrl_update(self, _) -> None:
         self._validate()
+
+
+class _PathgenGrid(wx.Dialog):
+    """Dialog to generate a gridded path."""
+    def __init__(self, parent, *args, **kwargs):
+        indent = '    '
+        unit = 'mm'
+        rotational_unit = 'dd'
+        options_grid = wx.FlexGridSizer(rows=14, cols=2, vgap=12, hgap=8)
+
+        options_grid_2 = wx.FlexGridSizer(rows=6, cols=3, vgap=12, hgap=8)
+        options_grid_2.AddGrowableCol(1, 0)
+
+        super().__init__(parent=parent, id=wx.ID_ANY, title='Add Gridded Path', size=(200, -1))
         
+        self.parent = parent
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',self.parent.core.project.devices))
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
+        
+        self.x_start_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.y_start_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.z_start_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.p_start_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)   
+        self.t_start_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)
+        self.x_poses_ctrl = wx.TextCtrl(self, size=(48, -1), value='1')     
+        self.y_poses_ctrl = wx.TextCtrl(self, size=(48, -1), value='1')   
+        self.z_poses_ctrl = wx.TextCtrl(self, size=(48, -1), value='1')   
+        self.p_poses_ctrl = wx.TextCtrl(self, size=(48, -1), value='1')   
+        self.t_poses_ctrl = wx.TextCtrl(self, size=(48, -1), value='1')   
+        self.x_increment_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.y_increment_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.z_increment_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.p_increment_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)
+        self.t_increment_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)
+
+
+        options_grid.Add(simple_statictext(self, label='Devices:', width=120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(self.device_checklist, 0, wx.EXPAND, 0)
+        options_grid.Add(simple_statictext(self, 'Start Pose', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(0, 0)
+        options_grid.Add(simple_statictext(self, f'{indent} X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.x_start_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.y_start_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.z_start_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} P ({rotational_unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.p_start_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} T ({rotational_unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.t_start_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid_2.Add(0,0)
+        options_grid_2.Add(simple_statictext(self, 'Num Poses', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid_2.Add(simple_statictext(self, 'Increment (mm or dd)', width=120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        
+        options_grid_2.Add(simple_statictext(self, f'{indent} X:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid_2.Add(self.x_poses_ctrl, 0, wx.EXPAND|wx.TOP, -11)   
+        options_grid_2.Add(self.x_increment_ctrl, 0, wx.EXPAND|wx.TOP, -11)   
+
+        options_grid_2.Add(simple_statictext(self, f'{indent} Y:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid_2.Add(self.y_poses_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid_2.Add(self.y_increment_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid_2.Add(simple_statictext(self, f'{indent} Z:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid_2.Add(self.z_poses_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid_2.Add(self.z_increment_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid_2.Add(simple_statictext(self, f'{indent} P:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid_2.Add(self.p_poses_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid_2.Add(self.p_increment_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid_2.Add(simple_statictext(self, f'{indent} T:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid_2.Add(self.t_poses_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid_2.Add(self.t_increment_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+
+
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+        self.Sizer.Add(options_grid_2, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+        self.Layout()
+        self.SetMinSize((200, -1))
+        self.Fit()
+        # ---
+        self.device_checklist.Bind(wx.EVT_CHECKLISTBOX, self._on_ctrl_update)
+        self.x_poses_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.y_poses_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.z_poses_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.p_poses_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.t_poses_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+       
+    def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
+        if (not self.device_checklist.CheckedItems or
+            self.x_poses_ctrl.Value == '' or not is_number(self.x_poses_ctrl.Value) or
+            self.y_poses_ctrl.Value == '' or not is_number(self.y_poses_ctrl.Value) or
+            self.z_poses_ctrl.Value == '' or not is_number(self.z_poses_ctrl.Value) or
+            self.p_poses_ctrl.Value == '' or not is_number(self.p_poses_ctrl.Value) or
+            self.t_poses_ctrl.Value == '' or not is_number(self.t_poses_ctrl.Value)):        
+                self._affirmative_button.Disable()
+                return
+        if (not self.x_poses_ctrl.Value.isdigit() or
+            not self.y_poses_ctrl.Value.isdigit() or
+            not self.z_poses_ctrl.Value.isdigit() or
+            not self.p_poses_ctrl.Value.isdigit() or
+            not self.t_poses_ctrl.Value.isdigit()):        
+                self._affirmative_button.Disable()
+                return
+        if (int(self.x_poses_ctrl.Value) < 1 or
+            int(self.y_poses_ctrl.Value) < 1 or
+            int(self.z_poses_ctrl.Value) < 1 or
+            int(self.p_poses_ctrl.Value) < 1 or
+            int(self.t_poses_ctrl.Value) < 1):        
+                self._affirmative_button.Disable()
+                return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
