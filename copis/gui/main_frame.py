@@ -278,10 +278,13 @@ class MainWindow(wx.Frame):
         recent_menu = wx.Menu()
         import_menu = wx.Menu()
 
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Import Legacy Actions\tCtrl+I',
-            'Import legacy actions')
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Import Legacy Actions\tCtrl+I','Import legacy actions')
         _item.Bitmap = create_scaled_bitmap('import', 16)
         self.Bind(wx.EVT_MENU, self.on_import_legacy_actions, import_menu.Append(_item))
+        
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Import Poses\tCtrl+I','Import poses')
+        _item.Bitmap = create_scaled_bitmap('import', 16)
+        self.Bind(wx.EVT_MENU, self.on_import_poses, import_menu.Append(_item))
 
         _item = wx.MenuItem(None, wx.ID_NEW, '&New Project\tCtrl+N', 'Create new project')
         _item.Bitmap = create_scaled_bitmap('add_project', 16)
@@ -456,6 +459,16 @@ class MainWindow(wx.Frame):
                 self.do_load_legacy_actions(path)
             except Exception as err:
                 wx.LogError(str(err))
+                
+    def on_import_poses(self, _) -> None:
+        wildcard = f'{self._FILES_PROJECT}|{self._FILES_WILDCARD}'
+        with wx.FileDialog(self, 'Import Project File', wildcard=wildcard, defaultDir=self._get_default_dir(), style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
+
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
+                return
+            msg = self.core.append_project(file_dialog.Path)
+            if msg:
+                show_msg_dialog(f'{msg}.', 'Import Poses')
 
     def on_project_selected(self, event: wx.CommandEvent):
         """Opens the selected recent project."""

@@ -1168,6 +1168,22 @@ class COPISCore:
         self._update_recent_projects(path)
         self._reconcile_machine(last_dvc_statuses)
         return resp
+    
+    def append_project(self, path) -> Tuple:
+        """Appends an existing project file to current project."""
+        self.select_pose(-1)
+        self.select_device(-1)
+        self.select_proxy(-1)
+        self._pose_set_offset_start = -1
+        self._pose_set_offset_end = -1
+        self._current_mainqueue_item = -1
+        self.select_pose_set(-1)
+        self._imaged_pose_sets.clear()
+        last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response) for d in self.project.devices]
+        resp = self.project.append_poses_from_project_file(path)
+        self._update_recent_projects(path)
+        self._reconcile_machine(last_dvc_statuses)
+        return resp
 
     def save_project(self, path) -> None:
         """Saves a project and update recent projects."""

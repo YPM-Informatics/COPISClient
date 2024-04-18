@@ -22,8 +22,7 @@ from pydispatch import dispatcher
 from itertools import groupby
 from glm import vec3
 
-from copis.classes import (
-    BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
+from copis.classes import (BoundingBox, Device, Action, Pose, MonitoredList, Object3D, OBJObject3D)
 
 from copis.globals import Point5
 from copis.command_processor import deserialize_command
@@ -32,7 +31,7 @@ from copis.pathutils import build_pose_sets
 import copis.store as store
 
 import wx
-from copis.gui.wxutils import show_prompt_dialog
+from copis.gui.wxutils import show_prompt_dialog, show_msg_dialog
 
 class Project():
     """A singleton that manages COPIS project operations."""
@@ -222,7 +221,17 @@ class Project():
                 self._pose_sets = MonitoredList('ntf_a_list_changed', sets)
             else:
                 self._pose_sets = MonitoredList('ntf_a_list_changed')
-
+    
+    def _append_pose_sets(self, sets=None):
+        if self._pose_sets is not None:
+            if sets is not None:
+                self._pose_sets.extend(sets)
+        else:
+            if sets:
+                self._pose_sets = MonitoredList('ntf_a_list_changed', sets)
+            else:
+                self._pose_sets = MonitoredList('ntf_a_list_changed')
+                
     def update_imaging_option(self, name: str, value: Any) -> None:
         """Updates the value of the give option in the imaging options dictionary."""
         if name not in self._options or self._options[name] != value:
@@ -318,9 +327,28 @@ class Project():
                 self._init_devices()
         self._init_proxies(proxies)
         self._init_pose_sets(p_sets)
+        #self._append_pose_sets(p_sets)
         if 'imaging_options' in proj_data:
             self._options = proj_data['imaging_options']
         self._path = path
+        if is_dirty:
+            self._set_is_dirty()
+        else:
+            self._unset_dirty_flag()
+        return resp
+    
+    def append_poses_from_project_file(self, path: str) -> Tuple:
+        """Appends poses from an existing project given it's path."""
+        if not self._is_initialized:
+            self._init()
+        proj_data = store.load_json(path)
+        resp = None
+        is_dirty = False
+        if self._profile != proj_data['profile']:
+            show_msg_dialog('This project was made using a different machine profile, unable to import poses.')
+            return resp
+        p_sets = list(map(_pose_from_json_map, proj_data['imaging_path']))
+        self._append_pose_sets(p_sets)
         if is_dirty:
             self._set_is_dirty()
         else:

@@ -868,6 +868,7 @@ class PathgenPoint(wx.Dialog):
         self._affirmative_button.Enable()
         self._affirmative_button.SetDefault()
 
+
 class PathgenTurnTable(wx.Dialog):
     """Dialog to generate a single point."""
 

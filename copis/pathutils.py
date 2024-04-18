@@ -340,8 +340,6 @@ def _build_poses(ordered_points, clearance_indexes, lookat):
 
     return poses
 
-
-
 def build_pose_from_XYZPT(dev_id : int, p5 : Point5, gen_payload=True) -> Pose:
     point_x = sanitize_number(p5.x)
     point_y = sanitize_number(p5.y)
@@ -354,7 +352,6 @@ def build_pose_from_XYZPT(dev_id : int, p5 : Point5, gen_payload=True) -> Pose:
         c_args = create_action_args([1.5], 'S')
         payload = [Action(ActionType.C0, dev_id, len(c_args), c_args)]
     return Pose(Action(ActionType.G1, dev_id, len(g_args), g_args), payload)
-
 
 def build_poses_from_XYZPT(ordered_points, clearance_indexes, gen_payload=True):
     poses = []
