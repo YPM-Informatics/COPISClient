@@ -254,7 +254,7 @@ class CustomAuiTabArt(aui.AuiDefaultTabArt):
 
         # draw tab text
         rectx, recty, dummy = dc.GetFullMultiLineTextExtent(draw_text)
-        dc.DrawLabel(draw_text, wx.Rect(text_offset, ypos, rectx, recty))
+        dc.DrawLabel(draw_text, wx.Rect(int(text_offset), int(ypos), int(rectx), int(recty)))
 
         out_button_rect = wx.Rect()
 
@@ -274,9 +274,11 @@ class CustomAuiTabArt(aui.AuiDefaultTabArt):
                 rect = wx.Rect(tab_x + 4, tab_y + (tab_height - bmp.GetHeight())/2 - shift,
                                close_button_width, tab_height)
             else:
-                rect = wx.Rect(tab_x + tab_width - close_button_width - 1,
-                               tab_y + (tab_height - bmp.GetHeight())/2 - shift,
-                               close_button_width, tab_height)
+                r_x = int(tab_x + tab_width - close_button_width - 1)
+                r_y = int(tab_y + (tab_height - bmp.GetHeight())/2 - shift)
+                r_width = int(close_button_width)
+                r_height = int(tab_height)
+                rect = wx.Rect(r_x,r_y,r_width,r_height)
 
             rect = IndentPressedBitmap(rect, close_button_state)
             dc.DrawBitmap(bmp, rect.x, rect.y-1, True)

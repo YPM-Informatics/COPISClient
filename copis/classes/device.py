@@ -15,7 +15,8 @@
 
 """Provide the COPIS Device Class."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
 from datetime import datetime
 from math import inf
 from glm import vec3
@@ -35,7 +36,8 @@ class Device:
     type: str = ''
     description: str = ''
     home_position: Point5 = Point5()
-    range_3d: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
+    #range_3d: BoundingBox = BoundingBox(vec3(inf), vec3(-inf))
+    range_3d: BoundingBox = field(default_factory=lambda: BoundingBox(vec3(inf), vec3(-inf)))
     size: vec3 = vec3()
     port: str = ''
     head_radius: float = 0
@@ -48,6 +50,8 @@ class Device:
     _is_writing_ser: bool = False   # How is this flag used?
     _is_writing_eds: bool = False   # How is this flag used?
     _last_reported_on: datetime = None
+    
+
 
     @property
     def position(self):

@@ -193,7 +193,8 @@ class COPISCore:
         safe_list = []
         device = namedtuple('SerialDevice', 'name is_connected is_active')
         # pylint: disable=not-an-iterable
-        for port in self._serial.port_list:
+        #for port in self._serial.port_list:
+        for port in self._serial._instance.port_list:
             safe_port = device(
                 name=port.name,
                 is_connected=port.connection is not None and port.connection.is_open,
@@ -205,7 +206,8 @@ class COPISCore:
     @property
     def is_serial_port_connected(self) -> bool:
         """Returns a flag indicating whether the active serial port is connected."""
-        return self._serial.is_port_open
+        #return self._serial.is_port_open
+        return self._serial._instance.is_port_open
 
     @property
     def edsdk_device_list(self) -> List:
@@ -220,7 +222,8 @@ class COPISCore:
     @property
     def is_edsdk_connected(self):
         """Returns a flag indicating whether a device is connected via edsdk."""
-        return self._edsdk.is_connected
+        #return self._edsdk.is_connected
+        return self._edsdk._instance.is_connected
 
     @property
     def save_imaging_session(self) -> str:
@@ -860,7 +863,8 @@ class COPISCore:
             return
         self._edsdk = import_module('copis.coms.edsdk_controller')
         self._edsdk.initialize(self.console)
-        self._is_edsdk_enabled = self._edsdk.is_enabled
+        #self._is_edsdk_enabled = self._edsdk.is_enabled
+        self._is_edsdk_enabled = self._edsdk._instance.is_enabled
 
     def terminate_edsdk(self):
         """Disconnects all EDSDK connections; and terminates the Canon EDSDK."""

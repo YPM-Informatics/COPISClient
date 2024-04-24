@@ -26,6 +26,7 @@ from glm import vec3
 from numpy import rot90
 
 import wx
+import wx.aui as x_aui
 import wx.lib.agw.aui as aui
 from copis.classes.device import Device
 
@@ -55,9 +56,9 @@ class PathgenToolbar(aui.AuiToolBar):
         # This allows the overflow button to be visible only when they don't;
         # no matter if the toolbar is floating or docked.
         self.Bind(wx.EVT_MOTION, lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
-
         self.Bind(wx.EVT_TOOL, self.on_tool_selected)
-
+        
+        
     def init_toolbar(self) -> None:
         """Initialize and populate toolbar.
 
@@ -87,7 +88,7 @@ class PathgenToolbar(aui.AuiToolBar):
         self.AddSpacer(5)
         self.Bind(wx.EVT_BUTTON, self.on_clear_path, self.AddControl(wx.Button(self, wx.ID_ANY, label='Clear Path', size=(75, -1))))
         self.AddSpacer(5)
-
+        
     def on_interleave_paths(self, _) -> None:
         """On interleave paths button pressed, rearrange poses to alternate by
         camera.

@@ -44,11 +44,7 @@ class ViewportPanel(wx.Panel):
         self._build_dimensions = parent.chamber_dimensions
         self._zoom_slider = None
 
-        self._glcanvas = GLCanvas3D(
-            self,
-            build_dimensions=self._build_dimensions,
-            every=100,
-            subdivisions=10)
+        self._glcanvas = GLCanvas3D(self, build_dimensions=self._build_dimensions, every=100,subdivisions=10)
         self.init_gui()
 
         self.Layout()
@@ -59,19 +55,17 @@ class ViewportPanel(wx.Panel):
         # add GLCanvas3D
         self.Sizer.Add(self._glcanvas, 1, wx.EXPAND|wx.ALL, 0)
 
-        navbar = wx.Panel(
-            self, wx.ID_ANY, size=(-1, 23), style=wx.BORDER_DEFAULT)
+        navbar = wx.Panel(self, wx.ID_ANY, size=(-1, 23), style=wx.BORDER_DEFAULT)
         navbar.Sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         navbar_left_sizer = wx.BoxSizer(wx.HORIZONTAL)
         navbar_right_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # add zoom slider and text
-        navbar_left_sizer.Add(wx.StaticText(navbar, wx.ID_ANY, 'Zoom'),
-            0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 5)
+        navbar_left_sizer.Add(wx.StaticText(navbar, wx.ID_ANY, 'Zoom'),0, wx.ALIGN_CENTER_VERTICAL|wx.LEFT, 5)
 
-        self._zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self._glcanvas.zoom_min * 10,
-            self._glcanvas.zoom_max * 10, size=(150, -1), style=wx.SL_HORIZONTAL)
+        #self._zoom_slider = wx.Slider(navbar, wx.ID_ANY, 10, self._glcanvas.zoom_min * 10,self._glcanvas.zoom_max * 10, size=(150, -1), style=wx.SL_HORIZONTAL)
+        self._zoom_slider = wx.Slider(navbar, id=wx.ID_ANY, value=10, minValue=int(self._glcanvas.zoom_min * 10), maxValue=int(self._glcanvas.zoom_max * 10), size=(150, -1), style=wx.SL_HORIZONTAL)
         self._zoom_slider.Bind(wx.EVT_SCROLL, self.on_zoom_slider)
         navbar_left_sizer.Add(self._zoom_slider, 0, wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, 5)
 
@@ -122,9 +116,9 @@ class ViewportPanel(wx.Panel):
         """Update GLCanvas3D zoom when slider is updated."""
         self._glcanvas.zoom = event.Int / 10
 
-    def set_zoom_slider(self, value: float) -> None:
+    def set_zoom_slider(self, value: int) -> None:
         """Update slider value."""
-        self._zoom_slider.Value = value * 10
+        self._zoom_slider.Value = int(value * 10)
 
     # --------------------------------------------------------------------------
     # Accessor methods

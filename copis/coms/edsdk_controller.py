@@ -23,7 +23,7 @@ from ctypes import c_int, c_ubyte, c_uint, c_void_p, sizeof, WINFUNCTYPE, string
 from dataclasses import dataclass
 
 from typing import ClassVar, List
-from mprop import mproperty
+#from mprop import mproperty
 
 from canon.EDSDKLib import (
     EDSDK, EdsAccess, EdsCapacity, EdsDeviceInfo, EdsErrorCodes, EdsEvfAf,
@@ -679,27 +679,27 @@ evf_focus = _instance.evf_focus
 attach_sys_db = _instance.attach_sys_db
 
 
-@mproperty
-def camera_count(mod) -> int:
-    """Returns camera count from the module."""
-    return mod._instance.camera_count
+#@mproperty
+#def camera_count(mod) -> int:
+#    """Returns camera count from the module."""
+#    return mod._instance.camera_count
 
-@mproperty
-def is_connected(mod) -> bool:
-    """Returns a flag indicating whether a device is connected."""
-    return mod._instance.is_connected
+#@mproperty
+#def is_connected(mod) -> bool:
+#    """Returns a flag indicating whether a device is connected."""
+#    return mod._instance.is_connected
 
-@mproperty
-def is_waiting_for_image(mod) -> bool:
-    """Returns a flag indicating whether we are waiting for an image; from the module."""
-    return mod._instance.is_waiting_for_image
+#@mproperty
+#def is_waiting_for_image(mod) -> bool:
+#    """Returns a flag indicating whether we are waiting for an image; from the module."""
+#    return mod._instance.is_waiting_for_image
 
-@mproperty
-def is_enabled(mod) -> bool:
-    """Returns a flag indicating whether EDSDK is enabled; from the module."""
-    return mod._instance.is_enabled
+#@mproperty
+#def is_enabled(mod) -> bool:
+#    """Returns a flag indicating whether EDSDK is enabled; from the module."""
+#    return mod._instance.is_enabled
 
-@mproperty
-def device_list(mod) -> List[EdsDeviceInfo]:
-    """Returns a list of descriptions of devices connected via edsdk; from the module."""
-    return mod._instance.device_list
+#@mproperty
+#def device_list(mod) -> List[EdsDeviceInfo]:
+#    """Returns a list of descriptions of devices connected via edsdk; from the module."""
+#    return mod._instance.device_list

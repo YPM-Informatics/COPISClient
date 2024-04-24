@@ -424,8 +424,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
             return
 
         scale = self.get_scale_factor()
-        event.x *= scale
-        event.y *= scale
+        event.x = int(event.x * scale)
+        event.y = int(event.y * scale)
 
         if event.Dragging():
             if event.LeftIsDown():

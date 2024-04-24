@@ -22,7 +22,7 @@ from typing import List
 
 import serial
 
-from mprop import mproperty
+#from mprop import mproperty
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
@@ -299,12 +299,12 @@ terminate = _instance.terminate
 attach_sys_db = _instance.attach_sys_db
 BAUDS = _instance.BAUDS
 
-@mproperty
-def is_port_open(mod) -> bool:
-    """Returns open status of the active port, from the module."""
-    return mod._instance.is_port_open
+#@mproperty
+#def is_port_open(mod) -> bool:
+#    """Returns open status of the active port, from the module."""
+#    return mod._instance.is_port_open
 
-@mproperty
-def port_list(mod) -> List[SerialPort]:
-    """Returns a copy of the serial ports list, from the module."""
-    return mod._instance.port_list
+#@mproperty
+#def port_list(mod) -> List[SerialPort]:
+#    """Returns a copy of the serial ports list, from the module."""
+#    return mod._instance.port_list
