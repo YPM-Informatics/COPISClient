@@ -93,10 +93,6 @@ class MachineToolbar(aui.AuiToolBar):
         self.start_imaging_btn = wx.Button(self, wx.ID_ANY, label='Start Imaging', size=(95, -1))
         self.Bind(wx.EVT_BUTTON, self.on_start_imaging, self.AddControl(self.start_imaging_btn))
 
-        _bmp = create_scaled_bitmap('export', 24)
-        self.AddTool(ToolIds.EXPORT.value, 'Export actions', _bmp, _bmp, aui.ITEM_NORMAL,
-            short_help_string='Export actions')
-
         # TODO: implement settings dialog, uncomment below
 
         # self.AddSeparator()
@@ -163,10 +159,12 @@ class MachineToolbar(aui.AuiToolBar):
         self.port_cb.Items = [p.name for p in self._core.serial_port_list]
 
     def on_tool_selected(self, event: wx.CommandEvent) -> None:
+        #This can be deleted?, not referenced anywhere
         """On toolbar tool selected, check which and process accordingly.
 
         TODO: Link with copiscore when implemented.
         """
+        print("machine: on_tool_selected")
         if event.Id == ToolIds.PLAY.value:
             if self.core.paused:
                 self.core.resume_work()
@@ -176,14 +174,10 @@ class MachineToolbar(aui.AuiToolBar):
             self._core.pause_work()
         elif event.Id == ToolIds.STOP.value:
             self._core.stop_work()
-
         elif event.Id == ToolIds.SETTINGS.value:
             with MachineSettingsDialog(self) as dlg:
                 print_debug_msg(self._core.console, 'Machine Settings opened.',
                     self._core.is_dev_env)
-
-        elif event.Id == ToolIds.EXPORT.value:
-            self._core.export_poses('actions.txt')
 
     def on_start_imaging(self, event: wx.CommandEvent) -> None:
         """On start imaging button pressed, initiate imaging workflow."""
@@ -205,7 +199,7 @@ class MachineToolbar(aui.AuiToolBar):
 
         pos = event.GetEventObject().GetScreenPosition()
         pane: aui.AuiPaneInfo = self.GetAuiManager().GetPane(self._parent.imaging_toolbar)
-
+        print("machine: on_start_imaging")
         def play_all_handler():
             self._core.start_imaging()
             pane.window.enable_tool(ToolIds.PAUSE)

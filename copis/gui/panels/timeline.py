@@ -23,17 +23,19 @@ import wx.lib.scrolledpanel as scrolled
 import wx.lib.agw as aui
 
 from pydispatch import dispatcher
-
+from typing import List
 from glm import vec3
 from copis.classes.action import Action
 from copis.classes.pose import Pose
+from copis.classes.device import Device
+from copis.gui import set_editor
 
+from copis.gui.set_editor import SetEditorFrame
 from copis.command_processor import serialize_command
 from copis.globals import ActionType, ToolIds
 from copis.gui.panels.pathgen_toolbar import PathgenPoint
-from copis.gui.wxutils import show_msg_dialog
-from copis.helpers import (create_action_args, get_atype_kind, get_heading, is_number,
-    print_debug_msg, rad_to_dd, sanitize_number, sanitize_point)
+from copis.gui.wxutils import show_msg_dialog, simple_statictext, FancyTextCtrl, create_scaled_bitmap
+from copis.helpers import create_action_args, get_atype_kind, get_heading, is_number, print_debug_msg, rad_to_dd, sanitize_number, sanitize_point, xyz_units, pt_units, dd_to_rad
 
 
 class TimelinePanel(wx.Panel):
@@ -253,6 +255,8 @@ class TimelinePanel(wx.Panel):
             self._buttons['image_btn'].Enable(True)
             self._buttons['add_btn'].Enable(True)
             self._buttons['reverse_btn'].Enable(True)
+            self._buttons['play_set_btn'].Enable(True)
+            self._buttons['edit_set_btn'].Enable(True)
         if data:
             self._buttons['delete_btn'].Enable(True)
             self._buttons['play_btn'].Enable(True)
@@ -272,6 +276,7 @@ class TimelinePanel(wx.Panel):
                 if self.core.project.can_add_pose(set_index, device_id):
                     self._buttons['paste_pose_btn'].Enable(True)
                 self._buttons['insert_pose_btn'].Enable(True)
+        #self._buttons['edit_set_btn'].Enable(True)
 
     def _get_index_poses(self, set_index, pose_index):
         sets = self.core.project.pose_sets
@@ -330,6 +335,7 @@ class TimelinePanel(wx.Panel):
         """Initialize gui elements."""
         timeline_sizer = wx.BoxSizer(wx.VERTICAL)
         self.timeline = wx.TreeCtrl(self)
+        #self.timeline = wx.TreeCtrl(self, style=wx.TR_MULTIPLE)
         btn_panel = scrolled.ScrolledPanel(self)
         btn_panel.SetupScrolling(scroll_x=False, scrollIntoView=False)
         btn_size = (85, -1)
@@ -379,29 +385,35 @@ class TimelinePanel(wx.Panel):
         delete_btn = wx.Button(btn_panel, label='Delete', size=btn_size)
         delete_btn.Bind(wx.EVT_BUTTON, self.on_delete_command)
         self._buttons['delete_btn'] = delete_btn
+        edit_set_btn = wx.Button(btn_panel, label='Bulk Editor', size=btn_size)
+        edit_set_btn.Bind(wx.EVT_BUTTON, self.on_edit_set_command)
+        self._buttons['edit_set_btn'] = edit_set_btn
         play_btn = wx.Button(btn_panel, label='Play', size=btn_size)
         play_btn.Bind(wx.EVT_BUTTON, self.on_play_command)
         self._buttons['play_btn'] = play_btn
         image_btn = wx.Button(btn_panel, label='Play All', size=btn_size)
         image_btn.Bind(wx.EVT_BUTTON, self.on_image_command)
         self._buttons['image_btn'] = image_btn
+        play_set_btn = wx.Button(btn_panel, label='Play From', size=btn_size)
+        play_set_btn.Bind(wx.EVT_BUTTON, self.on_play_set_command)
+        self._buttons['play_set_btn'] = play_set_btn
         # End Bind events ----
-        btn_sizer.AddMany([
-            (set_top_btn, 0, 0, 0),
-            (set_up_btn, 0, 0, 0),
-            (set_down_btn, 0, 0, 0),
-            (set_bottom_btn, 0, 0, 0),
-            (copy_pose_btn, 0, 0, 0),
-            (cut_pose_btn, 0, 0, 0),
-            (paste_pose_btn, 0, 0, 0),
-            (insert_pose_btn, 0, 0, 0),
-            (insert_pose_set_btn, 0, 0, 0),
-            (add_btn, 0, 0, 0),
-            (reverse_btn, 0, 0, 0),
-            (delete_btn, 0, 0, 0),
-            (play_btn, 0, 0, 0),
-            (image_btn, 0, 0, 0)
-        ])
+        btn_sizer.Add(set_top_btn, 0, 0, 0)
+        btn_sizer.Add(set_up_btn, 0, 0, 0)
+        btn_sizer.Add(set_down_btn, 0, 0, 0)
+        btn_sizer.Add(set_bottom_btn, 0, 0, 0)
+        btn_sizer.Add(copy_pose_btn, 0, 0, 0)
+        btn_sizer.Add(cut_pose_btn, 0, 0, 0)
+        btn_sizer.Add(paste_pose_btn, 0, 0, 0)
+        btn_sizer.Add(insert_pose_btn, 0, 0, 0)
+        btn_sizer.Add(insert_pose_set_btn, 0, 0, 0)
+        btn_sizer.Add(add_btn, 0, 0, 0)
+        btn_sizer.Add(reverse_btn, 0, 0, 0)
+        btn_sizer.Add(delete_btn, 0, 0, 0)
+        btn_sizer.Add(edit_set_btn, 0, 0, 0)
+        btn_sizer.Add(play_btn, 0, 0, 0)
+        btn_sizer.Add(image_btn, 0, 0, 0)
+        btn_sizer.Add(play_set_btn, 0, 0, 0)
         self._toggle_buttons()
         btn_panel.SetSizer(btn_sizer)
         btn_panel.Layout()
@@ -533,6 +545,65 @@ class TimelinePanel(wx.Panel):
         dialog.SetMinSize(dialog_size)
         dialog.Fit()
         dialog.ShowModal()
+    
+    def on_edit_set_command(self, event: wx.CommandEvent):
+        """Selection and advanced bulk editing of poses."""
+        start_idx = -1
+        end_idx = -1
+        set_editor = SetEditorFrame(self, "Pose Set Bulk Editor", self.core)
+        #set_editor.ShowModal()
+        #set_editor.Destroy()
+        set_editor.Show()
+        
+        #with _Editset_Dialog(self) as dlg:
+        #    if dlg.ShowModal() == wx.ID_OK:
+                #start_idx = int(dlg.start_pose_ctrl.GetValue())
+                #end_idx = int(dlg.end_pose_ctrl.GetValue())
+        #        if dlg.op == "Delete":
+        #            print("Do Delete")
+                    #for i in range(0,3):
+                    #    self.core.select_pose_set(-1)
+                    #    if len(self.core.project._pose_sets) > 3:
+                    #        self.core.project.delete_pose_set(i)
+                        
+                        #elif data['item'] == 'pose':
+                        #    set_index = data['set index']
+                        #    pose_index = data['index']
+                        #    prev_pose_index = pose_index - 1
+                        #    self.core.project.delete_pose(set_index, pose_index)
+
+         
+
+    def on_play_set_command(self, event: wx.CommandEvent):
+        """Plays the selected pose or pose set."""
+        can_image =  self._assert_can_image()
+        start_idx = -1
+        end_idx = -1
+        if can_image:
+            with _Playset_Dialog(self) as dlg:
+                if dlg.ShowModal() == wx.ID_OK:
+                    start_idx = int(dlg.start_pose_ctrl.GetValue())
+                    end_idx = int(dlg.end_pose_ctrl.GetValue())
+         
+        print(f'start imaging at pose:{start_idx}')
+        print(f'end imaging at pose:{end_idx}')
+        if start_idx >= 0 and end_idx >=0:
+            pos = event.GetEventObject().GetScreenPosition()
+            pane: aui.AuiPaneInfo = self._parent.imaging_toolbar.GetAuiManager().GetPane(self._parent.imaging_toolbar)
+            #poses = self.core.project.pose_sets[start_idx:end_idx+1]
+            def play_all_handler():
+                self.core.start_imaging(start_idx,end_idx)
+                pane.window.enable_tool(ToolIds.PAUSE)
+                pane.window.enable_tool(ToolIds.STOP)
+            def pause_handler():
+                self.core.pause_work()
+            def stop_handler():
+                self.core.stop_work()
+            actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
+                (ToolIds.PAUSE, False, pause_handler),
+                (ToolIds.STOP, False, stop_handler)]
+            self._parent.show_imaging_toolbar(pos, actions)
+            dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
     def on_play_command(self, event: wx.CommandEvent):
         """Plays the selected pose or pose set."""
@@ -556,21 +627,23 @@ class TimelinePanel(wx.Panel):
     def on_image_command(self, event: wx.CommandEvent):
         """Start the imaging run (plays all poses)."""
         can_image = self._assert_can_image()
-        pos = event.GetEventObject().GetScreenPosition()
-        pane: aui.AuiPaneInfo = self._parent.imaging_toolbar.GetAuiManager().GetPane(self._parent.imaging_toolbar)
-        def play_all_handler():
-            self.core.start_imaging()
-            pane.window.enable_tool(ToolIds.PAUSE)
-            pane.window.enable_tool(ToolIds.STOP)
-        def pause_handler():
-            self.core.pause_work()
-        def stop_handler():
-            self.core.stop_work()
-        actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
-            (ToolIds.PAUSE, False, pause_handler),
-            (ToolIds.STOP, False, stop_handler)]
-        self._parent.show_imaging_toolbar(pos, actions)
-        dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
+        if can_image:
+            pos = event.GetEventObject().GetScreenPosition()
+            pane: aui.AuiPaneInfo = self._parent.imaging_toolbar.GetAuiManager().GetPane(self._parent.imaging_toolbar)
+            #print("timeline on_image_command")
+            def play_all_handler():
+                self.core.start_imaging()
+                pane.window.enable_tool(ToolIds.PAUSE)
+                pane.window.enable_tool(ToolIds.STOP)
+            def pause_handler():
+                self.core.pause_work()
+            def stop_handler():
+                self.core.stop_work()
+            actions = [(ToolIds.PLAY_ALL, True, play_all_handler),
+                (ToolIds.PAUSE, False, pause_handler),
+                (ToolIds.STOP, False, stop_handler)]
+            self._parent.show_imaging_toolbar(pos, actions)
+            dispatcher.connect(self._parent.hide_imaging_toolbar, signal='ntf_machine_idle')
 
     def on_copy_command(self, _):
         """Copies the selected pose."""
@@ -693,3 +766,218 @@ class TimelinePanel(wx.Panel):
             if keep_imaging_path_selected:
                 self.timeline.SelectItem(root)
         self._toggle_buttons()
+        
+
+
+class _Playset_Dialog(wx.Dialog):
+    """Dialog to select a range of poses for playing."""
+    def __init__(self, parent, *args, **kwargs):
+        indent = '    '
+        options_grid = wx.FlexGridSizer(rows=14, cols=2, vgap=12, hgap=8)
+        mouse_pos = wx.GetMousePosition()
+        mouse_pos[0] = mouse_pos[0] - 300
+        mouse_pos[1] = mouse_pos[1] - 300
+        super().__init__(parent=parent, id=wx.ID_ANY, title='Select Range of Poses', size=(200, -1), pos=mouse_pos)
+        
+        self.parent = parent
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.start_pose_ctrl = wx.TextCtrl(self, size=(48, -1), value='0')     
+        self.end_pose_ctrl = wx.TextCtrl(self, size=(48, -1), value='0')    
+
+        options_grid.Add(simple_statictext(self, 'Start Pose Index:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(self.start_pose_ctrl, 0, wx.EXPAND|wx.TOP, 0)    
+
+        options_grid.Add(simple_statictext(self, 'End Pose Index:', 30), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(self.end_pose_ctrl, 0, wx.EXPAND|wx.TOP, 0)
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+
+       
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        
+        button_sizer.Realize()
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+        self.Layout()
+        #self.SetMinSize((200, -1))
+        self.SetMinSize((200, -1))
+        self.Fit()
+        # ---
+
+        self.start_pose_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.end_pose_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+       
+    def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
+        if (self.start_pose_ctrl.Value == '' or not is_number(self.start_pose_ctrl.Value) or
+            self.end_pose_ctrl.Value == '' or not is_number(self.end_pose_ctrl.Value)):        
+                self._affirmative_button.Disable()
+                return
+        if (not self.start_pose_ctrl.Value.isdigit() or not self.end_pose_ctrl.Value.isdigit()):        
+                self._affirmative_button.Disable()
+                return
+        if (int(self.start_pose_ctrl.Value) < 0 or int(self.end_pose_ctrl.Value) < 0):        
+                self._affirmative_button.Disable()
+                return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
+        
+
+class _Editset_Dialog(wx.Dialog):
+    """Dialog for selecting a set of poses and applying bulk edits to them."""
+    def __init__(self, parent, *args, **kwargs):
+        mouse_pos = wx.GetMousePosition()
+        mouse_pos[0] = mouse_pos[0] - 300
+        mouse_pos[1] = mouse_pos[1] - 300
+        super(_Editset_Dialog, self).__init__(parent=parent, id=wx.ID_ANY, title='Select Range of Poses', size=(200, -1), pos=mouse_pos)
+        
+        self._device_choices = list(map(lambda x: f'{x.device_id} ({x.name})',parent.core.project.devices))
+        self.parent = parent
+        unit = 'mm'
+        rotational_unit = 'dd'
+        indent = '    '
+        self.Sizer = wx.BoxSizer(wx.HORIZONTAL)   
+        #self.Sizer = wx.BoxSizer(wx.VERTICAL)   
+        options_grid = wx.FlexGridSizer(rows=20, cols=2, vgap=12, hgap=8)
+        options_grid.AddGrowableCol(1, 0)
+        
+        self.device_checklist = wx.CheckListBox(self, choices=self._device_choices)
+        self.start_pose_ctrl = wx.TextCtrl(self, size=(48, -1), value='0')     
+        self.end_pose_ctrl = wx.TextCtrl(self, size=(48, -1), value='0')
+        
+        self.bb_start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_start_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_start_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_end_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_end_y_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_end_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=unit, unit_conversions=xyz_units)
+        self.bb_spec_p_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)
+        self.bb_spec_t_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0, default_unit=rotational_unit, unit_conversions=pt_units)        
+
+        
+        options_grid.Add(simple_statictext(self, 'Devices:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(0, 0)
+        options_grid.Add(0, 0)
+        options_grid.Add(self.device_checklist, 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        
+        options_grid.Add(simple_statictext(self, 'Pose Range:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(0, 0)
+        
+        options_grid.Add(simple_statictext(self, f'{indent} Start Pose Index:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.start_pose_ctrl, 0, wx.EXPAND|wx.TOP, -11)    
+
+        options_grid.Add(simple_statictext(self, f'{indent} End Pose Index:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.end_pose_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid.Add(simple_statictext(self, 'Bounding Box:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        options_grid.Add(0, 0)
+        
+        options_grid.Add(simple_statictext(self, f'{indent} Start X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} Start Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} Start Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} End X ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} End Y ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_end_y_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} End Z ({unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+        options_grid.Add(simple_statictext(self, f'{indent} Specific P ({rotational_unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_spec_p_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        options_grid.Add(simple_statictext(self, f'{indent} Specific T ({rotational_unit}):', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11)
+        options_grid.Add(self.bb_spec_t_ctrl, 0, wx.EXPAND|wx.TOP, -11)
+        
+
+        #options_grid.Add(simple_statictext(self, f'{indent} Tags:', 72), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        #options_grid.Add(0, 0)
+
+        self.ops = ["Change Device", "Change Payload", "Adjust Position", "Retarget", "Delete", "Move Before", "Move After"]
+        self.operations_ctrl = wx.Choice(self, choices=self.ops)        
+        self.operations_grid = wx.FlexGridSizer(rows=5, cols=2, vgap=12, hgap=8)
+        self.operations_grid.AddGrowableCol(1, 0)
+
+        self.operations_grid.Add(simple_statictext(self, 'Operation:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        self.operations_grid.Add(self.operations_ctrl, 0, wx.EXPAND, 0)      
+
+        self.Sizer.Add(options_grid, 1, wx.ALL | wx.EXPAND, 4)
+        self.Sizer.AddSpacer(8)
+        self.Sizer.Add(self.operations_grid, 1, 0, 4)
+        self.Sizer.AddSpacer(8)
+
+       
+        button_sizer = self.CreateStdDialogButtonSizer(0)
+        self._affirmative_button = wx.Button(self, wx.ID_OK)
+        self._affirmative_button.Disable()
+        button_sizer.SetAffirmativeButton(self._affirmative_button)
+        button_sizer.SetCancelButton(wx.Button(self, wx.ID_CANCEL))
+        button_sizer.Realize()
+        self.Sizer.Add(button_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 4)
+        self.Layout()
+        self.SetMinSize((200, -1))
+        self.Fit()
+        # ---
+
+        self.start_pose_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.end_pose_ctrl.Bind(wx.EVT_TEXT, self._on_ctrl_update)
+        self.operations_ctrl.Bind(wx.EVT_CHOICE, self._on_operation_selected)
+       
+    def _on_ctrl_update(self, _) -> None:
+        """Enable the affirmative (OK) button if all fields have values."""
+        if (self.start_pose_ctrl.Value == '' or not is_number(self.start_pose_ctrl.Value) or
+            self.end_pose_ctrl.Value == '' or not is_number(self.end_pose_ctrl.Value)):        
+                self._affirmative_button.Disable()
+                return
+        if (not self.start_pose_ctrl.Value.isdigit() or not self.end_pose_ctrl.Value.isdigit()):        
+                self._affirmative_button.Disable()
+                return
+        if (int(self.start_pose_ctrl.Value) < 0 or int(self.end_pose_ctrl.Value) < 0):        
+                self._affirmative_button.Disable()
+                return
+
+        self._affirmative_button.Enable()
+        self._affirmative_button.SetDefault()
+    
+    def _on_operation_selected(self, event):
+        self.op = self.operations_ctrl.GetStringSelection()
+        self.operations_grid.Clear(delete_windows=True)
+        self.operations_ctrl = wx.Choice(self, choices=self.ops)
+        self.operations_ctrl.SetSelection(self.ops.index(self.op))
+        self.operations_grid.Add(simple_statictext(self, 'Operation:', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+        self.operations_grid.Add(self.operations_ctrl, 0, wx.EXPAND, 0)
+        if self.op == "Change Device":
+            self.operations_grid.Add(simple_statictext(self, 'Change Devices Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0)
+        elif self.op == "Change Payload":
+            self.operations_grid.Add(simple_statictext(self, 'Change Payload Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0) 
+        elif self.op == "Adjust Position":
+            self.operations_grid.Add(simple_statictext(self, 'Adjust Position Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0) 
+        elif self.op == "Retarget":
+            self.operations_grid.Add(simple_statictext(self, 'Retarget Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0) 
+        elif self.op == "Delete":
+            self.operations_grid.Add(simple_statictext(self, 'Delete Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0) 
+        elif self.op == "Move To":
+            self.operations_grid.Add(simple_statictext(self, 'Move To Coming Soon', 200), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0)
+            self.operations_grid.Add(0, 0) 
+        self.operations_ctrl.Bind(wx.EVT_CHOICE, self._on_operation_selected)
+        
+        self.operations_grid.Add(self.image_ctrl, 0, wx.CENTER | wx.ALL, 10)
+
+        self.Layout()    
+        self.Fit()
+        
+    
+
+                        
+

@@ -247,6 +247,7 @@ def interleave_poses(poses: List[Pose]) -> List[Pose]:
 
     return interleaved
 
+
 def build_pose_sets(poses: List[Pose]) -> List[List[Pose]]:
     """Arranges a pose list into a pose set list.
         Each set contains at most one pose per device."""
@@ -254,17 +255,13 @@ def build_pose_sets(poses: List[Pose]) -> List[List[Pose]]:
         return poses
     sets = []
     set_ = []
-
     for pose in poses:
         if set_ and any(p.position.device == pose.position.device for p in set_):
             sets.append(set_)
             set_ = []
-
         set_.append(pose)
-
     if set_:
         sets.append(set_)
-
     return sets
 
 def _build_poses(ordered_points, clearance_indexes, lookat):

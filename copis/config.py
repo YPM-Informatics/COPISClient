@@ -44,11 +44,18 @@ class Config():
         self._machine_settings = self._populate_machine_settings()
         self._log_serial_tx = False
         self._log_serial_rx = False
+        self._homing_method = ''
         db_path = store.get_sys_db_path()
         if db_path and self._config_parser.has_option('System', 'log_serial_tx'):
             self._log_serial_tx = _get_bool(self._config_parser['System']['log_serial_tx'])
         if db_path and self._config_parser.has_option('System', 'log_serial_rx'):
             self._log_serial_rx = _get_bool(self._config_parser['System']['log_serial_rx'])
+        if self._config_parser.has_option('System', 'homing_method'):
+                self._homing_method = self._config_parser['System']['homing_method']
+    @property
+    def homing_method(self) -> bool:
+        """Returns a flag indicating whether to log serial Tx, if a database is configured."""
+        return self._homing_method
 
     @property
     def log_serial_tx(self) -> bool:

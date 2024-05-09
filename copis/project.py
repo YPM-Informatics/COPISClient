@@ -62,6 +62,8 @@ class Project():
             self._devices = None
         if not hasattr(self, '_proxies'):
             self._proxies = None
+        if not hasattr(self, '_adhocs'):     #NR
+            self._adhocs = None              
         if not hasattr(self, '_pose_sets'):
             self._pose_sets = None
         if not hasattr(self, '_core'):
@@ -72,6 +74,7 @@ class Project():
         dispatcher.connect(self._set_is_dirty, signal='ntf_a_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_d_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_o_list_changed')
+        dispatcher.connect(self._set_is_dirty, signal='ntf_adhocs_list_changed') #NR
 
     @property
     def path(self) -> str:
@@ -87,6 +90,11 @@ class Project():
     def proxies(self) -> List[Object3D]:
         """Returns the list of proxy objects."""
         return self._proxies
+    
+    @property  #NR
+    def adhocs(self) -> List[Object3D]:              #NR
+        """Returns (dict of lists [todo]) list of adhoc objects that can be displayed as needed."""     #NR
+        return self._adhocs                          #NR
 
     @property
     def pose_sets(self) -> List[List[Pose]]:
@@ -199,6 +207,7 @@ class Project():
             self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
 
     def _init_proxies(self, proxies=None):
+        
         if proxies is None:
             # Start with handsome dan :)
             # On init a new project is created with handsome dan as the proxy.
@@ -208,8 +217,8 @@ class Project():
             self._proxies.clear(False)
             self._proxies.extend(proxies)
         else:
-            self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed',
-                proxies)
+            self._proxies: List[Object3D] = MonitoredList('ntf_o_list_changed', proxies)
+            self._adhocs: List[Object3D] = MonitoredList('ntf_adhocs_list_changed')         #NR
 
     def _init_pose_sets(self, sets=None):
         if self._pose_sets is not None:

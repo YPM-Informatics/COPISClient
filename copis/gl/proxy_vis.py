@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
 
-"""GLObjectVis class.
+"""GLProxyVis class.
 
 TODO: on ntf_o_list_changed, update only vao's which have been modified, not everything
 """
@@ -40,7 +40,7 @@ from copis.globals import MAX_ID
 
 
 @dataclass
-class Mesh():
+class ProxyMesh():
     """Object mesh."""
     color: glm.vec4
     count: int
@@ -49,17 +49,15 @@ class Mesh():
     selected: bool
 
 
-class GLObjectVis:
+class GLProxyVis:
     """Manage proxy object rendering in a GLCanvas."""
 
     def __init__(self, parent):
         """Initialize GLActionVis with constructors."""
         self.parent = parent
         self.core = self.parent.core
-
         self._initialized = False
-
-        self._meshes: List[Mesh] = []
+        self._meshes: List[ProxyMesh] = []
 
     def init(self) -> bool:
         """Initialize for rendering."""
@@ -101,7 +99,6 @@ class GLObjectVis:
                 continue
 
             vbo = glGenBuffers(3)
-
             # vertices
             glBindBuffer(GL_ARRAY_BUFFER, vbo[0])
             glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW)
@@ -118,7 +115,7 @@ class GLObjectVis:
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2])
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW)
 
-            self._meshes.append(Mesh(
+            self._meshes.append(ProxyMesh(
                 color=vec4(0.8, 0.8, 0.8, 0.85),
                 count=indices.length * 3,
                 vao=vao,
@@ -171,6 +168,6 @@ class GLObjectVis:
         glUseProgram(0)
 
     @property
-    def objects(self) -> List[Mesh]:
+    def objects(self) -> List[ProxyMesh]:
         """List of meshes."""
         return self._meshes

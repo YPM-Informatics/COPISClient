@@ -69,6 +69,7 @@ def get_cylinder_vertices(cylinder: CylinderObject3D,
     return glm.array(vertices), glm.array(normals), glm.array(indices)
 
 
+
 def get_aabb_vertices(aabb: AABoxObject3D) -> Tuple[glm.array, glm.array, glm.array]:
     """Get vertices, normals, and indices for an axis-aligned box object.
 

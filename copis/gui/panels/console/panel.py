@@ -64,7 +64,6 @@ class ConsolePanel(wx.Panel):
         dispatcher.connect(self.on_notification, signal='ntf_d_deselected')
         dispatcher.connect(self.on_notification, signal='ntf_o_selected')
         dispatcher.connect(self.on_notification, signal='ntf_o_deselected')
-        dispatcher.connect(self.on_action_export, signal='ntf_a_exported')
 
         dispatcher.connect(self.on_notification, signal='msg_error')
         dispatcher.connect(self.on_notification, signal='msg_info')
@@ -149,10 +148,3 @@ class ConsolePanel(wx.Panel):
             notification = get_notification_msg(signal, message)
             self.print(notification)
 
-    def on_action_export(self, filename: str = None) -> None:
-        """Print action exported message."""
-        location = '' if filename is None else f' to file {filename}'
-        notification = get_notification_msg('msg_info',
-            get_timestamped(f'Actions exported{location}'))
-
-        self.print(notification)

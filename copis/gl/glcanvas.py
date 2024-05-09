@@ -48,9 +48,11 @@ from copis.mathutils import arcball
 from copis.globals import MAX_ID
 from copis.helpers import print_error_msg
 from .actionvis import GLActionVis
-from .objectvis import GLObjectVis
+from .proxy_vis import GLProxyVis
 from .chamber import GLChamber
 from .viewcube import GLViewCube
+from .adhocvis import GLAdHocs      #NR
+from copis.gl import adhocvis #NR
 
 
 class _Size(NamedTuple):
@@ -128,7 +130,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._chamber = GLChamber(self, build_dimensions, every, subdivisions)
         self._viewcube = GLViewCube(self)
         self._actionvis = GLActionVis(self)
-        self._objectvis = GLObjectVis(self)
+        self._proxyvis = GLProxyVis(self)
+        self._adhocs = GLAdHocs(self)    #NR
 
         # other values
         self._zoom = 1.1
@@ -150,8 +153,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         dispatcher.connect(self._update_devices, signal='ntf_device_ser_updated')
         dispatcher.connect(self._update_objects, signal='ntf_o_list_changed')
         dispatcher.connect(self._deselect_object, signal='ntf_o_deselected')
-
         dispatcher.connect(self._handle_device_homed, signal='ntf_device_homed')
+        dispatcher.connect(self._update_adhocs, signal='ntf_adhocs_list_changed')  #NR
+        
 
         # Bind events.
         self._canvas.Bind(wx.EVT_SIZE, self.on_size)
@@ -164,6 +168,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._canvas.Bind(wx.EVT_ERASE_BACKGROUND, self.on_erase_background)
         self._canvas.Bind(wx.EVT_PAINT, self.on_paint)
         self._canvas.Bind(wx.EVT_SET_FOCUS, self.on_set_focus)
+        
+        
 
     def init_opengl(self) -> bool:
         """Initialize and set OpenGL capabilities.
@@ -315,8 +321,18 @@ class GLCanvas3D(glcanvas.GLCanvas):
         Handles ntf_o_list_changed signal.
         """
         self._num_objects = len(self.core.project.proxies)
-        wx.CallAfter(self._objectvis.update_objects)
+        wx.CallAfter(self._proxyvis.update_objects)
         self._dirty = True
+
+    def _update_adhocs(self) -> None:                           #NR
+        """When the proxy object list has changed,              #NR
+        update objectvis and _num_objects.                      #NR
+        Handles ntf_o_list_changed signal.                      #NR
+        """                                                     #NR
+        #print("adhoc_updated")                                  #NR
+        self._num_adhocs = len(self.core.project.adhocs)        #NR
+        wx.CallAfter(self._adhocs.update_objects)         #NR
+        self._dirty = True                                      #NR
 
     # @timing
     def render(self):
@@ -349,8 +365,9 @@ class GLCanvas3D(glcanvas.GLCanvas):
         self._render_chamber()
         self._render_actions_and_cameras()
         self._render_objects()
+        self._render_adhocs() #NR
         self._render_viewcube()
-
+    
         self._canvas.SwapBuffers()
 
     # --------------------------------------------------------------------------
@@ -390,7 +407,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
         # delete selected proxy object if backspace
         elif keycode == wx.WXK_BACK or keycode == wx.WXK_DELETE:
-            for obj in reversed(self._objectvis.objects):
+            for obj in reversed(self._proxyvis.objects):
                 if obj.selected:
                     self.core.select_proxy(-1)
                     self.core.project.proxies.pop(obj.object_id)
@@ -494,17 +511,17 @@ class GLCanvas3D(glcanvas.GLCanvas):
     def select_object(self, id_: int) -> None:
         """Select proxy object given id."""
         if id_ < 0:
-            if len(self._objectvis.objects) > 0 and \
-                any(obj.selected for obj in self._objectvis.objects):
+            if len(self._proxyvis.objects) > 0 and \
+                any(obj.selected for obj in self._proxyvis.objects):
                 self.core.select_proxy(-1)
 
-        elif id_ in (x.object_id for x in self._objectvis.objects):
+        elif id_ in (x.object_id for x in self._proxyvis.objects):
             self.core.select_device(-1)
             self.core.select_pose(-1)
             self.core.select_pose_set(-1)
             self.core.select_proxy(-1)
 
-            for obj in self._objectvis.objects:
+            for obj in self._proxyvis.objects:
                 is_obj_found = obj.object_id == id_
                 obj.selected = is_obj_found
                 if is_obj_found:
@@ -516,7 +533,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
             print_error_msg(self.core.console, f'Proxy object index {id_} is out of range.')
 
     def _deselect_object(self) -> None:
-        for obj in self._objectvis.objects:
+        for obj in self._proxyvis.objects:
             obj.selected = False
 
         self._dirty = True
@@ -632,7 +649,7 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects_for_picking(self) -> None:
         """Render objects with RGB color corresponding to id for picking."""
-        self._objectvis.render_for_picking()
+        self._proxyvis.render_for_picking()
         self._actionvis.render_for_picking()
         self._viewcube.render_for_picking()
 
@@ -650,8 +667,8 @@ class GLCanvas3D(glcanvas.GLCanvas):
 
     def _render_objects(self) -> None:
         """Render proxy objects."""
-        if self._objectvis is not None:
-            self._objectvis.render()
+        if self._proxyvis is not None:
+            self._proxyvis.render()
 
     def _render_actions_and_cameras(self) -> None:
         """Render paths."""
@@ -662,6 +679,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
         """Render ViewCube."""
         if self._viewcube is not None:
             self._viewcube.render()
+    
+    def _render_adhocs(self) -> None: #NR
+        if self._adhocs is not None:   #NR
+            self._adhocs.render()    #NR
 
     # --------------------------------------------------------------------------
     # Accessor methods

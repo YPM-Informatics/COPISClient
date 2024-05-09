@@ -462,10 +462,6 @@ class MainWindow(wx.Frame):
                 print_error_msg(self.core.console,
                 f'An exception occurred while saving the project: {err.args[0]}')
 
-    def on_export(self, _) -> None:
-        """Exports action list as series of G-code commands."""
-        self.core.export_poses("./test.copis")
-
     def do_load_legacy_actions(self, path: str) -> None:
         """Loads legacy actions from file Path."""
         poses = store.load_pickle(path, [])

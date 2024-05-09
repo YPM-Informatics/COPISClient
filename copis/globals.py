@@ -54,7 +54,6 @@ class ToolIds(Enum):
     SNAP_SHOT = 5
     SNAP_SHOTS = 6
     SETTINGS = 7
-    EXPORT = 8
 
 
 class PathIds(Enum):

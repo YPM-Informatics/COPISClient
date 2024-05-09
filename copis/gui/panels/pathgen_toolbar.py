@@ -31,11 +31,9 @@ import wx.lib.agw.aui as aui
 from copis.classes.device import Device
 
 from copis.globals import PathIds, Point5
-from copis.gui.wxutils import (
-    FancyTextCtrl, create_scaled_bitmap, simple_statictext)
+from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_statictext
 from copis.helpers import is_number, print_debug_msg, xyz_units, pt_units, dd_to_rad
-from copis.pathutils import (build_pose_from_XYZPT, build_pose_sets, create_circle, create_helix, create_line,
-    interleave_poses, process_path, create_slot_along_x, get_heading, build_poses_from_XYZPT)
+from copis.pathutils import build_pose_from_XYZPT, build_pose_sets, create_circle, create_helix, create_line, interleave_poses, process_path, create_slot_along_x, get_heading, build_poses_from_XYZPT
 
 
 class PathgenToolbar(aui.AuiToolBar):

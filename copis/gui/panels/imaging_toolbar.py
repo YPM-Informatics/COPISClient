@@ -30,8 +30,7 @@ class ImagingToolbar(aui.AuiToolBar):
     """Manage imaging toolbar."""
 
     def __init__(self, parent):
-        super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=
-            aui.AUI_TB_PLAIN_BACKGROUND)
+        super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
         
         self._parent = parent
         self._core = self._parent.core
@@ -44,8 +43,7 @@ class ImagingToolbar(aui.AuiToolBar):
         # when the toolbar is floating, even if all the items fit.
         # This allows the overflow button to be visible only when they don't;
         # no matter if the toolbar is floating or docked.
-        self.Bind(wx.EVT_MOTION,
-            lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
+        self.Bind(wx.EVT_MOTION,lambda _: self.SetOverflowVisible(not self.GetToolBarFits()))
 
         self.Bind(wx.EVT_TOOL, self._on_tool_selected)
         
