@@ -19,7 +19,7 @@ TODO: on ntf_o_list_changed, update only vao's which have been modified, not eve
 """
 
 from dataclasses import dataclass
-from ssl import VERIFY_ALLOW_PROXY_CERTS
+
 from typing import List
 
 from glm import vec3, vec4
