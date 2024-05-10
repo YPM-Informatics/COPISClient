@@ -138,7 +138,7 @@ class GLAdHocs:
 
     def render_for_picking(self) -> None:
         """Render proxy objects for picking pass."""
-        print("rfp")
+        #print("rfp")
         if not self.init():
            return
         proj = self.parent.projection_matrix

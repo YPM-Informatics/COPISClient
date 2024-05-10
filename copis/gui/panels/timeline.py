@@ -310,7 +310,7 @@ class TimelinePanel(wx.Panel):
 
     def _on_key_up(self, event: wx.KeyEvent):
         keycode = event.KeyCode
-        print(keycode)
+        #print(keycode)
         # Delete selected treeview item on delete key pressed.
         if keycode == wx.WXK_DELETE:
             self.on_delete_command(event)
