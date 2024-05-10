@@ -324,18 +324,16 @@ class COPISCore:
         g_code = str(atype).split('.')[1]
         if self.config.homing_method == 'ypmhack':
             for dvc in self.project.devices:
+                feed_rate = 1500
                 device_id = dvc.device_id
                 cmd_id = ''
                 cmd_str_1 = ''
                 cmd_str_2 = ''
                 x, y, z, p, t = self._get_device(device_id).home_position
-
                 if device_id > 0:
                     cmd_id = f'>{device_id}'
-
                 cmd_str_1 = f'{cmd_id}{g_code}Z{z}'
                 cmd_str_2 = f'{cmd_id}{g_code}X{x}Y{y}P{p}T{t}{f"F{feed_rate}" if g_code == "G1" else ""}'
-
                 step_1.append(deserialize_command(cmd_str_1))
                 step_2.append(deserialize_command(cmd_str_2))
                 feed_rate += 1000
