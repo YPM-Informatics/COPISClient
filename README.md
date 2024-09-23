@@ -9,7 +9,7 @@ For more information, see the project page at [copis3d.org](http://copis3d.org/)
 ## Getting Started
 
 ### Installation
-
+ 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install any necessary project dependencies.
 
 ```bash
