@@ -109,7 +109,7 @@ class GLAdHocs:
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2])
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW)
         
-            self._meshes.append(AdHocObj3D(color=vec4(0.1, 0.8, 0.8, 0.15), count=indices.length * 3, vao=vao, object_id=obj_id, selected=False))
+            self._meshes.append(AdHocObj3D(color=vec4(0.1, 0.8, 0.8, 0.5), count=indices.length * 3, vao=vao, object_id=obj_id, selected=False))
             glBindVertexArray(0)
 
     def render(self) -> None:
@@ -120,7 +120,7 @@ class GLAdHocs:
         proj = self.parent.projection_matrix
         view = self.parent.modelview_matrix
         
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         glUseProgram(self.parent.shaders['diffuse'])
         glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
         glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
@@ -132,9 +132,10 @@ class GLAdHocs:
             glDrawElements(GL_TRIANGLES, mesh.count, GL_UNSIGNED_INT, ctypes.c_void_p(0))
 
         glBindVertexArray(0)
-        glUseProgram(0)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        #glUseProgram(0)
+        #glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         #glEnable(GL_LINE_SMOOTH)
+        glUseProgram(0)
 
     def render_for_picking(self) -> None:
         """Render proxy objects for picking pass."""

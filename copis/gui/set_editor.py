@@ -258,6 +258,18 @@ class SetEditorFrame(wx.Dialog):
         if self.selected_op == "Deinterleave":       
             self.pose_count_label.SetLabel(f"{len(self.core.project.poses)} pose(s) selected.")
         else:
+            min_x = min(self.bb_start_x_ctrl.num_value,self.bb_end_x_ctrl.num_value)
+            max_x = max(self.bb_start_x_ctrl.num_value,self.bb_end_x_ctrl.num_value)
+            min_y = min(self.bb_start_y_ctrl.num_value,self.bb_end_y_ctrl.num_value)
+            max_y = max(self.bb_start_y_ctrl.num_value,self.bb_end_y_ctrl.num_value)
+            min_z = min(self.bb_start_z_ctrl.num_value,self.bb_end_z_ctrl.num_value)
+            max_z = max(self.bb_start_z_ctrl.num_value,self.bb_end_z_ctrl.num_value)
+            min_p = min(self.bb_start_p_ctrl.num_value,self.bb_end_p_ctrl.num_value)
+            max_p = max(self.bb_start_p_ctrl.num_value,self.bb_end_p_ctrl.num_value)
+            min_t = min(self.bb_start_t_ctrl.num_value,self.bb_end_t_ctrl.num_value)
+            max_t = max(self.bb_start_t_ctrl.num_value,self.bb_end_t_ctrl.num_value)
+            lower = vec3(min_x,min_y, min_z)
+            upper = vec3(max_x,max_y,max_z)
             filter_check = False
             for i, p in enumerate(self._op_deinterleave_to_poses_copy(self.deinterleave_algo)):
                 p5 = p.position_as_point5
@@ -267,19 +279,6 @@ class SetEditorFrame(wx.Dialog):
                     else:
                         continue    
                 if self.filter_bb.IsChecked():
-                    min_x = min(self.bb_start_x_ctrl.num_value,self.bb_end_x_ctrl.num_value)
-                    max_x = max(self.bb_start_x_ctrl.num_value,self.bb_end_x_ctrl.num_value)
-                    min_y = min(self.bb_start_y_ctrl.num_value,self.bb_end_y_ctrl.num_value)
-                    max_y = max(self.bb_start_y_ctrl.num_value,self.bb_end_y_ctrl.num_value)
-                    min_z = min(self.bb_start_z_ctrl.num_value,self.bb_end_z_ctrl.num_value)
-                    max_z = max(self.bb_start_z_ctrl.num_value,self.bb_end_z_ctrl.num_value)
-                    min_p = min(self.bb_start_p_ctrl.num_value,self.bb_end_p_ctrl.num_value)
-                    max_p = max(self.bb_start_p_ctrl.num_value,self.bb_end_p_ctrl.num_value)
-                    min_t = min(self.bb_start_t_ctrl.num_value,self.bb_end_t_ctrl.num_value)
-                    max_t = max(self.bb_start_t_ctrl.num_value,self.bb_end_t_ctrl.num_value)
-                    lower = vec3(min_x,min_y, min_z)
-                    upper = vec3(max_x,max_y,max_z)
-                    self.core.project.adhocs.append(AABoxObject3D(lower, upper))
                     if (min_x <= p5.x <= max_x and min_y <= p5.y <= max_y and min_z <=  p5.z <= max_z and min_p <=  rad_to_dd(p5.p) <= max_p and min_t <=  rad_to_dd(p5.t) <= max_t):
                             filter_check = True
                     else: 
@@ -291,6 +290,8 @@ class SetEditorFrame(wx.Dialog):
                         continue
                 if filter_check:
                     filtered_idxs.append(i)
+            if self.filter_bb.IsChecked():
+                self.core.project.adhocs.append(AABoxObject3D(lower, upper))
             self.pose_count_label.SetLabel(f"{len(filtered_idxs)} pose(s) selected.")
         return filtered_idxs
     
