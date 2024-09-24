@@ -35,3 +35,4 @@ class COPISConsole(cmd.Cmd):
         cmd.Cmd.__init__(self)
 
         self.c = COPISCore()
+        

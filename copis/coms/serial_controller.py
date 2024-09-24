@@ -92,7 +92,7 @@ class SerialController():
 
         self._console = console
         self._is_dev_env = is_dev_env
-
+        
         self.update_port_list()
 
     def attach_sys_db(self, sys_db : SysDB, log_options: dict=None) -> bool:
@@ -242,8 +242,10 @@ class SerialController():
                 self._sys_db.serial_rx(p_bytes)
 
             if resp:
-                self._print_raw_msg(self._console, resp)
-
+                #even if verbose output is off we still want to print system messages and error, so we only ignore position updates.
+                if self._console._client.core._verbose_output or 'pos' not in resp: 
+                    self._print_raw_msg(self._console, resp)
+                    
             response = self._parse_response(resp) if resp else None
 
         return response

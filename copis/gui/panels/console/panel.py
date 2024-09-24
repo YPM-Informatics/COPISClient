@@ -41,8 +41,7 @@ class ConsolePanel(wx.Panel):
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
 
-        font = wx.Font(9, family = wx.FONTFAMILY_MODERN, style = 0, weight = 90,
-            underline = False, faceName ='Consolas', encoding = wx.FONTENCODING_DEFAULT)
+        font = wx.Font(9, family = wx.FONTFAMILY_MODERN, style = 0, weight = 90, underline = False, faceName ='Consolas', encoding = wx.FONTENCODING_DEFAULT)
         self.SetFont(font)
 
         self._console = None
@@ -83,13 +82,19 @@ class ConsolePanel(wx.Panel):
         clear_btn = wx.BitmapButton(self, bitmap=create_scaled_bitmap('clear'), size=(-1, -1))
         clear_btn.Bind(wx.EVT_BUTTON, self.on_command_cleared)
 
-        command_sizer.AddMany([
-            (self._console_writer, 1, 0, 0),
-            (clear_btn, 0, wx.ALL, -1),
-        ])
+        verbose_chk = wx.CheckBox(self,label='Verbose output')
+        verbose_chk.Bind(wx.EVT_CHECKBOX, self.on_verbose_chk)
 
+        command_sizer.Add(self._console_writer, 1, 0, 0)
+        command_sizer.Add(clear_btn, 0, wx.ALL, -1)
+        command_sizer.Add(verbose_chk, 0, wx.LEFT |wx.ALIGN_CENTER_VERTICAL, 10)
         self.Sizer.Add(command_sizer, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 2)
 
+    def on_verbose_chk(self, event: wx.CommandEvent) -> None:
+        checkbox = event.GetEventObject()
+        checked = checkbox.GetValue()
+        self.core._verbose_output = checked
+            
     def on_command_entered(self, event: wx.CommandEvent) -> None:
         """Parse and process entered console command.
 

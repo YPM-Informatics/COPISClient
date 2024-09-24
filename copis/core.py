@@ -120,6 +120,7 @@ class COPISCore:
         self._save_imaging_session = False
         self._image_counters = {}
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
+        self._verbose_output = False
 
     @property
     def _disable_idle_motors(self):
