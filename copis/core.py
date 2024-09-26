@@ -76,6 +76,8 @@ class COPISCore:
         self.project = Project()
         self.project.start()
         self.console = ConsoleOutput(parent)
+        
+        
         self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -121,6 +123,10 @@ class COPISCore:
         self._image_counters = {}
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
         self._verbose_output = False
+
+        print_info_msg(self.console, f"using config: {store.get_ini_path()}")
+        print_info_msg(self.console, f"using profile: {store.get_profile_path()}")
+        print_info_msg(self.console, f"using sysdb: {store.get_sys_db_path()}")
 
     @property
     def _disable_idle_motors(self):

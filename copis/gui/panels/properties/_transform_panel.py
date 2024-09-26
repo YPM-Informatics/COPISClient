@@ -57,6 +57,8 @@ class TransformPanel(wx.Panel):
         self._pose = None
         self._device = None
 
+        self._last_pos_args = []
+
         self._x: float = 0.0
         self._y: float = 0.0
         self._z: float = 0.0
@@ -678,6 +680,7 @@ class TransformPanel(wx.Panel):
                     self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def _on_device_updated(self, device):
+        #if 
         if self._device and self._device.device_id == device.device_id:
             self.set_device(device)
 
@@ -697,11 +700,13 @@ class TransformPanel(wx.Panel):
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""
+        
         self._device = device
         args = get_action_args_values(device.position)
         args = [a if i < 3 else dd_to_rad(a) for i, a in enumerate(args)]
-
-        self._set_text_controls(Point5(*args))
+        if args != self._last_pos_args:
+            self._last_pos_args =  args.copy() 
+            self._set_text_controls(Point5(*args))
 
     def set_value(self, name: str, value: float) -> None:
         """Set value indicated by name.

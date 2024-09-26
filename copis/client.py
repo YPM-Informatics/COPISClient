@@ -24,6 +24,7 @@ from .config import Config
 from .core import COPISCore
 from .gui.main_frame import MainWindow
 
+import copis.store as store
 
 class COPISApp(wx.App):
     """Main wxPython app.
@@ -34,21 +35,14 @@ class COPISApp(wx.App):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.is_gui_loaded = False
-
         displays = (wx.Display(i) for i in range(wx.Display.GetCount()))
         main_d = next(filter(lambda d: d.IsPrimary, displays))
         display_rect = main_d.GetGeometry()
-
         self.config = Config(display_rect)
-
         self.core = COPISCore(self)
-
-        # pylint: disable=invalid-name
         self.AppName = 'COPIS Interface'
         dimensions_list = self._parse_chamber_dimensions()
-
         x, y, width, height, is_maximized = self.config.application_settings.window_state
-
         self.mainwindow = MainWindow(
             dimensions_list,
             None,
@@ -57,17 +51,17 @@ class COPISApp(wx.App):
             pos=(x, y),
             size=(width, height)
         )
+        filename = store.find_path('img/client_logo.ico')
+        icon = wx.Icon(filename, wx.BITMAP_TYPE_ICO)
+        self.mainwindow.SetIcon(icon)        
         self.mainwindow.Show()
         self.mainwindow.Maximize(is_maximized)
-
         self.is_gui_loaded = True
 
     def _parse_chamber_dimensions(self) -> list:
         size = list(self.config.machine_settings.dimensions)
         origin = list(self.config.machine_settings.origin)
-
         dimensions = []
         dimensions.extend(size)
         dimensions.extend(origin)
-
         return dimensions
