@@ -20,7 +20,6 @@ import math
 
 from collections import defaultdict
 from multiprocessing import Value
-from tkinter import Label
 from typing import List, Tuple
 from glm import vec3
 from numpy import rot90
@@ -29,6 +28,7 @@ import wx
 import wx.aui as x_aui
 import wx.lib.agw.aui as aui
 from copis.classes.device import Device
+from copis.core import COPISCore
 
 from copis.globals import PathIds, Point5
 from copis.gui.wxutils import FancyTextCtrl, create_scaled_bitmap, simple_statictext
@@ -44,8 +44,8 @@ class PathgenToolbar(aui.AuiToolBar):
         super().__init__(parent, style=wx.BORDER_DEFAULT, agwStyle=aui.AUI_TB_PLAIN_BACKGROUND)
 
         self.parent = parent
-        self.core = self.parent.core
-
+        self.core : COPISCore = self.parent.core
+        
         self._path_dialogs = {}
         self.init_toolbar()
 

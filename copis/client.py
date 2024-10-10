@@ -38,7 +38,8 @@ class COPISApp(wx.App):
         displays = (wx.Display(i) for i in range(wx.Display.GetCount()))
         main_d = next(filter(lambda d: d.IsPrimary, displays))
         display_rect = main_d.GetGeometry()
-        self.config = Config(display_rect)
+        #self.config = Config(display_rect)
+        self.config = Config()
         self.core = COPISCore(self)
         self.AppName = 'COPIS Interface'
         dimensions_list = self._parse_chamber_dimensions()
@@ -57,6 +58,7 @@ class COPISApp(wx.App):
         self.mainwindow.Show()
         self.mainwindow.Maximize(is_maximized)
         self.is_gui_loaded = True
+
 
     def _parse_chamber_dimensions(self) -> list:
         size = list(self.config.machine_settings.dimensions)

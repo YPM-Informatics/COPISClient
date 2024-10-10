@@ -22,7 +22,9 @@ from copis.globals import ActionType, Point5
 
 from copis.collision_detection import collision_eval_cam2cam_start, collision_eval_cam2proxy_start, collision_eval_cam2proxy_path, collision_eval_cam2cam_path
 from glm import vec3
-# pylint: disable=protected-access
+
+from copis.core import COPISCore
+
 class _CommandProcessor:
     """Handle console commands processing and execution.
 
@@ -32,7 +34,7 @@ class _CommandProcessor:
     _PROTOCOLS = ['edsdk', 'serial']
 
     def __init__(self, core) -> None:
-        self._core = core
+        self._core : COPISCore = core
         self._protocol = ''
 
     def process(self, cmd_line: str) -> None:
@@ -235,6 +237,7 @@ class _CommandProcessor:
             'select': select,
             'optimize': optimize,
             'collision': collision
+ 
         }
 
         cmds.get(cmd, default)()

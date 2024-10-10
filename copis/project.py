@@ -16,6 +16,7 @@
 """COPIS Application project manager."""
 
 import os
+import json
 from importlib import import_module
 from typing import Any, Dict, Iterable, List, Tuple
 from pydispatch import dispatcher
@@ -48,10 +49,10 @@ class Project():
             self.__dict__ = Project.__shared_state
         if not hasattr(self, '_is_initialized'):
             self._is_initialized = False
-        if not hasattr(self, '_profile_path'):
-            self._profile_path = None
-        if not hasattr(self, '_default_proxy_path'):
-            self._default_proxy_path = None
+        #if not hasattr(self, '_profile_path'):
+        #    self._profile_path = None
+        #if not hasattr(self, '_default_proxy_path'):
+        #    self._default_proxy_path = None
         if not hasattr(self, '_path'):
             self._path = None
         if not hasattr(self, '_profile'):
@@ -75,7 +76,12 @@ class Project():
         dispatcher.connect(self._set_is_dirty, signal='ntf_d_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_o_list_changed')
         dispatcher.connect(self._set_is_dirty, signal='ntf_adhocs_list_changed') #NR
-
+    
+    @property
+    def profile_path(self) -> str:
+        """Returns the project's profile path."""
+        return self._profile_path
+    
     @property
     def path(self) -> str:
         """Returns the project's save path."""
@@ -144,8 +150,8 @@ class Project():
         return [deserialize_command(cmd) for cmd in self.homing_sequence]
 
     def _init(self):
-        self._profile_path = store.get_profile_path()
-        self._default_proxy_path = store.get_proxy_path()
+        #self._profile_path =  store.get_profile_path()
+        #self._default_proxy_path = store.get_proxy_path()
         self._is_initialized = True
         self._is_dirty = False
 
@@ -164,6 +170,8 @@ class Project():
             lower_corner = vec3(data['range_x'][0], data['range_y'][0], data['range_z'][0])
             upper_corner = vec3(data['range_x'][1], data['range_y'][1], data['range_z'][1])
              #if gantry style not present (as in older profiles files) we default to standard overhead gantry since all files before were overhead only
+            if 'size' not in data:
+                data['size'] = [350,250,200]
             if 'head_radius' not in data:
                 data['head_radius'] = 200
             if 'body_dims' not in data:
@@ -206,14 +214,14 @@ class Project():
         else:
             self._devices: List[Device] = MonitoredList('ntf_d_list_changed', devices)
 
-    def _init_proxies(self, proxies=None):
+    def _init_proxies(self, proxies=None, default_proxy_path=None):
         
-        if proxies is None:
+        if proxies is None and  default_proxy_path and os.path.exists(default_proxy_path):
             # Start with handsome dan :)
             # On init a new project is created with handsome dan as the proxy.
-            handsome_dan = OBJObject3D(self._default_proxy_path, scale=vec3(20, 20, 20))
+            handsome_dan = OBJObject3D(default_proxy_path, scale=vec3(20, 20, 20))
             proxies = [handsome_dan]
-        if self._proxies is not None:
+        if self._proxies is not None and proxies is not None:
             self._proxies.clear(False)
             self._proxies.extend(proxies)
         else:
@@ -273,7 +281,7 @@ class Project():
                         return pose
         return None
 
-    def first_pose_by_dev_id(self, pose_set_idx, device_id):
+    def first_pose_by_dev_id(self, pose_set_idx, device_id) -> Pose:
         """Returns the first (lowest index) pose accross all pose sets up for device id, starting with pose_idx
            if no pose is present for that device, none is returned.
         """
@@ -284,13 +292,16 @@ class Project():
                         return pose
         return None
 
-    def start(self) -> None:
+    def start(self, profile_path:str, default_proxy_path: str) -> None:
         """Starts a new project."""
         if not self._is_initialized:
             self._init()
-        self._profile = store.load_json(store.get_profile_path())
+        with open(profile_path, 'r', encoding='utf-8') as file:
+            self._profile = json.load(file)
+        #self._default_proxy_path = default_proxy_path
+        #self._profile = store.load_json(store.get_profile_path())
         self._init_devices()
-        self._init_proxies()
+        self._init_proxies(default_proxy_path=default_proxy_path)
         self._init_pose_sets()
         self._path = None
         self._unset_dirty_flag()
@@ -299,7 +310,8 @@ class Project():
         """Opens an existing project given it's path."""
         if not self._is_initialized:
             self._init()
-        proj_data = store.load_json(path)
+        with open(path, 'r', encoding='utf-8') as file:
+            proj_data = json.load(file)
         p_sets = list(map(_pose_from_json_map, proj_data['imaging_path']))
         proxies = []
         resp = None
@@ -334,7 +346,7 @@ class Project():
             if choice == wx.ID_YES:
                 self._profile = proj_data['profile']
                 self._init_devices()
-        self._init_proxies(proxies)
+        self._init_proxies(proxies=proxies)
         self._init_pose_sets(p_sets)
         #self._append_pose_sets(p_sets)
         if 'imaging_options' in proj_data:
@@ -350,7 +362,9 @@ class Project():
         """Appends poses from an existing project given it's path."""
         if not self._is_initialized:
             self._init()
-        proj_data = store.load_json(path)
+        #proj_data = store.load_json(path)
+        with open(path, 'r', encoding='utf-8') as file:
+            proj_data = json.load(file)
         resp = None
         is_dirty = False
         if self._profile != proj_data['profile']:
@@ -367,6 +381,7 @@ class Project():
     def save(self, path: str) -> None:
         """Saves the project to disk at the given path."""
         get_module = lambda i: '.'.join(i.split(".")[:2])
+        
         proj_data = { 'imaging_path': self._pose_sets, 'imaging_options': self._options, 'profile': self._profile, 'proxies': []}
         for proxy in self._proxies:
             if hasattr(proxy, 'obj'):

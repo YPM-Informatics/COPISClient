@@ -38,8 +38,7 @@ class DefaultPanel(wx.Panel):
         self._core = parent.core
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
-        self._options_box_sizer = wx.StaticBoxSizer(
-            wx.StaticBox(self, label='Options'), wx.VERTICAL)
+        self._options_box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Options'), wx.VERTICAL)
 
         self._init_gui()
         self._toggle_options(False)

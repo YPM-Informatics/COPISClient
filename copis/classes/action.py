@@ -15,9 +15,9 @@
 
 """Provide the COPIS Action Class."""
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Optional
-
+import json
 from copis.globals import ActionType
 
 @dataclass
@@ -49,3 +49,5 @@ class Action(dict):
         a_dict = deepcopy(self.__dict__)
         a_dict['atype'] = a_type_name
         dict.update(self, a_dict)
+        
+

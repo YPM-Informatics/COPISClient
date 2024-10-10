@@ -62,9 +62,9 @@ class SysDB():
         }
     }
 
-    def __init__(self):
-        self._filename = store.get_sys_db_path()
-        if self._filename == '':
+    def __init__(self, filename):
+        self._filename = filename
+        if not self._filename or self._filename == '':
             self._is_initialized = False
             return
         self._create_or_update_schema()
@@ -76,6 +76,11 @@ class SysDB():
         self._is_writing = False
         print("using sysdb: ", self._filename)
 
+    @property
+    def filename(self) -> bool:
+        """Returns the file path of the db."""
+        return self.self._filename
+    
     @property
     def is_initialized(self) -> bool:
         """Returns True if db has been successfully initialized, false otherwise."""

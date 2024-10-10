@@ -5,7 +5,7 @@ a = Analysis(
     ['copisclient.py'],
     pathex=[],
     binaries=[],
-    datas=[('img', 'img'), ('profiles', '.\profiles'), ('db', './db'), ('copis.ini', '.'), ('proxies', 'proxies')],
+    datas=[('img', 'img'), ('ex','ex'), ('profiles', '.\profiles'), ('db', './db'), ('copis.ini', '.'), ('proxies', 'proxies')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

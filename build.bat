@@ -8,5 +8,6 @@ rmdir dist\compose /s /q
 del dist\pose_img_linker /s /q
 rmdir dist\pose_img_linker /s /q
 
+del dist\copisclient\client\copis.ini  /q
 del dist\copisclient\client\db\copis.db /q
 del dist\copisclient\client\profiles\*  /q

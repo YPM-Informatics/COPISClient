@@ -19,7 +19,6 @@
 import datetime
 from operator import truediv
 from optparse import Option
-from pickle import LIST
 import re
 import sys
 import shutil
@@ -31,13 +30,11 @@ import csv
 import hashlib
 import json
 import exiftool
-import tkinter as tk
 import copy 
 import time
 from itertools import groupby
 from math import cos, e, sin
 from configparser import ConfigParser
-from tkinter import filedialog
 from exif import Image
 from typing import List, Dict, Optional, OrderedDict, Union
 

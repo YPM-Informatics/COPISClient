@@ -120,6 +120,7 @@ class ActionType(Enum):
     G90 = auto()    # Absolute distance mode.
     G91 = auto()    # Relative distance mode.
     G92 = auto()    # Set axis position(s).
+    #M92 = auto()    # Set axis position(s). #temporary fix for submmitting G92 was decimal degrees. Will fix after this is tested and working
 
     M0 = auto()     # Pause processing.
     M17 = auto()    # Enable all motors.

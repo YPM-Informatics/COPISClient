@@ -41,6 +41,8 @@ from .proxy_dialogs import ProxygenCylinder, ProxygenAABB
 from .wxutils import create_scaled_bitmap, show_msg_dialog, show_prompt_dialog
 from .custom_tab_art import CustomAuiTabArt
 
+from copis.gui import config_dialog
+from copis.gui import profile_dialog
 
 class MainWindow(wx.Frame):
     """Main window.
@@ -252,9 +254,7 @@ class MainWindow(wx.Frame):
         # Submenus.
         recent_menu = wx.Menu()
         import_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Import Legacy Actions\tCtrl+I','Import legacy actions')
-        _item.Bitmap = create_scaled_bitmap('import', 16)
-        self.Bind(wx.EVT_MENU, self.on_import_legacy_actions, import_menu.Append(_item))
+
         _item = wx.MenuItem(None, wx.ID_ANY, 'Import Poses\tCtrl+I','Import poses')
         _item.Bitmap = create_scaled_bitmap('import', 16)
         self.Bind(wx.EVT_MENU, self.on_import_poses, import_menu.Append(_item))
@@ -285,12 +285,16 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_exit, self._file_menu.Append(_item))
         # Edit menu.
         edit_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts')
-        self.Bind(wx.EVT_MENU, None, edit_menu.Append(_item))
-        edit_menu.AppendSeparator()
-        _item = wx.MenuItem(None, wx.ID_ANY, '&Preferences', 'Open preferences')
+        #_item = wx.MenuItem(None, wx.ID_ANY, '&Keyboard Shortcuts...', 'Open keyboard shortcuts')
+        #self.Bind(wx.EVT_MENU, None, edit_menu.Append(_item))
+        #edit_menu.AppendSeparator()
+        _item = wx.MenuItem(None, wx.ID_ANY, '&Cofiguration', 'Open app config')
         _item.Bitmap = create_scaled_bitmap('tune', 16)
         self.Bind(wx.EVT_MENU, self.open_preferences_frame, edit_menu.Append(_item))
+        _item = wx.MenuItem(None, wx.ID_ANY, 'Profile', 'Open profile')
+        _item.Bitmap = create_scaled_bitmap('tune', 16)
+        self.Bind(wx.EVT_MENU, self.open_profile_frame, edit_menu.Append(_item))
+
         # View menu.
         view_menu = wx.Menu()
         self.statusbar_menuitem = view_menu.Append(wx.ID_ANY, '&Status &Bar', 'Toggle status bar visibility', wx.ITEM_CHECK)
@@ -337,16 +341,16 @@ class MainWindow(wx.Frame):
         self.menuitems['viewport'] = window_menu.Append(wx.ID_ANY,'Viewport','Show/hide viewport window', wx.ITEM_CHECK)
         self.menuitems['viewport'].Check(True)
         self.Bind(wx.EVT_MENU, self.update_viewport_panel, self.menuitems['viewport'])
-        window_menu.AppendSeparator()
-        _item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
-        _item.Bitmap = create_scaled_bitmap('tune', 16)
-        self.Bind(wx.EVT_MENU, None, window_menu.Append(_item))
+        #window_menu.AppendSeparator()
+        #_item = wx.MenuItem(None, wx.ID_ANY, 'Window &Preferences...', 'Open window preferences')
+        #_item.Bitmap = create_scaled_bitmap('tune', 16)
+        #self.Bind(wx.EVT_MENU, None, window_menu.Append(_item))
         # Help menu.
         help_menu = wx.Menu()
-        _item = wx.MenuItem(None, wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu')
-        _item.Bitmap = create_scaled_bitmap('help_outline', 16)
-        self.Bind(wx.EVT_MENU, None, help_menu.Append(_item))
-        help_menu.AppendSeparator()
+        #_item = wx.MenuItem(None, wx.ID_ANY, 'COPIS &Help...\tF1', 'Open COPIS help menu')
+        #_item.Bitmap = create_scaled_bitmap('help_outline', 16)
+        #self.Bind(wx.EVT_MENU, None, help_menu.Append(_item))
+        #help_menu.AppendSeparator()
         _item = wx.MenuItem(None, wx.ID_ANY, '&Visit COPIS website\tCtrl+F1', f'Open {self._COPIS_WEBSITE}')
         _item.Bitmap = create_scaled_bitmap('open_in_new', 16)
         self.Bind(wx.EVT_MENU, self.open_copis_website, help_menu.Append(_item))
@@ -367,23 +371,6 @@ class MainWindow(wx.Frame):
         proceed = self._prompt_saving('New Project', _)
         if proceed:
             self.core.start_new_project()
-
-    def on_import_legacy_actions(self, _) -> None:
-        """Opens 'open' dialog for legacy *.copis action paths."""
-        current_poses = self.core.project.poses
-        if current_poses is not None and len(current_poses) > 0:
-            if show_prompt_dialog('This will overwrite the current path. Proceed?',
-                'Import Legacy Actions') == wx.ID_NO:
-                return
-        wildcard = f'{self._FILES_LEGACY_ACTIONS}|{self._FILES_WILDCARD}'
-        with wx.FileDialog(self, 'Import Legacy Actions', wildcard=wildcard, defaultDir=self._get_default_dir(), style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
-            if file_dialog.ShowModal() == wx.ID_CANCEL:
-                return
-            path = file_dialog.Path
-            try:
-                self.do_load_legacy_actions(path)
-            except Exception as err:
-                wx.LogError(str(err))
                 
     def on_import_poses(self, _) -> None:
         wildcard = f'{self._FILES_PROJECT}|{self._FILES_WILDCARD}'
@@ -462,19 +449,6 @@ class MainWindow(wx.Frame):
                 print_error_msg(self.core.console,
                 f'An exception occurred while saving the project: {err.args[0]}')
 
-    def do_load_legacy_actions(self, path: str) -> None:
-        """Loads legacy actions from file Path."""
-        poses = store.load_pickle(path, [])
-        # Adjust actions from list of actions to a list of poses.
-        if isinstance(poses[0], Action):
-            real_poses = []
-            for i in range(0, len(poses), 2):
-                chunk = poses[i:i + 2]
-                real_poses.append(Pose(chunk[0], [chunk[1]]))
-            poses = real_poses
-        self.core.project.poses.clear(False)
-        self.core.project.poses.extend(poses)
-
     def show_imaging_toolbar(self, position, actions):
         """Shows the imaging toolbar at the given position and executes the given callback
             for the given tool."""
@@ -524,8 +498,17 @@ class MainWindow(wx.Frame):
 
     def open_preferences_frame(self, _) -> None:
         """Opens the preferences frame."""
-        preferences_dialog = PreferenceFrame(self)
-        preferences_dialog.Show()
+        cfg_dlg =  config_dialog.dlg_config(self)        
+        cfg_dlg.ShowModal()
+        cfg_dlg.Destroy()
+        #preferences_dialog = PreferenceFrame(self)
+        #preferences_dialog.Show()
+
+    def open_profile_frame(self, _) -> None:
+        """Opens the preferences frame."""
+        pfl_dlg =  profile_dialog.dlg_profile(self)        
+        pfl_dlg.ShowModal()
+        pfl_dlg.Destroy()
 
     def open_copis_website(self, _) -> None:
         """Launches the COPIS project's website."""

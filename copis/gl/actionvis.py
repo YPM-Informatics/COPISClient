@@ -510,6 +510,9 @@ class GLActionVis:
         col: glm.array, ids: glm.array):
 
         name, key = vao_info
+        if key not in self._vaos[name]:
+            print(f'key {key} not found')
+            return
         vao = self._vaos[name][key]
         vbo = glGenBuffers(3)
         glBindBuffer(GL_ARRAY_BUFFER, vbo[0])

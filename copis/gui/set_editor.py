@@ -1,7 +1,7 @@
 
 
 from json.encoder import py_encode_basestring_ascii
-from pickle import FALSE
+
 from glm import rotate
 import wx
 from copis.core import COPISCore

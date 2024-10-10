@@ -28,7 +28,7 @@ import time
 import threading
 import warnings
 import uuid
-
+import copy
 from collections import namedtuple
 from importlib import import_module
 from random import shuffle as rand_shuffle
@@ -41,9 +41,9 @@ from pydispatch import dispatcher
 from canon.EDSDKLib import EvfDriveLens
 from copis.coms import serial_controller
 from copis.command_processor import deserialize_command, serialize_command
-from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked
+from copis.helpers import get_atype_kind, print_error_msg, print_debug_msg, print_info_msg, create_action_args, get_action_args_values, get_end_position, get_heading, sanitize_number, locked, rad_to_dd, dd_to_rad
 from copis.globals import ActionType, ComStatus, DebugEnv, Point5, WorkType
-from copis.config import Config
+from copis.config import Config, _get_bool
 from copis.project import Project
 from copis.classes import Action, MonitoredList, Pose, ReadThread, SerialResponse
 from copis import store
@@ -67,17 +67,14 @@ class COPISCore:
 
     def __init__(self, parent=None) -> None:
         """Initializes a COPISCore instance."""
-        self.config = parent.config if parent else Config(vec2(800, 600))
-        print ("using config:", store.get_ini_path())
-        print ("using profile: ", store.get_profile_path())
-        self.sys_db = SysDB()
+
+        self.config = parent.config if parent else Config() #should never be called
+        self.sys_db = SysDB(self.config.db_path)
         self._session_id = self.sys_db.last_session_id() + 1
         self._session_guid = str(uuid.uuid4()) # Global session if, useful is merging dbs.
         self.project = Project()
-        self.project.start()
+        self.project.start(self.config.profile_path, self.config.default_proxy_path )
         self.console = ConsoleOutput(parent)
-        
-        
         self._is_dev_env = self.config.application_settings.debug_env == DebugEnv.DEV
         self._is_edsdk_enabled = False
         self._edsdk = None
@@ -123,11 +120,12 @@ class COPISCore:
         self._image_counters = {}
         self._ressetable_send_delay_ms = 0 # Delay time in milliseconds before sending a serial command after receiving idle/CTS.
         self._verbose_output = False
-
-        print_info_msg(self.console, f"using config: {store.get_ini_path()}")
-        print_info_msg(self.console, f"using profile: {store.get_profile_path()}")
-        print_info_msg(self.console, f"using sysdb: {store.get_sys_db_path()}")
-
+        self._adjust_live_pan = self.config.adjust_live_pan
+        
+        print_info_msg(self.console, f"using config: {self.config.ini_path}")
+        print_info_msg(self.console, f"using profile: {self.config.profile_path}")
+        print_info_msg(self.console, f"using sysdb: {self.config.db_path}")
+        #print(self.project.homing_actions)
     @property
     def _disable_idle_motors(self):
         if 'disable_idle_motors' in self.project.options:
@@ -303,6 +301,7 @@ class COPISCore:
             self._mainqueue.append(cmds)
             self._send_next()
             self._keep_working = False
+    
 
     def _unlock_machine(self):
         print_info_msg(self.console, '**** Unlocking machine ****')
@@ -467,13 +466,18 @@ class COPISCore:
         """Implements a worker thread."""
         t_name = self.work_type_name
         state = "resumed" if resuming else "started"
-        print_debug_msg(self.console, f'{t_name} thread {state}', self._is_dev_env)
+        if self._work_type == WorkType.IMAGING and self.sys_db._is_initialized:
+            state = state + f' Session No: {self._session_id}'
+        #print_debug_msg(self.console, f'{t_name} thread {state}', self._is_dev_env)
         def callback():
             if extra_callback:
                 extra_callback()
-            print_info_msg(self.console, f'{t_name} ended')  #where stepping ended was being generated
-        dispatcher.connect(callback, signal='ntf_machine_idle')
+            #s = f'{t_name} ended'    
+            #if self._work_type == WorkType.IMAGING  and self.sys_db._is_initialized:
+            #    s = s + f' Session No: {self._session_id}'
+            #print_info_msg(self.console, s)  #where stepping ended was being generated
         print_info_msg(self.console, f'{t_name} {state}')
+        dispatcher.connect(callback, signal='ntf_machine_idle')
         had_error = False
         try:
             while self._keep_working and (self.is_serial_port_connected or self._is_edsdk_enabled):
@@ -489,6 +493,10 @@ class COPISCore:
                     self._current_mainqueue_item = -1
                     self.select_pose_set(-1)
                     self._imaged_pose_sets.clear()
+                    m = f'{t_name} ended'
+                    if self.sys_db._is_initialized:
+                        m = m + f' Session No: {self._session_id}'
+                    print_info_msg(self.console, m)  #where stepping ended was being generated
                     self._session_id = self.sys_db.last_session_id() +1
                 self._work_type = None
             if not had_error:
@@ -655,6 +663,7 @@ class COPISCore:
                     if 'post_shutter_delay_ms' in self.project.options and self.project.options['post_shutter_delay_ms']:
                         self._ressetable_send_delay_ms = self.project.options['post_shutter_delay_ms']
                     self.sys_db.start_pose(device, method, action, session_id = self._session_id)
+                    
             if not is_edsdk_needed:
                 for dvc in dvcs:
                     if self._machine_busy_since is None:
@@ -764,8 +773,14 @@ class COPISCore:
     def play_poses(self, poses: List[Pose]):
         """Play the given pose set."""
         self._session_guid = str(uuid.uuid4())
+        
+        #temp_poselist = copy.deepcopy(poses)
+        #self.optimize_pose_list_pan_angles(temp_poselist, include_live_position=True)
+        #process_poses = lambda: [[val for val in tup if val is not None] for tup in zip_longest(*[p.get_seq_actions() for p in temp_poselist])]
+        
         process_poses = lambda: [[val for val in tup if val is not None] for tup in zip_longest(*[p.get_seq_actions() for p in poses])]
         processed_poses = process_poses()
+        
         commands = []
         commands.extend([c for p in processed_poses for c in p])
         is_serial_needed = any(get_atype_kind(p.atype) == 'SER' for p in commands)
@@ -778,13 +793,21 @@ class COPISCore:
                 print_error_msg(self.console, 'Cannot step. The machine is busy.')
                 return
             if not self.is_machine_idle:
-                print_error_msg(self.console,
-                    'The machine needs to be homed before stepping can start.')
+                print_error_msg(self.console, 'The machine needs to be homed before stepping can start.')
                 return
         if is_edsdk_needed:
             if not self._is_edsdk_enabled:
                 print_error_msg(self.console, 'EDSDK is not enabled.')
                 return
+        ##insert command for each device ro set its current pan to shortest distance to next move.
+        if self._adjust_live_pan and (len(poses) > 0):
+            print("adjust live pan..")
+            for pose in poses:
+                if pose.position:
+                    device_id = pose[0].device
+                    pose.position_as_point5
+                    pt = pose.position_as_point5       
+                    self._do_g92_pan_optimize(device_id,pt[3])
         dispatcher.connect(self._on_device_ser_updated, signal='ntf_device_ser_updated')
         dispatcher.connect(self._on_device_eds_updated, signal='ntf_device_eds_updated')
         self._mainqueue = []
@@ -1138,9 +1161,14 @@ class COPISCore:
                 file.write('\n'.join(lines))
         return lines
 
-    def optimize_all_poses_pan_angles(self) -> None:
+    def optimize_all_poses_pan_angles(self, include_live_position : bool = False) -> None:
         """Optimizes all the poses to minimize panning motion cost."""
         last_position_by_id = {}
+        if include_live_position:
+            for dvc in self.project.devices:
+                last_position_by_id[dvc.device_id] = copy.deepcopy(dvc.position) #live positions come from serial and are in DD. Pose positions are in radians
+                last_position_by_id[dvc.device_id].p = dd_to_rad(last_position_by_id[dvc.device_id].p)
+                last_position_by_id[dvc.device_id].t = dd_to_rad(last_position_by_id[dvc.device_id].t)
         for pose in self.project.poses:
             pose_position = pose.position
             device_id = pose[0].device
@@ -1161,10 +1189,93 @@ class COPISCore:
                 pt = Point5(*args[:5])
                 last_position_by_id[device_id] = pt
         dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True)
-        #self.select_pose(self.selected_pose) # Reselect the current selected pose (if one was selected) to update variables in transform panel.
+        
+    def _do_g92_pan_optimize(self, dev_id, next_angle_rad):
+        cmds = []
+        if self._is_machine_busy:
+            print_error_msg(self.console, 'Cannot execute g92. The machine is busy.')
+            return
+        target_dvc = None
+        for dvc in self.project.devices:
+                if dvc.device_id == dev_id:   
+                    target_dvc = dvc
+        if target_dvc:
+            optimized_pan_angle_dd = optimize_rotation_move_to_angle(rad_to_dd(next_angle_rad), target_dvc.position.p, angular_unit='dd') ##live positions are in DD. For accuracy we want to keep DD so we don't loose precision shifting back and forth between DD and RAD
+            new_pan = sanitize_number(optimized_pan_angle_dd)
+            if abs(target_dvc.position.p -  new_pan) > 1: #avoid unessarry adjustments due minor conversion errors 
+                print_info_msg(self.console, f'**** Readjusting Pan to {(new_pan)} ****')
+                a = Action(ActionType.G92, dev_id, 1,[('P',new_pan)]) #unfortunately client poses are stored in radians, we want ot avoid a dd to rad conversion which could add to errors so we attach the _raw attribute to action so serialization knows not to convert rad to dd for sending to firmware.
+                a._raw = True
+                cmds.append(a)
+                #cmds.append(Action(ActionType.M92, dev_id, 1,[('P',new_pan)]))
+        if cmds:
+            self._keep_working = True
+            self._clear_to_send = True
+            self._mainqueue = []
+            self._mainqueue.append(cmds)
+            self._send_next()
+            self._keep_working = False
+
+    def optimize_pose_list_pan_angles(self, poses: List[Pose], include_live_position : bool = False) -> None:
+        """Optimizes all the poses to minimize panning motion cost."""
+        last_position_by_id = {}
+        if include_live_position:
+            for dvc in self.project.devices:
+                last_position_by_id[dvc.device_id] = copy.deepcopy(dvc.position) #live positions come from serial and are in DD. Pose positions are in radians
+                last_position_by_id[dvc.device_id].p = dd_to_rad(last_position_by_id[dvc.device_id].p)
+                last_position_by_id[dvc.device_id].t = dd_to_rad(last_position_by_id[dvc.device_id].t)
+        for pose in poses:
+            pose_position = pose.position
+            device_id = pose[0].device
+            args = get_action_args_values(pose_position.args)
+            pt = Point5(*args[:5])
+            if device_id not in last_position_by_id:
+                last_position_by_id[device_id] = pt
+            else:
+                optimized_pan_angle = optimize_rotation_move_to_angle(last_position_by_id[device_id].p, pt.p)
+                args[3] = sanitize_number(optimized_pan_angle)
+                args = create_action_args(args)
+                argc = min(len(pose_position.args), len(args))
+                for i in range(argc):
+                    pose_position.args[i] = args[i]
+                pose_position.argc = argc
+                pose_position.update()
+                args = get_action_args_values(pose_position.args)
+                pt = Point5(*args[:5])
+                last_position_by_id[device_id] = pt
+        dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True) #this shouldn't be need to be called. lets test.
+    
+    def optimize_pose_set_list_pan_angles(self, pose_sets: List[List[Pose]], include_live_position : bool = False) -> None:
+        """Optimizes all the poses to minimize panning motion cost."""
+        last_position_by_id = {}
+        if include_live_position:
+            for dvc in self.project.devices:
+                last_position_by_id[dvc.device_id] = copy.deepcopy(dvc.position) #live positions come from serial and are in DD. Pose positions are in radians
+                last_position_by_id[dvc.device_id].p = dd_to_rad(last_position_by_id[dvc.device_id].p)
+                last_position_by_id[dvc.device_id].t = dd_to_rad(last_position_by_id[dvc.device_id].t)
+        for pose_set in pose_sets:         
+            for pose in pose_set:
+                pose_position = pose.position
+                device_id = pose[0].device
+                args = get_action_args_values(pose_position.args)
+                pt = Point5(*args[:5])
+                if device_id not in last_position_by_id:
+                    last_position_by_id[device_id] = pt
+                else:
+                    optimized_pan_angle = optimize_rotation_move_to_angle(last_position_by_id[device_id].p, pt.p)
+                    args[3] = sanitize_number(optimized_pan_angle)
+                    args = create_action_args(args)
+                    argc = min(len(pose_position.args), len(args))
+                    for i in range(argc):
+                        pose_position.args[i] = args[i]
+                    pose_position.argc = argc
+                    pose_position.update()
+                    args = get_action_args_values(pose_position.args)
+                    pt = Point5(*args[:5])
+                    last_position_by_id[device_id] = pt
+        dispatcher.send('ntf_a_list_changed', keep_imaging_path_selected=True) #this shouldn't be need to be called. lets test.
 
     def optimize_all_poses_randomize(self) -> None:
-        """Optimizes all the poses to minimize panning motion cost."""
         rand_shuffle(self.project.pose_sets)
         dispatcher.send('ntf_a_list_changed')
 
@@ -1180,7 +1291,7 @@ class COPISCore:
         self._imaged_pose_sets.clear()
         last_dvc_statuses = [(d.device_id, d.is_homed, d.serial_response)
             for d in self.project.devices]
-        self.project.start()
+        self.project.start(self.config.profile_path, self.config.default_proxy_path )
         self._reconcile_machine(last_dvc_statuses)
 
     def open_project(self, path) -> Tuple:
@@ -1223,25 +1334,7 @@ class COPISCore:
 
     def start_imaging(self, start_index = None, end_index=None) -> bool:
         """Starts the imaging sequence, following the defined action path."""
-        #def process_pose_sets():
-            #if start_index == None:
-            #    start_index = 0
-            #if end_index == None:
-            #    end_index = self.project.pose_sets.count - 1
-            #packets = []
-            #pose_sets_to_process = self.project.pose_sets[start_index:end_index+1]  # Adjust end index to be inclusive
-            #for i, p_set in enumerate(pose_sets_to_process, start=start_index):
-            #    zipped = [(i, [val for val in tup if val is not None]) for tup in
-            #        zip_longest(*[p.get_seq_actions() for p in p_set])]
-            #    packets.extend(zipped)
-            #return packets
 
-            #packets = []
-            #for i, p_set in enumerate(self.project.pose_sets):
-            #    zipped = [(i, [val for val in tup if val is not None]) for tup in
-            #        zip_longest(*[p.get_seq_actions() for p in p_set])]
-            #    packets.extend(zipped)
-            #return packets
         if self._is_machine_paused:
             return self.resume_work()
         if not self.is_serial_port_connected:
@@ -1264,12 +1357,24 @@ class COPISCore:
         if end_index == None or end_index < 0 or end_index > len(self.project.pose_sets):
             end_index = len(self.project.pose_sets) - 1
         pose_sets_to_process = self.project.pose_sets[start_index:end_index+1]  # Adjust end index to be inclusive
+        
+
+        ##insert command for each device ro set its current pan to shortest distance to first move.
+        if self._adjust_live_pan and (len(pose_sets_to_process) > 0):
+            devs_optimized = []
+            for ps in  pose_sets_to_process:
+                for pose in ps:
+                    device_id = pose[0].device
+                    if pose.position and device_id not in devs_optimized:
+                        devs_optimized.append(device_id)
+                        pose.position_as_point5
+                        pt = pose.position_as_point5       
+                        self._do_g92_pan_optimize(device_id,pt[3])
         for i, p_set in enumerate(pose_sets_to_process, start=start_index):
             zipped = [(i, [val for val in tup if val is not None]) for tup in
                 zip_longest(*[p.get_seq_actions() for p in p_set])]
             body.extend(zipped)
-
-
+            
         ### Revised footer to only send the disengage motors such that cams do not return to "ready" upon completion of an imaging session.
         # Uncomment next two lines and comment third to reenable.
         # footer = self._get_initialization_commands(ActionType.G1)

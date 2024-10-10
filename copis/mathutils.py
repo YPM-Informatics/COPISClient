@@ -128,8 +128,8 @@ def optimize_rotation_move_to_angle(start_angle, end_angle, angular_unit='rad'):
     full_circ =  pi*2
     half_circ =  pi
     if angular_unit == 'dd':
-        full_circ = 360
-        half_circ = 180
+        full_circ = 360.0
+        half_circ = 180.0
     delta = (end_angle - start_angle)
     dir = 0
     full_rotations = 0

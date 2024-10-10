@@ -16,6 +16,7 @@
 """COPIS Application action commands processor."""
 
 
+from pickle import TRUE
 import re
 
 from itertools import chain
@@ -52,19 +53,26 @@ def serialize_command(action: Action) -> str:
     dest = '' if action.device == 0 else f'>{action.device}'
 
     args = action.args.copy() if action.args else []
-
+    raw = False
+    if hasattr(action, '_raw'):
+        raw = action._raw
+    
     if args and len(args) > 0:
         for i, arg in enumerate(args):
             value = str(arg[1])
 
             if is_number(value):
                 value = float(arg[1])
-
-                if g_code[0] == 'G' and arg[0] in 'PT':
+                #values for poses are currently stored in actions as radians.  The  firmware expact angles in degrees, so a conversion is made for gcodes starting with G. Not sure why this was done like this, but Will have too look into how this might effect advanced gcodes used in homing.   Nometheless, is the action contains the _raw attribute, we pass it without conversion. Actions used by poses should not use "_raw" or that would get serialized. TODO: rework action serialization while maintaining file format compatibility.
+                if not raw and g_code[0] == 'G' and arg[0] in 'PT':  
                     value = rad_to_dd(value)
 
                 args[i] = (arg[0], f'{value}')
 
     g_cmd = ''.join(chain.from_iterable(args))
+    
+    #hack for overiding rad to dd conversion in sending PT
+    if g_code == 'M92':
+        g_code = 'G92'
 
     return f'{dest}{g_code}{g_cmd}'
