@@ -9,7 +9,14 @@ For more information, see the project page at [copis3d.org](http://copis3d.org/)
 ## Getting Started
 
 ### Installation
- 
+
+#### From the Latest Release
+Download the latest release distribution and unzip to any directory. No additional installations needed. Run the included copisclient.exe. 
+
+#### From Source
+
+Clone or download source from git
+
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install any necessary project dependencies.
 
 ```bash
@@ -36,7 +43,6 @@ python -m copisclient
 ### Configuration Files
 
 * `config.ini` contains initialization settings.
-* `machine.ini` contains settings for the imaging instrument.
 
 ## License
 
