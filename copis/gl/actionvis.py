@@ -410,19 +410,20 @@ class GLActionVis:
         # --- render devices ---
 
         for key, value in self._items['device'].items():
-            index_count = self._get_dvc_feature_vtx_count(('dvc_feature_vtx', key))
+            if key in self._vaos['dvc_feature'] and key in self._vaos['device']:
+                index_count = self._get_dvc_feature_vtx_count(('dvc_feature_vtx', key))
 
-            glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-            glBindVertexArray(self._vaos['dvc_feature'][key])
-            glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
+                glUseProgram(self.parent.shaders['instanced_model_multi_colors'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+                glBindVertexArray(self._vaos['dvc_feature'][key])
+                glDrawArraysInstanced(GL_LINES, 0, index_count, len(value))
 
-            glUseProgram(self.parent.shaders['instanced_model_color'])
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
-            glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
-            glBindVertexArray(self._vaos['device'][key])
-            glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
+                glUseProgram(self.parent.shaders['instanced_model_color'])
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm.value_ptr(proj))
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm.value_ptr(view))
+                glBindVertexArray(self._vaos['device'][key])
+                glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
 
         # --- render points ---
             
@@ -495,8 +496,11 @@ class GLActionVis:
 
         # render devices for picking
         for key, value in self._items['device'].items():
-            glBindVertexArray(self._vaos['device'][key])
-            glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
+            if key in self._vaos['device']:
+                glBindVertexArray(self._vaos['device'][key])
+                glDrawArraysInstanced(GL_QUADS, 0, 24, len(value))
+            else:
+                print("device key not; found render for picking")
 
         # render points for picking
         for key, value in self._items['point'].items():
@@ -555,7 +559,11 @@ class GLActionVis:
 
     def _bind_device_features(self, vao_info: ArrayInfo, mat: glm.array, color_mods: glm.array):
         name, key = vao_info
+        if key not in self._vaos[name]:
+            print(f'key {key} not found')
+            return
         vao = self._vaos[name][key]
+       
         vbo = glGenBuffers(2)
         
 

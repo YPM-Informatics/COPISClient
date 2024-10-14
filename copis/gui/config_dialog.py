@@ -299,6 +299,7 @@ class dlg_config ( wx.Dialog ):
             self.core.project.pose_sets.clear()
 
         self.core.config.save_to_file()
+        self._glcanvas._actionvis._initialized = False #forces devices to reload in opengl
         self.core.project.start(self.core.config.profile_path, self.core.config.default_proxy_path ) 
         self.EndModal(wx.ID_OK)
     
