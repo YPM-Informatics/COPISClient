@@ -463,7 +463,7 @@ class dlg_profile ( wx.Dialog ):
 
     def _load_profile(self):
         if 'COPISCore' not in globals():
-            from copis.core import COPISCore 
+            from copis.core import COPISCore  
         
         self.core : COPISCore = self.Parent.core 
         

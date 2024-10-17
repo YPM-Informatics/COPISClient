@@ -41,7 +41,7 @@ class AboutDialog(wx.Dialog):
         self.m_bitmap1 = wx.StaticBitmap( self, wx.ID_ANY, wx.Bitmap(filename, wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer1.Add( self.m_bitmap1, 0, wx.ALIGN_CENTER|wx.TOP, 20 )
 
-        self.m_staticText1 = wx.StaticText( self, wx.ID_ANY, _(u"COPIS Client Software\nBuild Version 20241010\nYale Peabody Museum\nDivision of Informatics\ncopis3d.org"), wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_CENTER_HORIZONTAL )
+        self.m_staticText1 = wx.StaticText( self, wx.ID_ANY, _(u"COPIS Client Software\nRelease Version 20241017\nYale Peabody Museum\nDivision of Informatics\ncopis3d.org"), wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_CENTER_HORIZONTAL )
         self.m_staticText1.Wrap( -1 )
 
         bSizer1.Add( self.m_staticText1, 0, wx.ALIGN_CENTER|wx.TOP, 20 )
