@@ -46,7 +46,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Default': ['default'],
         'Device': ['device_info', 'device_config'],
         'Point': ['transform'],
-        'Object': ['default']
+        'Object': ['proxy_info']
     }
 
     def __init__(self, parent, *args, **kwargs) -> None:
@@ -86,6 +86,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['device_info'] = _PropDeviceInfo(self)
         self._property_panels['device_config'] = _PropDeviceConfig(self)
         self._property_panels['quick_actions'] = _PropQuickActions(self)
+        self._property_panels['proxy_info'] = _PropProxyInfo(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND|wx.TOP|wx.BOTTOM, 0)
@@ -117,6 +118,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_device_selected(self, device) -> None:
         """On ntf_d_selected, set to device view."""
+        print("device selected") #debug
         self.current = 'Device'
         self._property_panels['device_info'].device_id = device.device_id
         self._property_panels['device_info'].device_name = device.name
@@ -126,6 +128,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_pose_selected(self, pose_index: int) -> None:
         """On ntf_a_selected, set to point view."""
+        print("pose selected") #debug
 
         pose = self.core.project.poses[pose_index].position
         if pose.atype == ActionType.G0 or pose.atype == ActionType.G1:
@@ -136,7 +139,10 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
     def on_object_selected(self, object) -> None:
         """On ntf_o_selected, set to proxy object view."""
+        print("object selected") #debug
+
         self.current = 'Proxy Object'
+        self._property_panels['proxy_info'].update_proxy_info(object)
         self.update_to_selected('Object')
 
     def on_deselected(self) -> None:
@@ -678,3 +684,47 @@ class _PropQuickActions(wx.Panel):
         box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND, 4)
         self.Sizer.Add(box_sizer, 0, wx.ALL|wx.EXPAND, 7)
         self.Layout()
+
+
+class _PropProxyInfo(wx.Panel): 
+    """Proxy Object panel to display details and settings for proxy objects"""
+
+    def __init__(self, parent, *args, **kwargs) -> None:
+        super().__init__(parent, style=wx.BORDER_DEFAULT)
+        self.parent = parent
+
+        self.Sizer = wx.BoxSizer(wx.VERTICAL)
+        self.box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Proxy Object Info'), wx.VERTICAL)
+
+        #create a grid to display proxy object details
+        grid = wx.FlexGridSizer(4, 2, 4, 8)
+        grid.AddGrowableCol(1, 0)
+
+        self.id_text = wx.StaticText(self, label = '')
+        self.name_text = wx.StaticText(self, label = '')
+        self.type_text = wx.StaticText(self, label = '')
+        self.desc_text = wx.StaticText(self, label = '')
+        
+        grid.AddMany([
+            (simple_statictext(self, 'ID:', 80), 0, wx.EXPAND, 0),
+            (self.id_text, 0, wx.EXPAND, 0),
+
+            (simple_statictext(self, 'Name:', 80), 0, wx.EXPAND, 0),
+            (self.id_text, 0, wx.EXPAND, 0),
+
+            (simple_statictext(self, 'Type:', 80), 0, wx.EXPAND, 0),
+            (self.id_text, 0, wx.EXPAND, 0),
+
+            (simple_statictext(self, 'Description:', 80), 0, wx.EXPAND, 0),
+            (self.id_text, 0, wx.EXPAND, 0),
+        ])
+
+        self.box_sizer.Add(grid, 0, wx.ALL|wx.EXPAND,4)
+        self.Sizer.Add(self.box_sizer, 0, wx.ALL|wx.EXPAND, 7)
+        self.Layout()
+
+    def update_proxy_info(self, object):
+        self.id_text.Label = str(object.id)
+        self.name_text.Label = object.name
+        self.type_text.Label = object.type
+        self.desc_text.Label = object.description
