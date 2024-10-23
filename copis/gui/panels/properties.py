@@ -140,7 +140,6 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_object_selected(self, object) -> None:
         """On ntf_o_selected, set to proxy object view."""
         print("object selected") #debug
-
         self.current = 'Proxy Object'
         self._property_panels['proxy_info'].update_proxy_info(object)
         self.update_to_selected('Object')
