@@ -12,7 +12,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
+import logging
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s (Line: %(lineno)d)',
+    datefmt='%m-%d %H:%M:%S',
+    handlers=[logging.StreamHandler(), logging.FileHandler('main_frame.log', mode='a')]
+)
+
+logger = logging.getLogger(__name__)
 """MainWindow class."""
 
 import wx
@@ -89,6 +98,9 @@ class MainWindow(wx.Frame):
         self.numpoints = None
         # Bind listeners.
         dispatcher.connect(self._handle_project_dirty_changed, signal='ntf_project_dirty_changed')
+
+        logger.debug("main frame initialized")
+
 
     # --------------------------------------------------------------------------
     # Accessor methods
@@ -745,6 +757,7 @@ class MainWindow(wx.Frame):
 
     def update_properties_panel_title(self, title: str) -> None:
         """Updates the properties panel's title."""
+        
         if title:
             title = title.title()
             self._mgr.GetPane(self.properties_panel).Caption(title)

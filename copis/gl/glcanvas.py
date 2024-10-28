@@ -742,7 +742,10 @@ class GLCanvas3D(glcanvas.GLCanvas):
                 -canvas_size.height / 2.0 / self._zoom, canvas_size.height / 2.0 / self._zoom,
                 -5.0 * self._dist, 5.0 * self._dist)
         else:
-            aspect_ratio = canvas_size.width / canvas_size.height
+            if canvas_size.height != 0:    
+                aspect_ratio = canvas_size.width / canvas_size.height
+            else:
+                aspect_ratio = 1                                                              
             return glm.perspective(
                 math.atan(math.tan(math.radians(45.0))),
                 aspect_ratio, 0.1, 2000.0)

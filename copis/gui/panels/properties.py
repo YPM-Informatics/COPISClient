@@ -12,8 +12,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with COPISClient. If not, see <https://www.gnu.org/licenses/>.
+import logging
 
-"""PropertiesPanel class."""
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s (Line: %(lineno)d)',
+    datefmt='%m-%d %H:%M:%S',
+    handlers=[logging.StreamHandler()]
+)
+
+logger = logging.getLogger(__name__)
+
+"""PropertiesPanel class. 
+    Note, none of the code in this file is used.
+    See properties directory* """
 
 from typing import Union
 
@@ -79,6 +91,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         dispatcher.connect(self.on_deselected, signal='ntf_a_deselected')
         dispatcher.connect(self.on_deselected, signal='ntf_o_deselected')
 
+        logger.debug("PropertiesPanel Initialized")
+
     def init_all_property_panels(self) -> None:
         """Initialize all property panels."""
         self._property_panels['default'] = _DefaultPanel(self)
@@ -119,6 +133,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_device_selected(self, device) -> None:
         """On ntf_d_selected, set to device view."""
         print("device selected") #debug
+        logger.debug("device slected")
         self.current = 'Device'
         self._property_panels['device_info'].device_id = device.device_id
         self._property_panels['device_info'].device_name = device.name
@@ -140,7 +155,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     def on_object_selected(self, object) -> None:
         """On ntf_o_selected, set to proxy object view."""
         print("object selected") #debug
-        self.current = 'Proxy Object'
+        self.current = 'Object'
         self._property_panels['proxy_info'].update_proxy_info(object)
         self.update_to_selected('Object')
 
@@ -723,7 +738,7 @@ class _PropProxyInfo(wx.Panel):
         self.Layout()
 
     def update_proxy_info(self, object):
-        self.id_text.Label = str(object.id)
-        self.name_text.Label = object.name
-        self.type_text.Label = object.type
-        self.desc_text.Label = object.description
+        self.id_text.Label = 'str(object.id)'
+        self.name_text.Label = 'object.name'
+        self.type_text.Label = 'object.type'
+        self.desc_text.Label = 'object.description'
