@@ -27,6 +27,7 @@ from ._transform_panel import TransformPanel
 from ._payload_panel import PayloadPanel
 from ._device_info_panel import DeviceInfoPanel
 from ._device_actions_panel import DeviceActionsPanel
+from._proxy_info_panel import ProxyInfo
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -36,8 +37,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
     _CONFIG = {
         'Default': ['default'],
         'Pose': ['default', 'transform', 'payload'],
-        'Device': ['default', 'device_info', 'live_transform', 'device_actions']
-        # 'Object': ['default']
+        'Device': ['default', 'device_info', 'live_transform', 'device_actions'],
+        'Object': ['default', 'proxy_info', 'live_transform']
     }
 
 
@@ -64,8 +65,8 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         dispatcher.connect(self.on_device_homed, signal='ntf_device_homed')
         dispatcher.connect(self.on_deselected, signal='ntf_a_deselected')
         dispatcher.connect(self.on_deselected, signal='ntf_d_deselected')
-        # dispatcher.connect(self.on_object_selected, signal='ntf_o_selected')
-        # dispatcher.connect(self.on_deselected, signal='ntf_o_deselected')
+        dispatcher.connect(self.on_object_selected, signal='ntf_o_selected')
+        dispatcher.connect(self.on_deselected, signal='ntf_o_deselected')
 
     def build_panels(self) -> None:
         """Initialize all property panels."""
@@ -78,6 +79,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['live_transform'] = TransformPanel(self, True)
         self._property_panels['device_actions'] = DeviceActionsPanel(self)
         self._property_panels['payload'] = PayloadPanel(self)
+        self._property_panels['proxy_info'] = ProxyInfo(self)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 0)
@@ -114,6 +116,12 @@ class PropertiesPanel(scrolled.ScrolledPanel):
 
         if not device.is_homed:
             self._property_panels['live_transform'].Disable()
+
+    def on_object_selected(self, object) -> None:
+        """On ntf_o_selected, set to proxy object view."""
+        self.current = 'Object'
+        self._property_panels['proxy_info'].set_proxy(object)
+        self.update_to_selected('Object')
 
     def on_deselected(self) -> None:
         """On ntf_*_deselected, reset to default view."""

@@ -99,7 +99,6 @@ class MainWindow(wx.Frame):
         # Bind listeners.
         dispatcher.connect(self._handle_project_dirty_changed, signal='ntf_project_dirty_changed')
 
-        logger.debug("main frame initialized")
 
 
     # --------------------------------------------------------------------------
@@ -498,7 +497,11 @@ class MainWindow(wx.Frame):
                 start = vec3(dlg.start_x_ctrl.num_value, dlg.start_y_ctrl.num_value, dlg.start_z_ctrl.num_value)
                 end = vec3(dlg.end_x_ctrl.num_value, dlg.end_y_ctrl.num_value, dlg.end_z_ctrl.num_value)
                 radius = dlg.radius_ctrl.num_value
-                self.core.project.proxies.append(CylinderObject3D(start, end, radius))
+                # TODO: fill name and type fields from
+                # defaults for now
+                name = f"Cylinder{len(self.core.project.proxies)}"
+                type = "Cylinder"
+                self.core.project.proxies.append(CylinderObject3D(start, end, radius, name, type))
 
     def add_proxy_aabb(self, _) -> None:
         """Opens dialog to generate box proxy object."""
@@ -506,7 +509,11 @@ class MainWindow(wx.Frame):
             if dlg.ShowModal() == wx.ID_OK:
                 lower = vec3(dlg.lower_x_ctrl.num_value, dlg.lower_y_ctrl.num_value, dlg.lower_z_ctrl.num_value)
                 upper = vec3(dlg.upper_x_ctrl.num_value, dlg.upper_y_ctrl.num_value, dlg.upper_z_ctrl.num_value)
-                self.core.project.proxies.append(AABoxObject3D(lower, upper))
+                # TODO: fill name and type fields from
+                # defaults for now
+                name = f"Box{len(self.core.project.proxies)}"
+                type = "Box"                
+                self.core.project.proxies.append(AABoxObject3D(lower, upper, name, type))
 
     def open_preferences_frame(self, _) -> None:
         """Opens the preferences frame."""

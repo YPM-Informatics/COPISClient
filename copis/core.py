@@ -1033,7 +1033,7 @@ class COPISCore:
             self.select_pose(-1)
             self.select_pose_set(-1)
             self._selected_proxy = index
-            dispatcher.send('ntf_o_selected', object=self._selected_proxy)
+            dispatcher.send('ntf_o_selected', object=self.project.proxies[self._selected_proxy])
         else:
             print_error_msg(self.console, f'Proxy object index {index} is out of range.')
 

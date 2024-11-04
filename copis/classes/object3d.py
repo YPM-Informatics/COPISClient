@@ -21,7 +21,7 @@ Classes:
 
 from abc import ABC, abstractmethod
 from math import inf
-
+import os
 from glm import vec3, vec4, mat4, u32vec3
 import glm
 import pywavefront
@@ -35,6 +35,9 @@ class Object3D(ABC):
 
     def __init__(self):
         self.selected: bool = False
+        self.name: str = ""
+        self.type: str = ""
+        #self.center: list = [0.0,0.0,0.0]
 
     @abstractmethod
     def vec3_intersect(self, v: vec3, episolon: float) -> bool:
@@ -55,8 +58,10 @@ class Object3D(ABC):
 class AABoxObject3D(Object3D):
     """Axis-aligned box object."""
 
-    def __init__(self, lower: vec3, upper: vec3):
+    def __init__(self, lower: vec3, upper: vec3, name: str, type: str):
         super().__init__()
+        self.name = name
+        self.type = type
         self.lower: vec3 = vec3(lower)
         self.upper: vec3 = vec3(upper)
         self._bbox = BoundingBox(self.lower, self.upper)
@@ -77,8 +82,10 @@ class AABoxObject3D(Object3D):
 class CylinderObject3D(Object3D):
     """Cylinder object."""
 
-    def __init__(self, start: vec3, end: vec3, radius: float):
+    def __init__(self, start: vec3, end: vec3, radius: float, name: str, type: str):
         super().__init__()
+        self.name = name
+        self.type = type
         self.start: vec3 = vec3(start)
         self.end: vec3 = vec3(end)
         self.radius: float = radius
@@ -131,6 +138,8 @@ class OBJObject3D(Object3D):
 
     def __init__(self, filename: str, scale: vec3 = vec3(1.0)):
         super().__init__()
+        self.type = 'custom'
+        self.name = os.path.basename(os.path.normpath(filename))
         self._filename = filename
         self._wavefront_vertices: glm.array
         self.scale = vec3(scale)
