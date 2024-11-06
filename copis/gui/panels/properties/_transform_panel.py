@@ -29,7 +29,7 @@ from copis.gui.wxutils import (EVT_FANCY_TEXT_UPDATED_EVENT, FancyTextCtrl, crea
 from copis.helpers import (create_action_args, dd_to_rad, get_action_args_values, get_end_position,
     get_heading, is_number, rad_to_dd, sanitize_number,
     xyz_units, pt_units)
-from copis.classes import Action, Device, Pose
+from copis.classes import Action, Device, Pose, Object3D, OBJObject3D, CylinderObject3D,  AABoxObject3D
 import copis.store as store
 
 
@@ -697,6 +697,12 @@ class TransformPanel(wx.Panel):
         args = get_action_args_values(pose.position.args)
 
         self._set_text_controls(Point5(*args[:5]))
+
+    def set_proxy(self, proxy: Object3D) -> None:
+        """Parses the selected proxy into the panel."""
+        #TODO:
+        pass
+
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""

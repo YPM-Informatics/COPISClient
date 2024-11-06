@@ -37,7 +37,7 @@ class ProxygenCylinder(wx.Dialog):
         indent = '    '
         unit = 'mm'
 
-        options_grid = wx.FlexGridSizer(9, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(11, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.start_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=0,
@@ -54,6 +54,8 @@ class ProxygenCylinder(wx.Dialog):
             default_unit=unit, unit_conversions=xyz_units)
         self.radius_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=50,
             default_unit=unit, unit_conversions=xyz_units)
+        self.proxy_name_ctrl = wx.TextCtrl(self, size = (48, -1), value = "Cylinder")
+        self.proxy_description_ctrl = wx.TextCtrl(self, size = (48, -1), value = "None")
 
         options_grid.AddMany([
             (simple_statictext(self, 'Start', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
@@ -61,26 +63,40 @@ class ProxygenCylinder(wx.Dialog):
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+            
             (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.start_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
             (simple_statictext(self, 'End', 120), 0, wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
             (0, 0),
+
             (simple_statictext(self, f'{indent}X ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_x_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
             (simple_statictext(self, f'{indent}Y ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_y_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.end_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
             (simple_statictext(self, f'Radius ({unit}):', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.radius_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
+            (simple_statictext(self, f'Name:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.proxy_name_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
+            (simple_statictext(self, f'Description:', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
-            (self.radius_ctrl, 0, wx.EXPAND, 0)
+            (self.proxy_description_ctrl, 0, wx.EXPAND, 0)
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL|wx.EXPAND, 4)
@@ -116,7 +132,7 @@ class ProxygenAABB(wx.Dialog):
         indent = '    '
         unit = 'mm'
 
-        options_grid = wx.FlexGridSizer(8, 2, 12, 8)
+        options_grid = wx.FlexGridSizer(10, 2, 12, 8)
         options_grid.AddGrowableCol(1, 0)
 
         self.lower_x_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=-50,
@@ -131,6 +147,8 @@ class ProxygenAABB(wx.Dialog):
             default_unit='mm', unit_conversions=xyz_units)
         self.upper_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit='mm', unit_conversions=xyz_units)
+        self.proxy_name_ctrl = wx.TextCtrl(self, size = (48, -1), value = "Cylinder")
+        self.proxy_description_ctrl = wx.TextCtrl(self, size = (48, -1), value = "None")
 
         options_grid.AddMany([
             (simple_statictext(self, 'Lower Corner', 120), 0,
@@ -157,10 +175,18 @@ class ProxygenAABB(wx.Dialog):
             (simple_statictext(self, f'{indent}Z ({unit}):', 120), 0,
                 wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
             (self.upper_z_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
+            (simple_statictext(self, f'Name:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.TOP, -11),
+            (self.proxy_name_ctrl, 0, wx.EXPAND|wx.TOP, -11),
+
+            (simple_statictext(self, f'Description:', 120), 0,
+                wx.EXPAND|wx.ALIGN_CENTER_VERTICAL, 0),
+            (self.proxy_description_ctrl, 0, wx.EXPAND, 0)
         ])
 
         self.Sizer.Add(options_grid, 1, wx.ALL|wx.EXPAND, 4)
-        self.Sizer.AddSpacer(8)
+        self.Sizer.AddSpacer(10)
 
         # ---
 

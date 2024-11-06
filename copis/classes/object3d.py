@@ -37,6 +37,7 @@ class Object3D(ABC):
         self.selected: bool = False
         self.name: str = ""
         self.type: str = ""
+
         #self.center: list = [0.0,0.0,0.0]
 
     @abstractmethod
@@ -58,10 +59,12 @@ class Object3D(ABC):
 class AABoxObject3D(Object3D):
     """Axis-aligned box object."""
 
-    def __init__(self, lower: vec3, upper: vec3, name: str, type: str):
-        super().__init__()
+    def __init__(self, lower: vec3, upper: vec3, name: str, type: str, description: str, id: int):
+        super().__init__() 
+        self.id = id
         self.name = name
         self.type = type
+        self.description = description 
         self.lower: vec3 = vec3(lower)
         self.upper: vec3 = vec3(upper)
         self._bbox = BoundingBox(self.lower, self.upper)
@@ -82,10 +85,12 @@ class AABoxObject3D(Object3D):
 class CylinderObject3D(Object3D):
     """Cylinder object."""
 
-    def __init__(self, start: vec3, end: vec3, radius: float, name: str, type: str):
+    def __init__(self, start: vec3, end: vec3, radius: float, name: str, type: str, description: str, id: int):
         super().__init__()
+        self.id = id
         self.name = name
         self.type = type
+        self.description = description
         self.start: vec3 = vec3(start)
         self.end: vec3 = vec3(end)
         self.radius: float = radius
@@ -136,8 +141,9 @@ class CylinderObject3D(Object3D):
 class OBJObject3D(Object3D):
     """.obj object. TODO"""
 
-    def __init__(self, filename: str, scale: vec3 = vec3(1.0)):
+    def __init__(self, filename: str, id: int = 99, scale: vec3 = vec3(1.0)):
         super().__init__()
+        self.id = id
         self.type = 'custom'
         self.name = os.path.basename(os.path.normpath(filename))
         self._filename = filename

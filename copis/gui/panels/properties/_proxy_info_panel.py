@@ -63,7 +63,7 @@ class ProxyInfo(wx.Panel):
 
     def set_proxy(self, object: Object3D):
         '''parses proxy attributes'''
-        self.id_text.Label = "str(object.id)"
+        self.id_text.Label = str(object.id)
         self.name_text.Label =object.name
         self.type_text.Label =object.type
-        self.desc_text.Label = "object.description"
+        self.desc_text.Label = object.description

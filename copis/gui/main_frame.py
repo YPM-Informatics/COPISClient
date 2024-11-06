@@ -499,9 +499,11 @@ class MainWindow(wx.Frame):
                 radius = dlg.radius_ctrl.num_value
                 # TODO: fill name and type fields from
                 # defaults for now
-                name = f"Cylinder{len(self.core.project.proxies)}"
+                name = dlg.proxy_name_ctrl.GetValue()
                 type = "Cylinder"
-                self.core.project.proxies.append(CylinderObject3D(start, end, radius, name, type))
+                id = len(self.core.project.proxies)
+                description = dlg.proxy_description_ctrl.GetValue()
+                self.core.project.proxies.append(CylinderObject3D(start, end, radius, name, type, description, id = id))
 
     def add_proxy_aabb(self, _) -> None:
         """Opens dialog to generate box proxy object."""
@@ -512,8 +514,11 @@ class MainWindow(wx.Frame):
                 # TODO: fill name and type fields from
                 # defaults for now
                 name = f"Box{len(self.core.project.proxies)}"
-                type = "Box"                
-                self.core.project.proxies.append(AABoxObject3D(lower, upper, name, type))
+                type = "Box"        
+                id = len(self.core.project.proxies)
+                name = dlg.proxy_name_ctrl.GetValue()
+                description = dlg.proxy_description_ctrl.GetValue()
+                self.core.project.proxies.append(AABoxObject3D(lower, upper, name, type, description, id = id))
 
     def open_preferences_frame(self, _) -> None:
         """Opens the preferences frame."""
