@@ -513,7 +513,6 @@ class MainWindow(wx.Frame):
                 upper = vec3(dlg.upper_x_ctrl.num_value, dlg.upper_y_ctrl.num_value, dlg.upper_z_ctrl.num_value)
                 # TODO: fill name and type fields from
                 # defaults for now
-                name = f"Box{len(self.core.project.proxies)}"
                 type = "Box"        
                 id = len(self.core.project.proxies)
                 name = dlg.proxy_name_ctrl.GetValue()

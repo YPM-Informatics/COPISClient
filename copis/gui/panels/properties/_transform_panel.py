@@ -56,6 +56,7 @@ class TransformPanel(wx.Panel):
 
         self._pose = None
         self._device = None
+        self._proxy = None
 
         self._last_pos_args = []
 
@@ -701,6 +702,7 @@ class TransformPanel(wx.Panel):
     def set_proxy(self, proxy: Object3D) -> None:
         """Parses the selected proxy into the panel."""
         #TODO:
+        self._proxy = proxy
         pass
 
 
