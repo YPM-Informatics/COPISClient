@@ -147,7 +147,7 @@ class ProxygenAABB(wx.Dialog):
             default_unit='mm', unit_conversions=xyz_units)
         self.upper_z_ctrl = FancyTextCtrl(self, size=(48, -1), num_value=100,
             default_unit='mm', unit_conversions=xyz_units)
-        self.proxy_name_ctrl = wx.TextCtrl(self, size = (48, -1), value = "Cylinder")
+        self.proxy_name_ctrl = wx.TextCtrl(self, size = (48, -1), value = "Box")
         self.proxy_description_ctrl = wx.TextCtrl(self, size = (48, -1), value = "None")
 
         options_grid.AddMany([
