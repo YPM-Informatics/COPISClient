@@ -703,7 +703,12 @@ class TransformPanel(wx.Panel):
         """Parses the selected proxy into the panel."""
         #TODO:
         self._proxy = proxy
-        pass
+        upper_args = [self._proxy.upper.x, self._proxy.upper.y, self._proxy.upper.z]
+        lower_args = [self._proxy.lower.x, self._proxy.lower.y, self._proxy.lower.z]
+        #center point, pan and tilt
+        args = [(upper_args[0]+lower_args[0])/2, (upper_args[1]+lower_args[1])/2, (upper_args[2]+lower_args[2])/2, 0, 0]
+        self._set_text_controls(Point5(*args))
+        
 
 
     def set_device(self, device: Device) -> None:
