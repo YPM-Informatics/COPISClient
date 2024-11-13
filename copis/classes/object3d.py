@@ -146,7 +146,7 @@ class OBJObject3D(Object3D):
         self.id = id
         self.type = 'custom'
         self.name = os.path.basename(os.path.normpath(filename))
-        self.description = "This is a custom proxy, upload an openGL .obj file to render your own."
+        self.description = "This is a custom proxy, upload an \n openGL .obj file to render your own."
         self._filename = filename
         self._wavefront_vertices: glm.array
         self.scale = vec3(scale)

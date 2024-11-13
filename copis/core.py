@@ -1037,9 +1037,27 @@ class COPISCore:
         else:
             print_error_msg(self.console, f'Proxy object index {index} is out of range.')
 
+    def update_selected_proxy_position(self, args):
+        '''Updates proxy position'''
+        #get proxy type from args[0], get position from args[1]
+        if args[0] == 'box':
+            new_points = args[1]
+            proxy_position_upper = self.project.proxies[self._selected_proxy].upper
+            proxy_position_lower = self.project.proxies[self._selected_proxy].lower
+            for i in range(1,3):
+                proxy_position_upper[i - 1] =  new_points[i - 1]
+                proxy_position_lower[i - 1] = new_points[i + 2]
+            
+        elif args[0] == 'cylinder':
+            pass
+        else: #mesh
+            pass
+
+
+
     def select_device(self, index: int) -> None:
         """Selects device given index in device list."""
-        if index < 0:
+        if index < 0: 
             if self._selected_device >= 0:
                 self._selected_device = -1
                 dispatcher.send('ntf_d_deselected')

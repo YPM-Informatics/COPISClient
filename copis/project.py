@@ -82,6 +82,7 @@ class Project():
         """Returns the project's profile path."""
         return self._profile_path
     
+    
     @property
     def path(self) -> str:
         """Returns the project's save path."""

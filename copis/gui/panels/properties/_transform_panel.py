@@ -17,7 +17,7 @@
 
 from functools import partial
 from collections import namedtuple
-
+import numpy as np
 import wx
 
 from glm import vec3
@@ -48,12 +48,13 @@ class TransformPanel(wx.Panel):
         'Bounding Box Ceiling center'
     )
 
-    def __init__(self, parent, is_live: bool=False) -> None:
+    def __init__(self, parent, is_live: bool=False, is_proxy: bool=False) -> None:
         """Initialize _PropTransform with constructors."""
         super().__init__(parent, style=wx.BORDER_DEFAULT)
         self.parent = parent
         self._is_live = is_live
-
+        self._proxy_selected = is_proxy
+        
         self._pose = None
         self._device = None
         self._proxy = None
@@ -67,6 +68,10 @@ class TransformPanel(wx.Panel):
         self._t: float = 0.0
         self._xyz_step: float = 50.0
         self._pt_step: float = 5.0
+        
+        #for maintaining proxy dimensions in native form
+        self._proxy_args = []
+        self._proxy_length = 0
 
         self.Sizer = wx.BoxSizer(wx.VERTICAL)
         self._box_sizer = wx.StaticBoxSizer(wx.StaticBox(self, label='Transform'), wx.VERTICAL)
@@ -634,6 +639,8 @@ class TransformPanel(wx.Panel):
         args = create_action_args(pos_values, pos_names)
         action = self._generate_commands('G1', args)
         self.parent.core.jog(action)
+    
+
 
     def _on_step_button(self, event: wx.CommandEvent) -> None:
         """On EVT_BUTTONs, step value accordingly."""
@@ -652,13 +659,20 @@ class TransformPanel(wx.Panel):
         if self._is_live:
             self._handle_jog(event)
         else:
-            self.parent.core.update_selected_pose_position([
-                self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
+            if self._proxy_selected:
+                pass
+            else:
+                if self._proxy_selected:
+                    
+                    pass
+                else:
+                    self.parent.core.update_selected_pose_position([
+                    self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def _on_text_updated(self, event: wx.Event) -> None:
         """Handles fancy text updated events."""
         ctrl = event.GetEventObject()
-        self.set_value(ctrl.Name, ctrl.num_value)
+        self.set_value(ctrl.Name, ctrl.num_value)               
 
         # Update pose or jog device.
         if ctrl.Name in 'xyzpt':
@@ -676,8 +690,19 @@ class TransformPanel(wx.Panel):
                     values.append(self._get_feed_rate_value())
 
                 self._play_position(values, keys)
-            else:
-                self.parent.core.update_selected_pose_position([
+            else: #different actions depending on what we are transforming 
+
+                if self._proxy_selected: #if we are transforming a proxy
+                    if isinstance(self._proxy, AABoxObject3D): #if that proxy is a box
+                        points = self.xyz_pan_tilt_to_points(self.x, self.y, self.z, self.p, self.t, self._proxy_length)
+                        args = ('box', points)
+                        self.parent.core.update_selected_proxy_position(args)
+                    elif isinstance(self._proxy, CylinderObject3D): #if that proxy is a box
+                        pass
+                    else: #mesh
+                        pass
+                else: #pose
+                    self.parent.core.update_selected_pose_position([
                     self.x, self.y, self.z, dd_to_rad(self.p), dd_to_rad(self.t)])
 
     def _on_device_updated(self, device):
@@ -703,17 +728,19 @@ class TransformPanel(wx.Panel):
         """Parses the selected proxy into the panel."""
         #TODO:
         self._proxy = proxy
-        upper_args = [self._proxy.upper.x, self._proxy.upper.y, self._proxy.upper.z]
-        lower_args = [self._proxy.lower.x, self._proxy.lower.y, self._proxy.lower.z]
-        #center point, pan and tilt
-        args = [(upper_args[0]+lower_args[0])/2, (upper_args[1]+lower_args[1])/2, (upper_args[2]+lower_args[2])/2, 0, 0]
-        self._set_text_controls(Point5(*args))
-        
+        if isinstance(proxy, AABoxObject3D):
+            upper_args = [self._proxy.upper.x, self._proxy.upper.y, self._proxy.upper.z]
+            lower_args = [self._proxy.lower.x, self._proxy.lower.y, self._proxy.lower.z]
+            #center point, pan and tilt
+            args = self.points_to_xyz_pan_tilt(upper_args, lower_args)
+            self._set_text_controls(Point5(*args))
+        elif isinstance(proxy, CylinderObject3D):
+            #Cylinder primitive has height, radius, start and end points
+            pass
 
 
     def set_device(self, device: Device) -> None:
         """Parses the selected device into the panel."""
-        
         self._device = device
         args = get_action_args_values(device.position)
         args = [a if i < 3 else dd_to_rad(a) for i, a in enumerate(args)]
@@ -778,3 +805,51 @@ class TransformPanel(wx.Panel):
             self.x += value
         else:
             return
+
+    def points_to_xyz_pan_tilt(self, upper, lower):
+        """
+        Convert two 3D points to `xyz`, `pan`, and `tilt`.
+        """
+        self._proxy_length = np.linalg.norm(np.array(lower) - np.array(upper))
+        # Center as the midpoint of point1 and point2
+        x, y, z = (np.array(upper) + np.array(lower)) / 2
+
+        # Vector from point1 to point2
+        direction = np.array(lower) - np.array(upper)
+    
+        # Compute pan (rotation around y-axis) and tilt (rotation around x-axis)
+        pan = np.arctan2(direction[0], direction[2])  # Yaw angle
+        tilt = np.arcsin(direction[1] / np.linalg.norm(direction))  # Pitch angle
+
+        # Convert angles to degrees for convenience
+        pan_deg = np.degrees(pan)
+        tilt_deg = np.degrees(tilt)
+        
+        return x, y, z, pan_deg, tilt_deg
+
+    def xyz_pan_tilt_to_points(self, x, y, z, pan, tilt, length):
+        """
+        Convert `xyz`, `pan`, and `tilt` back to two 3D points.
+    
+        Parameters:
+        - xyz: Center position (list or array of length 3)
+        - pan: Pan angle in degrees
+        - tilt: Tilt angle in degrees
+        - length: The distance between the two points
+        """
+        # Convert angles to radians
+        pan_rad = np.radians(pan)
+        tilt_rad = np.radians(tilt)
+
+        # Calculate direction vector from pan and tilt
+        direction = np.array([
+            np.sin(pan_rad) * np.cos(tilt_rad),
+            np.sin(tilt_rad),
+            np.cos(pan_rad) * np.cos(tilt_rad)
+        ])
+        xyz = np.array([x,y,z])
+        # Calculate the two points based on the length
+        upper = xyz - direction * (length / 2)
+        lower = xyz + direction * (length / 2)
+
+        return upper.tolist(), lower.tolist()

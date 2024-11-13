@@ -27,7 +27,8 @@ from ._transform_panel import TransformPanel
 from ._payload_panel import PayloadPanel
 from ._device_info_panel import DeviceInfoPanel
 from ._device_actions_panel import DeviceActionsPanel
-from._proxy_info_panel import ProxyInfo
+from ._proxy_info_panel import ProxyInfo
+from copis.classes import object3d, OBJObject3D, AABoxObject3D, CylinderObject3D
 
 
 class PropertiesPanel(scrolled.ScrolledPanel):
@@ -38,7 +39,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         'Default': ['default'],
         'Pose': ['default', 'transform', 'payload'],
         'Device': ['default', 'device_info', 'live_transform', 'device_actions'],
-        'Object': ['default', 'proxy_info', 'live_transform']
+        'Object': ['default', 'proxy_info', 'proxy_transform']
     }
 
 
@@ -80,6 +81,7 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         self._property_panels['device_actions'] = DeviceActionsPanel(self)
         self._property_panels['payload'] = PayloadPanel(self)
         self._property_panels['proxy_info'] = ProxyInfo(self)
+        self._property_panels['proxy_transform'] = TransformPanel(self, False, True)
 
         for _, panel in self._property_panels.items():
             self.Sizer.Add(panel, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 0)
@@ -121,7 +123,17 @@ class PropertiesPanel(scrolled.ScrolledPanel):
         """On ntf_o_selected, set to proxy object view."""
         self.current = 'Object'
         self._property_panels['proxy_info'].set_proxy(object)
+
+        # transform acts differently depending on the proxy type for now only allowing box proxies to be transformed, 
+        # eventually will implement functionality for all proxy types 
+        if isinstance(object, AABoxObject3D): 
+            self._property_panels['proxy_transform'].set_proxy(object)
+        else:
+            #TODO transform for cylinders and meshes
+            pass 
         self.update_to_selected('Object')
+        self.parent.update_properties_panel_title('proxy properties')
+
 
     def on_deselected(self) -> None:
         """On ntf_*_deselected, reset to default view."""
