@@ -23,7 +23,7 @@ def compress(input_folder):
             p = os.path.join(input_folder, f)
             img = Image.open(p)
             img_w, img_h = img.size
-            img.thumbnail((img_w/2,img_h/2), Image.ANTIALIAS)
+            img.thumbnail((img_w/2,img_h/2), Image.Resampling.LANCZOS)
             img.save(p, 'JPEG', quality=80)
             print(p)
 
@@ -69,7 +69,7 @@ def compose():
                 crop_right = img_mid_w + crop_w/2
                 crop_bottom = img_mid_h + crop_h/2
                 img = img.crop((crop_left,crop_top,crop_right,crop_bottom))
-                img.thumbnail((frame_w, frame_h), Image.ANTIALIAS)
+                img.thumbnail((frame_w, frame_h), Image.Resampling.LANCZOS)
                 img_draw = ImageDraw.Draw(img)
            
                 img_draw.text((0, 0), meta, fill=(255, 127, 0), font=ImageFont.truetype('arial.ttf', font_size), stroke_width=1, stroke_fill='black')
