@@ -20,10 +20,10 @@ import wx.lib.agw.aui as aui
 
 from pydispatch import dispatcher
 from glm import vec2, vec3
-
+import uuid
 import copis.store as store
 
-from copis.helpers import print_error_msg
+from copis.helpers import print_echo_msg, print_error_msg
 from copis.globals import WindowState
 from copis.classes import AABoxObject3D, CylinderObject3D, Action, Pose
 from .about import AboutDialog
@@ -89,7 +89,30 @@ class MainWindow(wx.Frame):
         self.numpoints = None
         # Bind listeners.
         dispatcher.connect(self._handle_project_dirty_changed, signal='ntf_project_dirty_changed')
+        
 
+        accel_entries = []
+        # Accelerator table: f5 triggers auto play
+        self.ID_HOTKEY_PLAY = wx.NewIdRef()
+        accel_entries.append((wx.ACCEL_NORMAL, wx.WXK_F5, self.ID_HOTKEY_PLAY))
+        self.Bind(wx.EVT_MENU, self.on_hotkey_play, id=self.ID_HOTKEY_PLAY)
+        
+        self.id_to_custom_hk_command = {}
+        for k,v in self.core.config.hotkeys.items():
+            key_code = None
+            if k.lower() == 'f9':
+                key_code = wx.WXK_F9
+            elif k.lower() == 'f10':
+                key_code = wx.WXK_F10
+            if key_code is not None:
+                hotkey_id = wx.NewId()
+                self.id_to_custom_hk_command[hotkey_id] = v
+                accel_entries.append((wx.ACCEL_NORMAL, key_code, hotkey_id))
+            # Bind the hotkey event
+            self.Bind(wx.EVT_MENU, self.on_hotkey_custom, id=hotkey_id)
+
+        accel_table = wx.AcceleratorTable(accel_entries)
+        self.SetAcceleratorTable(accel_table)
     # --------------------------------------------------------------------------
     # Accessor methods
     # --------------------------------------------------------------------------
@@ -147,6 +170,16 @@ class MainWindow(wx.Frame):
     def imaging_toolbar(self) -> ImagingToolbar:
         """Returns the imaging toolbar."""
         return self.panels['imaging_toolbar']
+
+    def on_hotkey_custom(self, event):
+        cmds = self.id_to_custom_hk_command.get(event.GetId())
+        if cmds:
+            for cmd in cmds:
+                if not self.core.is_serial_port_connected:
+                    print_echo_msg(self.core.console, 'A serial port needs to be open in order to send a command.')
+                else:
+                    self.core._serial.write(cmd)
+
 
     def _get_default_dir(self):
         return self.core.config.application_settings.last_output_path
@@ -365,6 +398,30 @@ class MainWindow(wx.Frame):
         self._menubar.Append(window_menu, '&Window')
         self._menubar.Append(help_menu, '&Help')
         self.SetMenuBar(self._menubar)
+        
+        
+    def on_hotkey_play(self, event):
+        if not self.core.is_serial_port_connected:
+                print_echo_msg(self.core.console, 'A serial port needs to be open in order to shoot.')
+        else:
+            """On start imaging button pressed, initiate imaging workflow."""
+        
+        self.core._session_guid = str(uuid.uuid4())
+        is_connected = self.core.is_serial_port_connected
+        has_path = len(self.core.project.pose_sets)
+        is_homed = self.core.is_machine_homed
+        can_image = is_connected and has_path and is_homed
+
+        if not can_image:
+            msg = 'The machine needs to be homed before imaging.'
+            if not is_connected:
+                msg = 'The machine needs to be connected for imaging.'
+            elif not has_path:
+                msg = 'The machine needs a path for imaging.'
+
+            show_msg_dialog(msg, 'Imaging')
+            return
+        self.core.start_imaging()
 
     def on_new_project(self, _) -> None:
         """Starts a new project with defaults."""

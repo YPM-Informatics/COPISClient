@@ -63,7 +63,7 @@ class Config():
         self._ini_path_type : str = None
         self._plaform_data_path : str = platformdirs.site_data_path('copis','copis') #ideally where we want it to be
         self._plaform_user_path : str = platformdirs.user_data_dir('copis','copis')
-        
+        self._hotkeys = {}
         if self._ini_path is None:
             self._ini_path = os.path.join(self._root_path, 'copis.ini') #local path
             if os.path.exists(self._ini_path):
@@ -147,6 +147,11 @@ class Config():
     @db_path.setter
     def db_path(self, value):
         self._db_path = value 
+
+    @property
+    def hotkeys(self) -> dict:
+        """Returns the path to the system database."""
+        return self._hotkeys
 
     @property
     def log_serial_tx(self) -> bool:
@@ -274,7 +279,6 @@ class Config():
             if recent_projects:
                 self._application_settings.recent_projects = [
                     l.strip('\t') for l in recent_projects.splitlines()]
-        
         machine = parser['Machine']
         size_x = machine.getfloat('size_x')
         size_y = machine.getfloat('size_y')
@@ -307,6 +311,19 @@ class Config():
                 self._homing_method = parser['System']['homing_method']
         if parser.has_option('System', 'live_cam_pan_op'):
             self._adjust_live_pan = _get_bool(parser['System']['live_cam_pan_op'])
+
+        if parser.has_option('System', 'hotkeys'):
+           hotkeys = parser['System']['hotkeys']
+           if hotkeys:
+                for hotkey in hotkeys.splitlines():
+                    kv =  hotkey.split(':')
+                    if len(kv) == 2:
+                        key = kv[0].strip()
+                        value = kv[1].strip()
+                        if key not in self._hotkeys:
+                            self._hotkeys[key] = []
+                        self._hotkeys[key].append(value)
+                        #self._hotkeys[kv[0].strip()] = kv[1].strip()
         
         if parser.has_option('Project', 'profile_path'):
             self._profile_path = parser['Project']['profile_path']
@@ -340,14 +357,21 @@ class Config():
             config_dict['App']['last_output_path'] = self._application_settings.last_output_path
         if self._application_settings.recent_projects:
             config_dict['App']['recent_projects'] = stringify_list(self._application_settings.recent_projects)
-        
+
         config_dict['System'] = {
             'db': self._db_path,
             'log_serial_tx' : self._log_serial_tx,
             'log_serial_rx' : self._log_serial_rx,
             'live_cam_pan_op' : self._adjust_live_pan
-            
         }
+        if len(self._hotkeys) > 0:
+            hk_str_list = []
+            for k,v in self._hotkeys.items():
+                for cmd in v:
+                    hk_str_list.append(k + ':' + cmd)
+            config_dict['System']['hotkeys'] = stringify_list(hk_str_list)
+
+
         config_dict['Project'] = {
             'profile_path': self._profile_path,
             'default_proxy_path' : self._default_proxy_path

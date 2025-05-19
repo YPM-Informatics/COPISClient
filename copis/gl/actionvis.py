@@ -94,8 +94,11 @@ class GLActionVis:
         for dvc in self.core.project.devices:
             key = dvc.device_id
             size = vec3(dvc.size.x, dvc.size.y / 2, dvc.size.z)
+            #print (size)
             scale = 2 * self._SCALE_FACTOR
+            #print (scale)
             size_nm = vec3([round(v * scale, 1) for v in glm.normalize(size)])
+            #print (size_nm)
             vertices = glm.array(*create_cuboid(size_nm))
             feat_vertices = np.array(create_device_features(dvc.size, 3 * self._SCALE_FACTOR), dtype=np.float32)
 

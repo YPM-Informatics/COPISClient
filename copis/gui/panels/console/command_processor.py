@@ -16,12 +16,19 @@
 """Console Command Processor."""
 
 import shlex
+import uuid
 
 from copis.helpers import print_echo_msg, get_action_args_values
 from copis.globals import ActionType, Point5
 
 from copis.collision_detection import collision_eval_cam2cam_start, collision_eval_cam2proxy_start, collision_eval_cam2proxy_path, collision_eval_cam2cam_path
 from glm import vec3
+from pydispatch import dispatcher
+
+from copis.globals import ToolIds
+from copis.gui.machine_settings_dialog import MachineSettingsDialog
+from copis.gui.wxutils import create_scaled_bitmap, show_msg_dialog
+from copis.helpers import print_debug_msg, print_info_msg
 
 from copis.core import COPISCore
 
@@ -137,6 +144,29 @@ class _CommandProcessor:
                     else:
                         self._print('Invalid operation. Usage: \'shoot <device_index>\';',
                             ' where <device_index> in an integer.')
+            
+        def play():        
+            if not self._core.is_serial_port_connected:
+                self._print('A serial port needs to be open in order to shoot.')
+            else:
+                """On start imaging button pressed, initiate imaging workflow."""
+            self._core._session_guid = str(uuid.uuid4())
+            is_connected = self._core.is_serial_port_connected
+            has_path = len(self._core.project.pose_sets)
+            is_homed = self._core.is_machine_homed
+            can_image = is_connected and has_path and is_homed
+
+            if not can_image:
+                msg = 'The machine needs to be homed before imaging.'
+                if not is_connected:
+                    msg = 'The machine needs to be connected for imaging.'
+                elif not has_path:
+                    msg = 'The machine needs a path for imaging.'
+
+                show_msg_dialog(msg, 'Imaging')
+                return
+            self._core.start_imaging()
+
 
         def list_():
             if self._protocol == '':
@@ -225,7 +255,7 @@ class _CommandProcessor:
                 self._print('A serial port needs to be open in order to execute G code.')
             else:
                 self._core._serial.write(cmd)
-                   
+                  
         cmds = {
             'use': use,
             'release': release,
@@ -236,7 +266,8 @@ class _CommandProcessor:
             'refresh': refresh,
             'select': select,
             'optimize': optimize,
-            'collision': collision
+            'collision': collision,
+            'play': play
  
         }
 

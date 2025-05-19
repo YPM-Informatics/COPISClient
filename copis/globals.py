@@ -107,6 +107,7 @@ class ActionType(Enum):
     C0 = auto()     # Press shutter.
     C1 = auto()     # Press auto focus.
     C10 = auto()    # Remote shutter focus stack.
+    C51 = auto()    # Light control (WS2812)
 
     G0 = auto()     # Rapid positioning.
     G1 = auto()     # Linear movement.
